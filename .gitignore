@@ -37,8 +37,8 @@ m4/
 
 *.con
 
-roq-coinbase-pro
-roq-coinbase-pro-benchmark
-roq-coinbase-pro-test
+roq-binance
+roq-binance-benchmark
+roq-binance-test
 
 *.roq

@@ -1,6 +1,10 @@
+SUBDIRS = api json
+
 bin_PROGRAMS = roq-binance
 roq_binance_LDFLAGS = \
 	$(PTHREAD_CFLAGS) \
+	$(top_builddir)/src/roq/binance/json/libroq-binance-json.la \
+	$(top_builddir)/src/roq/binance/api/libroq-binance-api.la \
 	$(ROQ_SERVER_LIBS) \
 	$(ROQ_CORE_LIBS) \
 	$(ROQ_API_LIBS) \
@@ -32,7 +36,6 @@ roq_binance_CPPFLAGS = \
 roq_binance_SOURCES = \
 	application.cpp \
 	config.cpp \
-	fix.cpp \
 	gateway.cpp \
 	options.cpp \
 	order_mapping.cpp \
