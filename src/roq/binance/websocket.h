@@ -8,7 +8,7 @@
 #include <string_view>
 #include <vector>
 
-#include "roq/core/hash_map.h"
+#include "roq/core/hash/map.h"
 
 #include "roq/core/stack/buffer.h"
 
@@ -193,7 +193,7 @@ class WebSocket final
   bool _upgrade_websocket = false;
   bool _sec_websocket_accept = false;
   // sequence (by product)
-  core::hash_map<std::string, Product> _product;
+  core::hash::map<std::string, Product> _product;
 };
 
 }  // namespace binance

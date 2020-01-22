@@ -13,7 +13,7 @@
 #include <random>
 #include <stdexcept>
 
-#include "roq/core/base64/base64.h"
+#include "roq/core/binascii/base64.h"
 
 #include "roq/core/crypto/hmac.h"
 
@@ -80,7 +80,7 @@ std::string Random::create_raw_data(
     const std::string_view& secret) {
   auto timestamp = create_timestamp(sending_time);
   auto number = create_number(msg_seq_num);
-  auto key = core::base64::decode(
+  auto key = core::binascii::Base64::decode(
       secret.data(),
       secret.length(),
       false);
@@ -99,7 +99,7 @@ std::string Random::create_raw_data(
   hmac.update(password);
   char buffer[32];
   auto length = hmac.digest(buffer, std::size(buffer));
-  return core::base64::encode(buffer, length);
+  return core::binascii::Base64::encode(buffer, length);
 }
 
 std::string Random::create_signature(
@@ -109,7 +109,7 @@ std::string Random::create_signature(
     const std::string_view& secret) {
   auto t = create_timestamp_secs(timestamp);
   auto m = std::string_view(core::http::EnumNameMethod(method));
-  auto key = core::base64::decode(
+  auto key = core::binascii::Base64::decode(
       secret.data(),
       secret.length(),
       false);
@@ -119,7 +119,7 @@ std::string Random::create_signature(
   hmac.update(path);
   char buffer[32];
   auto length = hmac.digest(buffer, std::size(buffer));
-  return core::base64::encode(buffer, length);
+  return core::binascii::Base64::encode(buffer, length);
 }
 
 std::string Random::create_headers(

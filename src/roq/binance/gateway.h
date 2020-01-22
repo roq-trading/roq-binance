@@ -10,7 +10,7 @@
 
 #include "roq/server.h"
 
-#include "roq/core/hash_map.h"
+#include "roq/core/hash/map.h"
 
 #include "roq/core/ssl/ssl.h"
 
@@ -143,14 +143,14 @@ class Gateway final : public server::Handler {
   } _download = Download::NONE;
   std::vector<std::string> _symbols;
   // reference data
-  core::hash_map<std::string, Product> _product_cache;
+  core::hash::map<std::string, Product> _product_cache;
   // market data
   GatewayStatus _market_data_status = GatewayStatus::DISCONNECTED;
   core::page_aligned_vector<MBPUpdate> _bid, _ask;
   // order manager
   GatewayStatus _order_manager_status = GatewayStatus::DISCONNECTED;
   std::unordered_map<uint64_t, OrderMapping> _order_mapping;
-  core::hash_map<std::string, uint64_t> _order_lookup;
+  core::hash::map<std::string, uint64_t> _order_lookup;
 
   decltype(_order_mapping)::iterator find_order_mapping(  // XXX move
       const std::string_view& order_id);
