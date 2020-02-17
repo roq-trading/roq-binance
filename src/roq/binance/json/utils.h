@@ -10,8 +10,6 @@
 
 #include "roq/core/charconv/datetime.h"
 
-#include "roq/binance/api/enums.h"
-
 namespace roq {
 namespace binance {
 namespace json {
@@ -56,62 +54,6 @@ inline void update(
         },
       },
       value);
-}
-
-template <>
-inline void update(
-    api::Side& result,
-    const core::json::value_t& value) {
-  result = api::to_enum<std::remove_reference<decltype(result)>::type>(
-      core::json::get<std::string_view>(value));
-}
-
-template <>
-inline void update(
-    api::OrderType& result,
-    const core::json::value_t& value) {
-  result = api::to_enum<std::remove_reference<decltype(result)>::type>(
-      core::json::get<std::string_view>(value));
-}
-
-template <>
-inline void update(
-    api::OrderStatus& result,
-    const core::json::value_t& value) {
-  result = api::to_enum<std::remove_reference<decltype(result)>::type>(
-      core::json::get<std::string_view>(value));
-}
-
-template <>
-inline void update(
-    api::TimeInForce& result,
-    const core::json::value_t& value) {
-  result = api::to_enum<std::remove_reference<decltype(result)>::type>(
-      core::json::get<std::string_view>(value));
-}
-
-template <>
-inline void update(
-    api::Reason& result,
-    const core::json::value_t& value) {
-  result = api::to_enum<std::remove_reference<decltype(result)>::type>(
-      core::json::get<std::string_view>(value));
-}
-
-template <>
-inline void update(
-    api::XStatus& result,
-    const core::json::value_t& value) {
-  result = api::to_enum<std::remove_reference<decltype(result)>::type>(
-      core::json::get<std::string_view>(value));
-}
-
-template <>
-inline void update(
-    api::StopType& result,
-    const core::json::value_t& value) {
-  result = api::to_enum<std::remove_reference<decltype(result)>::type>(
-      core::json::get<std::string_view>(value));
 }
 
 }  // namespace json

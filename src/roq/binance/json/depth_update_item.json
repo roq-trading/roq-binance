@@ -1,0 +1,8 @@
+{
+"name": "DepthUpdateItem",
+"type": "json::array_item",
+"values": [
+	{ "name": "price", "type": "double" },
+	{ "name": "quantity", "type": "double" }
+]
+}

@@ -1,0 +1,12 @@
+{
+"name": "BookTicker",
+"type": "json::item",
+"values": [
+	{ "field": "u", "name": "order_book_update_id", "type": "uint64_t" },
+	{ "field": "s", "name": "symbol", "type": "std::string_view" },
+	{ "field": "b", "name": "best_bid_price", "type": "double" },
+	{ "field": "B", "name": "best_bid_quantity", "type": "double" },
+	{ "field": "a", "name": "best_ask_price", "type": "double" },
+	{ "field": "A", "name": "best_ask_quantity", "type": "double" }
+]
+}

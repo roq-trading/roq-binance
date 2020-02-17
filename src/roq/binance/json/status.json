@@ -1,0 +1,7 @@
+{
+"name": "Status",
+"type": "enum",
+"values": [
+       	{ "name": "FILLED" }
+]
+}

@@ -1,0 +1,17 @@
+{
+"name": "AggTrade",
+"type": "json::item",
+"values": [
+	{ "field": "e", "name": "event_type", "type": "std::string_view" },
+	{ "field": "E", "name": "event_time", "type": "std::chrono::nanoseconds" },
+	{ "field": "s", "name": "symbol", "type": "std::string_view" },
+	{ "field": "a", "name": "aggregate_trade_id", "type": "uint64_t" },
+	{ "field": "p", "name": "price", "type": "double" },
+	{ "field": "q", "name": "quantity", "type": "double" },
+	{ "field": "f", "name": "first_trade_id", "type": "uint64_t" },
+	{ "field": "l", "name": "last_trade_id", "type": "uint64_t" },
+	{ "field": "T", "name": "trade_time", "type": "std::chrono::nanoseconds" },
+	{ "field": "m", "name": "is_buyer_market_maker", "type": "bool" },
+	{ "field": "M", "name": "ignore", "type": "bool" }
+]
+}

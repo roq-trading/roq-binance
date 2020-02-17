@@ -15,7 +15,6 @@ AC_CONFIG_FILES([
  src/Makefile
  src/roq/Makefile
  src/roq/binance/Makefile
- src/roq/binance/api/Makefile
  src/roq/binance/json/Makefile
  test/Makefile
 ])

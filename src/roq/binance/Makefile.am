@@ -1,10 +1,9 @@
-SUBDIRS = api json
+SUBDIRS = json
 
 bin_PROGRAMS = roq-binance
 roq_binance_LDFLAGS = \
 	$(PTHREAD_CFLAGS) \
 	$(top_builddir)/src/roq/binance/json/libroq-binance-json.la \
-	$(top_builddir)/src/roq/binance/api/libroq-binance-api.la \
 	$(ROQ_SERVER_LIBS) \
 	$(ROQ_CORE_LIBS) \
 	$(ROQ_API_LIBS) \

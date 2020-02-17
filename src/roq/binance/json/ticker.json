@@ -1,0 +1,29 @@
+{
+"name": "Ticker",
+"type": "json::item",
+"values": [
+	{ "field": "e", "name": "event_type", "type": "std::string_view" },
+	{ "field": "E", "name": "event_time", "type": "std::chrono::nanoseconds" },
+	{ "field": "s", "name": "symbol", "type": "std::string_view" },
+	{ "field": "p", "name": "price_change", "type": "double" },
+	{ "field": "P", "name": "price_change_percent", "type": "double" },
+	{ "field": "w", "name": "weighted_average_price", "type": "double" },
+	{ "field": "x", "name": "first_trade_price", "type": "double" },
+	{ "field": "c", "name": "last_price", "type": "double" },
+	{ "field": "Q", "name": "last_quantity", "type": "double" },
+	{ "field": "b", "name": "best_bid_price", "type": "double" },
+	{ "field": "B", "name": "best_bid_quantity", "type": "double" },
+	{ "field": "a", "name": "best_ask_price", "type": "double" },
+	{ "field": "A", "name": "best_ask_quantity", "type": "double" },
+	{ "field": "o", "name": "open_price", "type": "double" },
+	{ "field": "h", "name": "high_price", "type": "double" },
+	{ "field": "l", "name": "low_price", "type": "double" },
+	{ "field": "v", "name": "total_traded_base_asset_volume", "type": "double" },
+	{ "field": "g", "name": "total_traded_quote_asset_volume", "type": "double" },
+	{ "field": "O", "name": "statistics_open_time", "type": "uint32_t" },
+	{ "field": "C", "name": "statistics_close_time", "type": "uint32_t" },
+	{ "field": "F", "name": "first_trade_id", "type": "uint64_t" },
+	{ "field": "L", "name": "last_trade_id", "type": "uint64_t" },
+	{ "field": "n", "name": "total_number_trades", "type": "uint64_t" }
+]
+}
