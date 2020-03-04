@@ -1,6 +1,6 @@
 {
 "name": "Trade",
-"type": "json::item",
+"type": "array_item",
 "values": [
 	{ "field": "e", "name": "event_type", "type": "std::string_view" },
 	{ "field": "E", "name": "event_time", "type": "std::chrono::nanoseconds" },

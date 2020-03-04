@@ -1,6 +1,6 @@
 {
 "name": "BookTicker",
-"type": "json::item",
+"type": "array_item",
 "values": [
 	{ "field": "u", "name": "order_book_update_id", "type": "uint64_t" },
 	{ "field": "s", "name": "symbol", "type": "std::string_view" },

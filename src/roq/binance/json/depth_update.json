@@ -1,6 +1,6 @@
 {
 "name": "DepthUpdate",
-"type": "json::comp",
+"type": "comp",
 "values": [
 	{ "field": "e", "name": "event_type", "type": "std::string_view" },
 	{ "field": "E", "name": "event_time", "type": "std::chrono::nanoseconds" },

@@ -1,6 +1,6 @@
 {
 "name": "OrderResponseFill",
-"type": "json::item",
+"type": "array_item",
 "values": [
 	{ "name": "price", "type": "double" },
 	{ "name": "qty", "type": "double" },

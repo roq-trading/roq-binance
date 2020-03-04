@@ -32,12 +32,13 @@
 #include "roq/core/ws/decoder.h"
 
 #include "roq/binance/config.h"
+#include "roq/binance/random.h"
 
 namespace roq {
 namespace binance {
 
 using success_t = std::function<void(const std::string_view&)>;
-using failure_t = std::function<void(const core::http::Status&)>;
+using failure_t = std::function<void(const core::http::Status&, const std::string_view&)>;
 
 class HTTPConnection final : public core::http::Response::Handler {
  public:
@@ -69,8 +70,8 @@ class HTTPConnection final : public core::http::Response::Handler {
       core::ssl::Context& ssl_context,
       core::event::Base& base);
 
-  HTTPConnection(HTTPConnection&) = delete;
-  void operator=(HTTPConnection&) = delete;
+  HTTPConnection(const HTTPConnection&) = delete;
+  HTTPConnection(HTTPConnection&&) = delete;
 
   void connect(
       core::event::DNSBase& dns_base,
@@ -128,6 +129,7 @@ class Rest final : public HTTPConnection::Handler {
   Rest(
       Gateway& gateway,
       const Config& config,
+      Random& random,
       core::event::Base& base,
       core::event::DNSBase& dns_base,
       core::ssl::Context& ssl_context);
@@ -135,14 +137,20 @@ class Rest final : public HTTPConnection::Handler {
   Rest(const Rest&) = delete;
   Rest(Rest&&) = delete;
 
-  void operator=(const Rest&) = delete;
-  void operator=(Rest&&) = delete;
-
   void operator()(const StartEvent&);
   void operator()(const StopEvent&);
   void operator()(const TimerEvent&);
 
   void operator()(Metrics& metrics);
+
+  void create_order(
+      const CreateOrder& create_order,
+      const std::string_view& cl_ord_id);
+
+  void cancel_order(
+      const CancelOrder& cancel_order,
+      const std::string_view& cl_ord_id,
+      const server::OMS_Order& order);
 
   void get_products();
   void get_accounts();
@@ -156,24 +164,38 @@ class Rest final : public HTTPConnection::Handler {
 
   void process_pending();
 
+  void send_ping();
+
   void get_time();
 
   void get(
       const std::string_view& uri,
-      bool authenticate,
+      success_t&& success,
+      failure_t&& failure);
+
+  void post(
+      const std::string_view& uri,
+      const std::string_view& body,
+      success_t&& success,
+      failure_t&& failure);
+
+  void delete_(
+      const std::string_view& uri,
+      const std::string_view& body,
       success_t&& success,
       failure_t&& failure);
 
   bool request(
-      const core::http::Method& method,
-      const std::string_view& uri,
-      bool authenticate);
+      core::http::Method method,
+      const std::string_view& path,
+      const std::string_view& body);
 
   bool throttle();
 
   void make_pending(
+      core::http::Method,
       const std::string_view& uri,
-      bool authenticate,
+      const std::string_view& body,
       std::chrono::nanoseconds create_time,
       success_t&& success,
       failure_t&& failure);
@@ -199,10 +221,9 @@ class Rest final : public HTTPConnection::Handler {
  private:
   Gateway& _gateway;
   // config
-  const std::string _access_key;
-  const std::string _access_password;
-  const std::string _access_secret;
   const core::URI _uri;
+  // authentication
+  Random& _random;
   // async
   core::event::Base& _base;
   core::event::DNSBase& _dns_base;
@@ -222,7 +243,10 @@ class Rest final : public HTTPConnection::Handler {
       success,
       failure,
       products,
-      accounts;
+      accounts,
+      create_order,
+      modify_order,
+      cancel_order;
   } _profile;
   struct {
     core::metrics::Latency
@@ -233,8 +257,9 @@ class Rest final : public HTTPConnection::Handler {
   // request pipeline
   std::list<
     std::tuple<
-      std::string,
-      bool,
+      core::http::Method,
+      std::string,  // uri
+      std::string,  // body
       std::chrono::nanoseconds,
       success_t,
       failure_t> > _waiting;
@@ -249,6 +274,8 @@ class Rest final : public HTTPConnection::Handler {
   int _request_count = 0;
   // XXX weird to have here ...
   core::http::Status _status = core::http::Status::UNKNOWN;
+  //
+  std::chrono::nanoseconds _next_ping = {};
 };
 
 }  // namespace binance

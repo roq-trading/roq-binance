@@ -8,8 +8,6 @@
 #include <string_view>
 #include <vector>
 
-#include "roq/core/hash/map.h"
-
 #include "roq/core/stack/buffer.h"
 
 #include "roq/core/metrics/counter.h"
@@ -26,22 +24,10 @@
 
 #include "roq/core/ws/decoder.h"
 
-#include "roq/binance/json/activate.h"
-#include "roq/binance/json/change.h"
-#include "roq/binance/json/done.h"
-#include "roq/binance/json/error.h"
-#include "roq/binance/json/heartbeat.h"
-#include "roq/binance/json/last_match.h"
-#include "roq/binance/json/l2update.h"
-#include "roq/binance/json/match.h"
-#include "roq/binance/json/open.h"
-#include "roq/binance/json/received.h"
-#include "roq/binance/json/snapshot.h"
-#include "roq/binance/json/status.h"
-#include "roq/binance/json/subscriptions.h"
-#include "roq/binance/json/ticker.h"
-
 #include "roq/binance/config.h"
+#include "roq/binance/random.h"
+
+#include "roq/binance/json/parser.h"
 
 namespace roq {
 namespace binance {
@@ -50,22 +36,20 @@ class Gateway;
 
 class WebSocket final
     : public core::net::Manager::Handler,
-      public core::http::Response::Handler {
+      public core::http::Response::Handler,
+      public json::Parser::Handler {
   enum class State {
     DISCONNECTED,
     UPGRADE_SENT,
+    AWAIT_HANDSHAKE,
     READY,
-  };
-  struct Product final {
-    uint64_t last_sequence = 0;
-    uint32_t match_last_trade_id = 0;
-    uint32_t fill_last_trade_id = 0;
   };
 
  public:
   WebSocket(
       Gateway& gateway,
       const Config& config,
+      Random& random,
       core::event::Base& base,
       core::event::DNSBase& dns_base,
       core::ssl::Context& ssl_context);
@@ -73,16 +57,17 @@ class WebSocket final
   WebSocket(const WebSocket&) = delete;
   WebSocket(WebSocket&&) = delete;
 
-  void operator=(const WebSocket&) = delete;
-  void operator=(WebSocket&&) = delete;
-
   bool ready() const;
 
   void operator()(const StartEvent&);
   void operator()(const StopEvent&);
   void operator()(const TimerEvent&);
 
-  void subscribe(const std::vector<std::string>& symbols);
+  void subscribe(const std::string_view& topic);
+
+  void subscribe(
+      const std::string_view& topic,
+      const std::vector<std::string>& filter);
 
   void operator()(Metrics& metrics);
 
@@ -120,31 +105,13 @@ class WebSocket final
   void parse(const std::string_view& message);
   void parse_helper(const std::string_view& message);
 
-  void operator()(const json::Error& error);
-  void operator()(const json::Heartbeat& heartbeat);
-  void operator()(const json::Subscriptions& subscriptions);
-  void operator()(const json::Status& status);
-  void operator()(const json::Received& received);
-  void operator()(const json::Open& open);
-  void operator()(const json::Match& match);
-  void operator()(const json::Done& done);
-  void operator()(const json::Change& change);
-  void operator()(const json::Activate& activate);
-  void operator()(const json::Ticker& ticker);
-  void operator()(const json::Snapshot& snapshot);
-  void operator()(const json::L2Update& l2update);
-  void operator()(const json::LastMatch& last_match);
-
-  Product& check(
-      const std::string_view& product_id,
-      uint64_t sequence);
+  void send_cancel_all_after();
 
  private:
   Gateway& _gateway;
   // config
-  const std::string _access_key;
-  const std::string _access_password;
-  const std::string _access_secret;
+  // authentication
+  Random& _random;
   // connection
   core::net::TcpSslConnectionFactory _connection_factory;
   core::net::Manager _connection;
@@ -156,6 +123,7 @@ class WebSocket final
   std::string _response_key;
   std::unique_ptr<core::http::Response> _response;
   std::chrono::nanoseconds _next_heartbeat = {};
+  std::chrono::nanoseconds _next_cancel_all_after = {};
   // other
   core::stack::Buffer<char, 32> _buffer;
   // metrics
@@ -166,20 +134,21 @@ class WebSocket final
   struct {
     core::metrics::Profile
       parse,
+      cancel_all_after,
       error,
-      heartbeat,
-      subscriptions,
-      status,
-      received,
-      open,
-      match,
-      done,
-      change,
-      activate,
-      ticker,
-      snapshot,
-      l2update,
-      last_match;
+      execution,
+      funding,
+      handshake,
+      instrument,
+      liquidation,
+      margin,
+      order,
+      order_book_l2,
+      position,
+      quote,
+      settlement,
+      subscribe,
+      trade;
   } _profile;
   struct {
     core::metrics::Latency
@@ -192,8 +161,6 @@ class WebSocket final
   bool _connection_upgrade = false;
   bool _upgrade_websocket = false;
   bool _sec_websocket_accept = false;
-  // sequence (by product)
-  core::hash::map<std::string, Product> _product;
 };
 
 }  // namespace binance

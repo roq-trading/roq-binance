@@ -13,7 +13,6 @@ check_PROGRAMS = roq-binance-test
 roq_binance_test_LDADD = \
 	libgtest.la \
 	$(top_builddir)/src/roq/binance/json/libroq-binance-json.la \
-	$(top_builddir)/src/roq/binance/api/libroq-binance-api.la \
 	$(DATE_LIBS) \
 	$(ROQ_CORE_LIBS) \
 	$(ROQ_API_LIBS) \

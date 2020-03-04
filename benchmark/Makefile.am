@@ -2,7 +2,6 @@ TESTS = roq-binance-benchmark
 bin_PROGRAMS = roq-binance-benchmark
 roq_binance_benchmark_LDADD = \
 	$(top_builddir)/src/roq/binance/json/libroq-binance-json.la \
-	$(top_builddir)/src/roq/binance/api/libroq-binance-api.la \
 	$(DATE_LIBS) \
 	$(ROQ_API_LIBS) \
 	$(ROQ_CORE_LIBS) \

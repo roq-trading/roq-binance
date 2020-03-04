@@ -6,34 +6,37 @@
 #include <string>
 #include <string_view>
 
+#include "roq/core/crypto/hmac.h"
+
 #include "roq/core/http/method.h"
 
 namespace roq {
 namespace binance {
 
-struct Random final {
-  static std::string create_raw_data(
-      std::chrono::nanoseconds sending_time,
-      const std::string_view& msg_type,
-      uint64_t msg_seq_num,
-      const std::string_view& sender_comp_id,
-      const std::string_view& target_comp_id,
-      const std::string_view& password,
-      const std::string_view& secret);
-
-  static std::string create_signature(
-      std::chrono::seconds timestamp,
-      const core::http::Method& method,
-      const std::string_view& path,
-      const std::string_view& secret);
-
-  static std::string create_headers(
-      std::chrono::seconds timestamp,
-      const core::http::Method& method,
-      const std::string_view& path,
+class Random final {
+ public:
+  Random(
       const std::string_view& key,
-      const std::string_view& password,
       const std::string_view& secret);
+
+  Random(Random&&) = delete;
+  Random(const Random&) = delete;
+
+  std::string create_signature(
+      std::chrono::seconds expires,
+      const core::http::Method& method,
+      const std::string_view& path,
+      const std::string_view& obdy);
+
+  std::string create_headers(
+      std::chrono::seconds expires,
+      const core::http::Method& method,
+      const std::string_view& path,
+      const std::string_view& obdy);
+
+ private:
+  const std::string _key;
+  core::crypto::HMAC_SHA256 _hmac;
 };
 
 }  // namespace binance

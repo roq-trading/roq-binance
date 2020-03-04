@@ -6,6 +6,8 @@
 
 #include "roq/logging.h"
 
+#include "roq/binance/options.h"
+
 namespace roq {
 namespace binance {
 
@@ -20,6 +22,7 @@ std::string Config::get_account() const {
 }
 
 void Config::dispatch(server::Config::Handler& handler) const {
+  handler(FLAGS_exchange);
   handler(symbols);
   for (auto iter : accounts)
     handler(iter.second);
@@ -44,7 +47,7 @@ void Config::operator()(User&& user) {
 void Config::operator()(
     const std::string_view& key,
     cpptoml::base&) {
-  LOG(WARNING)("UNKNOWN KEY=\"{}\"" , key);
+  LOG(WARNING)(FMT_STRING("UNKNOWN KEY=\"{}\""), key);
 }
 
 }  // namespace binance

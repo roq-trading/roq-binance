@@ -1,6 +1,6 @@
 {
 "name": "OrderResponse",
-"type": "json::comp",
+"type": "comp",
 "values": [
 	{ "name": "symbol", "type": "std::string_view" },
 	{ "name": "orderId", "type": "uint32_t" },

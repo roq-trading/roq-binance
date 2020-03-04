@@ -30,8 +30,8 @@ BUILT_SOURCES = \
 	time_in_force.h \
 	trade.cpp \
 	trade.h \
-	type.cpp
-	type.h \
+	type.cpp \
+	type.h
 CLEANFILES = $(BUILT_SOURCES)
 libroq_binance_json_la_SOURCES = \
 	agg_trade.cpp \
@@ -45,10 +45,20 @@ libroq_binance_json_la_SOURCES = \
 	ticker.cpp \
 	time_in_force.cpp \
 	trade.cpp \
-	type.cpp
+	type.cpp \
+	parser.cpp \
+	utils.cpp
 
 .json.h:
-	@abs_top_builddir@/autogen/autogen.py --namespace=binance/json --type h --spec $< > $@
+	@abs_top_builddir@/autogen/autogen.py \
+		--namespace=roq/binance/json \
+		--output-type json \
+		--file-type h \
+		$< > $@
 
 .json.cpp:
-	@abs_top_builddir@/autogen/autogen.py --namespace=binance/json --type cpp --spec $< > $@
+	@abs_top_builddir@/autogen/autogen.py \
+		--namespace=roq/binance/json \
+		--output-type json \
+		--file-type cpp \
+		$< > $@
