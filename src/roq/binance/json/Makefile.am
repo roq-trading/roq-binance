@@ -33,8 +33,8 @@ AUTOGEN_H = \
 	time_in_force.h \
 	trade.h \
 	type.h
-BUILT_SOURCES = $(AUTOGEN_CPP) $(AUTOGEN_H) .gitignore
-CLEANFILES = $(BUILT_SOURCES)
+CLEANFILES = $(AUTOGEN_CPP) $(AUTOGEN_H)
+BUILT_SOURCES = $(CLEANFILES) .gitignore
 libroq_binance_json_la_SOURCES = \
 	$(AUTOGEN_CPP) \
 	parser.cpp \
