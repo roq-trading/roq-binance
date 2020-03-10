@@ -39,5 +39,5 @@ roq_binance_SOURCES = \
 	options.cpp \
 	random.cpp \
 	rest.cpp \
-	websocket.cpp \
+	web_socket.cpp \
 	main.cpp
