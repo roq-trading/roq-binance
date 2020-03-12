@@ -3,12 +3,8 @@
 #pragma once
 
 #include <chrono>
-#include <memory>
-#include <string>
 #include <string_view>
 #include <vector>
-
-#include "roq/core/stack/buffer.h"
 
 #include "roq/core/metrics/counter.h"
 #include "roq/core/metrics/latency.h"
@@ -17,12 +13,7 @@
 #include "roq/core/event/base.h"
 #include "roq/core/event/dns_base.h"
 
-#include "roq/core/net/tcp_ssl_connection_factory.h"
-#include "roq/core/net/manager.h"
-
-#include "roq/core/http/response.h"
-
-#include "roq/core/ws/decoder.h"
+#include "roq/core/web/socket.h"
 
 #include "roq/binance/config.h"
 #include "roq/binance/random.h"
@@ -35,16 +26,8 @@ namespace binance {
 class Gateway;
 
 class WebSocket final
-    : public core::net::Manager::Handler,
-      public core::http::Response::Handler,
+    : public core::web::Socket::Handler,
       public json::Parser::Handler {
-  enum class State {
-    DISCONNECTED,
-    UPGRADE_SENT,
-    AWAIT_HANDSHAKE,
-    READY,
-  };
-
  public:
   WebSocket(
       Gateway& gateway,
@@ -54,8 +37,8 @@ class WebSocket final
       core::event::DNSBase& dns_base,
       core::ssl::Context& ssl_context);
 
-  WebSocket(const WebSocket&) = delete;
   WebSocket(WebSocket&&) = delete;
+  WebSocket(const WebSocket&) = delete;
 
   bool ready() const;
 
@@ -72,35 +55,12 @@ class WebSocket final
   void operator()(Metrics& metrics);
 
  protected:
-  void send(const core::utils::Message& message);
-
-  void send_upgrade_request();
-  void send_close();
-  void send_ping();
-
-  void operator()(State state);
-
-  void operator()(const core::net::Manager::Connected&) override;
-  void operator()(const core::net::Manager::Disconnected&) override;
-  void operator()(const core::net::Manager::Read&) override;
-
-  // http:
-  void operator()(const core::http::Response::MessageBegin&) override;
-  void operator()(const core::http::Response::URL&) override;
-  void operator()(const core::http::Response::Status&) override;
-  void operator()(const core::http::Response::HeaderField&) override;
-  void operator()(const core::http::Response::HeaderValue&) override;
-  void operator()(const core::http::Response::HeadersComplete&) override;
-  void operator()(const core::http::Response::ChunkHeader&) override;
-  void operator()(const core::http::Response::Body&) override;
-  void operator()(const core::http::Response::ChunkComplete&) override;
-  void operator()(const core::http::Response::MessageComplete&) override;
-
-  // ws:
-  void operator()(const core::ws::text_t&);
-  void operator()(const core::ws::close_t&);
-  void operator()(const core::ws::ping_t&);
-  void operator()(const core::ws::pong_t&);
+  void operator()(const core::web::Socket::Connected&) override;
+  void operator()(const core::web::Socket::Disconnected&) override;
+  void operator()(const core::web::Socket::Ready&) override;
+  void operator()(const core::web::Socket::Close&) override;
+  void operator()(const core::web::Socket::Latency&) override;
+  void operator()(const core::web::Socket::Text&) override;
 
   void parse(const std::string_view& message);
   void parse_helper(const std::string_view& message);
@@ -109,23 +69,15 @@ class WebSocket final
 
  private:
   Gateway& _gateway;
-  // config
   // authentication
   Random& _random;
-  // connection
-  core::net::TcpSslConnectionFactory _connection_factory;
-  core::net::Manager _connection;
+  // web socket
+  core::web::Socket _connection;
   // buffers
-  core::utils::Buffer _encode_buffer;
   core::utils::Buffer _decode_buffer;
   // session
-  State _state = State::DISCONNECTED;
-  std::string _response_key;
-  std::unique_ptr<core::http::Response> _response;
   std::chrono::nanoseconds _next_heartbeat = {};
   std::chrono::nanoseconds _next_cancel_all_after = {};
-  // other
-  core::stack::Buffer<char, 32> _buffer;
   // metrics
   struct {
     core::metrics::Counter
@@ -155,12 +107,6 @@ class WebSocket final
       ping,
       heartbeat;
   } _latency;
-  // upgrade
-  core::http::Status _status = core::http::Status::UNKNOWN;
-  core::http::Header _header = core::http::Header::UNKNOWN;
-  bool _connection_upgrade = false;
-  bool _upgrade_websocket = false;
-  bool _sec_websocket_accept = false;
 };
 
 }  // namespace binance
