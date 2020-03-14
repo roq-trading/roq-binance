@@ -10,6 +10,9 @@ void Parser::dispatch(
     Handler& handler,
     const std::string_view& message,
     core::json::Buffer& buffer) {
+  (void) handler;  // avoid warning
+  (void) message;  // avoid warning
+  (void) buffer;  // avoid warning
 }
 
 }  // namespace json

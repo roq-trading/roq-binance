@@ -114,7 +114,7 @@ void Gateway::operator()(
     const CreateOrderEvent& event,
     const std::string_view& request_id,
     uint32_t gateway_order_id) {
-  auto& message_info = event.message_info;
+  (void) gateway_order_id;  // avoid warning
   auto& create_order = event.create_order;
   /*
   core::stack::Buffer<char, 36> buffer;
@@ -146,7 +146,6 @@ void Gateway::operator()(
     const CancelOrderEvent& event,
     const std::string_view& request_id,
     const server::OMS_Order& order) {
-  auto& message_info = event.message_info;
   auto& cancel_order = event.cancel_order;
   _rest.cancel_order(
       cancel_order,
@@ -248,13 +247,7 @@ void Gateway::check_download() {
       update_market_data(GatewayStatus::READY);
       LOG(INFO)("Download COMPLETED");
       _download = Download::READY;
-      LOG(INFO)("********************************************");
-      LOG(INFO)("***   DEFAULT LOGGING IS NOW MINIMAL     ***");
-      LOG(INFO)("***                                      ***");
-      LOG(INFO)("***   verbose logging can be enabled     ***");
-      LOG(INFO)("***   by setting the ROQ_v environment   ***");
-      LOG(INFO)("***   variable to a non-zero value       ***");
-      LOG(INFO)("********************************************");
+      server::PRINT_REDUCED_LOGGING();
       break;
     }
     case Download::READY:

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <chrono>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -76,7 +77,6 @@ class WebSocket final
   // buffers
   core::utils::Buffer _decode_buffer;
   // session
-  std::chrono::nanoseconds _next_heartbeat = {};
   std::chrono::nanoseconds _next_cancel_all_after = {};
   // metrics
   struct {

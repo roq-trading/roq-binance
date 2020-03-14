@@ -75,6 +75,7 @@ Rest::Rest(
       _latency {
         .ping = create_latency("ping"),
       } {
+  (void) config;  // avoid warning
 }
 
 bool Rest::ready() const {
@@ -109,12 +110,17 @@ void Rest::operator()(Metrics& metrics) {
 void Rest::create_order(
     const CreateOrder& create_order,
     const std::string_view& cl_ord_id) {
+  (void) create_order;  // avoid warning
+  (void) cl_ord_id;  // avoid warning
 }
 
 void Rest::cancel_order(
     const CancelOrder& cancel_order,
     const std::string_view& request_id,
     const server::OMS_Order& order) {
+  (void) cancel_order;  // avoid warning
+  (void) request_id;  // avoid warning
+  (void) order;  // avoid warning
 }
 
 void Rest::get_products() {
@@ -124,6 +130,8 @@ void Rest::get_products() {
       std::string_view(),  // headers
       std::string_view(),  // body
       [this](auto status, const auto& body) {
+        (void) status;  // avoid warning
+        (void) body;  // avoid warning
         _profile.products(
             [&]() {
               /*
@@ -152,6 +160,8 @@ void Rest::get_accounts() {
       std::string_view(),  // headers
       std::string_view(),  // body
       [this](auto status, const auto& body) {
+        (void) status;  // avoid warning
+        (void) body;  // avoid warning
         _profile.accounts(
             [&]() {
               /*

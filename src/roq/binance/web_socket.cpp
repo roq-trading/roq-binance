@@ -3,7 +3,6 @@
 #include "roq/binance/web_socket.h"
 
 #include <fmt/format.h>
-// #include <fmt/chrono.h>
 
 #include "roq/builtins.h"
 #include "roq/patterns.h"
@@ -91,6 +90,7 @@ WebSocket::WebSocket(
         .ping = create_latency("ping"),
         .heartbeat = create_latency("heartbeat"),
       } {
+  (void) config;  // avoid warning
 }
 
 bool WebSocket::ready() const {
@@ -179,7 +179,6 @@ void WebSocket::operator()(const core::web::Socket::Connected&) {
 }
 
 void WebSocket::operator()(const core::web::Socket::Disconnected&) {
-  _next_heartbeat = {};
   _next_cancel_all_after = {};
   _gateway(*this);
   ++_counter.disconnect;
