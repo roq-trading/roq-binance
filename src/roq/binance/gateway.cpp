@@ -247,7 +247,6 @@ void Gateway::check_download() {
       update_market_data(GatewayStatus::READY);
       LOG(INFO)("Download COMPLETED");
       _download = Download::READY;
-      server::PRINT_REDUCED_LOGGING();
       break;
     }
     case Download::READY:
