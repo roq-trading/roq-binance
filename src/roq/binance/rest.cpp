@@ -128,63 +128,9 @@ void Rest::cancel_order(
 }
 
 void Rest::get_products() {
-  _connection.request(
-      core::http::Method::GET,
-      "/products",
-      std::string_view(),  // headers
-      std::string_view(),  // body
-      [this](auto status, const auto& body) {
-        (void) status;  // avoid warning
-        (void) body;  // avoid warning
-        _profile.products(
-            [&]() {
-              /*
-              core::json::Buffer buffer(_decode_buffer);
-              auto products = json::Products::parse(
-                  body,
-                  buffer);
-              VLOG(1)("products={}", products);
-              _gateway(products);
-              */
-            });
-      },
-      [](const auto& e) {
-        LOG(WARNING)(
-            FMT_STRING("Exception what=\"{}\""),
-            e.what());
-        LOG(WARNING)("Unable to get products");
-        LOG(FATAL)("Unexpected -- now what?");  // FIXME(thraneh): ...
-      });
 }
 
 void Rest::get_accounts() {
-  _connection.request(
-      core::http::Method::GET,
-      "/accounts",
-      std::string_view(),  // headers
-      std::string_view(),  // body
-      [this](auto status, const auto& body) {
-        (void) status;  // avoid warning
-        (void) body;  // avoid warning
-        _profile.accounts(
-            [&]() {
-              /*
-              core::json::Buffer buffer(_decode_buffer);
-              auto accounts = json::Accounts::parse(
-                  body,
-                  buffer);
-              VLOG(1)("accounts={}", accounts);
-              _gateway(accounts);
-              */
-            });
-      },
-      [](const auto& e) {
-        LOG(WARNING)(
-            FMT_STRING("Exception what=\"{}\""),
-            e.what());
-        LOG(WARNING)("Unable to get accounts");
-        LOG(FATAL)("Unexpected -- now what?");  // FIXME(thraneh): ...
-      });
 }
 
 void Rest::operator()(const core::web::Client::Connected&) {
