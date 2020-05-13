@@ -82,8 +82,8 @@ Gateway::Gateway(
           _base,
           _dns_base,
           _ssl_context),
-      _bid(FLAGS_max_depth),
-      _ask(FLAGS_max_depth),
+      _bid(FLAGS_cache_mbp_max_depth),
+      _ask(FLAGS_cache_mbp_max_depth),
       _trade(FLAGS_max_trades) {
   LOG_IF(WARNING, FLAGS_cancel_on_disconnect == false)(
       "Orders will *NOT* be cancelled on disconnect");

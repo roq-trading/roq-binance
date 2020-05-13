@@ -25,4 +25,4 @@ DECLARE_uint32(request_expires_secs);
 // external
 
 DECLARE_string(name);
-DECLARE_uint32(max_depth);
+DECLARE_uint32(cache_mbp_max_depth);
