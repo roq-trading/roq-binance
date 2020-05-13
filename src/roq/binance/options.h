@@ -4,7 +4,6 @@
 
 #include <gflags/gflags.h>
 
-DECLARE_string(listen);
 DECLARE_string(config_file);
 
 DECLARE_string(rest_uri);
