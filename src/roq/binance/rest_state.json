@@ -1,0 +1,8 @@
+{
+"name": "RestState",
+"type": "enum",
+"values": [
+	{ "name": "exchange_info" },
+	{ "name": "done" }
+]
+}

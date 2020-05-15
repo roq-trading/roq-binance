@@ -32,7 +32,14 @@ roq_binance_CPPFLAGS = \
 	$(ROQ_API_CFLAGS) \
 	$(ROQ_CORE_CFLAGS) \
 	$(ROQ_SERVER_CFLAGS)
+AUTOGEN_CPP = \
+	rest_state.cpp
+AUTOGEN_H = \
+	rest_state.h
+CLEANFILES = $(AUTOGEN_CPP) $(AUTOGEN_H)
+BUILT_SOURCES = $(CLEANFILES) .gitignore
 roq_binance_SOURCES = \
+	$(AUTOGEN_CPP) \
 	application.cpp \
 	config.cpp \
 	gateway.cpp \
@@ -41,3 +48,20 @@ roq_binance_SOURCES = \
 	rest.cpp \
 	web_socket.cpp \
 	main.cpp
+
+.gitignore: Makefile.am
+	echo $(AUTOGEN_CPP) $(AUTOGEN_H) | tr " " "\n" | sort > $@
+
+.json.h:
+	@abs_top_builddir@/autogen/autogen.py \
+		--namespace=roq/binance \
+		--output-type state \
+		--file-type h \
+		$< > $@
+
+.json.cpp:
+	@abs_top_builddir@/autogen/autogen.py \
+		--namespace=roq/binance \
+		--output-type state \
+		--file-type cpp \
+		$< > $@

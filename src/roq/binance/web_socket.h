@@ -24,14 +24,15 @@
 namespace roq {
 namespace binance {
 
-class Gateway;
-
 class WebSocket final
     : public core::web::Socket::Handler,
       public json::Parser::Handler {
  public:
+  struct Handler {
+    virtual void operator()(const WebSocket&) = 0;
+  };
   WebSocket(
-      Gateway& gateway,
+      Handler& handler,
       const Config& config,
       Random& random,
       core::event::Base& base,
@@ -69,7 +70,7 @@ class WebSocket final
   void send_cancel_all_after();
 
  private:
-  Gateway& _gateway;
+  Handler& _handler;
   // authentication
   Random& _random;
   // web socket

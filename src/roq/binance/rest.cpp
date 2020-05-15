@@ -5,8 +5,9 @@
 #include <fmt/format.h>
 #include <fmt/chrono.h>
 
-#include "roq/binance/gateway.h"
 #include "roq/binance/options.h"
+
+#include "roq/binance/json/exchange_info.h"
 
 #include "roq/binance/json/utils.h"
 
@@ -42,13 +43,13 @@ static auto create_latency(
 }  // namespace
 
 Rest::Rest(
-    Gateway& gateway,
+    Handler& handler,
     const Config& config,
     Random& random,
     core::event::Base& base,
     core::event::DNSBase& dns_base,
     core::ssl::Context& ssl_context)
-    : _gateway(gateway),
+    : _handler(handler),
       _random(random),
       _connection(
           *this,
@@ -58,23 +59,18 @@ Rest::Rest(
           core::URI(FLAGS_rest_uri),
           PACKAGE_NAME,
           true,  // keep alive
-          std::chrono::seconds { FLAGS_rate_limit_interval_secs },
-          FLAGS_rate_limit_max_requests,
-          std::chrono::seconds { FLAGS_ping_freq_secs },
+          std::chrono::seconds { FLAGS_rest_rate_limit_interval_secs },
+          FLAGS_rest_rate_limit_max_requests,
+          std::chrono::seconds { FLAGS_rest_ping_freq_secs },
           FLAGS_decode_buffer_size,
-          FLAGS_encode_buffer_size),
+          FLAGS_encode_buffer_size,
+          FLAGS_rest_ping_path),
       _decode_buffer(FLAGS_decode_buffer_size),
       _counter {
         .disconnect = create_counter("disconnect"),
       },
       _profile {
-        .success = create_profile("success"),
-        .failure = create_profile("failure"),
-        .products = create_profile("products"),
-        .accounts = create_profile("accounts"),
-        .create_order = create_profile("create_order"),
-        .modify_order = create_profile("modify_order"),
-        .cancel_order = create_profile("cancel_order"),
+        .exchange_info = create_profile("exchange_info"),
       },
       _latency {
         .ping = create_latency("ping"),
@@ -103,42 +99,52 @@ void Rest::operator()(Metrics& metrics) {
     // counter
     .write(_counter.disconnect)
     // profile
-    .write(_profile.success)
-    .write(_profile.failure)
-    .write(_profile.products)
-    .write(_profile.accounts)
+    .write(_profile.exchange_info)
     // latency
     .write(_latency.ping);
 }
 
-void Rest::create_order(
-    const CreateOrder& create_order,
-    const std::string_view& cl_ord_id) {
-  (void) create_order;  // avoid warning
-  (void) cl_ord_id;  // avoid warning
+template <>
+void Rest::get(
+    std::function<void(const core::Promise<json::ExchangeInfo>&)>&& callback) {
+  constexpr auto method = core::http::Method::GET;
+  constexpr std::string_view path = "/api/v3/exchangeInfo";
+  _connection.request(
+      method,
+      path,
+      std::string_view(),  // headers
+      std::string_view(),  // body
+      [this, callback](auto& response) {
+    _profile.exchange_info(
+        [&]() {
+      try {
+        response.expect(core::http::Status::OK);
+        core::json::Buffer buffer(_decode_buffer);
+        auto products = core::json::Parser::create<json::ExchangeInfo>(
+            response.body(),
+            buffer);
+        VLOG(1)(
+            FMT_STRING(R"(exchange_info={})"),
+            products);
+        core::Promise<json::ExchangeInfo> promise(products);
+        callback(promise);
+      } catch (NetworkError& e) {
+        LOG(WARNING)(
+            FMT_STRING(R"(Exception type={}, what="{}")"),
+            typeid(e).name(),
+            e.what());
+        core::Promise<json::ExchangeInfo> promise(std::current_exception());
+        callback(promise);
+      }
+    });
+  });
 }
-
-void Rest::cancel_order(
-    const CancelOrder& cancel_order,
-    const std::string_view& request_id,
-    const server::OMS_Order& order) {
-  (void) cancel_order;  // avoid warning
-  (void) request_id;  // avoid warning
-  (void) order;  // avoid warning
-}
-
-void Rest::get_products() {
-}
-
-void Rest::get_accounts() {
-}
-
 void Rest::operator()(const core::web::Client::Connected&) {
-  _gateway(*this);
+  _handler(*this);
 }
 
 void Rest::operator()(const core::web::Client::Disconnected&) {
-  _gateway(*this);
+  _handler(*this);
   ++_counter.disconnect;
 }
 

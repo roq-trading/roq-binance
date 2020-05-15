@@ -12,10 +12,12 @@ AUTOGEN_CPP = \
 	book_ticker.cpp \
 	depth_update.cpp \
 	depth_update_item.cpp \
+	exchange_info.cpp \
 	order_response.cpp \
 	order_response_fill.cpp \
 	side.cpp \
 	status.cpp \
+	symbol.cpp \
 	ticker.cpp \
 	time_in_force.cpp \
 	trade.cpp \
@@ -25,10 +27,12 @@ AUTOGEN_H = \
 	book_ticker.h \
 	depth_update.h \
 	depth_update_item.h \
+	exchange_info.h \
 	order_response.h \
 	order_response_fill.h \
 	side.h \
 	status.h \
+	symbol.h \
 	ticker.h \
 	time_in_force.h \
 	trade.h \

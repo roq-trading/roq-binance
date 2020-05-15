@@ -11,7 +11,6 @@
 
 #include "roq/core/charconv.h"
 
-#include "roq/binance/gateway.h"
 #include "roq/binance/options.h"
 
 namespace roq {
@@ -46,13 +45,13 @@ static auto create_latency(
 }  // namespace
 
 WebSocket::WebSocket(
-    Gateway& gateway,
+    Handler& handler,
     const Config& config,
     Random& random,
     core::event::Base& base,
     core::event::DNSBase& dns_base,
     core::ssl::Context& ssl_context)
-    : _gateway(gateway),
+    : _handler(handler),
       _random(random),
       _connection(
           *this,
@@ -60,7 +59,7 @@ WebSocket::WebSocket(
           dns_base,
           ssl_context,
           core::URI(FLAGS_ws_uri),
-          std::chrono::seconds { FLAGS_ping_freq_secs },
+          std::chrono::seconds { FLAGS_ws_ping_freq_secs },
           FLAGS_decode_buffer_size,
           FLAGS_encode_buffer_size,
           []() { return std::string(); }),
@@ -107,6 +106,7 @@ void WebSocket::operator()(const StopEvent&) {
 
 void WebSocket::operator()(const TimerEvent& event) {
   _connection.refresh(event.now);
+  /*
   if (_connection.ready()) {
     if (FLAGS_cancel_all_after_secs &&
         _next_cancel_all_after <= event.now) {
@@ -115,6 +115,7 @@ void WebSocket::operator()(const TimerEvent& event) {
       send_cancel_all_after();
     }
   }
+  */
 }
 
 void WebSocket::subscribe(const std::string_view& topic) {
@@ -175,17 +176,17 @@ void WebSocket::operator()(Metrics& metrics) {
 }
 
 void WebSocket::operator()(const core::web::Socket::Connected&) {
-  _gateway(*this);
+  _handler(*this);
 }
 
 void WebSocket::operator()(const core::web::Socket::Disconnected&) {
   _next_cancel_all_after = {};
-  _gateway(*this);
+  _handler(*this);
   ++_counter.disconnect;
 }
 
 void WebSocket::operator()(const core::web::Socket::Ready&) {
-  _gateway(*this);
+  _handler(*this);
 }
 
 void WebSocket::operator()(const core::web::Socket::Close&) {
@@ -226,6 +227,7 @@ void WebSocket::parse_helper(const std::string_view& message) {
 }
 
 void WebSocket::send_cancel_all_after() {
+  /*
   auto message = fmt::format(
       FMT_STRING(
         "{{"
@@ -234,6 +236,7 @@ void WebSocket::send_cancel_all_after() {
         "}}"),
       FLAGS_cancel_all_after_secs * 1000);  // milliseconds
   _connection.send_text(message);
+  */
 }
 
 }  // namespace binance

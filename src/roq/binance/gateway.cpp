@@ -68,20 +68,31 @@ Gateway::Gateway(
           config.get_api_key(),
           config.get_secret()),
       _dns_base(_base, true),
-      _web_socket(
+      _web_socket {
+        .connection = {
           *this,
           config,
           _random,
           _base,
           _dns_base,
-          _ssl_context),
-      _rest(
+          _ssl_context,
+        },
+      },
+      _rest {
+        .connection = {
           *this,
           config,
           _random,
           _base,
           _dns_base,
-          _ssl_context),
+          _ssl_context,
+        },
+        .download = RestDownload(
+            std::chrono::seconds { FLAGS_download_timeout_secs },
+            [this](auto state) {
+              return download(state);
+            }),
+      },
       _bid(FLAGS_cache_mbp_max_depth),
       _ask(FLAGS_cache_mbp_max_depth),
       _trade(FLAGS_max_trades) {
@@ -91,19 +102,19 @@ Gateway::Gateway(
 
 void Gateway::operator()(const StartEvent& event) {
   LOG(INFO)("Starting the gateway...");
-  _web_socket(event);
-  _rest(event);
+  _web_socket.connection(event);
+  _rest.connection(event);
 }
 
 void Gateway::operator()(const StopEvent& event) {
   LOG(INFO)("Stopping the gateway...");
-  _web_socket(event);
-  _rest(event);
+  _web_socket.connection(event);
+  _rest.connection(event);
 }
 
 void Gateway::operator()(const TimerEvent& event) {
-  _web_socket(event);
-  _rest(event);
+  _web_socket.connection(event);
+  _rest.connection(event);
   _base.loop(EVLOOP_NONBLOCK);
 }
 
@@ -114,23 +125,6 @@ void Gateway::operator()(
     const CreateOrderEvent& event,
     const std::string_view& request_id,
     uint32_t gateway_order_id) {
-  (void) gateway_order_id;  // avoid warning
-  auto& create_order = event.create_order;
-  /*
-  core::stack::Buffer<char, 36> buffer;
-  fmt::format_to(
-      std::back_inserter(buffer),
-      "roq-{}-{}-{}",
-      gateway_order_id,
-      message_info.source,
-      create_order.order_id);
-  std::string_view cl_ord_id(
-      buffer.data(),
-      buffer.size());
-  */
-  _rest.create_order(
-      create_order,
-      request_id);
 }
 
 void Gateway::operator()(
@@ -146,40 +140,29 @@ void Gateway::operator()(
     const CancelOrderEvent& event,
     const std::string_view& request_id,
     const server::OMS_Order& order) {
-  auto& cancel_order = event.cancel_order;
-  _rest.cancel_order(
-      cancel_order,
-      request_id,
-      order);
 }
 
 void Gateway::operator()(Metrics& metrics) {
-  _web_socket(metrics);
-  _rest(metrics);
+  _web_socket.connection(metrics);
+  _rest.connection(metrics);
 }
 
 // ws
 
 void Gateway::operator()(const WebSocket& web_socket) {
-  VLOG(1)("WebSocket");
   if (web_socket.ready()) {
-    if (_download == Download::NONE) {
-      // pretend the (automatic) upgrade request is the login
-      update_order_manager(GatewayStatus::LOGIN_SENT);
-      update_market_data(GatewayStatus::LOGIN_SENT);
-      begin_download();
-    }
+    _rest.download.begin();
   } else {
-    update_market_data(GatewayStatus::DISCONNECTED);
-    _download = Download::NONE;
+    _rest.download.reset();
     _symbols.clear();
-    _snapshot = {};
   }
 }
 
 // rest
 
 void Gateway::operator()(const Rest&) {
+  if (_rest.connection.ready())
+    _rest.download.bump();
 }
 
 
@@ -212,6 +195,38 @@ void Gateway::update_order_manager(GatewayStatus gateway_status) {
   LOG(INFO)(FMT_STRING("order_manager_status={}"), _order_manager_status);
 }
 
+uint32_t Gateway::download(RestDownload::State state) {
+  if (_web_socket.connection.ready() == false)
+    return -1;
+  switch (state) {
+    case RestDownload::State::UNDEFINED:
+      assert(false);
+      break;
+    case RestDownload::State::EXCHANGE_INFO:
+      download_exchange_info();
+      return 1;
+    case RestDownload::State::DONE:
+      // update(GatewayStatus::READY);
+      return 0;
+  }
+  assert(false);
+  return 0;
+}
+
+void Gateway::download_exchange_info() {
+  constexpr auto state = RestDownload::State::EXCHANGE_INFO;
+  _rest.connection.get<json::ExchangeInfo>(
+      [this](auto& promise) {
+    try {
+      (*this)(promise.get());
+      _rest.download.check(state);
+    } catch (NetworkError&) {
+      _rest.download.retry(state);
+    }
+  });
+}
+
+/*
 void Gateway::begin_download() {
   assert(_download == Download::NONE);
   assert(_order_manager_status == GatewayStatus::LOGIN_SENT);
@@ -290,6 +305,10 @@ void Gateway::subscribe_order_book_l2() {
   // XXX other
   // cancelAllAfter
   // authKeyExpires
+}
+*/
+
+void Gateway::operator()(const json::ExchangeInfo&) {
 }
 
 template <typename T>

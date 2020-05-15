@@ -4,6 +4,8 @@
 
 #include <string_view>
 
+#include "roq/core/promise.h"
+
 #include "roq/core/utils/buffer.h"
 
 #include "roq/core/metrics/counter.h"
@@ -23,13 +25,15 @@
 namespace roq {
 namespace binance {
 
-class Gateway;
-
 class Rest final
     : public core::web::Client::Handler {
  public:
+  struct Handler {
+    virtual void operator()(const Rest&) = 0;
+  };
+
   Rest(
-      Gateway& gateway,
+      Handler& handler,
       const Config& config,
       Random& random,
       core::event::Base& base,
@@ -47,17 +51,8 @@ class Rest final
 
   void operator()(Metrics& metrics);
 
-  void create_order(
-      const CreateOrder& create_order,
-      const std::string_view& cl_ord_id);
-
-  void cancel_order(
-      const CancelOrder& cancel_order,
-      const std::string_view& cl_ord_id,
-      const server::OMS_Order& order);
-
-  void get_products();
-  void get_accounts();
+  template <typename T>
+  void get(std::function<void(const core::Promise<T>&)>&& callback);
 
  protected:
   void operator()(const core::web::Client::Connected&);
@@ -65,7 +60,7 @@ class Rest final
   void operator()(const core::web::Client::Latency&);
 
  private:
-  Gateway& _gateway;
+  Handler& _handler;
   // authentication
   Random& _random;
   // connection
@@ -79,13 +74,7 @@ class Rest final
   } _counter;
   struct {
     core::metrics::Profile
-      success,
-      failure,
-      products,
-      accounts,
-      create_order,
-      modify_order,
-      cancel_order;
+      exchange_info;
   } _profile;
   struct {
     core::metrics::Latency

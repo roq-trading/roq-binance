@@ -6,29 +6,43 @@ DEFINE_string(config_file,
     "",
     "config file (path)");
 
+DEFINE_string(exchange,
+    "binance",
+    "exchange identifier (string)");
+
+DEFINE_uint32(download_timeout_secs,
+    15,
+    "download time-out (seconds)");
+
 DEFINE_string(rest_uri,
     "https://testnet.binance.com/api/v1",
     "REST end-point (URI)");
+
+DEFINE_uint32(rest_ping_freq_secs,
+    5,
+    "ping frequency (seconds)");
+
+DEFINE_string(rest_ping_path,
+    "/api/v3/time",
+    "URI path used for REST connection keep-alive messages");
+
+DEFINE_uint32(rest_rate_limit_interval_secs,
+    60,
+    "rate limit: monitor interval (seconds)");
+
+DEFINE_uint32(rest_rate_limit_max_requests,
+    1200,
+    "rate limit: max requests (per interval)");
 
 DEFINE_string(ws_uri,
     "wss://testnet.binance.com/realtime",
     "WebSocket end-point (URI)");
 
-DEFINE_uint32(rate_limit_interval_secs,
-    uint32_t{60},
-    "rate limit: monitor interval (seconds)");
-
-DEFINE_uint32(rate_limit_max_requests,
-    uint32_t{1200},
-    "rate limit: max requests (per interval)");
-
-DEFINE_uint32(ping_freq_secs,
-    uint32_t{5},
+DEFINE_uint32(ws_ping_freq_secs,
+    5,
     "ping frequency (seconds)");
 
-DEFINE_string(exchange,
-    "binance",
-    "exchange identifier (string)");
+
 
 DEFINE_bool(cancel_on_disconnect,
     true,
@@ -39,21 +53,9 @@ DEFINE_uint32(max_trades,
   "maximum trades for trade summary");
 
 DEFINE_uint32(encode_buffer_size,
-    uint32_t{1048576},
+    1048576,
     "encode buffer size");
 
 DEFINE_uint32(decode_buffer_size,
-    uint32_t{10485760},
+    10485760,
     "decode buffer size");
-
-DEFINE_uint32(reconnect_secs,
-    uint32_t{3},
-    "time before reconnect (seconds)");
-
-DEFINE_uint32(cancel_all_after_secs,
-    uint32_t{60},
-    "cancel all after (seconds)");
-
-DEFINE_uint32(request_expires_secs,
-    uint32_t{60},
-    "request expires after (seconds)");

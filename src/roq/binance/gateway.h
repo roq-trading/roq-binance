@@ -10,6 +10,7 @@
 #include "roq/metrics.h"
 
 #include "roq/server.h"
+#include "roq/download.h"
 
 #include "roq/core/hash/map.h"
 
@@ -22,7 +23,10 @@
 #include "roq/binance/random.h"
 
 #include "roq/binance/rest.h"
+#include "roq/binance/rest_state.h"
 #include "roq/binance/web_socket.h"
+
+#include "roq/binance/json/exchange_info.h"
 
 // json (inbound)
 
@@ -31,11 +35,17 @@ namespace binance {
 
 class WebSocket;
 
-class Gateway final : public server::Handler {
+class Gateway final
+    : public server::Handler,
+      public Rest::Handler,
+      public WebSocket::Handler {
  public:
   Gateway(
       server::Dispatcher& dispatcher,
       const Config& config);
+
+ protected:
+  // server::Handler
 
   void operator()(const StartEvent&) override;
   void operator()(const StopEvent&) override;
@@ -57,25 +67,26 @@ class Gateway final : public server::Handler {
 
   void operator()(Metrics& metrics) override;
 
-  // ws
-  void operator()(const WebSocket&);
+  // WebSocket::Handler
 
-  // rest
-  void operator()(const Rest&);
+  void operator()(const WebSocket&) override;
+
+  // Rest::Handler
+
+  void operator()(const Rest&) override;
 
  private:
+  void operator()(const json::ExchangeInfo&);
+
   void update_market_data(GatewayStatus gateway_status);
   void update_order_manager(GatewayStatus gateway_status);
 
-  void begin_download();
-  void check_download();
+  using RestDownload = server::Download<RestState>;
 
-  void download_accounts();
+  uint32_t download(RestDownload::State state);
 
-  void subscribe_instrument();
-  void subscribe_order_book_l2();
+  void download_exchange_info();
 
- private:
   template <typename T>
   void enqueue(
       const T& event,
@@ -99,16 +110,13 @@ class Gateway final : public server::Handler {
   // crypto
   core::ssl::Context _ssl_context;
   // connections
-  WebSocket _web_socket;
-  Rest _rest;
-  // download
-  enum class Download {
-    NONE,
-    PRODUCTS,
-    ACCOUNTS,
-    ORDER_BOOKS,
-    READY,
-  } _download = Download::NONE;
+  struct {
+    WebSocket connection;
+  } _web_socket;
+  struct {
+    Rest connection;
+    RestDownload download;
+  } _rest;
   // reference data
   std::vector<std::string> _symbols;
   struct {
