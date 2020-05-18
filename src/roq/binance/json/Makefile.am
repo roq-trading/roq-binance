@@ -8,35 +8,33 @@ libroq_binance_json_la_CPPFLAGS = \
 	$(LIBCONFIG_CFLAGS) \
 	$(ROQ_CFLAGS)
 AUTOGEN_CPP = \
-	agg_trade.cpp \
-	book_ticker.cpp \
 	depth_update.cpp \
 	depth_update_item.cpp \
+	event_type.cpp \
 	exchange_info.cpp \
-	order_response.cpp \
-	order_response_fill.cpp \
+	execution_type.cpp \
+	order_status.cpp \
+	order_type.cpp \
+	order_update.cpp \
 	side.cpp \
-	status.cpp \
 	symbol.cpp \
 	ticker.cpp \
 	time_in_force.cpp \
-	trade.cpp \
-	type.cpp
+	trade.cpp
 AUTOGEN_H = \
-	agg_trade.h \
-	book_ticker.h \
 	depth_update.h \
 	depth_update_item.h \
+	event_type.h \
 	exchange_info.h \
-	order_response.h \
-	order_response_fill.h \
+	execution_type.h \
+	order_status.h \
+	order_type.h \
+	order_update.h \
 	side.h \
-	status.h \
 	symbol.h \
 	ticker.h \
 	time_in_force.h \
-	trade.h \
-	type.h
+	trade.h
 CLEANFILES = $(AUTOGEN_CPP) $(AUTOGEN_H)
 BUILT_SOURCES = $(CLEANFILES) .gitignore
 libroq_binance_json_la_SOURCES = \

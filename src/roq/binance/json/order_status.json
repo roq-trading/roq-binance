@@ -1,0 +1,7 @@
+{
+"name": "OrderStatus",
+"type": "enum",
+"values": [
+	{ "name": "NEW" }
+]
+}

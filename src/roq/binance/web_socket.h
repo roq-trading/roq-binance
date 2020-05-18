@@ -30,6 +30,9 @@ class WebSocket final
  public:
   struct Handler {
     virtual void operator()(const WebSocket&) = 0;
+    virtual void operator()(const json::Trade&) = 0;
+    virtual void operator()(const json::Ticker&) = 0;
+    virtual void operator()(const json::DepthUpdate&) = 0;
   };
   WebSocket(
       Handler& handler,
@@ -65,7 +68,10 @@ class WebSocket final
   void operator()(const core::web::Socket::Text&) override;
 
   void parse(const std::string_view& message);
-  void parse_helper(const std::string_view& message);
+
+  void operator()(const json::Trade&) override;
+  void operator()(const json::Ticker&) override;
+  void operator()(const json::DepthUpdate&) override;
 
   void send_cancel_all_after();
 
@@ -87,21 +93,9 @@ class WebSocket final
   struct {
     core::metrics::Profile
       parse,
-      cancel_all_after,
-      error,
-      execution,
-      funding,
-      handshake,
-      instrument,
-      liquidation,
-      margin,
-      order,
-      order_book_l2,
-      position,
-      quote,
-      settlement,
-      subscribe,
-      trade;
+      trade,
+      ticker,
+      depth_update;
   } _profile;
   struct {
     core::metrics::Latency

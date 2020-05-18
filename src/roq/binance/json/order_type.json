@@ -1,0 +1,7 @@
+{
+"name": "OrderType",
+"type": "enum",
+"values": [
+	{ "name": "LIMIT" }
+]
+}

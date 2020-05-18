@@ -3,6 +3,6 @@
 "type": "array_item",
 "values": [
 	{ "name": "price", "type": "double" },
-	{ "name": "quantity", "type": "double" }
+	{ "name": "quantity", "type": "double"}
 ]
 }

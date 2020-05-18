@@ -71,6 +71,10 @@ class Gateway final
 
   void operator()(const WebSocket&) override;
 
+  void operator()(const json::Trade&) override;
+  void operator()(const json::Ticker&) override;
+  void operator()(const json::DepthUpdate&) override;
+
   // Rest::Handler
 
   void operator()(const Rest&) override;

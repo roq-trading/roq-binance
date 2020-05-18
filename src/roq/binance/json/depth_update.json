@@ -2,12 +2,12 @@
 "name": "DepthUpdate",
 "type": "comp",
 "values": [
-	{ "field": "e", "name": "event_type", "type": "std::string_view" },
-	{ "field": "E", "name": "event_time", "type": "std::chrono::nanoseconds" },
-	{ "field": "s", "name": "symbol", "type": "std::string_view" },
-	{ "field": "U", "name": "first_update_id", "type": "uint64_t" },
-	{ "field": "u", "name": "final_update_id", "type": "uint64_t" },
-	{ "field": "b", "name": "bids", "type": "roq::span<DepthUpdateItem>" },
-	{ "field": "a", "name": "asks", "type": "roq::span<DepthUpdateItem>" }
+	{ "raw": "e", "name": "event_type", "type": "std::string_view" },
+	{ "raw": "E", "name": "event_time", "type": "std::string_view" },
+	{ "raw": "s", "name": "symbol", "type": "std::string_view" },
+	{ "raw": "U", "name": "first_update_id", "type": "uint64_t" },
+	{ "raw": "u", "name": "final_update_id", "type": "uint64_t" },
+	{ "raw": "b", "name": "bids", "type": "roq::span<DepthUpdateItem>" },
+	{ "raw": "a", "name": "asks", "type": "roq::span<DepthUpdateItem>" }
 ]
 }

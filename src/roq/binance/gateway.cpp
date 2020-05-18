@@ -158,6 +158,15 @@ void Gateway::operator()(const WebSocket& web_socket) {
   }
 }
 
+void Gateway::operator()(const json::Trade&) {
+}
+
+void Gateway::operator()(const json::Ticker&) {
+}
+
+void Gateway::operator()(const json::DepthUpdate&) {
+}
+
 // rest
 
 void Gateway::operator()(const Rest&) {
@@ -215,9 +224,12 @@ uint32_t Gateway::download(RestDownload::State state) {
 
 void Gateway::download_exchange_info() {
   constexpr auto state = RestDownload::State::EXCHANGE_INFO;
+  auto sequence = _rest.download.sequence();
   _rest.connection.get<json::ExchangeInfo>(
-      [this](auto& promise) {
+      [this, sequence](auto& promise) {
     try {
+      if (_rest.download.skip(sequence, state))
+        return;
       (*this)(promise.get());
       _rest.download.check(state);
     } catch (NetworkError&) {

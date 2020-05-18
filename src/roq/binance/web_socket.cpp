@@ -69,21 +69,9 @@ WebSocket::WebSocket(
       },
       _profile {
         .parse = create_profile("parse"),
-        .cancel_all_after = create_profile("cancel_all_after"),
-        .error = create_profile("error"),
-        .execution = create_profile("execution"),
-        .funding = create_profile("funding"),
-        .handshake = create_profile("handshake"),
-        .instrument = create_profile("instrument"),
-        .liquidation = create_profile("liquidation"),
-        .margin = create_profile("margin"),
-        .order = create_profile("order"),
-        .order_book_l2 = create_profile("order_book_l2"),
-        .position = create_profile("position"),
-        .quote = create_profile("quote"),
-        .settlement = create_profile("settlement"),
-        .subscribe = create_profile("subscribe"),
         .trade = create_profile("trade"),
+        .ticker = create_profile("ticker"),
+        .depth_update = create_profile("depth_update"),
       },
       _latency {
         .ping = create_latency("ping"),
@@ -155,21 +143,9 @@ void WebSocket::operator()(Metrics& metrics) {
     .write(_counter.disconnect)
     // profile
     .write(_profile.parse)
-    .write(_profile.cancel_all_after)
-    .write(_profile.error)
-    .write(_profile.execution)
-    .write(_profile.funding)
-    .write(_profile.handshake)
-    .write(_profile.instrument)
-    .write(_profile.liquidation)
-    .write(_profile.margin)
-    .write(_profile.order)
-    .write(_profile.order_book_l2)
-    .write(_profile.position)
-    .write(_profile.quote)
-    .write(_profile.settlement)
-    .write(_profile.subscribe)
     .write(_profile.trade)
+    .write(_profile.ticker)
+    .write(_profile.depth_update)
     // latency
     .write(_latency.ping)
     .write(_latency.heartbeat);
@@ -203,27 +179,53 @@ void WebSocket::operator()(const core::web::Socket::Text& text) {
 }
 
 void WebSocket::parse(const std::string_view& message) {
-  VLOG(4)(
-      FMT_STRING("message={}"),
-      message);
   _profile.parse(
       [&]() {
         try {
-          parse_helper(message);
+          core::json::Buffer buffer(_decode_buffer);
+          json::Parser::dispatch(
+              *this,
+              message,
+              buffer);
         } catch (std::exception& e) {
+          LOG(WARNING)(
+              FMT_STRING(R"(message="{}")"),
+              message);
           LOG(FATAL)(
-              FMT_STRING("ERROR what=\"{}\""),
+              FMT_STRING(R"(ERROR what="{}")"),
               e.what());
         }
       });
 }
 
-void WebSocket::parse_helper(const std::string_view& message) {
-  core::json::Buffer buffer(_decode_buffer);
-  json::Parser::dispatch(
-      *this,
-      message,
-      buffer);
+void WebSocket::operator()(const json::Trade& trade) {
+  _profile.trade(
+      [&]() {
+        VLOG(3)(
+            FMT_STRING(R"(trade={})"),
+            trade);
+        _handler(trade);
+      });
+}
+
+void WebSocket::operator()(const json::Ticker& ticker) {
+  _profile.ticker(
+      [&]() {
+        VLOG(3)(
+            FMT_STRING(R"(ticker={})"),
+            ticker);
+        _handler(ticker);
+      });
+}
+
+void WebSocket::operator()(const json::DepthUpdate& depth_update) {
+  _profile.depth_update(
+      [&]() {
+        VLOG(3)(
+            FMT_STRING(R"(depth_update={})"),
+            depth_update);
+        _handler(depth_update);
+      });
 }
 
 void WebSocket::send_cancel_all_after() {
