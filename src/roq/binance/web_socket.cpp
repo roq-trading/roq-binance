@@ -106,35 +106,16 @@ void WebSocket::operator()(const TimerEvent& event) {
   */
 }
 
-void WebSocket::subscribe(const std::string_view& topic) {
+void WebSocket::subscribe() {
   auto message = fmt::format(
       FMT_STRING(
-        "{{"
-        "\"op\":\"subscribe\","
-        "\"args\":"
-        "\"{}\""
-        "}}"),
-      topic);
+        R"({{)"
+        R"("method":"SUBSCRIBE",)"
+        R"("params":["btcusdt@trade","btcusdt@bookTicker","btcusdt@depth@100ms"],)"
+        R"("id":{})"
+        R"(}})"),
+      1);
   _connection.send_text(message);
-}
-
-void WebSocket::subscribe(
-    const std::string_view& topic,
-    const std::vector<std::string>& filter) {
-  if (filter.empty()) {
-    subscribe(topic);
-  } else {
-    auto message = fmt::format(
-        FMT_STRING(
-          "{{"
-          "\"op\":\"subscribe\","
-          "\"args\":"
-          "\"{}:{}\""
-          "}}"),
-        topic,
-        fmt::join(filter, ","));
-    _connection.send_text(message);
-  }
 }
 
 void WebSocket::operator()(Metrics& metrics) {
@@ -198,6 +179,12 @@ void WebSocket::parse(const std::string_view& message) {
       });
 }
 
+void WebSocket::operator()(int32_t, const json::Error&) {
+}
+
+void WebSocket::operator()(int32_t, const json::Result&) {
+}
+
 void WebSocket::operator()(const json::Trade& trade) {
   _profile.trade(
       [&]() {
@@ -208,7 +195,7 @@ void WebSocket::operator()(const json::Trade& trade) {
       });
 }
 
-void WebSocket::operator()(const json::Ticker& ticker) {
+void WebSocket::operator()(const json::BookTicker& ticker) {
   _profile.ticker(
       [&]() {
         VLOG(3)(

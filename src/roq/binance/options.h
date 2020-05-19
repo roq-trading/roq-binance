@@ -19,6 +19,8 @@ DECLARE_uint32(rest_rate_limit_max_requests);
 DECLARE_string(ws_uri);
 DECLARE_uint32(ws_ping_freq_secs);
 
+DECLARE_uint32(ws_depth_freq_msecs);
+
 // XXX review
 
 DECLARE_bool(cancel_on_disconnect);

@@ -3,7 +3,7 @@
 "type": "comp",
 "values": [
 	{ "raw": "e", "name": "event_type", "type": "std::string_view" },
-	{ "raw": "E", "name": "event_time", "type": "std::string_view" },
+	{ "raw": "E", "name": "event_time", "type": "std::chrono::nanoseconds" },
 	{ "raw": "s", "name": "symbol", "type": "std::string_view" },
 	{ "raw": "U", "name": "first_update_id", "type": "uint64_t" },
 	{ "raw": "u", "name": "final_update_id", "type": "uint64_t" },

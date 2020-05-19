@@ -161,7 +161,7 @@ void Gateway::operator()(const WebSocket& web_socket) {
 void Gateway::operator()(const json::Trade&) {
 }
 
-void Gateway::operator()(const json::Ticker&) {
+void Gateway::operator()(const json::BookTicker&) {
 }
 
 void Gateway::operator()(const json::DepthUpdate&) {
@@ -214,6 +214,9 @@ uint32_t Gateway::download(RestDownload::State state) {
     case RestDownload::State::EXCHANGE_INFO:
       download_exchange_info();
       return 1;
+    case RestDownload::State::SUBSCRIBE:
+      subscribe();
+      return 0;
     case RestDownload::State::DONE:
       // update(GatewayStatus::READY);
       return 0;
@@ -238,89 +241,25 @@ void Gateway::download_exchange_info() {
   });
 }
 
-/*
-void Gateway::begin_download() {
-  assert(_download == Download::NONE);
-  assert(_order_manager_status == GatewayStatus::LOGIN_SENT);
-  assert(_market_data_status == GatewayStatus::LOGIN_SENT);
-  update_order_manager(GatewayStatus::DOWNLOADING);
-  update_market_data(GatewayStatus::DOWNLOADING);
-  LOG(INFO)("Download:");
-  subscribe_instrument();
+void Gateway::subscribe() {
+  _web_socket.connection.subscribe();
 }
 
-void Gateway::check_download() {
-  assert(_download != Download::NONE);
-  assert(_download != Download::READY);
-  switch (_download) {
-    case Download::NONE:
-      assert(false);
-      break;
-    case Download::ACCOUNTS: {
-      LOG(INFO)("Download accounts COMPLETED");
-      update_order_manager(GatewayStatus::READY);
-      subscribe_order_book_l2();
-      break;
+void Gateway::operator()(const json::ExchangeInfo& exchange_info) {
+  assert(_symbols.empty());
+  for (const auto& item : exchange_info.symbols) {
+    if (_dispatcher.discard_symbol(item.symbol)) {
+      VLOG(1)(
+          FMT_STRING(R"(Drop symbol="{}")"),
+          item.symbol);
+      continue;
     }
-    case Download::PRODUCTS: {
-      LOG(INFO)("Download products COMPLETED");
-      // download_accounts();
-      update_order_manager(GatewayStatus::READY);
-      subscribe_order_book_l2();
-      break;
-    }
-    case Download::ORDER_BOOKS: {
-      LOG(INFO)("Download order books COMPLETED");
-      update_market_data(GatewayStatus::READY);
-      LOG(INFO)("Download COMPLETED");
-      _download = Download::READY;
-      break;
-    }
-    case Download::READY:
-      assert(false);
-      break;
+    _symbols.push_back(std::string(item.symbol));
   }
-}
-
-void Gateway::download_accounts() {
-  assert(_download != Download::READY);
-  LOG(INFO)("Download accounts...");
-  // _rest.get_accounts();
-  _download = Download::ACCOUNTS;
-}
-
-void Gateway::subscribe_instrument() {
-  assert(_download != Download::READY);
-  LOG(INFO)("Download products...");
-  // XXX _rest.get_products();
-  _web_socket.subscribe("instrument");
-  _download = Download::PRODUCTS;
-}
-
-void Gateway::subscribe_order_book_l2() {
-  assert(_download != Download::READY);
-  LOG(INFO)("Download order books");
-  _web_socket.subscribe("orderBookL2", _symbols);
-  _download = Download::ORDER_BOOKS;
-
-  // XXX not here
-  _web_socket.subscribe("funding", _symbols);
-  _web_socket.subscribe("liquidation", _symbols);
-  _web_socket.subscribe("quote", _symbols);
-  _web_socket.subscribe("settlement", _symbols);
-  _web_socket.subscribe("trade", _symbols);
-  // XXX private
-  _web_socket.subscribe("execution", _symbols);
-  _web_socket.subscribe("order", _symbols);
-  _web_socket.subscribe("margin", _symbols);
-  _web_socket.subscribe("position", _symbols);
-  // XXX other
-  // cancelAllAfter
-  // authKeyExpires
-}
-*/
-
-void Gateway::operator()(const json::ExchangeInfo&) {
+  LOG(INFO)(
+      FMT_STRING("Exchange info: including symbols {}/{}"),
+      _symbols.size(),
+      exchange_info.symbols.size());
 }
 
 template <typename T>

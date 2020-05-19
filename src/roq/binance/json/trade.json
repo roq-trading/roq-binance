@@ -2,8 +2,8 @@
 "name": "Trade",
 "type": "item",
 "values": [
-	{ "raw": "e", "name": "event_type", "type": "std::string_view" },
-	{ "raw": "E", "name": "event_time", "type": "std::string_view" },
+	{ "raw": "e", "name": "event_type", "type": "EventType" },
+	{ "raw": "E", "name": "event_time", "type": "std::chrono::nanoseconds" },
 	{ "raw": "s", "name": "symbol", "type": "std::string_view" },
 	{ "raw": "t", "name": "trade_id", "type": "uint64_t" },
 	{ "raw": "p", "name": "price", "type": "double" },

@@ -72,7 +72,7 @@ class Gateway final
   void operator()(const WebSocket&) override;
 
   void operator()(const json::Trade&) override;
-  void operator()(const json::Ticker&) override;
+  void operator()(const json::BookTicker&) override;
   void operator()(const json::DepthUpdate&) override;
 
   // Rest::Handler
@@ -90,6 +90,8 @@ class Gateway final
   uint32_t download(RestDownload::State state);
 
   void download_exchange_info();
+
+  void subscribe();
 
   template <typename T>
   void enqueue(

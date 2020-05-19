@@ -10,6 +10,8 @@
 
 #include "roq/core/charconv/datetime.h"
 
+#include "roq/binance/json/event_type.h"
+
 namespace roq {
 namespace binance {
 namespace json {
@@ -19,6 +21,14 @@ inline void update(
     T& result,
     const core::json::value_t& value) {
   result = core::json::get<T>(value);
+}
+
+template <>
+inline void update(
+    EventType& result,
+    const core::json::value_t& value) {
+  using result_type = std::remove_reference<decltype(result)>::type;
+  result = result_type(core::json::get<std::string_view>(value));
 }
 
 template <>

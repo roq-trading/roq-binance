@@ -31,7 +31,7 @@ class WebSocket final
   struct Handler {
     virtual void operator()(const WebSocket&) = 0;
     virtual void operator()(const json::Trade&) = 0;
-    virtual void operator()(const json::Ticker&) = 0;
+    virtual void operator()(const json::BookTicker&) = 0;
     virtual void operator()(const json::DepthUpdate&) = 0;
   };
   WebSocket(
@@ -51,11 +51,7 @@ class WebSocket final
   void operator()(const StopEvent&);
   void operator()(const TimerEvent&);
 
-  void subscribe(const std::string_view& topic);
-
-  void subscribe(
-      const std::string_view& topic,
-      const std::vector<std::string>& filter);
+  void subscribe();
 
   void operator()(Metrics& metrics);
 
@@ -69,8 +65,13 @@ class WebSocket final
 
   void parse(const std::string_view& message);
 
+  // response
+  void operator()(int32_t, const json::Error&) override;
+  void operator()(int32_t, const json::Result&) override;
+
+  // update
   void operator()(const json::Trade&) override;
-  void operator()(const json::Ticker&) override;
+  void operator()(const json::BookTicker&) override;
   void operator()(const json::DepthUpdate&) override;
 
   void send_cancel_all_after();

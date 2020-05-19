@@ -3,6 +3,7 @@
 "type": "enum",
 "values": [
 	{ "name": "exchange_info" },
+	{ "name": "subscribe" },
 	{ "name": "done" }
 ]
 }

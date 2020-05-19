@@ -1,0 +1,9 @@
+{
+"name": "Stream",
+"type": "enum",
+"values": [
+	{ "name": "trade" },
+	{ "name": "bookTicker" },
+	{ "name": "depth" }
+]
+}

@@ -42,6 +42,10 @@ DEFINE_uint32(ws_ping_freq_secs,
     5,
     "ping frequency (seconds)");
 
+DEFINE_uint32(ws_depth_freq_msecs,
+    100,
+    "depth update frequency (milliseconds)");
+
 
 
 DEFINE_bool(cancel_on_disconnect,

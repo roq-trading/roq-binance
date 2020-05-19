@@ -3,8 +3,9 @@
 "type": "enum",
 "values": [
 	{ "name": "trade" },
-	{ "name": "24hrTicker" },
+	{ "name": "bookTicker" },
 	{ "name": "depthUpdate" },
+
 	{ "name": "accountUpdate" },
 	{ "name": "balanceUpdate" },
 	{ "name": "executionReport" }

@@ -4,7 +4,8 @@
 
 #include "roq/compat.h"
 
-#include "roq/binance/json/event_type.h"
+#include "roq/binance/json/field.h"
+#include "roq/binance/json/stream.h"
 
 #include "roq/logging.h"
 
@@ -12,55 +13,104 @@ namespace roq {
 namespace binance {
 namespace json {
 
-namespace {
-static EventType find_event_type(const auto& message) {
-  constexpr std::string_view EVENT_TYPE = "e";
-  core::json::Parser parser(message);
-  auto root = parser.root();
-  for (auto [key, value] : std::get<core::json::object_t>(root)) {
-    if (key.compare(EVENT_TYPE) == 0) {
-      return EventType(value);
-    }
-  }
-  return EventType::UNDEFINED;
-}
-}  // namespace
-
 void Parser::dispatch(
     Parser::Handler& handler,
     const std::string_view& message,
     core::json::Buffer& buffer) {
-  auto event_type = find_event_type(message);
-  core::json::Parser parser(message);
-  auto root = parser.root();
-  switch (event_type) {
-    case EventType::UNDEFINED:
-    case EventType::UNKNOWN:
-      LOG(WARNING)(FMT_STRING("message=\"{}\""), message);
-      LOG(FATAL)("Unexpected");
-      break;
-    case EventType::TRADE: {
-      Trade trade(root);
-      handler(trade);
-      break;
+  LOG(WARNING)(
+      FMT_STRING(R"(message="{}")"),
+      message);
+  auto stream = Stream::UNDEFINED;
+  for (int i = 0; i < 2; ++i) {
+    core::json::Parser parser(message);
+    auto root = parser.root();
+    for (auto [key, value] : std::get<core::json::object_t>(root)) {
+      auto field = Field(key);
+      switch (field) {
+        case Field::UNDEFINED:
+          LOG(FATAL)("Unexpected");
+          break;
+        case Field::UNKNOWN:
+          DLOG(FATAL)(
+              FMT_STRING(R"(Unknown key="{}")"),
+              key);
+          break;
+        case Field::ERROR: {
+          Error error(value);
+          LOG(INFO)(FMT_STRING("ERROR error={}"), error);
+          return;
+        }
+        case Field::RESULT: {
+          Result result(
+              value,
+              buffer);
+          LOG(INFO)(FMT_STRING("RESULT result={}"), result);
+          return;
+        }
+        case Field::ID:
+          // wait for error or result
+          break;
+        case Field::STREAM: {
+          // <symbol>@<stream>[@<freq>]
+          auto full_name = std::get<std::string_view>(value);
+          auto idx0 = full_name.find('@');  // <symbol>@<stream>
+          LOG_IF(FATAL, idx0 == full_name.npos)(
+              FMT_STRING(R"(Unexpected: name="")"),
+              full_name);
+          auto idx1 = full_name.find('@', idx0 + 1);
+          auto name = std::string_view(
+              full_name.begin() + idx0 + 1,
+              (idx1 == full_name.npos)
+                ? full_name.size() - idx0 - 1
+                : idx1 - idx0 - 1);
+          stream = Stream(name);
+          LOG(INFO)(
+              FMT_STRING("UPDATE stream={}"),
+              stream);
+          break;
+        }
+        case Field::DATA:
+          switch (stream) {
+            case Stream::UNDEFINED:
+              break;  // wait
+            case Stream::UNKNOWN:
+              DLOG(FATAL)("Unexpected (unknown stream)");
+              return;
+            case Stream::TRADE: {
+              Trade trade(value);
+              LOG(INFO)(
+                  FMT_STRING("UPDATE trade={}"),
+                  trade);
+              handler(trade);
+              return;
+            }
+            case Stream::BOOK_TICKER: {
+              BookTicker book_ticker(value);
+              LOG(INFO)(
+                  FMT_STRING("UPDATE book_ticker={}"),
+                  book_ticker);
+              handler(book_ticker);
+              return;
+            }
+            case Stream::DEPTH: {
+              DepthUpdate depth_update(
+                  value,
+                  buffer);
+              LOG(INFO)(
+                  FMT_STRING("UPDATE depth_update={}"),
+                  depth_update);
+              handler(depth_update);
+              return;
+            }
+          }
+          break;
+      }
     }
-    case EventType::_24HR_TICKER: {
-      Ticker ticker(root);
-      handler(ticker);
-      break;
-    }
-    case EventType::DEPTH_UPDATE: {
-      DepthUpdate depth_update(
-          root,
-          buffer);
-      handler(depth_update);
-      break;
-    }
-    case EventType::ACCOUNT_UPDATE:
-    case EventType::BALANCE_UPDATE:
-    case EventType::EXECUTION_REPORT:
-      break;
   }
+  LOG(WARNING)(
+      FMT_STRING(R"(message="{}")"),
+      message);
+  LOG(FATAL)("Unexpected");
 }
 
 }  // namespace json
