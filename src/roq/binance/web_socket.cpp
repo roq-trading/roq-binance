@@ -71,6 +71,7 @@ WebSocket::WebSocket(
         .parse = create_profile("parse"),
         .trade = create_profile("trade"),
         .ticker = create_profile("ticker"),
+        .depth = create_profile("depth"),
         .depth_update = create_profile("depth_update"),
       },
       _latency {
@@ -94,16 +95,6 @@ void WebSocket::operator()(const StopEvent&) {
 
 void WebSocket::operator()(const TimerEvent& event) {
   _connection.refresh(event.now);
-  /*
-  if (_connection.ready()) {
-    if (FLAGS_cancel_all_after_secs &&
-        _next_cancel_all_after <= event.now) {
-      _next_cancel_all_after = event.now +
-        std::chrono::seconds { FLAGS_cancel_all_after_secs / 4 };
-      send_cancel_all_after();
-    }
-  }
-  */
 }
 
 void WebSocket::subscribe() {
@@ -111,7 +102,7 @@ void WebSocket::subscribe() {
       FMT_STRING(
         R"({{)"
         R"("method":"SUBSCRIBE",)"
-        R"("params":["btcusdt@trade","btcusdt@bookTicker","btcusdt@depth@100ms"],)"
+        R"("params":["btcusdt@trade","btcusdt@bookTicker","btcusdt@depth5@100ms"],)"
         R"("id":{})"
         R"(}})"),
       1);
@@ -126,6 +117,7 @@ void WebSocket::operator()(Metrics& metrics) {
     .write(_profile.parse)
     .write(_profile.trade)
     .write(_profile.ticker)
+    .write(_profile.depth)
     .write(_profile.depth_update)
     // latency
     .write(_latency.ping)
@@ -205,27 +197,34 @@ void WebSocket::operator()(const json::BookTicker& ticker) {
       });
 }
 
-void WebSocket::operator()(const json::DepthUpdate& depth_update) {
-  _profile.depth_update(
+void WebSocket::operator()(
+    const std::string_view& symbol,
+    const json::Depth& depth) {
+  _profile.depth(
       [&]() {
         VLOG(3)(
-            FMT_STRING(R"(depth_update={})"),
-            depth_update);
-        _handler(depth_update);
+            FMT_STRING(R"(symbol="{}", depth={})"),
+            symbol,
+            depth);
+        _handler(
+            symbol,
+            depth);
       });
 }
 
-void WebSocket::send_cancel_all_after() {
-  /*
-  auto message = fmt::format(
-      FMT_STRING(
-        "{{"
-        "\"op\":\"cancelAllAfter\","
-        "\"args\":{}"
-        "}}"),
-      FLAGS_cancel_all_after_secs * 1000);  // milliseconds
-  _connection.send_text(message);
-  */
+void WebSocket::operator()(
+    const std::string_view& symbol,
+    const json::DepthUpdate& depth_update) {
+  _profile.depth_update(
+      [&]() {
+        VLOG(3)(
+            FMT_STRING(R"(symbol="{}", depth_update={})"),
+            symbol,
+            depth_update);
+        _handler(
+            symbol,
+            depth_update);
+      });
 }
 
 }  // namespace binance

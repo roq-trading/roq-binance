@@ -34,6 +34,10 @@ DEFINE_uint32(rest_rate_limit_max_requests,
     1200,
     "rate limit: max requests (per interval)");
 
+DEFINE_uint32(rest_depth_limit,
+    100,
+    "depth limit (levels)");
+
 DEFINE_string(ws_uri,
     "wss://testnet.binance.com/realtime",
     "WebSocket end-point (URI)");
@@ -41,6 +45,10 @@ DEFINE_string(ws_uri,
 DEFINE_uint32(ws_ping_freq_secs,
     5,
     "ping frequency (seconds)");
+
+DEFINE_uint32(ws_depth_levels,
+    5,
+    "depth levels (count)");
 
 DEFINE_uint32(ws_depth_freq_msecs,
     100,

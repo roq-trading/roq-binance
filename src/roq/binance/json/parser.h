@@ -10,6 +10,7 @@
 #include "roq/binance/json/result.h"
 
 #include "roq/binance/json/book_ticker.h"
+#include "roq/binance/json/depth.h"
 #include "roq/binance/json/depth_update.h"
 #include "roq/binance/json/trade.h"
 /*
@@ -30,7 +31,12 @@ struct Parser final {
     // update
     virtual void operator()(const Trade&) = 0;
     virtual void operator()(const BookTicker&) = 0;
-    virtual void operator()(const DepthUpdate&) = 0;
+    virtual void operator()(
+        const std::string_view& symbol,
+        const Depth& depth) = 0;
+    virtual void operator()(
+        const std::string_view& symbol,
+        const DepthUpdate& depth_update) = 0;
     /*
     virtual void operator()(const AccountUpdate&) = 0;
     virtual void operator()(const BalanceUpdate&) = 0;

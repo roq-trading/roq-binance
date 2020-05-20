@@ -9,8 +9,9 @@ libroq_binance_json_la_CPPFLAGS = \
 	$(ROQ_CFLAGS)
 AUTOGEN_CPP = \
 	book_ticker.cpp \
+	depth.cpp \
+	depth_item.cpp \
 	depth_update.cpp \
-	depth_update_item.cpp \
 	error.cpp \
 	event_type.cpp \
 	exchange_info.cpp \
@@ -28,8 +29,9 @@ AUTOGEN_CPP = \
 	trade.cpp
 AUTOGEN_H = \
 	book_ticker.h \
+	depth.h \
+	depth_item.h \
 	depth_update.h \
-	depth_update_item.h \
 	error.h \
 	event_type.h \
 	exchange_info.h \

@@ -17,9 +17,7 @@ void Parser::dispatch(
     Parser::Handler& handler,
     const std::string_view& message,
     core::json::Buffer& buffer) {
-  LOG(WARNING)(
-      FMT_STRING(R"(message="{}")"),
-      message);
+  std::string_view symbol;
   auto stream = Stream::UNDEFINED;
   for (int i = 0; i < 2; ++i) {
     core::json::Parser parser(message);
@@ -34,10 +32,12 @@ void Parser::dispatch(
           DLOG(FATAL)(
               FMT_STRING(R"(Unknown key="{}")"),
               key);
+          // XXX CALLBACK ?????????????
           break;
         case Field::ERROR: {
           Error error(value);
           LOG(INFO)(FMT_STRING("ERROR error={}"), error);
+          // XXX CALLBACK ?????????????
           return;
         }
         case Field::RESULT: {
@@ -45,6 +45,7 @@ void Parser::dispatch(
               value,
               buffer);
           LOG(INFO)(FMT_STRING("RESULT result={}"), result);
+          // XXX CALLBACK ?????????????
           return;
         }
         case Field::ID:
@@ -57,6 +58,9 @@ void Parser::dispatch(
           LOG_IF(FATAL, idx0 == full_name.npos)(
               FMT_STRING(R"(Unexpected: name="")"),
               full_name);
+          symbol = std::string_view(
+              full_name.begin(),
+              idx0);
           auto idx1 = full_name.find('@', idx0 + 1);
           auto name = std::string_view(
               full_name.begin() + idx0 + 1,
@@ -64,9 +68,6 @@ void Parser::dispatch(
                 ? full_name.size() - idx0 - 1
                 : idx1 - idx0 - 1);
           stream = Stream(name);
-          LOG(INFO)(
-              FMT_STRING("UPDATE stream={}"),
-              stream);
           break;
         }
         case Field::DATA:
@@ -78,28 +79,34 @@ void Parser::dispatch(
               return;
             case Stream::TRADE: {
               Trade trade(value);
-              LOG(INFO)(
-                  FMT_STRING("UPDATE trade={}"),
-                  trade);
               handler(trade);
               return;
             }
             case Stream::BOOK_TICKER: {
               BookTicker book_ticker(value);
-              LOG(INFO)(
-                  FMT_STRING("UPDATE book_ticker={}"),
-                  book_ticker);
               handler(book_ticker);
               return;
             }
+            case Stream::DEPTH5:
+            case Stream::DEPTH10:
+            case Stream::DEPTH20: {
+              assert(symbol.empty() == false);
+              Depth depth(
+                  value,
+                  buffer);
+              handler(
+                  symbol,
+                  depth);
+              return;
+            }
             case Stream::DEPTH: {
+              assert(symbol.empty() == false);
               DepthUpdate depth_update(
                   value,
                   buffer);
-              LOG(INFO)(
-                  FMT_STRING("UPDATE depth_update={}"),
+              handler(
+                  symbol,
                   depth_update);
-              handler(depth_update);
               return;
             }
           }

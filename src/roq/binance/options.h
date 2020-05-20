@@ -16,9 +16,12 @@ DECLARE_string(rest_ping_path);
 DECLARE_uint32(rest_rate_limit_interval_secs);
 DECLARE_uint32(rest_rate_limit_max_requests);
 
+DECLARE_uint32(rest_depth_limit);
+
 DECLARE_string(ws_uri);
 DECLARE_uint32(ws_ping_freq_secs);
 
+DECLARE_uint32(ws_depth_levels);
 DECLARE_uint32(ws_depth_freq_msecs);
 
 // XXX review

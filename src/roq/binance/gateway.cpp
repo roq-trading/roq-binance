@@ -31,30 +31,9 @@ static bool mbp_update(
     const T& item) {
   auto& obj = data[offset];
   new (&obj) MBPUpdate {
-    .price = item.first,
-    .quantity = item.second,
-  };
-  ++offset;
-  return offset < data.size();
-}
-
-template <typename T>
-static bool trade_update(
-    auto& data,
-    size_t& offset,
-    const T& item) {
-  auto& obj = data[offset];
-  /*
-  new (&obj) Trade {
-    .side = json::map(item.side),  // XXX check
     .price = item.price,
-    .quantity = item.size,
-    .trade_id = {},
+    .quantity = item.qty,
   };
-  core::copy_to(
-      item.trd_match_id,
-      obj.trade_id);
-      */
   ++offset;
   return offset < data.size();
 }
@@ -94,8 +73,7 @@ Gateway::Gateway(
             }),
       },
       _bid(FLAGS_cache_mbp_max_depth),
-      _ask(FLAGS_cache_mbp_max_depth),
-      _trade(FLAGS_max_trades) {
+      _ask(FLAGS_cache_mbp_max_depth) {
   LOG_IF(WARNING, FLAGS_cancel_on_disconnect == false)(
       "Orders will *NOT* be cancelled on disconnect");
 }
@@ -158,13 +136,114 @@ void Gateway::operator()(const WebSocket& web_socket) {
   }
 }
 
-void Gateway::operator()(const json::Trade&) {
+void Gateway::operator()(const json::Trade& trade) {
+  Trade trade_ {
+    .side = trade.buyer_is_maker ? Side::BUY : Side::SELL,
+    .price = trade.price,
+    .quantity = trade.quantity,
+    .trade_id = {},
+  };
+  core::view_t view(
+      trade_.trade_id,
+      trade_.trade_id + sizeof(trade_.trade_id));
+  core::charconv::to_string(
+      std::back_inserter(view),
+      trade.trade_id);
+  TradeSummary trade_summary {
+    .exchange = FLAGS_exchange,
+    .symbol = trade.symbol,
+    .trades = {
+      .items = &trade_,
+      .length = 1,
+    },
+    .exchange_time_utc = trade.event_time,
+  };
+  VLOG(3)(
+      FMT_STRING(R"(trade_summary={})"),
+      trade_summary);
+  enqueue(
+      trade_summary,
+      false);
 }
 
-void Gateway::operator()(const json::BookTicker&) {
+void Gateway::operator()(const json::BookTicker& book_ticker) {
+  TopOfBook top_of_book {
+    .exchange = FLAGS_exchange,
+    .symbol = book_ticker.symbol,
+    .layer = {
+      .bid_price = book_ticker.best_bid_price,
+      .bid_quantity = book_ticker.best_bid_qty,
+      .ask_price = book_ticker.best_ask_price,
+      .ask_quantity = book_ticker.best_ask_qty,
+    },
+    .snapshot = false,
+    .exchange_time_utc = {},
+  };
+  VLOG(3)(
+      FMT_STRING(R"(top_of_book={})"),
+      top_of_book);
+  enqueue(
+      top_of_book,
+      true);
 }
 
-void Gateway::operator()(const json::DepthUpdate&) {
+void Gateway::operator()(
+    const std::string_view& symbol,
+    const json::Depth& depth) {
+  bool success = true;
+  size_t bid_length = 0;
+  for (auto& item : depth.bids) {
+    if (success == false)
+      break;
+    success = mbp_update(
+        _bid,
+        bid_length,
+        item);
+  }
+  size_t ask_length = 0;
+  for (auto& item : depth.asks) {
+    if (success == false)
+      break;
+    success = mbp_update(
+        _ask,
+        ask_length,
+        item);
+  }
+  if (unlikely(success == false)) {
+    LOG(FATAL)(
+        FMT_STRING(
+          R"(Insufficient bid/ask array size(s): )"
+          R"(len(bid)={}/{}, len(ask)={}/{})"),
+        bid_length,
+        _bid.size(),
+        ask_length,
+        _ask.size());
+  }
+  MarketByPrice market_by_price {
+    .exchange = FLAGS_exchange,
+    .symbol = symbol,
+    .bids = {
+      .items = _bid.data(),
+      .length = bid_length,
+    },
+    .asks = {
+      .items = _ask.data(),
+      .length = ask_length,
+    },
+    .snapshot = true,
+    .exchange_time_utc = {},
+    };
+  VLOG(3)(
+      FMT_STRING(R"(market_by_price={})"),
+      market_by_price);
+  enqueue(
+      market_by_price,
+      true);
+}
+
+void Gateway::operator()(
+    const std::string_view& symbol,
+    const json::DepthUpdate&) {
 }
 
 // rest
@@ -255,6 +334,39 @@ void Gateway::operator()(const json::ExchangeInfo& exchange_info) {
       continue;
     }
     _symbols.push_back(std::string(item.symbol));
+    ReferenceData reference_data {
+      .exchange = FLAGS_exchange,
+      .symbol = item.symbol,
+      .security_type = SecurityType::UNDEFINED,
+      .currency = item.base_asset,
+      .settlement_currency = item.quote_asset,
+      .commission_currency = std::string_view(),
+      .tick_size = std::numeric_limits<double>::quiet_NaN(),
+      .limit_up = std::numeric_limits<double>::quiet_NaN(),
+      .limit_down = std::numeric_limits<double>::quiet_NaN(),
+      .multiplier = std::numeric_limits<double>::quiet_NaN(),
+      .min_trade_vol = std::numeric_limits<double>::quiet_NaN(),
+      .option_type = OptionType::UNDEFINED,
+      .strike_currency = std::string_view(),
+      .strike_price = std::numeric_limits<double>::quiet_NaN(),
+    };
+    VLOG(1)(
+        FMT_STRING(R"(reference_data={})"),
+        reference_data);
+    enqueue(
+        reference_data,
+        false);
+    MarketStatus market_status {
+      .exchange = FLAGS_exchange,
+      .symbol = item.symbol,
+      .trading_status = TradingStatus::OPEN,
+    };
+    VLOG(1)(
+        FMT_STRING(R"(market_status={})"),
+        market_status);
+    enqueue(
+        market_status,
+        true);
   }
   LOG(INFO)(
       FMT_STRING("Exchange info: including symbols {}/{}"),

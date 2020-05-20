@@ -7,6 +7,7 @@
 
 #include "roq/binance/options.h"
 
+#include "roq/binance/json/depth.h"
 #include "roq/binance/json/exchange_info.h"
 
 #include "roq/binance/json/utils.h"
@@ -71,6 +72,7 @@ Rest::Rest(
       },
       _profile {
         .exchange_info = create_profile("exchange_info"),
+        .depth = create_profile("depth"),
       },
       _latency {
         .ping = create_latency("ping"),
@@ -100,6 +102,7 @@ void Rest::operator()(Metrics& metrics) {
     .write(_counter.disconnect)
     // profile
     .write(_profile.exchange_info)
+    .write(_profile.depth)
     // latency
     .write(_latency.ping);
 }
@@ -139,6 +142,43 @@ void Rest::get(
     });
   });
 }
+
+template <>
+void Rest::get(
+    std::function<void(const core::Promise<json::Depth>&)>&& callback) {
+  constexpr auto method = core::http::Method::GET;
+  constexpr std::string_view path = "/api/v3/depth?symbol=BTCUSDT";  // XXX DEBUG
+  _connection.request(
+      method,
+      path,
+      std::string_view(),  // headers
+      std::string_view(),  // body
+      [this, callback](auto& response) {
+    _profile.depth(
+        [&]() {
+      try {
+        response.expect(core::http::Status::OK);
+        core::json::Buffer buffer(_decode_buffer);
+        auto products = core::json::Parser::create<json::Depth>(
+            response.body(),
+            buffer);
+        VLOG(1)(
+            FMT_STRING(R"(depth={})"),
+            products);
+        core::Promise<json::Depth> promise(products);
+        callback(promise);
+      } catch (NetworkError& e) {
+        LOG(WARNING)(
+            FMT_STRING(R"(Exception type={}, what="{}")"),
+            typeid(e).name(),
+            e.what());
+        core::Promise<json::Depth> promise(std::current_exception());
+        callback(promise);
+      }
+    });
+  });
+}
+
 void Rest::operator()(const core::web::Client::Connected&) {
   _handler(*this);
 }

@@ -26,6 +26,7 @@
 #include "roq/binance/rest_state.h"
 #include "roq/binance/web_socket.h"
 
+#include "roq/binance/json/depth.h"
 #include "roq/binance/json/exchange_info.h"
 
 // json (inbound)
@@ -73,7 +74,12 @@ class Gateway final
 
   void operator()(const json::Trade&) override;
   void operator()(const json::BookTicker&) override;
-  void operator()(const json::DepthUpdate&) override;
+  void operator()(
+      const std::string_view& symbol,
+      const json::Depth& depth) override;
+  void operator()(
+      const std::string_view& symbol,
+      const json::DepthUpdate& depth_update) override;
 
   // Rest::Handler
 
@@ -132,8 +138,6 @@ class Gateway final
   // market data
   GatewayStatus _market_data_status = GatewayStatus::DISCONNECTED;
   core::page_aligned_vector<MBPUpdate> _bid, _ask;
-  core::page_aligned_vector<Trade> _trade;
-  std::unordered_map<uint64_t, double> _price_lookup;
   // order manager
   GatewayStatus _order_manager_status = GatewayStatus::DISCONNECTED;
 };

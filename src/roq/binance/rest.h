@@ -74,7 +74,8 @@ class Rest final
   } _counter;
   struct {
     core::metrics::Profile
-      exchange_info;
+      exchange_info,
+      depth;
   } _profile;
   struct {
     core::metrics::Latency

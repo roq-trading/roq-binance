@@ -32,7 +32,12 @@ class WebSocket final
     virtual void operator()(const WebSocket&) = 0;
     virtual void operator()(const json::Trade&) = 0;
     virtual void operator()(const json::BookTicker&) = 0;
-    virtual void operator()(const json::DepthUpdate&) = 0;
+    virtual void operator()(
+        const std::string_view& symbol,
+        const json::Depth& depth) = 0;
+    virtual void operator()(
+        const std::string_view& symbol,
+        const json::DepthUpdate& depth_update) = 0;
   };
   WebSocket(
       Handler& handler,
@@ -72,9 +77,12 @@ class WebSocket final
   // update
   void operator()(const json::Trade&) override;
   void operator()(const json::BookTicker&) override;
-  void operator()(const json::DepthUpdate&) override;
-
-  void send_cancel_all_after();
+  void operator()(
+      const std::string_view& symbol,
+      const json::Depth& depth) override;
+  void operator()(
+      const std::string_view& symbol,
+      const json::DepthUpdate& depth_update) override;
 
  private:
   Handler& _handler;
@@ -96,6 +104,7 @@ class WebSocket final
       parse,
       trade,
       ticker,
+      depth,
       depth_update;
   } _profile;
   struct {

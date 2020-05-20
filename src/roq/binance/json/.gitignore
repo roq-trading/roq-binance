@@ -1,9 +1,11 @@
 book_ticker.cpp
 book_ticker.h
+depth.cpp
+depth.h
+depth_item.cpp
+depth_item.h
 depth_update.cpp
 depth_update.h
-depth_update_item.cpp
-depth_update_item.h
 error.cpp
 error.h
 event_type.cpp
