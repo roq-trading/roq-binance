@@ -2,7 +2,9 @@
 "name": "Stream",
 "type": "enum",
 "values": [
+	{ "name": "aggTrade" },
 	{ "name": "trade" },
+	{ "name": "miniTicker" },
 	{ "name": "bookTicker" },
 	{ "name": "depth5" },
 	{ "name": "depth10" },

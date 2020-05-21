@@ -4,6 +4,8 @@
 
 #include <fmt/format.h>
 
+#include <cassert>
+
 #include "roq/builtins.h"
 #include "roq/patterns.h"
 
@@ -69,8 +71,12 @@ WebSocket::WebSocket(
       },
       _profile {
         .parse = create_profile("parse"),
+        .error = create_profile("error"),
+        .result = create_profile("result"),
+        .agg_trade = create_profile("agg_trade"),
         .trade = create_profile("trade"),
-        .ticker = create_profile("ticker"),
+        .mini_ticker = create_profile("mini_ticker"),
+        .book_ticker = create_profile("book_ticker"),
         .depth = create_profile("depth"),
         .depth_update = create_profile("depth_update"),
       },
@@ -97,15 +103,101 @@ void WebSocket::operator()(const TimerEvent& event) {
   _connection.refresh(event.now);
 }
 
-void WebSocket::subscribe() {
+template <>
+void WebSocket::subscribe_agg_trade(
+    const std::vector<std::string>& symbols) {
+  assert(symbols.empty() == false);
   auto message = fmt::format(
       FMT_STRING(
         R"({{)"
         R"("method":"SUBSCRIBE",)"
-        R"("params":["btcusdt@trade","btcusdt@bookTicker","btcusdt@depth5@100ms"],)"
+        R"("params":["{}@aggTrade"],)"
         R"("id":{})"
         R"(}})"),
-      1);
+      fmt::join(
+          symbols,
+          R"(@aggTrade",")"),
+      ++_request_id);
+  _connection.send_text(message);
+}
+
+template <>
+void WebSocket::subscribe_trade(
+    const std::vector<std::string>& symbols) {
+  assert(symbols.empty() == false);
+  auto message = fmt::format(
+      FMT_STRING(
+        R"({{)"
+        R"("method":"SUBSCRIBE",)"
+        R"("params":["{}@trade"],)"
+        R"("id":{})"
+        R"(}})"),
+      fmt::join(
+          symbols,
+          R"(@trade",")"),
+      ++_request_id);
+  _connection.send_text(message);
+}
+
+template <>
+void WebSocket::subscribe_mini_ticker(
+    const std::vector<std::string>& symbols) {
+  assert(symbols.empty() == false);
+  auto message = fmt::format(
+      FMT_STRING(
+        R"({{)"
+        R"("method":"SUBSCRIBE",)"
+        R"("params":["{}@miniTicker"],)"
+        R"("id":{})"
+        R"(}})"),
+      fmt::join(
+          symbols,
+          R"(@miniTicker",")"),
+      ++_request_id);
+  _connection.send_text(message);
+}
+
+template <>
+void WebSocket::subscribe_book_ticker(
+    const std::vector<std::string>& symbols) {
+  assert(symbols.empty() == false);
+  auto message = fmt::format(
+      FMT_STRING(
+        R"({{)"
+        R"("method":"SUBSCRIBE",)"
+        R"("params":["{}@bookTicker"],)"
+        R"("id":{})"
+        R"(}})"),
+      fmt::join(
+          symbols,
+          R"(@bookTicker",")"),
+      ++_request_id);
+  _connection.send_text(message);
+}
+
+template <>
+void WebSocket::subscribe_depth(
+    const std::vector<std::string>& symbols) {
+  assert(symbols.empty() == false);
+  auto stream = fmt::format(
+      FMT_STRING(R"(@depth{}@{}ms)"),
+      FLAGS_ws_depth_levels,
+      FLAGS_ws_depth_freq_msecs);
+  auto separator = fmt::format(
+      FMT_STRING(R"({}",")"),
+      stream);
+  auto message = fmt::format(
+      FMT_STRING(
+        R"({{)"
+        R"("method":"SUBSCRIBE",)"
+        R"("params":["{}{}"],)"
+        R"("id":{})"
+        R"(}})"),
+      fmt::join(
+          symbols,
+          separator),
+      stream,
+      ++_request_id);
   _connection.send_text(message);
 }
 
@@ -115,8 +207,11 @@ void WebSocket::operator()(Metrics& metrics) {
     .write(_counter.disconnect)
     // profile
     .write(_profile.parse)
+    .write(_profile.error)
+    .write(_profile.result)
+    .write(_profile.agg_trade)
     .write(_profile.trade)
-    .write(_profile.ticker)
+    .write(_profile.book_ticker)
     .write(_profile.depth)
     .write(_profile.depth_update)
     // latency
@@ -129,7 +224,6 @@ void WebSocket::operator()(const core::web::Socket::Connected&) {
 }
 
 void WebSocket::operator()(const core::web::Socket::Disconnected&) {
-  _next_cancel_all_after = {};
   _handler(*this);
   ++_counter.disconnect;
 }
@@ -171,10 +265,38 @@ void WebSocket::parse(const std::string_view& message) {
       });
 }
 
-void WebSocket::operator()(int32_t, const json::Error&) {
+void WebSocket::operator()(
+    int32_t id,
+    const json::Error& error) {
+  _profile.error(
+      [&]() {
+        LOG(WARNING)(
+            FMT_STRING(R"(id={}, error={})"),
+            id,
+            error);
+      });
 }
 
-void WebSocket::operator()(int32_t, const json::Result&) {
+void WebSocket::operator()(
+    int32_t id,
+    const json::Result& result) {
+  _profile.result(
+      [&]() {
+        LOG(INFO)(
+            FMT_STRING(R"(id={}, result={})"),
+            id,
+            result);
+      });
+}
+
+void WebSocket::operator()(const json::AggTrade& agg_trade) {
+  _profile.agg_trade(
+      [&]() {
+        VLOG(3)(
+            FMT_STRING(R"(agg_trade={})"),
+            agg_trade);
+        _handler(agg_trade);
+      });
 }
 
 void WebSocket::operator()(const json::Trade& trade) {
@@ -187,13 +309,23 @@ void WebSocket::operator()(const json::Trade& trade) {
       });
 }
 
-void WebSocket::operator()(const json::BookTicker& ticker) {
-  _profile.ticker(
+void WebSocket::operator()(const json::MiniTicker& mini_ticker) {
+  _profile.mini_ticker(
       [&]() {
         VLOG(3)(
-            FMT_STRING(R"(ticker={})"),
-            ticker);
-        _handler(ticker);
+            FMT_STRING(R"(mini_ticker={})"),
+            mini_ticker);
+        _handler(mini_ticker);
+      });
+}
+
+void WebSocket::operator()(const json::BookTicker& book_ticker) {
+  _profile.book_ticker(
+      [&]() {
+        VLOG(3)(
+            FMT_STRING(R"(book_ticker={})"),
+            book_ticker);
+        _handler(book_ticker);
       });
 }
 

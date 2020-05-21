@@ -1,4 +1,7 @@
-symbols = ".*"
+symbols = [
+  "BTCUSDT",
+  ".*BTC"
+]
 
 [order_templates]
 

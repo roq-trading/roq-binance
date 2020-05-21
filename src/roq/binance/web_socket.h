@@ -30,7 +30,9 @@ class WebSocket final
  public:
   struct Handler {
     virtual void operator()(const WebSocket&) = 0;
+    virtual void operator()(const json::AggTrade&) = 0;
     virtual void operator()(const json::Trade&) = 0;
+    virtual void operator()(const json::MiniTicker&) = 0;
     virtual void operator()(const json::BookTicker&) = 0;
     virtual void operator()(
         const std::string_view& symbol,
@@ -56,7 +58,20 @@ class WebSocket final
   void operator()(const StopEvent&);
   void operator()(const TimerEvent&);
 
-  void subscribe();
+  template <typename T>
+  void subscribe_agg_trade(const T& symbols);
+
+  template <typename T>
+  void subscribe_trade(const T& symbols);
+
+  template <typename T>
+  void subscribe_mini_ticker(const T& symbols);
+
+  template <typename T>
+  void subscribe_book_ticker(const T& symbols);
+
+  template <typename T>
+  void subscribe_depth(const T& symbols);
 
   void operator()(Metrics& metrics);
 
@@ -75,7 +90,9 @@ class WebSocket final
   void operator()(int32_t, const json::Result&) override;
 
   // update
+  void operator()(const json::AggTrade&) override;
   void operator()(const json::Trade&) override;
+  void operator()(const json::MiniTicker&) override;
   void operator()(const json::BookTicker&) override;
   void operator()(
       const std::string_view& symbol,
@@ -93,7 +110,7 @@ class WebSocket final
   // buffers
   core::utils::Buffer _decode_buffer;
   // session
-  std::chrono::nanoseconds _next_cancel_all_after = {};
+  uint64_t _request_id = 0;
   // metrics
   struct {
     core::metrics::Counter
@@ -102,8 +119,12 @@ class WebSocket final
   struct {
     core::metrics::Profile
       parse,
+      error,
+      result,
+      agg_trade,
       trade,
-      ticker,
+      mini_ticker,
+      book_ticker,
       depth,
       depth_update;
   } _profile;

@@ -1,6 +1,6 @@
 symbols = [
-  "BTC-.*",
-  "ETH-.*",
+  "BTCUSDT",
+  ".*BTC",
 ]
 
 [order_templates]
@@ -13,9 +13,8 @@ symbols = [
   [accounts.A1]
   master = true
   login = "YOUR_BINANCE_API_KEY_GOES_HERE"
-  password = "YOUR_BINANCE_PASSPHRASE_GOES_HERE"
   secret = "YOUR_BINANCE_SECRET_GOES_HERE"
-  symbols = [ "BTC-.*", "ETH-.*" ]
+  symbols = [ "BTCUSDT", ".*BTC" ]
 
 [users]
 
@@ -26,7 +25,7 @@ symbols = [
   [users.trader]
   password = "secret"
   accounts = [ "A1" ]
-  symbols = [ "BTC-USD" ]
+  symbols = [ "BTCUSDT" ]
   monitor_period_secs = 60
   ban_period_secs = 300
   request_limit = 10

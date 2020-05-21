@@ -47,12 +47,16 @@ DEFINE_uint32(ws_ping_freq_secs,
     "ping frequency (seconds)");
 
 DEFINE_uint32(ws_depth_levels,
-    5,
+    20,
     "depth levels (count)");
 
 DEFINE_uint32(ws_depth_freq_msecs,
     100,
     "depth update frequency (milliseconds)");
+
+DEFINE_bool(ws_trade_details,
+    false,
+    "report individual matches for trade summary? (bool)");
 
 
 

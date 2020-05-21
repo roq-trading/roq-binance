@@ -2,10 +2,11 @@
 "name": "EventType",
 "type": "enum",
 "values": [
+	{ "name": "aggTrade" },
 	{ "name": "trade" },
+	{ "name": "24hrMiniTicker" },
 	{ "name": "bookTicker" },
 	{ "name": "depthUpdate" },
-
 	{ "name": "accountUpdate" },
 	{ "name": "balanceUpdate" },
 	{ "name": "executionReport" }

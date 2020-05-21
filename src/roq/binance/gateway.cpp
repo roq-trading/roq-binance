@@ -2,6 +2,7 @@
 
 #include "roq/binance/gateway.h"
 
+#include <cctype>
 #include <limits>
 #include <utility>
 
@@ -136,6 +137,36 @@ void Gateway::operator()(const WebSocket& web_socket) {
   }
 }
 
+void Gateway::operator()(const json::AggTrade& agg_trade) {
+  Trade trade {
+    .side = agg_trade.buyer_is_maker ? Side::BUY : Side::SELL,
+    .price = agg_trade.price,
+    .quantity = agg_trade.quantity,
+    .trade_id = {},
+  };
+  core::view_t view(
+      trade.trade_id,
+      trade.trade_id + sizeof(trade.trade_id));
+  core::charconv::to_string(
+      std::back_inserter(view),
+      agg_trade.agg_trade_id);
+  TradeSummary trade_summary {
+    .exchange = FLAGS_exchange,
+    .symbol = agg_trade.symbol,
+    .trades = {
+      .items = &trade,
+      .length = 1,
+    },
+    .exchange_time_utc = agg_trade.event_time,
+  };
+  VLOG(3)(
+      FMT_STRING(R"(trade_summary={})"),
+      trade_summary);
+  enqueue(
+      trade_summary,
+      false);
+}
+
 void Gateway::operator()(const json::Trade& trade) {
   Trade trade_ {
     .side = trade.buyer_is_maker ? Side::BUY : Side::SELL,
@@ -164,6 +195,42 @@ void Gateway::operator()(const json::Trade& trade) {
   enqueue(
       trade_summary,
       false);
+}
+
+void Gateway::operator()(const json::MiniTicker& mini_ticker) {
+  SessionStatistics session_statistics {
+    .exchange = FLAGS_exchange,
+    .symbol = mini_ticker.symbol,
+    .pre_open_interest = std::numeric_limits<double>::quiet_NaN(),
+    .pre_settlement_price = std::numeric_limits<double>::quiet_NaN(),
+    .pre_close_price = std::numeric_limits<double>::quiet_NaN(),
+    .highest_traded_price = mini_ticker.high_price,
+    .lowest_traded_price = mini_ticker.low_price,
+    .upper_limit_price = std::numeric_limits<double>::quiet_NaN(),
+    .lower_limit_price = std::numeric_limits<double>::quiet_NaN(),
+    .exchange_time_utc = mini_ticker.event_time,
+  };
+  VLOG(3)(
+      FMT_STRING(R"(session_statistics={})"),
+      session_statistics);
+  enqueue(
+      session_statistics,
+      false);
+  DailyStatistics daily_statistics {
+    .exchange = FLAGS_exchange,
+    .symbol = mini_ticker.symbol,
+    .open_price = mini_ticker.open_price,
+    .settlement_price = std::numeric_limits<double>::quiet_NaN(),
+    .close_price = mini_ticker.close_price,
+    .open_interest = std::numeric_limits<double>::quiet_NaN(),
+    .exchange_time_utc = mini_ticker.event_time,
+  };
+  VLOG(3)(
+      FMT_STRING(R"(daily_statistics={})"),
+      daily_statistics);
+  enqueue(
+      daily_statistics,
+      true);
 }
 
 void Gateway::operator()(const json::BookTicker& book_ticker) {
@@ -321,7 +388,14 @@ void Gateway::download_exchange_info() {
 }
 
 void Gateway::subscribe() {
-  _web_socket.connection.subscribe();
+  if (FLAGS_ws_trade_details) {
+    _web_socket.connection.subscribe_trade(_symbols);
+  } else {
+    _web_socket.connection.subscribe_agg_trade(_symbols);
+  }
+  _web_socket.connection.subscribe_mini_ticker(_symbols);
+  _web_socket.connection.subscribe_book_ticker(_symbols);
+  _web_socket.connection.subscribe_depth(_symbols);
 }
 
 void Gateway::operator()(const json::ExchangeInfo& exchange_info) {
@@ -333,7 +407,14 @@ void Gateway::operator()(const json::ExchangeInfo& exchange_info) {
           item.symbol);
       continue;
     }
-    _symbols.push_back(std::string(item.symbol));
+    // note! convert to lowercase
+    std::string symbol(item.symbol);
+    std::transform(
+        symbol.begin(),
+        symbol.end(),
+        symbol.begin(),
+        [](auto c) { return std::tolower(c); });
+    _symbols.push_back(std::move(symbol));
     ReferenceData reference_data {
       .exchange = FLAGS_exchange,
       .symbol = item.symbol,
@@ -359,7 +440,7 @@ void Gateway::operator()(const json::ExchangeInfo& exchange_info) {
     MarketStatus market_status {
       .exchange = FLAGS_exchange,
       .symbol = item.symbol,
-      .trading_status = TradingStatus::OPEN,
+      .trading_status = json::map(item.status),
     };
     VLOG(1)(
         FMT_STRING(R"(market_status={})"),

@@ -8,6 +8,7 @@ libroq_binance_json_la_CPPFLAGS = \
 	$(LIBCONFIG_CFLAGS) \
 	$(ROQ_CFLAGS)
 AUTOGEN_CPP = \
+	agg_trade.cpp \
 	book_ticker.cpp \
 	depth.cpp \
 	depth_item.cpp \
@@ -17,6 +18,8 @@ AUTOGEN_CPP = \
 	exchange_info.cpp \
 	execution_type.cpp \
 	field.cpp \
+	filter_type.cpp \
+	mini_ticker.cpp \
 	order_status.cpp \
 	order_type.cpp \
 	order_update.cpp \
@@ -24,10 +27,12 @@ AUTOGEN_CPP = \
 	side.cpp \
 	stream.cpp \
 	symbol.cpp \
+	symbol_status.cpp \
 	ticker.cpp \
 	time_in_force.cpp \
 	trade.cpp
 AUTOGEN_H = \
+	agg_trade.h \
 	book_ticker.h \
 	depth.h \
 	depth_item.h \
@@ -37,6 +42,8 @@ AUTOGEN_H = \
 	exchange_info.h \
 	execution_type.h \
 	field.h \
+	filter_type.h \
+	mini_ticker.h \
 	order_status.h \
 	order_type.h \
 	order_update.h \
@@ -44,6 +51,7 @@ AUTOGEN_H = \
 	side.h \
 	stream.h \
 	symbol.h \
+	symbol_status.h \
 	ticker.h \
 	time_in_force.h \
 	trade.h

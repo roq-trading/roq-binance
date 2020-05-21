@@ -24,6 +24,8 @@ DECLARE_uint32(ws_ping_freq_secs);
 DECLARE_uint32(ws_depth_levels);
 DECLARE_uint32(ws_depth_freq_msecs);
 
+DECLARE_bool(ws_trade_details);
+
 // XXX review
 
 DECLARE_bool(cancel_on_disconnect);

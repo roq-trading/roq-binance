@@ -1,3 +1,5 @@
+agg_trade.cpp
+agg_trade.h
 book_ticker.cpp
 book_ticker.h
 depth.cpp
@@ -16,6 +18,10 @@ execution_type.cpp
 execution_type.h
 field.cpp
 field.h
+filter_type.cpp
+filter_type.h
+mini_ticker.cpp
+mini_ticker.h
 order_status.cpp
 order_status.h
 order_type.cpp
@@ -30,6 +36,8 @@ stream.cpp
 stream.h
 symbol.cpp
 symbol.h
+symbol_status.cpp
+symbol_status.h
 ticker.cpp
 ticker.h
 time_in_force.cpp

@@ -3,7 +3,7 @@
 "type": "item",
 "values": [
 	{ "name": "symbol", "type": "std::string_view" },
-	{ "name": "status", "type": "std::string_view" },
+	{ "name": "status", "type": "SymbolStatus" },
 	{ "name": "baseAsset", "type": "std::string_view" },
 	{ "name": "baseAssetPrecision", "type": "uint32_t" },
 	{ "name": "quoteAsset", "type": "std::string_view" },
