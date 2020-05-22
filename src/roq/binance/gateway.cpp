@@ -208,6 +208,8 @@ void Gateway::operator()(const json::MiniTicker& mini_ticker) {
     .lowest_traded_price = mini_ticker.low_price,
     .upper_limit_price = std::numeric_limits<double>::quiet_NaN(),
     .lower_limit_price = std::numeric_limits<double>::quiet_NaN(),
+    .index_value = std::numeric_limits<double>::quiet_NaN(),
+    .margin_rate = std::numeric_limits<double>::quiet_NaN(),
     .exchange_time_utc = mini_ticker.event_time,
   };
   VLOG(3)(
