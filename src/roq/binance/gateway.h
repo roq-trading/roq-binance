@@ -26,6 +26,7 @@
 #include "roq/binance/rest_state.h"
 #include "roq/binance/web_socket.h"
 
+#include "roq/binance/json/account.h"
 #include "roq/binance/json/exchange_info.h"
 
 // json (inbound)
@@ -88,6 +89,7 @@ class Gateway final
 
  private:
   void operator()(const json::ExchangeInfo&);
+  void operator()(const json::Account&);
 
   void update_market_data(GatewayStatus gateway_status);
   void update_order_manager(GatewayStatus gateway_status);
@@ -97,6 +99,7 @@ class Gateway final
   uint32_t download(RestDownload::State state);
 
   void download_exchange_info();
+  void download_account();
 
   void subscribe();
 

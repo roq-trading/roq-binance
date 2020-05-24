@@ -1,5 +1,9 @@
+account.cpp
+account.h
 agg_trade.cpp
 agg_trade.h
+balance.cpp
+balance.h
 book_ticker.cpp
 book_ticker.h
 depth.cpp

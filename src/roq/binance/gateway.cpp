@@ -362,6 +362,9 @@ uint32_t Gateway::download(RestDownload::State state) {
     case RestDownload::State::EXCHANGE_INFO:
       download_exchange_info();
       return 1;
+    case RestDownload::State::ACCOUNT:
+      download_account();
+      return 1;
     case RestDownload::State::SUBSCRIBE:
       subscribe();
       return 0;
@@ -377,6 +380,22 @@ void Gateway::download_exchange_info() {
   constexpr auto state = RestDownload::State::EXCHANGE_INFO;
   auto sequence = _rest.download.sequence();
   _rest.connection.get<json::ExchangeInfo>(
+      [this, sequence](auto& promise) {
+    try {
+      if (_rest.download.skip(sequence, state))
+        return;
+      (*this)(promise.get());
+      _rest.download.check(state);
+    } catch (NetworkError&) {
+      _rest.download.retry(state);
+    }
+  });
+}
+
+void Gateway::download_account() {
+  constexpr auto state = RestDownload::State::ACCOUNT;
+  auto sequence = _rest.download.sequence();
+  _rest.connection.get<json::Account>(
       [this, sequence](auto& promise) {
     try {
       if (_rest.download.skip(sequence, state))
@@ -455,6 +474,9 @@ void Gateway::operator()(const json::ExchangeInfo& exchange_info) {
       FMT_STRING("Exchange info: including symbols {}/{}"),
       _symbols.size(),
       exchange_info.symbols.size());
+}
+
+void Gateway::operator()(const json::Account& account) {
 }
 
 template <typename T>

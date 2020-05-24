@@ -8,7 +8,9 @@ libroq_binance_json_la_CPPFLAGS = \
 	$(LIBCONFIG_CFLAGS) \
 	$(ROQ_CFLAGS)
 AUTOGEN_CPP = \
+	account.cpp \
 	agg_trade.cpp \
+	balance.cpp \
 	book_ticker.cpp \
 	depth.cpp \
 	depth_item.cpp \
@@ -32,7 +34,9 @@ AUTOGEN_CPP = \
 	time_in_force.cpp \
 	trade.cpp
 AUTOGEN_H = \
+	account.h \
 	agg_trade.h \
+	balance.h \
 	book_ticker.h \
 	depth.h \
 	depth_item.h \

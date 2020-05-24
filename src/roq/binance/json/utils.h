@@ -53,9 +53,7 @@ inline void update(
           throw std::bad_cast();
         },
         [&](int64_t value) {
-          result = std::chrono::nanoseconds {
-            static_cast<uint64_t>(value * int64_t{1000000000})
-          };
+          result = std::chrono::milliseconds { value };
         },
         [&](double value) {
           result = std::chrono::nanoseconds {

@@ -7,6 +7,7 @@
 
 #include "roq/binance/options.h"
 
+#include "roq/binance/json/account.h"
 #include "roq/binance/json/depth.h"
 #include "roq/binance/json/exchange_info.h"
 
@@ -52,6 +53,7 @@ Rest::Rest(
     core::ssl::Context& ssl_context)
     : _handler(handler),
       _random(random),
+      _api_key(config.get_api_key()),
       _connection(
           *this,
           base,
@@ -72,6 +74,7 @@ Rest::Rest(
       },
       _profile {
         .exchange_info = create_profile("exchange_info"),
+        .account = create_profile("account"),
         .depth = create_profile("depth"),
       },
       _latency {
@@ -102,6 +105,7 @@ void Rest::operator()(Metrics& metrics) {
     .write(_counter.disconnect)
     // profile
     .write(_profile.exchange_info)
+    .write(_profile.account)
     .write(_profile.depth)
     // latency
     .write(_latency.ping);
@@ -115,6 +119,7 @@ void Rest::get(
   _connection.request(
       method,
       path,
+      std::string_view(),  // query
       std::string_view(),  // headers
       std::string_view(),  // body
       [this, callback](auto& response) {
@@ -123,13 +128,13 @@ void Rest::get(
       try {
         response.expect(core::http::Status::OK);
         core::json::Buffer buffer(_decode_buffer);
-        auto products = core::json::Parser::create<json::ExchangeInfo>(
+        auto exchange_info = core::json::Parser::create<json::ExchangeInfo>(
             response.body(),
             buffer);
         VLOG(1)(
             FMT_STRING(R"(exchange_info={})"),
-            products);
-        core::Promise<json::ExchangeInfo> promise(products);
+            exchange_info);
+        core::Promise<json::ExchangeInfo> promise(exchange_info);
         callback(promise);
       } catch (NetworkError& e) {
         LOG(WARNING)(
@@ -145,12 +150,63 @@ void Rest::get(
 
 template <>
 void Rest::get(
+    std::function<void(const core::Promise<json::Account>&)>&& callback) {
+  constexpr auto method = core::http::Method::GET;
+  constexpr std::string_view path = "/api/v3/account";
+  auto now = core::get_realtime_clock();
+  auto timestamp = fmt::format(
+      FMT_STRING(R"(timestamp={})"),
+      std::chrono::duration_cast<
+        std::chrono::milliseconds>(now).count());
+  auto signature = _random.create_signature(timestamp);
+  auto query = fmt::format(
+      FMT_STRING(R"(?{}&signature={})"),
+      timestamp,
+      signature);
+  auto headers = fmt::format(
+      FMT_STRING(R"(X-MBX-APIKEY: {})"),
+      _api_key);
+  _connection.request(
+      method,
+      path,
+      query,
+      headers,
+      std::string_view(),  // body
+      [this, callback](auto& response) {
+    _profile.account(
+        [&]() {
+      try {
+        response.expect(core::http::Status::OK);
+        core::json::Buffer buffer(_decode_buffer);
+        auto account = core::json::Parser::create<json::Account>(
+            response.body(),
+            buffer);
+        VLOG(1)(
+            FMT_STRING(R"(account={})"),
+            account);
+        core::Promise<json::Account> promise(account);
+        callback(promise);
+      } catch (NetworkError& e) {
+        LOG(WARNING)(
+            FMT_STRING(R"(Exception type={}, what="{}")"),
+            typeid(e).name(),
+            e.what());
+        core::Promise<json::Account> promise(std::current_exception());
+        callback(promise);
+      }
+    });
+  });
+}
+
+template <>
+void Rest::get(
     std::function<void(const core::Promise<json::Depth>&)>&& callback) {
   constexpr auto method = core::http::Method::GET;
   constexpr std::string_view path = "/api/v3/depth?symbol=BTCUSDT";  // XXX DEBUG
   _connection.request(
       method,
       path,
+      std::string_view(),  // query
       std::string_view(),  // headers
       std::string_view(),  // body
       [this, callback](auto& response) {

@@ -63,6 +63,7 @@ class Rest final
   Handler& _handler;
   // authentication
   Random& _random;
+  const std::string _api_key;
   // connection
   core::web::Client _connection;
   // buffers
@@ -75,6 +76,7 @@ class Rest final
   struct {
     core::metrics::Profile
       exchange_info,
+      account,
       depth;
   } _profile;
   struct {
