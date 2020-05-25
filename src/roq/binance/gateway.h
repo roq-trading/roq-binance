@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <list>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -22,24 +24,24 @@
 #include "roq/binance/config.h"
 #include "roq/binance/random.h"
 
+#include "roq/binance/market_stream.h"
+
 #include "roq/binance/rest.h"
 #include "roq/binance/rest_state.h"
-#include "roq/binance/web_socket.h"
 
 #include "roq/binance/json/account.h"
 #include "roq/binance/json/exchange_info.h"
+#include "roq/binance/json/listen_key.h"
 
 // json (inbound)
 
 namespace roq {
 namespace binance {
 
-class WebSocket;
-
 class Gateway final
     : public server::Handler,
       public Rest::Handler,
-      public WebSocket::Handler {
+      public MarketStream::Handler {
  public:
   Gateway(
       server::Dispatcher& dispatcher,
@@ -68,9 +70,7 @@ class Gateway final
 
   void operator()(Metrics& metrics) override;
 
-  // WebSocket::Handler
-
-  void operator()(const WebSocket&) override;
+  // MarketStream::Handler
 
   void operator()(const json::AggTrade&) override;
   void operator()(const json::Trade&) override;
@@ -89,6 +89,7 @@ class Gateway final
 
  private:
   void operator()(const json::ExchangeInfo&);
+  void operator()(const json::ListenKey&);
   void operator()(const json::Account&);
 
   void update_market_data(GatewayStatus gateway_status);
@@ -99,9 +100,10 @@ class Gateway final
   uint32_t download(RestDownload::State state);
 
   void download_exchange_info();
+  void subscribe_market_streams();
+  void download_listen_key();
+  void subscribe_user_stream();
   void download_account();
-
-  void subscribe();
 
   template <typename T>
   void enqueue(
@@ -127,12 +129,11 @@ class Gateway final
   core::ssl::Context _ssl_context;
   // connections
   struct {
-    WebSocket connection;
-  } _web_socket;
-  struct {
     Rest connection;
     RestDownload download;
   } _rest;
+  uint32_t _market_stream_id = 0;
+  std::list<std::unique_ptr<MarketStream> > _market_streams;
   // reference data
   std::vector<std::string> _symbols;
   // market data

@@ -3,6 +3,7 @@
 #include "roq/binance/json/parser.h"
 
 #include <cctype>
+#include <string>
 
 #include "roq/compat.h"
 

@@ -26,6 +26,8 @@ DECLARE_uint32(ws_depth_freq_msecs);
 
 DECLARE_bool(ws_trade_details);
 
+DECLARE_uint32(ws_max_subscriptions);
+
 // XXX review
 
 DECLARE_bool(cancel_on_disconnect);

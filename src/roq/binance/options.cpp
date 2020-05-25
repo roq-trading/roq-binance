@@ -58,6 +58,9 @@ DEFINE_bool(ws_trade_details,
     false,
     "report individual matches for trade summary? (bool)");
 
+DEFINE_uint32(ws_max_subscriptions,
+    1024,
+    "max subscriptions per connection (count)");
 
 
 DEFINE_bool(cancel_on_disconnect,

@@ -10,6 +10,7 @@
 #include "roq/binance/json/account.h"
 #include "roq/binance/json/depth.h"
 #include "roq/binance/json/exchange_info.h"
+#include "roq/binance/json/listen_key.h"
 
 #include "roq/binance/json/utils.h"
 
@@ -75,6 +76,7 @@ Rest::Rest(
       _profile {
         .exchange_info = create_profile("exchange_info"),
         .account = create_profile("account"),
+        .listen_key = create_profile("listen_key"),
         .depth = create_profile("depth"),
       },
       _latency {
@@ -106,6 +108,7 @@ void Rest::operator()(Metrics& metrics) {
     // profile
     .write(_profile.exchange_info)
     .write(_profile.account)
+    .write(_profile.listen_key)
     .write(_profile.depth)
     // latency
     .write(_latency.ping);
@@ -164,7 +167,7 @@ void Rest::get(
       timestamp,
       signature);
   auto headers = fmt::format(
-      FMT_STRING(R"(X-MBX-APIKEY: {})"),
+      FMT_STRING("X-MBX-APIKEY: {}\r\n"),
       _api_key);
   _connection.request(
       method,
@@ -192,6 +195,46 @@ void Rest::get(
             typeid(e).name(),
             e.what());
         core::Promise<json::Account> promise(std::current_exception());
+        callback(promise);
+      }
+    });
+  });
+}
+
+template <>
+void Rest::get(
+    std::function<void(const core::Promise<json::ListenKey>&)>&& callback) {
+  constexpr auto method = core::http::Method::POST;
+  constexpr std::string_view path = "/api/v3/userDataStream";
+  auto headers = fmt::format(
+      FMT_STRING("X-MBX-APIKEY: {}\r\n"),
+      _api_key);
+  _connection.request(
+      method,
+      path,
+      std::string_view(),  // query
+      headers,
+      std::string_view(),  // body
+      [this, callback](auto& response) {
+    _profile.listen_key(
+        [&]() {
+      try {
+        response.expect(core::http::Status::OK);
+        core::json::Buffer buffer(_decode_buffer);
+        auto listen_key = core::json::Parser::create<json::ListenKey>(
+            response.body(),
+            buffer);
+        VLOG(1)(
+            FMT_STRING(R"(listen_key={})"),
+            listen_key);
+        core::Promise<json::ListenKey> promise(listen_key);
+        callback(promise);
+      } catch (NetworkError& e) {
+        LOG(WARNING)(
+            FMT_STRING(R"(Exception type={}, what="{}")"),
+            typeid(e).name(),
+            e.what());
+        core::Promise<json::ListenKey> promise(std::current_exception());
         callback(promise);
       }
     });

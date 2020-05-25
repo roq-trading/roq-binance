@@ -3,8 +3,10 @@
 "type": "enum",
 "values": [
 	{ "name": "exchange_info" },
+	{ "name": "market_stream" },
+	{ "name": "listen_key" },
+	{ "name": "user_stream" },
 	{ "name": "account" },
-	{ "name": "subscribe" },
 	{ "name": "done" }
 ]
 }

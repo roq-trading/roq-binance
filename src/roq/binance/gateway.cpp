@@ -4,7 +4,6 @@
 
 #include <cctype>
 #include <limits>
-#include <utility>
 
 #include "roq/logging.h"
 #include "roq/format.h"
@@ -48,16 +47,6 @@ Gateway::Gateway(
           config.get_api_key(),
           config.get_secret()),
       _dns_base(_base, true),
-      _web_socket {
-        .connection = {
-          *this,
-          config,
-          _random,
-          _base,
-          _dns_base,
-          _ssl_context,
-        },
-      },
       _rest {
         .connection = {
           *this,
@@ -81,19 +70,23 @@ Gateway::Gateway(
 
 void Gateway::operator()(const StartEvent& event) {
   LOG(INFO)("Starting the gateway...");
-  _web_socket.connection(event);
   _rest.connection(event);
+  assert(_symbols.empty());
+  assert(_market_streams.empty());
+  _rest.download.begin();
 }
 
 void Gateway::operator()(const StopEvent& event) {
   LOG(INFO)("Stopping the gateway...");
-  _web_socket.connection(event);
   _rest.connection(event);
+  for (auto& iter : _market_streams)
+    (*iter)(event);
 }
 
 void Gateway::operator()(const TimerEvent& event) {
-  _web_socket.connection(event);
   _rest.connection(event);
+  for (auto& iter : _market_streams)
+    (*iter)(event);
   _base.loop(EVLOOP_NONBLOCK);
 }
 
@@ -122,20 +115,12 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(Metrics& metrics) {
-  _web_socket.connection(metrics);
   _rest.connection(metrics);
+  for (auto& iter : _market_streams)
+    (*iter)(metrics);
 }
 
-// ws
-
-void Gateway::operator()(const WebSocket& web_socket) {
-  if (web_socket.ready()) {
-    _rest.download.begin();
-  } else {
-    _rest.download.reset();
-    _symbols.clear();
-  }
-}
+// market stream
 
 void Gateway::operator()(const json::AggTrade& agg_trade) {
   Trade trade {
@@ -353,8 +338,6 @@ void Gateway::update_order_manager(GatewayStatus gateway_status) {
 }
 
 uint32_t Gateway::download(RestDownload::State state) {
-  if (_web_socket.connection.ready() == false)
-    return -1;
   switch (state) {
     case RestDownload::State::UNDEFINED:
       assert(false);
@@ -362,12 +345,18 @@ uint32_t Gateway::download(RestDownload::State state) {
     case RestDownload::State::EXCHANGE_INFO:
       download_exchange_info();
       return 1;
+    case RestDownload::State::MARKET_STREAM:
+      subscribe_market_streams();
+      return 0;
+    case RestDownload::State::LISTEN_KEY:
+      download_listen_key();
+      return 1;
+    case RestDownload::State::USER_STREAM:
+      subscribe_user_stream();
+      return 0;
     case RestDownload::State::ACCOUNT:
       download_account();
       return 1;
-    case RestDownload::State::SUBSCRIBE:
-      subscribe();
-      return 0;
     case RestDownload::State::DONE:
       // update(GatewayStatus::READY);
       return 0;
@@ -392,6 +381,51 @@ void Gateway::download_exchange_info() {
   });
 }
 
+void Gateway::subscribe_market_streams() {
+  if (_symbols.empty())
+    return;
+  assert(FLAGS_ws_max_subscriptions > 0);
+  size_t max_length = FLAGS_ws_max_subscriptions / 4;
+  for (size_t major = 0; major < _symbols.size(); major += max_length) {
+    auto minor_length = std::min(
+        _symbols.size() - major,
+        max_length);
+    assert(minor_length > 0);
+    std::vector<std::string> symbols(minor_length);
+    for (size_t minor = 0; minor < minor_length; ++minor)
+      symbols[minor] = _symbols[major + minor];
+    auto market_stream_ptr = std::make_unique<MarketStream>(
+        *this,
+        _random,
+        _base,
+        _dns_base,
+        _ssl_context,
+        ++_market_stream_id,
+        std::move(symbols));
+    (*market_stream_ptr)(StartEvent{});
+    _market_streams.emplace_back(std::move(market_stream_ptr));
+  }
+}
+
+void Gateway::download_listen_key() {
+  constexpr auto state = RestDownload::State::LISTEN_KEY;
+  auto sequence = _rest.download.sequence();
+  _rest.connection.get<json::ListenKey>(
+      [this, sequence](auto& promise) {
+    try {
+      if (_rest.download.skip(sequence, state))
+        return;
+      (*this)(promise.get());
+      _rest.download.check(state);
+    } catch (NetworkError&) {
+      _rest.download.retry(state);
+    }
+  });
+}
+
+void Gateway::subscribe_user_stream() {
+}
+
 void Gateway::download_account() {
   constexpr auto state = RestDownload::State::ACCOUNT;
   auto sequence = _rest.download.sequence();
@@ -406,17 +440,6 @@ void Gateway::download_account() {
       _rest.download.retry(state);
     }
   });
-}
-
-void Gateway::subscribe() {
-  if (FLAGS_ws_trade_details) {
-    _web_socket.connection.subscribe_trade(_symbols);
-  } else {
-    _web_socket.connection.subscribe_agg_trade(_symbols);
-  }
-  _web_socket.connection.subscribe_mini_ticker(_symbols);
-  _web_socket.connection.subscribe_book_ticker(_symbols);
-  _web_socket.connection.subscribe_depth(_symbols);
 }
 
 void Gateway::operator()(const json::ExchangeInfo& exchange_info) {
@@ -474,6 +497,9 @@ void Gateway::operator()(const json::ExchangeInfo& exchange_info) {
       FMT_STRING("Exchange info: including symbols {}/{}"),
       _symbols.size(),
       exchange_info.symbols.size());
+}
+
+void Gateway::operator()(const json::ListenKey& listen_key) {
 }
 
 void Gateway::operator()(const json::Account& account) {

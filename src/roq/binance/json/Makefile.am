@@ -21,6 +21,7 @@ AUTOGEN_CPP = \
 	execution_type.cpp \
 	field.cpp \
 	filter_type.cpp \
+	listen_key.cpp \
 	mini_ticker.cpp \
 	order_status.cpp \
 	order_type.cpp \
@@ -47,6 +48,7 @@ AUTOGEN_H = \
 	execution_type.h \
 	field.h \
 	filter_type.h \
+	listen_key.h \
 	mini_ticker.h \
 	order_status.h \
 	order_type.h \

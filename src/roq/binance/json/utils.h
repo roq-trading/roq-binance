@@ -56,8 +56,8 @@ inline void update(
           result = std::chrono::milliseconds { value };
         },
         [&](double value) {
-          result = std::chrono::nanoseconds {
-            static_cast<uint64_t>(value * 1.0e9)
+          result = std::chrono::milliseconds {
+            static_cast<int64_t>(value)
           };
         },
         [&](const std::string_view& value) {

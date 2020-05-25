@@ -16,7 +16,6 @@
 
 #include "roq/core/web/socket.h"
 
-#include "roq/binance/config.h"
 #include "roq/binance/random.h"
 
 #include "roq/binance/json/parser.h"
@@ -24,12 +23,11 @@
 namespace roq {
 namespace binance {
 
-class WebSocket final
+class MarketStream final
     : public core::web::Socket::Handler,
       public json::Parser::Handler {
  public:
   struct Handler {
-    virtual void operator()(const WebSocket&) = 0;
     virtual void operator()(const json::AggTrade&) = 0;
     virtual void operator()(const json::Trade&) = 0;
     virtual void operator()(const json::MiniTicker&) = 0;
@@ -41,16 +39,17 @@ class WebSocket final
         const std::string_view& symbol,
         const json::DepthUpdate& depth_update) = 0;
   };
-  WebSocket(
+  MarketStream(
       Handler& handler,
-      const Config& config,
       Random& random,
       core::event::Base& base,
       core::event::DNSBase& dns_base,
-      core::ssl::Context& ssl_context);
+      core::ssl::Context& ssl_context,
+      uint32_t market_stream_id,
+      std::vector<std::string>&& symbols);
 
-  WebSocket(WebSocket&&) = delete;
-  WebSocket(const WebSocket&) = delete;
+  MarketStream(MarketStream&&) = delete;
+  MarketStream(const MarketStream&) = delete;
 
   bool ready() const;
 
@@ -103,6 +102,9 @@ class WebSocket final
 
  private:
   Handler& _handler;
+  // config
+  uint32_t _market_stream_id;
+  std::vector<std::string> _symbols;
   // authentication
   Random& _random;
   // web socket

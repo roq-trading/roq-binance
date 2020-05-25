@@ -1,0 +1,7 @@
+{
+"name": "ListenKey",
+"type": "comp",
+"values": [
+	{ "name": "listenKey", "type": "std::string_view" }
+]
+}

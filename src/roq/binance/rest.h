@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <string>
 #include <string_view>
 
 #include "roq/core/promise.h"
@@ -77,6 +78,7 @@ class Rest final
     core::metrics::Profile
       exchange_info,
       account,
+      listen_key,
       depth;
   } _profile;
   struct {
