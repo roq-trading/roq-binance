@@ -4,6 +4,10 @@ agg_trade.cpp
 agg_trade.h
 balance.cpp
 balance.h
+balance_update.cpp
+balance_update.h
+balances_item.cpp
+balances_item.h
 book_ticker.cpp
 book_ticker.h
 depth.cpp
@@ -18,6 +22,8 @@ event_type.cpp
 event_type.h
 exchange_info.cpp
 exchange_info.h
+execution_report.cpp
+execution_report.h
 execution_type.cpp
 execution_type.h
 field.cpp
@@ -32,8 +38,10 @@ order_status.cpp
 order_status.h
 order_type.cpp
 order_type.h
-order_update.cpp
-order_update.h
+outbound_account_info.cpp
+outbound_account_info.h
+outbound_account_position.cpp
+outbound_account_position.h
 result.cpp
 result.h
 side.cpp

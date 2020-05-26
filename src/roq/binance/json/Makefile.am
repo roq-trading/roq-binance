@@ -11,6 +11,8 @@ AUTOGEN_CPP = \
 	account.cpp \
 	agg_trade.cpp \
 	balance.cpp \
+	balance_update.cpp \
+	balances_item.cpp \
 	book_ticker.cpp \
 	depth.cpp \
 	depth_item.cpp \
@@ -18,6 +20,7 @@ AUTOGEN_CPP = \
 	error.cpp \
 	event_type.cpp \
 	exchange_info.cpp \
+	execution_report.cpp \
 	execution_type.cpp \
 	field.cpp \
 	filter_type.cpp \
@@ -25,7 +28,8 @@ AUTOGEN_CPP = \
 	mini_ticker.cpp \
 	order_status.cpp \
 	order_type.cpp \
-	order_update.cpp \
+	outbound_account_info.cpp \
+	outbound_account_position.cpp \
 	result.cpp \
 	side.cpp \
 	stream.cpp \
@@ -38,6 +42,8 @@ AUTOGEN_H = \
 	account.h \
 	agg_trade.h \
 	balance.h \
+	balance_update.h \
+	balances_item.h \
 	book_ticker.h \
 	depth.h \
 	depth_item.h \
@@ -45,6 +51,7 @@ AUTOGEN_H = \
 	error.h \
 	event_type.h \
 	exchange_info.h \
+	execution_report.h \
 	execution_type.h \
 	field.h \
 	filter_type.h \
@@ -52,7 +59,8 @@ AUTOGEN_H = \
 	mini_ticker.h \
 	order_status.h \
 	order_type.h \
-	order_update.h \
+	outbound_account_info.h \
+	outbound_account_position.h \
 	result.h \
 	side.h \
 	stream.h \
@@ -65,7 +73,8 @@ CLEANFILES = $(AUTOGEN_CPP) $(AUTOGEN_H)
 BUILT_SOURCES = $(CLEANFILES) .gitignore
 libroq_binance_json_la_SOURCES = \
 	$(AUTOGEN_CPP) \
-	parser.cpp \
+	market_stream_parser.cpp \
+	user_stream_parser.cpp \
 	utils.cpp
 
 .gitignore: Makefile.am

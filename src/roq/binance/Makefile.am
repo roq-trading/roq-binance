@@ -43,10 +43,11 @@ roq_binance_SOURCES = \
 	application.cpp \
 	config.cpp \
 	gateway.cpp \
+	market_stream.cpp \
 	options.cpp \
 	random.cpp \
 	rest.cpp \
-	market_stream.cpp \
+	user_stream.cpp \
 	main.cpp
 
 .gitignore: Makefile.am

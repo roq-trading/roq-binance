@@ -73,6 +73,7 @@ void Gateway::operator()(const StartEvent& event) {
   _rest.connection(event);
   assert(_symbols.empty());
   assert(_market_streams.empty());
+  assert(static_cast<bool>(_user_stream) == false);
   _rest.download.begin();
 }
 
@@ -81,12 +82,16 @@ void Gateway::operator()(const StopEvent& event) {
   _rest.connection(event);
   for (auto& iter : _market_streams)
     (*iter)(event);
+  if (static_cast<bool>(_user_stream))
+    (*_user_stream)(event);
 }
 
 void Gateway::operator()(const TimerEvent& event) {
   _rest.connection(event);
   for (auto& iter : _market_streams)
     (*iter)(event);
+  if (static_cast<bool>(_user_stream))
+    (*_user_stream)(event);
   _base.loop(EVLOOP_NONBLOCK);
 }
 
@@ -118,6 +123,8 @@ void Gateway::operator()(Metrics& metrics) {
   _rest.connection(metrics);
   for (auto& iter : _market_streams)
     (*iter)(metrics);
+  if (static_cast<bool>(_user_stream))
+    (*_user_stream)(metrics);
 }
 
 // market stream
@@ -300,6 +307,18 @@ void Gateway::operator()(
     const json::DepthUpdate&) {
 }
 
+void Gateway::operator()(const json::OutboundAccountInfo&) {
+}
+
+void Gateway::operator()(const json::OutboundAccountPosition&) {
+}
+
+void Gateway::operator()(const json::BalanceUpdate&) {
+}
+
+void Gateway::operator()(const json::ExecutionReport&) {
+}
+
 // rest
 
 void Gateway::operator()(const Rest&) {
@@ -424,6 +443,16 @@ void Gateway::download_listen_key() {
 }
 
 void Gateway::subscribe_user_stream() {
+  assert(_listen_key.empty() == false);
+  assert(static_cast<bool>(_user_stream) == false);
+  _user_stream = std::make_unique<UserStream>(
+      *this,
+      _random,
+      _base,
+      _dns_base,
+      _ssl_context,
+      _listen_key);
+  (*_user_stream)(StartEvent{});
 }
 
 void Gateway::download_account() {
@@ -500,6 +529,8 @@ void Gateway::operator()(const json::ExchangeInfo& exchange_info) {
 }
 
 void Gateway::operator()(const json::ListenKey& listen_key) {
+  assert(_listen_key.empty());
+  _listen_key = listen_key.listen_key;
 }
 
 void Gateway::operator()(const json::Account& account) {

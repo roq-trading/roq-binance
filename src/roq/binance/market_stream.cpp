@@ -20,7 +20,7 @@ namespace roq {
 namespace binance {
 
 namespace {
-constexpr std::string_view CONNECTION = "ws";
+constexpr std::string_view CONNECTION = "market_stream";
 
 static auto create_connection_name(uint32_t market_stream_id) {
   return fmt::format(
@@ -75,6 +75,7 @@ MarketStream::MarketStream(
           dns_base,
           ssl_context,
           core::URI(FLAGS_ws_uri),
+          std::string_view(),  // query
           std::chrono::seconds { FLAGS_ws_ping_freq_secs },
           FLAGS_decode_buffer_size,
           FLAGS_encode_buffer_size,
@@ -224,6 +225,7 @@ void MarketStream::operator()(Metrics& metrics) {
     .write(_profile.result)
     .write(_profile.agg_trade)
     .write(_profile.trade)
+    .write(_profile.mini_ticker)
     .write(_profile.book_ticker)
     .write(_profile.depth)
     .write(_profile.depth_update)
@@ -242,6 +244,9 @@ void MarketStream::operator()(const core::web::Socket::Disconnected&) {
 }
 
 void MarketStream::operator()(const core::web::Socket::Ready&) {
+  LOG(INFO)(
+      FMT_STRING("Ready (#{})"),
+      _market_stream_id);
   if (FLAGS_ws_trade_details) {
     subscribe_trade(_symbols);
   } else {
@@ -270,7 +275,7 @@ void MarketStream::parse(const std::string_view& message) {
       [&]() {
         try {
           core::json::Buffer buffer(_decode_buffer);
-          json::Parser::dispatch(
+          json::MarketStreamParser::dispatch(
               *this,
               message,
               buffer);

@@ -25,6 +25,7 @@
 #include "roq/binance/random.h"
 
 #include "roq/binance/market_stream.h"
+#include "roq/binance/user_stream.h"
 
 #include "roq/binance/rest.h"
 #include "roq/binance/rest_state.h"
@@ -41,7 +42,8 @@ namespace binance {
 class Gateway final
     : public server::Handler,
       public Rest::Handler,
-      public MarketStream::Handler {
+      public MarketStream::Handler,
+      public UserStream::Handler {
  public:
   Gateway(
       server::Dispatcher& dispatcher,
@@ -82,6 +84,12 @@ class Gateway final
   void operator()(
       const std::string_view& symbol,
       const json::DepthUpdate& depth_update) override;
+
+  // UserStream::Handler
+  void operator()(const json::OutboundAccountInfo&) override;
+  void operator()(const json::OutboundAccountPosition&) override;
+  void operator()(const json::BalanceUpdate&) override;
+  void operator()(const json::ExecutionReport&) override;
 
   // Rest::Handler
 
@@ -132,8 +140,12 @@ class Gateway final
     Rest connection;
     RestDownload download;
   } _rest;
+  // ... market streams
   uint32_t _market_stream_id = 0;
   std::list<std::unique_ptr<MarketStream> > _market_streams;
+  // ... user streams
+  std::string _listen_key;
+  std::unique_ptr<UserStream> _user_stream;
   // reference data
   std::vector<std::string> _symbols;
   // market data

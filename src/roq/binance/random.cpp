@@ -13,13 +13,6 @@
 namespace roq {
 namespace binance {
 
-static auto create_timestamp_secs(
-    std::chrono::seconds value) {
-  return fmt::format(
-      FMT_STRING("{}"),
-      value.count());
-}
-
 Random::Random(
     const std::string_view& key,
     const std::string_view& secret)

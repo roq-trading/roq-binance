@@ -11,7 +11,12 @@
 #include "roq/core/charconv/datetime.h"
 
 #include "roq/binance/json/event_type.h"
+#include "roq/binance/json/execution_type.h"
+#include "roq/binance/json/order_status.h"
+#include "roq/binance/json/order_type.h"
+#include "roq/binance/json/side.h"
 #include "roq/binance/json/symbol_status.h"
+#include "roq/binance/json/time_in_force.h"
 
 namespace roq {
 namespace binance {
@@ -34,7 +39,47 @@ inline void update(
 
 template <>
 inline void update(
+    ExecutionType& result,
+    const core::json::value_t& value) {
+  using result_type = std::remove_reference<decltype(result)>::type;
+  result = result_type(core::json::get<std::string_view>(value));
+}
+
+template <>
+inline void update(
+    OrderStatus& result,
+    const core::json::value_t& value) {
+  using result_type = std::remove_reference<decltype(result)>::type;
+  result = result_type(core::json::get<std::string_view>(value));
+}
+
+template <>
+inline void update(
+    OrderType& result,
+    const core::json::value_t& value) {
+  using result_type = std::remove_reference<decltype(result)>::type;
+  result = result_type(core::json::get<std::string_view>(value));
+}
+
+template <>
+inline void update(
+    Side& result,
+    const core::json::value_t& value) {
+  using result_type = std::remove_reference<decltype(result)>::type;
+  result = result_type(core::json::get<std::string_view>(value));
+}
+
+template <>
+inline void update(
     SymbolStatus& result,
+    const core::json::value_t& value) {
+  using result_type = std::remove_reference<decltype(result)>::type;
+  result = result_type(core::json::get<std::string_view>(value));
+}
+
+template <>
+inline void update(
+    TimeInForce& result,
     const core::json::value_t& value) {
   using result_type = std::remove_reference<decltype(result)>::type;
   result = result_type(core::json::get<std::string_view>(value));

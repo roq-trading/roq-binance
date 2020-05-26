@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2020, Hans Erik Thrane */
 
-#include "roq/binance/json/parser.h"
+#include "roq/binance/json/market_stream_parser.h"
 
 #include <cctype>
 #include <string>
@@ -16,8 +16,8 @@ namespace roq {
 namespace binance {
 namespace json {
 
-void Parser::dispatch(
-    Parser::Handler& handler,
+void MarketStreamParser::dispatch(
+    MarketStreamParser::Handler& handler,
     const std::string_view& message,
     core::json::Buffer& buffer) {
   int64_t id = -1;

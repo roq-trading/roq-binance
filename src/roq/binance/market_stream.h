@@ -18,14 +18,14 @@
 
 #include "roq/binance/random.h"
 
-#include "roq/binance/json/parser.h"
+#include "roq/binance/json/market_stream_parser.h"
 
 namespace roq {
 namespace binance {
 
 class MarketStream final
     : public core::web::Socket::Handler,
-      public json::Parser::Handler {
+      public json::MarketStreamParser::Handler {
  public:
   struct Handler {
     virtual void operator()(const json::AggTrade&) = 0;
@@ -57,6 +57,9 @@ class MarketStream final
   void operator()(const StopEvent&);
   void operator()(const TimerEvent&);
 
+  void operator()(Metrics& metrics);
+
+ protected:
   template <typename T>
   void subscribe_agg_trade(const T& symbols);
 
@@ -71,8 +74,6 @@ class MarketStream final
 
   template <typename T>
   void subscribe_depth(const T& symbols);
-
-  void operator()(Metrics& metrics);
 
  protected:
   void operator()(const core::web::Socket::Connected&) override;

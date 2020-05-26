@@ -220,10 +220,8 @@ void Rest::get(
         [&]() {
       try {
         response.expect(core::http::Status::OK);
-        core::json::Buffer buffer(_decode_buffer);
         auto listen_key = core::json::Parser::create<json::ListenKey>(
-            response.body(),
-            buffer);
+            response.body());
         VLOG(1)(
             FMT_STRING(R"(listen_key={})"),
             listen_key);

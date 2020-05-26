@@ -15,23 +15,20 @@
 #include "roq/binance/json/depth_update.h"
 #include "roq/binance/json/mini_ticker.h"
 #include "roq/binance/json/trade.h"
-/*
-#include "roq/binance/json/account_update.h"
-#include "roq/binance/json/balance_update.h"
-#include "roq/binance/json/execution_report.h"
-*/
 
 namespace roq {
 namespace binance {
 namespace json {
 
-struct Parser final {
+struct MarketStreamParser final {
   struct Handler {
     // response
+
     virtual void operator()(int32_t, const Error&) = 0;
     virtual void operator()(int32_t, const Result&) = 0;
 
     // update
+
     virtual void operator()(const AggTrade&) = 0;
     virtual void operator()(const Trade&) = 0;
 
@@ -45,12 +42,6 @@ struct Parser final {
     virtual void operator()(
         const std::string_view& symbol,
         const DepthUpdate& depth_update) = 0;
-
-    /*
-    virtual void operator()(const AccountUpdate&) = 0;
-    virtual void operator()(const BalanceUpdate&) = 0;
-    virtual void operator()(const ExecutionReport&) = 0;
-    */
   };
 
   static void dispatch(
