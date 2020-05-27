@@ -113,6 +113,8 @@ class Gateway final
   void subscribe_user_stream();
   void download_account();
 
+  void refresh_listen_key();
+
   template <typename T>
   void enqueue(
       const T& event,
@@ -145,6 +147,7 @@ class Gateway final
   std::list<std::unique_ptr<MarketStream> > _market_streams;
   // ... user streams
   std::string _listen_key;
+  std::chrono::nanoseconds _listen_key_refresh = {};
   std::unique_ptr<UserStream> _user_stream;
   // reference data
   std::vector<std::string> _symbols;

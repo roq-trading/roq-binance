@@ -24,6 +24,8 @@ constexpr auto DEFAULT_MULTIPLIER = double{1.0};
 
 constexpr auto TOLERANCE = double{1.0e-10};
 
+constexpr auto DEFAULT_LISTEN_KEY_REFRESH_SECS = uint32_t{2};
+
 template <typename T>
 static bool mbp_update(
     auto& data,
@@ -92,6 +94,7 @@ void Gateway::operator()(const TimerEvent& event) {
     (*iter)(event);
   if (static_cast<bool>(_user_stream))
     (*_user_stream)(event);
+  refresh_listen_key();
   _base.loop(EVLOOP_NONBLOCK);
 }
 
@@ -529,11 +532,46 @@ void Gateway::operator()(const json::ExchangeInfo& exchange_info) {
 }
 
 void Gateway::operator()(const json::ListenKey& listen_key) {
-  assert(_listen_key.empty());
-  _listen_key = listen_key.listen_key;
+  auto& value = listen_key.listen_key;
+  auto same = _listen_key.compare(value) == 0;
+  if (same) {
+    LOG(INFO)("Listen key has been refreshed!");
+  } else if (_listen_key.empty()) {
+    _listen_key = value;
+    LOG(INFO)(
+        FMT_STRING(R"(Listen key has been acquired (value="{}"))"),
+        _listen_key);
+  } else {
+    LOG(FATAL)("Unexpected");
+    // XXX should we recreate _user_stream ?
+  }
+  auto now = core::get_system_clock();
+  _listen_key_refresh = now
+    + std::chrono::seconds { FLAGS_rest_listen_key_refresh_secs };
 }
 
 void Gateway::operator()(const json::Account& account) {
+}
+
+void Gateway::refresh_listen_key() {
+  auto now = core::get_system_clock();
+  if (_listen_key_refresh.count() == 0 ||
+      now < _listen_key_refresh)
+    return;
+  LOG(INFO)("Refreshing listen key...");
+  _listen_key_refresh = now
+    + std::chrono::seconds { FLAGS_rest_listen_key_refresh_secs };
+  _rest.connection.get<json::ListenKey>(
+      [this](auto& promise) {
+    try {
+      (*this)(promise.get());
+    } catch (NetworkError&) {
+      LOG(WARNING)("Rescheduling listen key refresh!");
+      auto now = core::get_system_clock();
+      _listen_key_refresh = now
+        + std::chrono::seconds { DEFAULT_LISTEN_KEY_REFRESH_SECS };
+    }
+  });
 }
 
 template <typename T>

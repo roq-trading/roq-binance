@@ -38,6 +38,10 @@ DEFINE_uint32(rest_depth_limit,
     100,
     "depth limit (levels)");
 
+DEFINE_uint32(rest_listen_key_refresh_secs,
+    1800,
+    "listen key refresh period (seconds)");
+
 DEFINE_string(ws_uri,
     "wss://testnet.binance.com/realtime",
     "WebSocket end-point (URI)");
