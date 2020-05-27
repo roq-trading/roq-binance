@@ -10,6 +10,8 @@ balances_item.cpp
 balances_item.h
 book_ticker.cpp
 book_ticker.h
+cancel_order.cpp
+cancel_order.h
 depth.cpp
 depth.h
 depth_item.cpp
@@ -28,12 +30,16 @@ execution_type.cpp
 execution_type.h
 field.cpp
 field.h
+fill.cpp
+fill.h
 filter_type.cpp
 filter_type.h
 listen_key.cpp
 listen_key.h
 mini_ticker.cpp
 mini_ticker.h
+new_order.cpp
+new_order.h
 order_status.cpp
 order_status.h
 order_type.cpp

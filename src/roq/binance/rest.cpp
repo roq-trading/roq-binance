@@ -78,6 +78,8 @@ Rest::Rest(
         .account = create_profile("account"),
         .listen_key = create_profile("listen_key"),
         .depth = create_profile("depth"),
+        .new_order = create_profile("new_order"),
+        .cancel_order = create_profile("cancel_order"),
       },
       _latency {
         .ping = create_latency("ping"),
@@ -110,6 +112,8 @@ void Rest::operator()(Metrics& metrics) {
     .write(_profile.account)
     .write(_profile.listen_key)
     .write(_profile.depth)
+    .write(_profile.new_order)
+    .write(_profile.cancel_order)
     // latency
     .write(_latency.ping);
 }
@@ -242,6 +246,7 @@ void Rest::get(
 template <>
 void Rest::get(
     std::function<void(const core::Promise<json::Depth>&)>&& callback) {
+  assert(false);  // XXX not ready
   constexpr auto method = core::http::Method::GET;
   constexpr std::string_view path = "/api/v3/depth?symbol=BTCUSDT";  // XXX DEBUG
   _connection.request(
@@ -256,13 +261,13 @@ void Rest::get(
       try {
         response.expect(core::http::Status::OK);
         core::json::Buffer buffer(_decode_buffer);
-        auto products = core::json::Parser::create<json::Depth>(
+        auto depth = core::json::Parser::create<json::Depth>(
             response.body(),
             buffer);
         VLOG(1)(
             FMT_STRING(R"(depth={})"),
-            products);
-        core::Promise<json::Depth> promise(products);
+            depth);
+        core::Promise<json::Depth> promise(depth);
         callback(promise);
       } catch (NetworkError& e) {
         LOG(WARNING)(
@@ -270,6 +275,87 @@ void Rest::get(
             typeid(e).name(),
             e.what());
         core::Promise<json::Depth> promise(std::current_exception());
+        callback(promise);
+      }
+    });
+  });
+}
+
+void Rest::create_order(
+    const CreateOrder& create_order,
+    const std::string_view& cl_ord_id,
+    std::function<void(const core::Promise<json::NewOrder>&)>&& callback) {
+  constexpr auto method = core::http::Method::POST;
+  constexpr std::string_view path = "/api/v3/order";
+  auto headers = fmt::format(
+      FMT_STRING("X-MBX-APIKEY: {}\r\n"),
+      _api_key);
+  _connection.request(
+      method,
+      path,
+      std::string_view(),  // query
+      headers,
+      std::string_view(),  // body
+      [this, callback](auto& response) {
+    _profile.new_order(
+        [&]() {
+      try {
+        response.expect(core::http::Status::OK);
+        core::json::Buffer buffer(_decode_buffer);
+        auto new_order = core::json::Parser::create<json::NewOrder>(
+            response.body(),
+            buffer);
+        VLOG(1)(
+            FMT_STRING(R"(new_order={})"),
+            new_order);
+        core::Promise<json::NewOrder> promise(new_order);
+        callback(promise);
+      } catch (NetworkError& e) {
+        LOG(WARNING)(
+            FMT_STRING(R"(Exception type={}, what="{}")"),
+            typeid(e).name(),
+            e.what());
+        core::Promise<json::NewOrder> promise(std::current_exception());
+        callback(promise);
+      }
+    });
+  });
+}
+
+void Rest::cancel_order(
+    const CancelOrder& cancel_order,
+    const std::string_view& request_id,
+    const server::OMS_Order& order,
+    std::function<void(const core::Promise<json::CancelOrder>&)>&& callback) {
+  constexpr auto method = core::http::Method::DELETE;
+  constexpr std::string_view path = "/api/v3/order";
+  auto headers = fmt::format(
+      FMT_STRING("X-MBX-APIKEY: {}\r\n"),
+      _api_key);
+  _connection.request(
+      method,
+      path,
+      std::string_view(),  // query
+      headers,
+      std::string_view(),  // body
+      [this, callback](auto& response) {
+    _profile.cancel_order(
+        [&]() {
+      try {
+        response.expect(core::http::Status::OK);
+        auto cancel_order = core::json::Parser::create<json::CancelOrder>(
+            response.body());
+        VLOG(1)(
+            FMT_STRING(R"(cancel_order={})"),
+            cancel_order);
+        core::Promise<json::CancelOrder> promise(cancel_order);
+        callback(promise);
+      } catch (NetworkError& e) {
+        LOG(WARNING)(
+            FMT_STRING(R"(Exception type={}, what="{}")"),
+            typeid(e).name(),
+            e.what());
+        core::Promise<json::CancelOrder> promise(std::current_exception());
         callback(promise);
       }
     });

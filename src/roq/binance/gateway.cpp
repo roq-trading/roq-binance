@@ -310,13 +310,38 @@ void Gateway::operator()(
     const json::DepthUpdate&) {
 }
 
-void Gateway::operator()(const json::OutboundAccountInfo&) {
+void Gateway::operator()(
+    const json::OutboundAccountInfo& outbound_account_info) {
+  for (auto& item : outbound_account_info.balances) {
+    FundsUpdate funds_update {
+      .account = _account,
+      .currency = item.asset,
+      .balance = item.free_amount,
+      .hold = item.locked_amount,
+    };
+    enqueue(
+        funds_update,
+        true);
+  }
 }
 
-void Gateway::operator()(const json::OutboundAccountPosition&) {
+void Gateway::operator()(
+    const json::OutboundAccountPosition& outbound_account_position) {
+  for (auto& item : outbound_account_position.balances) {
+    FundsUpdate funds_update {
+      .account = _account,
+      .currency = item.asset,
+      .balance = item.free_amount,
+      .hold = item.locked_amount,
+    };
+    enqueue(
+        funds_update,
+        true);
+  }
 }
 
 void Gateway::operator()(const json::BalanceUpdate&) {
+  // contains delta (changes) -- we're not going to use here
 }
 
 void Gateway::operator()(const json::ExecutionReport&) {
@@ -551,6 +576,17 @@ void Gateway::operator()(const json::ListenKey& listen_key) {
 }
 
 void Gateway::operator()(const json::Account& account) {
+  for (auto& item : account.balances) {
+    FundsUpdate funds_update {
+      .account = _account,
+      .currency = item.asset,
+      .balance = item.free,
+      .hold = item.locked,
+    };
+    enqueue(
+        funds_update,
+        true);
+  }
 }
 
 void Gateway::refresh_listen_key() {

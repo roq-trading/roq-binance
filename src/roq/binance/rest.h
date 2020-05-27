@@ -23,6 +23,9 @@
 #include "roq/binance/config.h"
 #include "roq/binance/random.h"
 
+#include "roq/binance/json/cancel_order.h"
+#include "roq/binance/json/new_order.h"
+
 namespace roq {
 namespace binance {
 
@@ -55,6 +58,17 @@ class Rest final
   template <typename T>
   void get(std::function<void(const core::Promise<T>&)>&& callback);
 
+  void create_order(
+      const CreateOrder& create_order,
+      const std::string_view& cl_ord_id,
+      std::function<void(const core::Promise<json::NewOrder>&)>&& callback);
+
+  void cancel_order(
+      const CancelOrder& cancel_order,
+      const std::string_view& request_id,
+      const server::OMS_Order& order,
+      std::function<void(const core::Promise<json::CancelOrder>&)>&& callback);
+
  protected:
   void operator()(const core::web::Client::Connected&);
   void operator()(const core::web::Client::Disconnected&);
@@ -79,7 +93,9 @@ class Rest final
       exchange_info,
       account,
       listen_key,
-      depth;
+      depth,
+      new_order,
+      cancel_order;
   } _profile;
   struct {
     core::metrics::Latency

@@ -14,6 +14,7 @@ AUTOGEN_CPP = \
 	balance_update.cpp \
 	balances_item.cpp \
 	book_ticker.cpp \
+	cancel_order.cpp \
 	depth.cpp \
 	depth_item.cpp \
 	depth_update.cpp \
@@ -23,9 +24,11 @@ AUTOGEN_CPP = \
 	execution_report.cpp \
 	execution_type.cpp \
 	field.cpp \
+	fill.cpp \
 	filter_type.cpp \
 	listen_key.cpp \
 	mini_ticker.cpp \
+	new_order.cpp \
 	order_status.cpp \
 	order_type.cpp \
 	outbound_account_info.cpp \
@@ -45,6 +48,7 @@ AUTOGEN_H = \
 	balance_update.h \
 	balances_item.h \
 	book_ticker.h \
+	cancel_order.h \
 	depth.h \
 	depth_item.h \
 	depth_update.h \
@@ -54,9 +58,11 @@ AUTOGEN_H = \
 	execution_report.h \
 	execution_type.h \
 	field.h \
+	fill.h \
 	filter_type.h \
 	listen_key.h \
 	mini_ticker.h \
+	new_order.h \
 	order_status.h \
 	order_type.h \
 	outbound_account_info.h \
