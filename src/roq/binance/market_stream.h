@@ -59,6 +59,10 @@ class MarketStream final
 
   void operator()(Metrics& metrics);
 
+  size_t capacity() const;
+
+  void subscribe(const std::vector<std::string>& symbols);
+
  protected:
   template <typename T>
   void subscribe_agg_trade(const T& symbols);

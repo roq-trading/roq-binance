@@ -117,6 +117,13 @@ void MarketStream::operator()(const TimerEvent& event) {
   _connection.refresh(event.now);
 }
 
+size_t MarketStream::capacity() const {
+  assert(FLAGS_ws_max_subscriptions > 0);
+  size_t max_length = FLAGS_ws_max_subscriptions / 4;
+  assert(max_length >= _symbols.size());
+  return max_length - _symbols.size();
+}
+
 template <>
 void MarketStream::subscribe_agg_trade(
     const std::vector<std::string>& symbols) {
@@ -255,6 +262,29 @@ void MarketStream::operator()(const core::web::Socket::Ready&) {
   subscribe_mini_ticker(_symbols);
   subscribe_book_ticker(_symbols);
   subscribe_depth(_symbols);
+}
+
+void MarketStream::subscribe(const std::vector<std::string>& symbols) {
+  assert(symbols.size() <= capacity());
+  for (auto& symbol : symbols) {
+#if !defined(NDEBUG)
+    auto iter = std::find(
+        _symbols.begin(),
+        _symbols.end(),
+        symbol);
+    LOG_IF(FATAL, iter != _symbols.end())("Unexpected");
+#endif
+    _symbols.emplace_back(symbol);
+  }
+  // only subscribe incremental symbols
+  if (FLAGS_ws_trade_details) {
+    subscribe_trade(symbols);
+  } else {
+    subscribe_agg_trade(symbols);
+  }
+  subscribe_mini_ticker(symbols);
+  subscribe_book_ticker(symbols);
+  subscribe_depth(symbols);
 }
 
 void MarketStream::operator()(const core::web::Socket::Close&) {

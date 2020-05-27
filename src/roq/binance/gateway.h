@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -156,7 +157,7 @@ class Gateway final
   std::chrono::nanoseconds _listen_key_refresh = {};
   std::unique_ptr<UserStream> _user_stream;
   // reference data
-  std::vector<std::string> _symbols;
+  std::unordered_set<std::string> _symbols;
   // market data
   GatewayStatus _market_data_status = GatewayStatus::DISCONNECTED;
   core::page_aligned_vector<MBPUpdate> _bid, _ask;

@@ -334,7 +334,7 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(
-    const std::string_view& symbol,
+    const std::string_view&,
     const json::DepthUpdate&) {
 }
 
@@ -466,14 +466,18 @@ void Gateway::subscribe_market_streams() {
     return;
   assert(FLAGS_ws_max_subscriptions > 0);
   size_t max_length = FLAGS_ws_max_subscriptions / 4;
+  auto iter = _symbols.begin();
   for (size_t major = 0; major < _symbols.size(); major += max_length) {
     auto minor_length = std::min(
         _symbols.size() - major,
         max_length);
     assert(minor_length > 0);
-    std::vector<std::string> symbols(minor_length);
-    for (size_t minor = 0; minor < minor_length; ++minor)
-      symbols[minor] = _symbols[major + minor];
+    std::vector<std::string> symbols;
+    symbols.reserve(max_length);
+    for (size_t minor = 0; minor < minor_length; ++minor, ++iter) {
+      assert(iter != _symbols.end());
+      symbols.emplace_back(*iter);
+    }
     auto market_stream_ptr = std::make_unique<MarketStream>(
         *this,
         _random,
@@ -548,7 +552,7 @@ void Gateway::operator()(const json::ExchangeInfo& exchange_info) {
         symbol.end(),
         symbol.begin(),
         [](auto c) { return std::tolower(c); });
-    _symbols.push_back(std::move(symbol));
+    _symbols.emplace(std::move(symbol));
     ReferenceData reference_data {
       .exchange = FLAGS_exchange,
       .symbol = item.symbol,
