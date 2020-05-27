@@ -360,6 +360,7 @@ void Rest::cancel_order(
     const std::string_view& request_id,
     const server::OMS_Order& order,
     std::function<void(const core::Promise<json::CancelOrder>&)>&& callback) {
+  (void)cancel_order;
   constexpr auto method = core::http::Method::DELETE;
   constexpr std::string_view path = "/api/v3/order";
   auto timestamp = core::get_realtime_clock();

@@ -372,7 +372,30 @@ void Gateway::operator()(const json::BalanceUpdate&) {
   // contains delta (changes) -- we're not going to use here
 }
 
-void Gateway::operator()(const json::ExecutionReport&) {
+void Gateway::operator()(const json::ExecutionReport& execution_report) {
+  server::OMS_Lookup order_lookup {
+    .symbol = execution_report.symbol,
+    .side = json::map(execution_report.side),
+    .status = json::map(execution_report.current_order_status),
+    .price = execution_report.price,
+    .remaining_quantity = std::numeric_limits<double>::quiet_NaN(),
+    .traded_quantity = execution_report.cumulative_filled_quantity,
+    .timestamp = execution_report.transaction_time,  // XXX transact_time?
+    .external_order_id = execution_report.client_order_id,
+  };
+  auto found = _dispatcher.find_order(
+      execution_report.original_client_order_id,
+      execution_report.client_order_id,
+      order_lookup,
+      [&](const auto& order, auto& result) {
+        // XXX IMPLEMENT
+      });
+  if (found == false) {
+    LOG(WARNING)("*** EXTERNAL ORDER ***");
+    LOG(WARNING)(
+        FMT_STRING("execution_report={}"),
+        execution_report);
+  }
 }
 
 // rest

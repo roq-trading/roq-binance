@@ -118,6 +118,34 @@ inline void update(
       value);
 }
 
+inline roq::OrderStatus map(json::OrderStatus side) {
+  switch (side) {
+    case json::OrderStatus::UNDEFINED:        break;
+    case json::OrderStatus::UNKNOWN:          break;
+    case json::OrderStatus::NEW:              return roq::OrderStatus::WORKING;
+    case json::OrderStatus::PARTIALLY_FILLED: return roq::OrderStatus::WORKING;
+    case json::OrderStatus::CANCELED:         return roq::OrderStatus::CANCELED;
+    case json::OrderStatus::PENDING_CANCEL:   return roq::OrderStatus::PENDING;
+    case json::OrderStatus::REJECTED:         return roq::OrderStatus::REJECTED;
+    case json::OrderStatus::EXPIRED:          break;
+  }
+  return roq::OrderStatus::UNDEFINED;
+}
+
+inline json::OrderStatus map(roq::OrderStatus side) {
+  switch (side) {
+    case roq::OrderStatus::UNDEFINED: break;
+    case roq::OrderStatus::SENT:      break;
+    case roq::OrderStatus::REJECTED:  return json::OrderStatus::REJECTED;
+    case roq::OrderStatus::ACCEPTED:  break;
+    case roq::OrderStatus::PENDING:   break;
+    case roq::OrderStatus::WORKING:   return json::OrderStatus::NEW;
+    case roq::OrderStatus::COMPLETED: break;  // XXX NO COMPLETED ???
+    case roq::OrderStatus::CANCELED:  return json::OrderStatus::CANCELED;
+  }
+  return json::OrderStatus::UNDEFINED;
+}
+
 inline roq::OrderType map(json::OrderType side) {
   switch (side) {
     case json::OrderType::UNDEFINED:         break;
