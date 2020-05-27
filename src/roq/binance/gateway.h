@@ -34,6 +34,9 @@
 #include "roq/binance/json/exchange_info.h"
 #include "roq/binance/json/listen_key.h"
 
+#include "roq/binance/json/cancel_order.h"
+#include "roq/binance/json/new_order.h"
+
 // json (inbound)
 
 namespace roq {
@@ -94,6 +97,9 @@ class Gateway final
   // Rest::Handler
 
   void operator()(const Rest&) override;
+
+  void operator()(const json::NewOrder&);
+  void operator()(const json::CancelOrder&);
 
  private:
   void operator()(const json::ExchangeInfo&);

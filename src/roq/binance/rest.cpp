@@ -287,6 +287,39 @@ void Rest::create_order(
     std::function<void(const core::Promise<json::NewOrder>&)>&& callback) {
   constexpr auto method = core::http::Method::POST;
   constexpr std::string_view path = "/api/v3/order";
+  auto timestamp = core::get_realtime_clock();
+  // XXX use encode buffer
+  auto message = fmt::format(
+      FMT_STRING(
+        R"({{)"
+        R"("symbol":"{}",)"
+        R"("side":"{}",)"
+        R"("type":"{}",)"
+        R"("timeInForce":"{}",)"
+        R"("quantity":{},)"
+        R"("quoteOrderQty":{},)"  // XXX ???
+        R"("price":{},)"
+        R"("newClientOrderId":"{}")"
+        R"("stopPrice":{},)"  // XXX ???
+        R"("icebergQty":{},)"  // XXX ???
+        R"("recvWindow":{},)"
+        R"("timestamp":{})"
+        R"(}})"),
+      create_order.symbol,
+      json::map(create_order.side).as_raw_text(),
+      json::map(create_order.order_type).as_raw_text(),
+      json::map(create_order.time_in_force).as_raw_text(),
+      create_order.quantity,
+      double{0.0},
+      create_order.price,
+      cl_ord_id,
+      double{0.0},
+      double{0.0},
+      FLAGS_rest_recv_window_secs * 1000,
+      timestamp.count());
+  DLOG(INFO)(
+      FMT_STRING(R"(body="{}")"),
+      message);
   auto headers = fmt::format(
       FMT_STRING("X-MBX-APIKEY: {}\r\n"),
       _api_key);
@@ -329,6 +362,25 @@ void Rest::cancel_order(
     std::function<void(const core::Promise<json::CancelOrder>&)>&& callback) {
   constexpr auto method = core::http::Method::DELETE;
   constexpr std::string_view path = "/api/v3/order";
+  auto timestamp = core::get_realtime_clock();
+  // XXX use encode buffer
+  auto message = fmt::format(
+      FMT_STRING(
+        R"({{)"
+        R"("symbol":"{}",)"
+        R"("origClientOrderId":"{}")"
+        R"("newClientOrderId":"{}")"
+        R"("recvWindow":{},)"
+        R"("timestamp":{})"
+        R"(}})"),
+      order.symbol,
+      order.external_order_id,
+      request_id,
+      FLAGS_rest_recv_window_secs * 1000,
+      timestamp.count());
+  DLOG(INFO)(
+      FMT_STRING(R"(body="{}")"),
+      message);
   auto headers = fmt::format(
       FMT_STRING("X-MBX-APIKEY: {}\r\n"),
       _api_key);

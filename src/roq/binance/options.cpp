@@ -42,6 +42,10 @@ DEFINE_uint32(rest_listen_key_refresh_secs,
     1800,
     "listen key refresh period (seconds)");
 
+DEFINE_uint32(rest_recv_window_secs,
+    5000,
+    "receive window (seconds)");
+
 DEFINE_string(ws_uri,
     "wss://testnet.binance.com/realtime",
     "WebSocket end-point (URI)");

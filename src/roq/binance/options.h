@@ -18,6 +18,7 @@ DECLARE_uint32(rest_rate_limit_max_requests);
 
 DECLARE_uint32(rest_depth_limit);
 DECLARE_uint32(rest_listen_key_refresh_secs);
+DECLARE_uint32(rest_recv_window_secs);
 
 DECLARE_string(ws_uri);
 DECLARE_uint32(ws_ping_freq_secs);

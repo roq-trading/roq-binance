@@ -105,6 +105,20 @@ void Gateway::operator()(
     const CreateOrderEvent& event,
     const std::string_view& request_id,
     uint32_t gateway_order_id) {
+  (void) gateway_order_id;  // avoid warning
+  _rest.connection.create_order(
+      event.create_order,
+      request_id,
+      [this](auto& promise) {
+    try {
+      (*this)(promise.get());
+    } catch (NetworkError& e) {
+      // XXX send ack failure
+      LOG(FATAL)(
+          FMT_STRING(R"(Unexpected what="{}")"),
+          e.what());
+    }
+  });
 }
 
 void Gateway::operator()(
@@ -120,6 +134,20 @@ void Gateway::operator()(
     const CancelOrderEvent& event,
     const std::string_view& request_id,
     const server::OMS_Order& order) {
+  _rest.connection.cancel_order(
+      event.cancel_order,
+      request_id,
+      order,
+      [this](auto& promise) {
+    try {
+      (*this)(promise.get());
+    } catch (NetworkError& e) {
+      // XXX send ack failure
+      LOG(FATAL)(
+          FMT_STRING(R"(Unexpected what="{}")"),
+          e.what());
+    }
+  });
 }
 
 void Gateway::operator()(Metrics& metrics) {
@@ -354,6 +382,11 @@ void Gateway::operator()(const Rest&) {
     _rest.download.bump();
 }
 
+void Gateway::operator()(const json::NewOrder&) {
+}
+
+void Gateway::operator()(const json::CancelOrder&) {
+}
 
 // UTILS:
 
