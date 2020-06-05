@@ -95,15 +95,15 @@ bool UserStream::ready() const {
   return _connection.ready();
 }
 
-void UserStream::operator()(const StartEvent&) {
+void UserStream::operator()(const server::StartEvent&) {
   _connection.start();
 }
 
-void UserStream::operator()(const StopEvent&) {
+void UserStream::operator()(const server::StopEvent&) {
   _connection.stop();
 }
 
-void UserStream::operator()(const TimerEvent& event) {
+void UserStream::operator()(const server::TimerEvent& event) {
   _connection.refresh(event.now);
 }
 

@@ -70,7 +70,7 @@ Gateway::Gateway(
       "Orders will *NOT* be cancelled on disconnect");
 }
 
-void Gateway::operator()(const StartEvent& event) {
+void Gateway::operator()(const server::StartEvent& event) {
   LOG(INFO)("Starting the gateway...");
   _rest.connection(event);
   assert(_symbols.empty());
@@ -79,7 +79,7 @@ void Gateway::operator()(const StartEvent& event) {
   _rest.download.begin();
 }
 
-void Gateway::operator()(const StopEvent& event) {
+void Gateway::operator()(const server::StopEvent& event) {
   LOG(INFO)("Stopping the gateway...");
   _rest.connection(event);
   for (auto& iter : _market_streams)
@@ -88,7 +88,7 @@ void Gateway::operator()(const StopEvent& event) {
     (*_user_stream)(event);
 }
 
-void Gateway::operator()(const TimerEvent& event) {
+void Gateway::operator()(const server::TimerEvent& event) {
   _rest.connection(event);
   for (auto& iter : _market_streams)
     (*iter)(event);
@@ -98,7 +98,7 @@ void Gateway::operator()(const TimerEvent& event) {
   _base.loop(EVLOOP_NONBLOCK);
 }
 
-void Gateway::operator()(const ConnectionStatusEvent&) {
+void Gateway::operator()(const server::ConnectionStatusEvent&) {
 }
 
 void Gateway::operator()(
@@ -167,11 +167,8 @@ void Gateway::operator()(const json::AggTrade& agg_trade) {
     .quantity = agg_trade.quantity,
     .trade_id = {},
   };
-  core::view_t view(
-      trade.trade_id,
-      trade.trade_id + sizeof(trade.trade_id));
   core::charconv::to_string(
-      std::back_inserter(view),
+      std::back_inserter(trade.trade_id),
       agg_trade.agg_trade_id);
   TradeSummary trade_summary {
     .exchange = FLAGS_exchange,
@@ -197,11 +194,8 @@ void Gateway::operator()(const json::Trade& trade) {
     .quantity = trade.quantity,
     .trade_id = {},
   };
-  core::view_t view(
-      trade_.trade_id,
-      trade_.trade_id + sizeof(trade_.trade_id));
   core::charconv::to_string(
-      std::back_inserter(view),
+      std::back_inserter(trade_.trade_id),
       trade.trade_id);
   TradeSummary trade_summary {
     .exchange = FLAGS_exchange,
@@ -509,7 +503,7 @@ void Gateway::subscribe_market_streams() {
         _ssl_context,
         ++_market_stream_id,
         std::move(symbols));
-    (*market_stream_ptr)(StartEvent{});
+    (*market_stream_ptr)(server::StartEvent{});
     _market_streams.emplace_back(std::move(market_stream_ptr));
   }
 }
@@ -540,7 +534,7 @@ void Gateway::subscribe_user_stream() {
       _dns_base,
       _ssl_context,
       _listen_key);
-  (*_user_stream)(StartEvent{});
+  (*_user_stream)(server::StartEvent{});
 }
 
 void Gateway::download_account() {

@@ -105,15 +105,15 @@ bool MarketStream::ready() const {
   return _connection.ready();
 }
 
-void MarketStream::operator()(const StartEvent&) {
+void MarketStream::operator()(const server::StartEvent&) {
   _connection.start();
 }
 
-void MarketStream::operator()(const StopEvent&) {
+void MarketStream::operator()(const server::StopEvent&) {
   _connection.stop();
 }
 
-void MarketStream::operator()(const TimerEvent& event) {
+void MarketStream::operator()(const server::TimerEvent& event) {
   _connection.refresh(event.now);
 }
 

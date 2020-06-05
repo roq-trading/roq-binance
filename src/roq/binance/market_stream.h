@@ -16,6 +16,8 @@
 
 #include "roq/core/web/socket.h"
 
+#include "roq/server.h"
+
 #include "roq/binance/random.h"
 
 #include "roq/binance/json/market_stream_parser.h"
@@ -53,9 +55,9 @@ class MarketStream final
 
   bool ready() const;
 
-  void operator()(const StartEvent&);
-  void operator()(const StopEvent&);
-  void operator()(const TimerEvent&);
+  void operator()(const server::StartEvent&);
+  void operator()(const server::StopEvent&);
+  void operator()(const server::TimerEvent&);
 
   void operator()(Metrics& metrics);
 
