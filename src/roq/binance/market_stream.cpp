@@ -7,7 +7,6 @@
 #include <cassert>
 #include <utility>
 
-#include "roq/builtins.h"
 #include "roq/patterns.h"
 
 #include "roq/core/clock.h"
