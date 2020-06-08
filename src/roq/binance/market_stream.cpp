@@ -222,23 +222,23 @@ void MarketStream::subscribe_depth(
   _connection.send_text(message);
 }
 
-void MarketStream::operator()(Metrics& metrics) {
-  metrics
+void MarketStream::operator()(metrics::Writer& writer) {
+  writer
     // counter
-    .write(_counter.disconnect)
+    .write(_counter.disconnect, metrics::COUNTER)
     // profile
-    .write(_profile.parse)
-    .write(_profile.error)
-    .write(_profile.result)
-    .write(_profile.agg_trade)
-    .write(_profile.trade)
-    .write(_profile.mini_ticker)
-    .write(_profile.book_ticker)
-    .write(_profile.depth)
-    .write(_profile.depth_update)
+    .write(_profile.parse, metrics::PROFILE)
+    .write(_profile.error, metrics::PROFILE)
+    .write(_profile.result, metrics::PROFILE)
+    .write(_profile.agg_trade, metrics::PROFILE)
+    .write(_profile.trade, metrics::PROFILE)
+    .write(_profile.mini_ticker, metrics::PROFILE)
+    .write(_profile.book_ticker, metrics::PROFILE)
+    .write(_profile.depth, metrics::PROFILE)
+    .write(_profile.depth_update, metrics::PROFILE)
     // latency
-    .write(_latency.ping)
-    .write(_latency.heartbeat);
+    .write(_latency.ping, metrics::LATENCY)
+    .write(_latency.heartbeat, metrics::LATENCY);
 }
 
 void MarketStream::operator()(const core::web::Socket::Connected&) {

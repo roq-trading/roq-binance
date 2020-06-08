@@ -107,19 +107,19 @@ void UserStream::operator()(const server::TimerEvent& event) {
   _connection.refresh(event.now);
 }
 
-void UserStream::operator()(Metrics& metrics) {
-  metrics
+void UserStream::operator()(metrics::Writer& writer) {
+  writer
     // counter
-    .write(_counter.disconnect)
+    .write(_counter.disconnect, metrics::COUNTER)
     // profile
-    .write(_profile.parse)
-    .write(_profile.outbound_account_info)
-    .write(_profile.outbound_account_position)
-    .write(_profile.balance_update)
-    .write(_profile.execution_report)
+    .write(_profile.parse, metrics::PROFILE)
+    .write(_profile.outbound_account_info, metrics::PROFILE)
+    .write(_profile.outbound_account_position, metrics::PROFILE)
+    .write(_profile.balance_update, metrics::PROFILE)
+    .write(_profile.execution_report, metrics::PROFILE)
     // latency
-    .write(_latency.ping)
-    .write(_latency.heartbeat);
+    .write(_latency.ping, metrics::LATENCY)
+    .write(_latency.heartbeat, metrics::LATENCY);
 }
 
 void UserStream::operator()(const core::web::Socket::Connected&) {

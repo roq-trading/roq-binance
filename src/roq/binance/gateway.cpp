@@ -150,12 +150,12 @@ void Gateway::operator()(
   });
 }
 
-void Gateway::operator()(Metrics& metrics) {
-  _rest.connection(metrics);
+void Gateway::operator()(metrics::Writer& writer) {
+  _rest.connection(writer);
   for (auto& iter : _market_streams)
-    (*iter)(metrics);
+    (*iter)(writer);
   if (static_cast<bool>(_user_stream))
-    (*_user_stream)(metrics);
+    (*_user_stream)(writer);
 }
 
 // market stream

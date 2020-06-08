@@ -52,7 +52,7 @@ class UserStream final
   void operator()(const server::StopEvent&);
   void operator()(const server::TimerEvent&);
 
-  void operator()(Metrics& metrics);
+  void operator()(metrics::Writer& writer);
 
  protected:
   void operator()(const core::web::Socket::Connected&) override;

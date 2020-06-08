@@ -103,19 +103,19 @@ void Rest::operator()(const server::TimerEvent& event) {
   _connection.refresh(event.now);
 }
 
-void Rest::operator()(Metrics& metrics) {
-  metrics
+void Rest::operator()(metrics::Writer& writer) {
+  writer
     // counter
-    .write(_counter.disconnect)
+    .write(_counter.disconnect, metrics::COUNTER)
     // profile
-    .write(_profile.exchange_info)
-    .write(_profile.account)
-    .write(_profile.listen_key)
-    .write(_profile.depth)
-    .write(_profile.new_order)
-    .write(_profile.cancel_order)
+    .write(_profile.exchange_info, metrics::PROFILE)
+    .write(_profile.account, metrics::PROFILE)
+    .write(_profile.listen_key, metrics::PROFILE)
+    .write(_profile.depth, metrics::PROFILE)
+    .write(_profile.new_order, metrics::PROFILE)
+    .write(_profile.cancel_order, metrics::PROFILE)
     // latency
-    .write(_latency.ping);
+    .write(_latency.ping, metrics::LATENCY);
 }
 
 template <>
