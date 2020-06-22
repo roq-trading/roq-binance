@@ -149,11 +149,13 @@ void UserStream::parse(const std::string_view& message) {
   _profile.parse(
       [&]() {
         try {
+          server::Trace trace;
           core::json::Buffer buffer(_decode_buffer);
           json::UserStreamParser::dispatch(
               *this,
               message,
-              buffer);
+              buffer,
+              trace);
         } catch (std::exception& e) {
           LOG(WARNING)(
               FMT_STRING(R"(message="{}")"),
@@ -166,44 +168,58 @@ void UserStream::parse(const std::string_view& message) {
 }
 
 void UserStream::operator()(
-    const json::OutboundAccountInfo& outbound_account_info) {
+    const json::OutboundAccountInfo& outbound_account_info,
+    const server::Trace& trace) {
   _profile.outbound_account_info(
       [&]() {
         VLOG(3)(
             FMT_STRING(R"(outbound_account_info={})"),
             outbound_account_info);
-        _handler(outbound_account_info);
+        _handler(
+            outbound_account_info,
+            trace);
       });
 }
 
 void UserStream::operator()(
-    const json::OutboundAccountPosition& outbound_account_position) {
+    const json::OutboundAccountPosition& outbound_account_position,
+    const server::Trace& trace) {
   _profile.outbound_account_position(
       [&]() {
         VLOG(3)(
             FMT_STRING(R"(outbound_account_position={})"),
             outbound_account_position);
-        _handler(outbound_account_position);
+        _handler(
+            outbound_account_position,
+            trace);
       });
 }
 
-void UserStream::operator()(const json::BalanceUpdate& balance_update) {
+void UserStream::operator()(
+    const json::BalanceUpdate& balance_update,
+    const server::Trace& trace) {
   _profile.balance_update(
       [&]() {
         VLOG(3)(
             FMT_STRING(R"(balance_update={})"),
             balance_update);
-        _handler(balance_update);
+        _handler(
+            balance_update,
+            trace);
       });
 }
 
-void UserStream::operator()(const json::ExecutionReport& execution_report) {
+void UserStream::operator()(
+    const json::ExecutionReport& execution_report,
+    const server::Trace& trace) {
   _profile.execution_report(
       [&]() {
         VLOG(3)(
             FMT_STRING(R"(execution_report={})"),
             execution_report);
-        _handler(execution_report);
+        _handler(
+            execution_report,
+            trace);
       });
 }
 

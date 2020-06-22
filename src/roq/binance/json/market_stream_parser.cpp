@@ -19,7 +19,8 @@ namespace json {
 void MarketStreamParser::dispatch(
     MarketStreamParser::Handler& handler,
     const std::string_view& message,
-    core::json::Buffer& buffer) {
+    core::json::Buffer& buffer,
+    const server::Trace& trace) {
   int64_t id = -1;
   std::string symbol;  // allocating because we need uppercase
   auto stream = Stream::UNDEFINED;
@@ -97,25 +98,33 @@ void MarketStreamParser::dispatch(
             case Stream::AGG_TRADE: {
               AggTrade agg_trade(value);
               dispatched = true;
-              handler(agg_trade);
+              handler(
+                  agg_trade,
+                  trace);
               break;
             }
             case Stream::TRADE: {
               Trade trade(value);
               dispatched = true;
-              handler(trade);
+              handler(
+                  trade,
+                  trace);
               break;
             }
             case Stream::MINI_TICKER: {
               MiniTicker mini_ticker(value);
               dispatched = true;
-              handler(mini_ticker);
+              handler(
+                  mini_ticker,
+                  trace);
               break;
             }
             case Stream::BOOK_TICKER: {
               BookTicker book_ticker(value);
               dispatched = true;
-              handler(book_ticker);
+              handler(
+                  book_ticker,
+                  trace);
               break;
             }
             case Stream::DEPTH5:
@@ -128,7 +137,8 @@ void MarketStreamParser::dispatch(
               dispatched = true;
               handler(
                   symbol,
-                  depth);
+                  depth,
+                  trace);
               break;
             }
             case Stream::DEPTH: {
@@ -139,7 +149,8 @@ void MarketStreamParser::dispatch(
               dispatched = true;
               handler(
                   symbol,
-                  depth_update);
+                  depth_update,
+                  trace);
               break;
             }
           }

@@ -30,16 +30,26 @@ class MarketStream final
       public json::MarketStreamParser::Handler {
  public:
   struct Handler {
-    virtual void operator()(const json::AggTrade&) = 0;
-    virtual void operator()(const json::Trade&) = 0;
-    virtual void operator()(const json::MiniTicker&) = 0;
-    virtual void operator()(const json::BookTicker&) = 0;
+    virtual void operator()(
+        const json::AggTrade&,
+        const server::Trace&) = 0;
+    virtual void operator()(
+        const json::Trade&,
+        const server::Trace&) = 0;
+    virtual void operator()(
+        const json::MiniTicker&,
+        const server::Trace&) = 0;
+    virtual void operator()(
+        const json::BookTicker&,
+        const server::Trace&) = 0;
     virtual void operator()(
         const std::string_view& symbol,
-        const json::Depth& depth) = 0;
+        const json::Depth& depth,
+        const server::Trace&) = 0;
     virtual void operator()(
         const std::string_view& symbol,
-        const json::DepthUpdate& depth_update) = 0;
+        const json::DepthUpdate& depth_update,
+        const server::Trace&) = 0;
   };
   MarketStream(
       Handler& handler,
@@ -96,16 +106,26 @@ class MarketStream final
   void operator()(int32_t, const json::Result&) override;
 
   // update
-  void operator()(const json::AggTrade&) override;
-  void operator()(const json::Trade&) override;
-  void operator()(const json::MiniTicker&) override;
-  void operator()(const json::BookTicker&) override;
+  void operator()(
+      const json::AggTrade&,
+      const server::Trace&) override;
+  void operator()(
+      const json::Trade&,
+      const server::Trace&) override;
+  void operator()(
+      const json::MiniTicker&,
+      const server::Trace&) override;
+  void operator()(
+      const json::BookTicker&,
+      const server::Trace&) override;
   void operator()(
       const std::string_view& symbol,
-      const json::Depth& depth) override;
+      const json::Depth& depth,
+      const server::Trace&) override;
   void operator()(
       const std::string_view& symbol,
-      const json::DepthUpdate& depth_update) override;
+      const json::DepthUpdate& depth_update,
+      const server::Trace&) override;
 
  private:
   Handler& _handler;

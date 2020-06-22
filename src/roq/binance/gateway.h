@@ -78,22 +78,40 @@ class Gateway final
 
   // MarketStream::Handler
 
-  void operator()(const json::AggTrade&) override;
-  void operator()(const json::Trade&) override;
-  void operator()(const json::MiniTicker&) override;
-  void operator()(const json::BookTicker&) override;
+  void operator()(
+      const json::AggTrade&,
+      const server::Trace&) override;
+  void operator()(
+      const json::Trade&,
+      const server::Trace&) override;
+  void operator()(
+      const json::MiniTicker&,
+      const server::Trace&) override;
+  void operator()(
+      const json::BookTicker&,
+      const server::Trace&) override;
   void operator()(
       const std::string_view& symbol,
-      const json::Depth& depth) override;
+      const json::Depth& depth,
+      const server::Trace&) override;
   void operator()(
       const std::string_view& symbol,
-      const json::DepthUpdate& depth_update) override;
+      const json::DepthUpdate& depth_update,
+      const server::Trace&) override;
 
   // UserStream::Handler
-  void operator()(const json::OutboundAccountInfo&) override;
-  void operator()(const json::OutboundAccountPosition&) override;
-  void operator()(const json::BalanceUpdate&) override;
-  void operator()(const json::ExecutionReport&) override;
+  void operator()(
+      const json::OutboundAccountInfo&,
+      const server::Trace&) override;
+  void operator()(
+      const json::OutboundAccountPosition&,
+      const server::Trace&) override;
+  void operator()(
+      const json::BalanceUpdate&,
+      const server::Trace&) override;
+  void operator()(
+      const json::ExecutionReport&,
+      const server::Trace&) override;
 
   // Rest::Handler
 
@@ -125,12 +143,14 @@ class Gateway final
   template <typename T>
   void enqueue(
       const T& event,
+      const server::Trace& trace,
       bool is_last);
 
   template <typename T>
   void enqueue(
       uint8_t user_id,
       const T& event,
+      const server::Trace& trace,
       bool is_last);
 
  private:

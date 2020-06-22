@@ -6,6 +6,8 @@
 
 #include "roq/core/json/buffer.h"
 
+#include "roq/server.h"
+
 #include "roq/binance/json/error.h"
 #include "roq/binance/json/result.h"
 
@@ -29,25 +31,36 @@ struct MarketStreamParser final {
 
     // update
 
-    virtual void operator()(const AggTrade&) = 0;
-    virtual void operator()(const Trade&) = 0;
+    virtual void operator()(
+        const AggTrade&,
+        const server::Trace&) = 0;
+    virtual void operator()(
+        const Trade&,
+        const server::Trace&) = 0;
 
-    virtual void operator()(const MiniTicker&) = 0;
-    virtual void operator()(const BookTicker&) = 0;
+    virtual void operator()(
+        const MiniTicker&,
+        const server::Trace&) = 0;
+    virtual void operator()(
+        const BookTicker&,
+        const server::Trace&) = 0;
 
     virtual void operator()(
         const std::string_view& symbol,
-        const Depth& depth) = 0;
+        const Depth& depth,
+        const server::Trace&) = 0;
 
     virtual void operator()(
         const std::string_view& symbol,
-        const DepthUpdate& depth_update) = 0;
+        const DepthUpdate& depth_update,
+        const server::Trace&) = 0;
   };
 
   static void dispatch(
       Handler& handler,
       const std::string_view& message,
-      core::json::Buffer& buffer);
+      core::json::Buffer& buffer,
+      const server::Trace&);
 };
 
 }  // namespace json

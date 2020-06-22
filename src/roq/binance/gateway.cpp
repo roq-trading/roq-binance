@@ -8,6 +8,8 @@
 #include "roq/logging.h"
 #include "roq/format.h"
 
+#include "roq/core/string/builder.h"
+
 #include "roq/core/charconv.h"
 #include "roq/core/clock.h"
 #include "roq/core/utils.h"
@@ -160,7 +162,9 @@ void Gateway::operator()(metrics::Writer& writer) {
 
 // market stream
 
-void Gateway::operator()(const json::AggTrade& agg_trade) {
+void Gateway::operator()(
+    const json::AggTrade& agg_trade,
+    const server::Trace& trace) {
   Trade trade {
     .side = agg_trade.buyer_is_maker ? Side::BUY : Side::SELL,
     .price = agg_trade.price,
@@ -168,7 +172,7 @@ void Gateway::operator()(const json::AggTrade& agg_trade) {
     .trade_id = {},
   };
   core::charconv::to_string(
-      std::back_inserter(trade.trade_id),
+      core::string::builder(trade.trade_id),
       agg_trade.agg_trade_id);
   TradeSummary trade_summary {
     .exchange = FLAGS_exchange,
@@ -184,10 +188,13 @@ void Gateway::operator()(const json::AggTrade& agg_trade) {
       trade_summary);
   enqueue(
       trade_summary,
+      trace,
       false);
 }
 
-void Gateway::operator()(const json::Trade& trade) {
+void Gateway::operator()(
+    const json::Trade& trade,
+    const server::Trace& trace) {
   Trade trade_ {
     .side = trade.buyer_is_maker ? Side::BUY : Side::SELL,
     .price = trade.price,
@@ -195,7 +202,7 @@ void Gateway::operator()(const json::Trade& trade) {
     .trade_id = {},
   };
   core::charconv::to_string(
-      std::back_inserter(trade_.trade_id),
+      core::string::builder(trade_.trade_id),
       trade.trade_id);
   TradeSummary trade_summary {
     .exchange = FLAGS_exchange,
@@ -211,10 +218,13 @@ void Gateway::operator()(const json::Trade& trade) {
       trade_summary);
   enqueue(
       trade_summary,
-      false);
+      trace,
+      false);  // XXX (2020-06-21) why ???
 }
 
-void Gateway::operator()(const json::MiniTicker& mini_ticker) {
+void Gateway::operator()(
+    const json::MiniTicker& mini_ticker,
+    const server::Trace& trace) {
   SessionStatistics session_statistics {
     .exchange = FLAGS_exchange,
     .symbol = mini_ticker.symbol,
@@ -234,6 +244,7 @@ void Gateway::operator()(const json::MiniTicker& mini_ticker) {
       session_statistics);
   enqueue(
       session_statistics,
+      trace,
       false);
   DailyStatistics daily_statistics {
     .exchange = FLAGS_exchange,
@@ -249,10 +260,13 @@ void Gateway::operator()(const json::MiniTicker& mini_ticker) {
       daily_statistics);
   enqueue(
       daily_statistics,
+      trace,
       true);
 }
 
-void Gateway::operator()(const json::BookTicker& book_ticker) {
+void Gateway::operator()(
+    const json::BookTicker& book_ticker,
+    const server::Trace& trace) {
   TopOfBook top_of_book {
     .exchange = FLAGS_exchange,
     .symbol = book_ticker.symbol,
@@ -270,12 +284,14 @@ void Gateway::operator()(const json::BookTicker& book_ticker) {
       top_of_book);
   enqueue(
       top_of_book,
+      trace,
       true);
 }
 
 void Gateway::operator()(
     const std::string_view& symbol,
-    const json::Depth& depth) {
+    const json::Depth& depth,
+    const server::Trace& trace) {
   bool success = true;
   size_t bid_length = 0;
   for (auto& item : depth.bids) {
@@ -324,16 +340,19 @@ void Gateway::operator()(
       market_by_price);
   enqueue(
       market_by_price,
+      trace,
       true);
 }
 
 void Gateway::operator()(
     const std::string_view&,
-    const json::DepthUpdate&) {
+    const json::DepthUpdate&,
+    const server::Trace& trace) {
 }
 
 void Gateway::operator()(
-    const json::OutboundAccountInfo& outbound_account_info) {
+    const json::OutboundAccountInfo& outbound_account_info,
+    const server::Trace& trace) {
   for (auto& item : outbound_account_info.balances) {
     FundsUpdate funds_update {
       .account = _account,
@@ -343,12 +362,14 @@ void Gateway::operator()(
     };
     enqueue(
         funds_update,
+        trace,
         true);
   }
 }
 
 void Gateway::operator()(
-    const json::OutboundAccountPosition& outbound_account_position) {
+    const json::OutboundAccountPosition& outbound_account_position,
+    const server::Trace& trace) {
   for (auto& item : outbound_account_position.balances) {
     FundsUpdate funds_update {
       .account = _account,
@@ -358,15 +379,20 @@ void Gateway::operator()(
     };
     enqueue(
         funds_update,
+        trace,
         true);
   }
 }
 
-void Gateway::operator()(const json::BalanceUpdate&) {
+void Gateway::operator()(
+    const json::BalanceUpdate&,
+    const server::Trace& trace) {
   // contains delta (changes) -- we're not going to use here
 }
 
-void Gateway::operator()(const json::ExecutionReport& execution_report) {
+void Gateway::operator()(
+    const json::ExecutionReport& execution_report,
+    const server::Trace& trace) {
   server::OMS_Lookup order_lookup {
     .symbol = execution_report.symbol,
     .side = json::map(execution_report.side),
@@ -381,6 +407,7 @@ void Gateway::operator()(const json::ExecutionReport& execution_report) {
       execution_report.original_client_order_id,
       execution_report.client_order_id,
       order_lookup,
+      trace,
       [&](const auto& order, auto& result) {
         // XXX IMPLEMENT
       });
@@ -411,11 +438,13 @@ void Gateway::update_market_data(GatewayStatus gateway_status) {
   if (gateway_status == _market_data_status)
     return;
   _market_data_status = gateway_status;
+  server::Trace trace;
   MarketDataStatus market_data_status {
     .status = _market_data_status,
   };
   enqueue(
       market_data_status,
+      trace,
       true);
   LOG(INFO)(FMT_STRING("market_data_status={}"), _market_data_status);
 }
@@ -424,12 +453,14 @@ void Gateway::update_order_manager(GatewayStatus gateway_status) {
   if (gateway_status == _order_manager_status)
     return;
   _order_manager_status = gateway_status;
+  server::Trace trace;
   OrderManagerStatus order_manager_status {
     .account = _account,
     .status = _order_manager_status,
   };
   enqueue(
       order_manager_status,
+      trace,
       true);
   LOG(INFO)(FMT_STRING("order_manager_status={}"), _order_manager_status);
 }
@@ -555,6 +586,7 @@ void Gateway::download_account() {
 
 void Gateway::operator()(const json::ExchangeInfo& exchange_info) {
   assert(_symbols.empty());
+  server::Trace trace;  // note! not correct (*after* message parsing)
   for (const auto& item : exchange_info.symbols) {
     if (_dispatcher.discard_symbol(item.symbol)) {
       VLOG(1)(
@@ -591,6 +623,7 @@ void Gateway::operator()(const json::ExchangeInfo& exchange_info) {
         reference_data);
     enqueue(
         reference_data,
+        trace,
         false);
     MarketStatus market_status {
       .exchange = FLAGS_exchange,
@@ -602,6 +635,7 @@ void Gateway::operator()(const json::ExchangeInfo& exchange_info) {
         market_status);
     enqueue(
         market_status,
+        trace,
         true);
   }
   LOG(INFO)(
@@ -630,6 +664,7 @@ void Gateway::operator()(const json::ListenKey& listen_key) {
 }
 
 void Gateway::operator()(const json::Account& account) {
+  server::Trace trace;  // note! not correct (*after* message parsing)
   for (auto& item : account.balances) {
     FundsUpdate funds_update {
       .account = _account,
@@ -639,6 +674,7 @@ void Gateway::operator()(const json::Account& account) {
     };
     enqueue(
         funds_update,
+        trace,
         true);
   }
 }
@@ -667,12 +703,11 @@ void Gateway::refresh_listen_key() {
 template <typename T>
 void Gateway::enqueue(
     const T& event,
+    const server::Trace& trace,
     bool is_last) {
-  auto now = core::get_system_clock();
   _dispatcher(
       event,
-      now,
-      now,
+      trace,
       is_last);
 }
 
@@ -680,13 +715,12 @@ template <typename T>
 void Gateway::enqueue(
     uint8_t user_id,
     const T& event,
+    const server::Trace& trace,
     bool is_last) {
-  auto now = core::get_system_clock();
   _dispatcher(
       user_id,
       event,
-      now,
-      now,
+      trace,
       is_last);
 }
 

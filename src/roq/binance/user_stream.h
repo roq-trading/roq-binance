@@ -30,10 +30,18 @@ class UserStream final
       public json::UserStreamParser::Handler {
  public:
   struct Handler {
-    virtual void operator()(const json::OutboundAccountInfo&) = 0;
-    virtual void operator()(const json::OutboundAccountPosition&) = 0;
-    virtual void operator()(const json::BalanceUpdate&) = 0;
-    virtual void operator()(const json::ExecutionReport&) = 0;
+    virtual void operator()(
+        const json::OutboundAccountInfo&,
+        const server::Trace&) = 0;
+    virtual void operator()(
+        const json::OutboundAccountPosition&,
+        const server::Trace&) = 0;
+    virtual void operator()(
+        const json::BalanceUpdate&,
+        const server::Trace&) = 0;
+    virtual void operator()(
+        const json::ExecutionReport&,
+        const server::Trace&) = 0;
   };
   UserStream(
       Handler& handler,
@@ -64,10 +72,18 @@ class UserStream final
 
   void parse(const std::string_view& message);
 
-  void operator()(const json::OutboundAccountInfo&) override;
-  void operator()(const json::OutboundAccountPosition&) override;
-  void operator()(const json::BalanceUpdate&) override;
-  void operator()(const json::ExecutionReport&) override;
+  void operator()(
+      const json::OutboundAccountInfo&,
+      const server::Trace&) override;
+  void operator()(
+      const json::OutboundAccountPosition&,
+      const server::Trace&) override;
+  void operator()(
+      const json::BalanceUpdate&,
+      const server::Trace&) override;
+  void operator()(
+      const json::ExecutionReport&,
+      const server::Trace&) override;
 
  private:
   Handler& _handler;
