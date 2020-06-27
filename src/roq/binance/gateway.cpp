@@ -100,16 +100,16 @@ void Gateway::operator()(const server::TimerEvent& event) {
   _base.loop(EVLOOP_NONBLOCK);
 }
 
-void Gateway::operator()(const server::ConnectionStatusEvent&) {
+void Gateway::operator()(const Event<ConnectionStatus>&) {
 }
 
 void Gateway::operator()(
-    const CreateOrderEvent& event,
+    const Event<CreateOrder>& event,
     const std::string_view& request_id,
     uint32_t gateway_order_id) {
   (void) gateway_order_id;  // avoid warning
   _rest.connection.create_order(
-      event.create_order,
+      event.value,
       request_id,
       [this](auto& promise) {
     try {
@@ -124,7 +124,7 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(
-    const ModifyOrderEvent&,
+    const Event<ModifyOrder>&,
     const std::string_view&,
     const server::OMS_Order& order) {
   throw server::OMS_Exception(
@@ -133,11 +133,11 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(
-    const CancelOrderEvent& event,
+    const Event<CancelOrder>& event,
     const std::string_view& request_id,
     const server::OMS_Order& order) {
   _rest.connection.cancel_order(
-      event.cancel_order,
+      event.value,
       request_id,
       order,
       [this](auto& promise) {
