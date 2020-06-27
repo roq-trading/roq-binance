@@ -321,7 +321,7 @@ void Gateway::operator()(
         ask_length,
         _ask.size());
   }
-  MarketByPrice market_by_price {
+  MarketByPriceUpdate market_by_price_update {
     .exchange = FLAGS_exchange,
     .symbol = symbol,
     .bids = {
@@ -336,10 +336,10 @@ void Gateway::operator()(
     .exchange_time_utc = {},
     };
   VLOG(3)(
-      FMT_STRING(R"(market_by_price={})"),
-      market_by_price);
+      FMT_STRING(R"(market_by_price_update={})"),
+      market_by_price_update);
   enqueue(
-      market_by_price,
+      market_by_price_update,
       trace,
       true);
 }
@@ -347,7 +347,7 @@ void Gateway::operator()(
 void Gateway::operator()(
     const std::string_view&,
     const json::DepthUpdate&,
-    const server::Trace& trace) {
+    const server::Trace&) {
 }
 
 void Gateway::operator()(
@@ -386,7 +386,7 @@ void Gateway::operator()(
 
 void Gateway::operator()(
     const json::BalanceUpdate&,
-    const server::Trace& trace) {
+    const server::Trace&) {
   // contains delta (changes) -- we're not going to use here
 }
 
@@ -409,6 +409,8 @@ void Gateway::operator()(
       order_lookup,
       trace,
       [&](const auto& order, auto& result) {
+        (void)(order);
+        (void)(result);
         // XXX IMPLEMENT
       });
   if (found == false) {
