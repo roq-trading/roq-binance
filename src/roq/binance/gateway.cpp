@@ -262,6 +262,38 @@ void Gateway::operator()(
       daily_statistics,
       trace,
       true);
+  // XXX NEW
+  Statistics statistics[] = {
+    {
+      .type = StatisticsType::HIGHEST_TRADED_PRICE,
+      .value = mini_ticker.high_price,
+    }, {
+      .type = StatisticsType::LOWEST_TRADED_PRICE,
+      .value = mini_ticker.low_price,
+    }, {
+      .type = StatisticsType::OPEN_PRICE,
+      .value = mini_ticker.open_price,
+    }, {
+      .type = StatisticsType::CLOSE_PRICE,
+      .value = mini_ticker.close_price,
+    }, };
+  static_assert(std::size(statistics) == 4);  // just checking...
+  StatisticsUpdate statistics_update {
+    .exchange = FLAGS_exchange,
+    .symbol = mini_ticker.symbol,
+    .statistics = roq::span(
+        statistics,
+        std::size(statistics)),
+    .snapshot = false,
+    .exchange_time_utc = mini_ticker.event_time,
+  };
+  VLOG(3)(
+      FMT_STRING("statistics_update={}"),
+      statistics_update);
+  enqueue(
+      statistics_update,
+      trace,
+      true);
 }
 
 void Gateway::operator()(
