@@ -94,16 +94,16 @@ bool UserStream::ready() const {
   return _connection.ready();
 }
 
-void UserStream::operator()(const server::StartEvent&) {
+void UserStream::operator()(const Event<Start>&) {
   _connection.start();
 }
 
-void UserStream::operator()(const server::StopEvent&) {
+void UserStream::operator()(const Event<Stop>&) {
   _connection.stop();
 }
 
-void UserStream::operator()(const server::TimerEvent& event) {
-  _connection.refresh(event.now);
+void UserStream::operator()(const Event<Timer>& event) {
+  _connection.refresh(event.value.now);
 }
 
 void UserStream::operator()(metrics::Writer& writer) {

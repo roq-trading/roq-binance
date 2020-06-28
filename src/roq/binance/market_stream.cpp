@@ -104,16 +104,16 @@ bool MarketStream::ready() const {
   return _connection.ready();
 }
 
-void MarketStream::operator()(const server::StartEvent&) {
+void MarketStream::operator()(const Event<Start>&) {
   _connection.start();
 }
 
-void MarketStream::operator()(const server::StopEvent&) {
+void MarketStream::operator()(const Event<Stop>&) {
   _connection.stop();
 }
 
-void MarketStream::operator()(const server::TimerEvent& event) {
-  _connection.refresh(event.now);
+void MarketStream::operator()(const Event<Timer>& event) {
+  _connection.refresh(event.value.now);
 }
 
 size_t MarketStream::capacity() const {

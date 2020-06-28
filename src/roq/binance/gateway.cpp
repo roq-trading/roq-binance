@@ -72,7 +72,7 @@ Gateway::Gateway(
       "Orders will *NOT* be cancelled on disconnect");
 }
 
-void Gateway::operator()(const server::StartEvent& event) {
+void Gateway::operator()(const Event<Start>& event) {
   LOG(INFO)("Starting the gateway...");
   _rest.connection(event);
   assert(_symbols.empty());
@@ -81,7 +81,7 @@ void Gateway::operator()(const server::StartEvent& event) {
   _rest.download.begin();
 }
 
-void Gateway::operator()(const server::StopEvent& event) {
+void Gateway::operator()(const Event<Stop>& event) {
   LOG(INFO)("Stopping the gateway...");
   _rest.connection(event);
   for (auto& iter : _market_streams)
@@ -90,7 +90,7 @@ void Gateway::operator()(const server::StopEvent& event) {
     (*_user_stream)(event);
 }
 
-void Gateway::operator()(const server::TimerEvent& event) {
+void Gateway::operator()(const Event<Timer>& event) {
   _rest.connection(event);
   for (auto& iter : _market_streams)
     (*iter)(event);
@@ -100,7 +100,7 @@ void Gateway::operator()(const server::TimerEvent& event) {
   _base.loop(EVLOOP_NONBLOCK);
 }
 
-void Gateway::operator()(const Event<ConnectionStatus>&) {
+void Gateway::operator()(const Event<Connection>&) {
 }
 
 void Gateway::operator()(
@@ -536,7 +536,12 @@ void Gateway::subscribe_market_streams() {
         _ssl_context,
         ++_market_stream_id,
         std::move(symbols));
-    (*market_stream_ptr)(server::StartEvent{});
+    MessageInfo message_info;  // XXX something sensible
+    Start start;
+    create_event_and_dispatch(
+        *market_stream_ptr,
+        message_info,
+        start);
     _market_streams.emplace_back(std::move(market_stream_ptr));
   }
 }
@@ -567,7 +572,12 @@ void Gateway::subscribe_user_stream() {
       _dns_base,
       _ssl_context,
       _listen_key);
-  (*_user_stream)(server::StartEvent{});
+  MessageInfo message_info; // XXX something sensible;
+  Start start;
+  create_event_and_dispatch(
+      *_user_stream,
+      message_info,
+      start);
 }
 
 void Gateway::download_account() {
