@@ -225,44 +225,6 @@ void Gateway::operator()(
 void Gateway::operator()(
     const json::MiniTicker& mini_ticker,
     const server::Trace& trace) {
-  SessionStatistics session_statistics {
-    .exchange = FLAGS_exchange,
-    .symbol = mini_ticker.symbol,
-    .pre_open_interest = std::numeric_limits<double>::quiet_NaN(),
-    .pre_settlement_price = std::numeric_limits<double>::quiet_NaN(),
-    .pre_close_price = std::numeric_limits<double>::quiet_NaN(),
-    .highest_traded_price = mini_ticker.high_price,
-    .lowest_traded_price = mini_ticker.low_price,
-    .upper_limit_price = std::numeric_limits<double>::quiet_NaN(),
-    .lower_limit_price = std::numeric_limits<double>::quiet_NaN(),
-    .index_value = std::numeric_limits<double>::quiet_NaN(),
-    .margin_rate = std::numeric_limits<double>::quiet_NaN(),
-    .exchange_time_utc = mini_ticker.event_time,
-  };
-  VLOG(3)(
-      FMT_STRING(R"(session_statistics={})"),
-      session_statistics);
-  enqueue(
-      session_statistics,
-      trace,
-      false);
-  DailyStatistics daily_statistics {
-    .exchange = FLAGS_exchange,
-    .symbol = mini_ticker.symbol,
-    .open_price = mini_ticker.open_price,
-    .settlement_price = std::numeric_limits<double>::quiet_NaN(),
-    .close_price = mini_ticker.close_price,
-    .open_interest = std::numeric_limits<double>::quiet_NaN(),
-    .exchange_time_utc = mini_ticker.event_time,
-  };
-  VLOG(3)(
-      FMT_STRING(R"(daily_statistics={})"),
-      daily_statistics);
-  enqueue(
-      daily_statistics,
-      trace,
-      true);
-  // XXX NEW
   Statistics statistics[] = {
     {
       .type = StatisticsType::HIGHEST_TRADED_PRICE,
