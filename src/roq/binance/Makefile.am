@@ -19,6 +19,7 @@ roq_binance_LDFLAGS = \
 	$(OPENSSL_LIBS) \
 	$(CRYPTO_LIBS) \
 	$(PTHREAD_LIBS) \
+	$(STDCXX_FS_LIBS) \
 	$(RT_LIBS)
 roq_binance_CPPFLAGS = \
 	-I$(top_srcdir)/src \
