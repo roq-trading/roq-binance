@@ -14,7 +14,7 @@ void UserStreamParser::dispatch(
     UserStreamParser::Handler& handler,
     const std::string_view& message,
     core::json::Buffer& buffer,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   core::json::Parser parser(message);
   auto root = parser.root();
   for (auto [key, value] : std::get<core::json::object_t>(root)) {
@@ -26,7 +26,7 @@ void UserStreamParser::dispatch(
         message,
         buffer,
         event_type,
-        trace))
+        trace_info))
       return;
     break;
   }
@@ -41,7 +41,7 @@ bool UserStreamParser::try_dispatch(
     const std::string_view& message,
     core::json::Buffer& buffer,
     EventType event_type,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   switch (event_type) {
     case EventType::UNDEFINED:
     case EventType::UNKNOWN:
@@ -59,7 +59,7 @@ bool UserStreamParser::try_dispatch(
             buffer);
       handler(
           outbound_account_info,
-          trace);
+          trace_info);
       break;
     }
     case EventType::OUTBOUND_ACCOUNT_POSITION: {
@@ -69,7 +69,7 @@ bool UserStreamParser::try_dispatch(
             buffer);
       handler(
           outbound_account_position,
-          trace);
+          trace_info);
       break;
     }
     case EventType::BALANCE_UPDATE: {
@@ -77,7 +77,7 @@ bool UserStreamParser::try_dispatch(
         core::json::Parser::create<BalanceUpdate>(message);
       handler(
           balance_update,
-          trace);
+          trace_info);
       break;
     }
     case EventType::EXECUTION_REPORT: {
@@ -85,7 +85,7 @@ bool UserStreamParser::try_dispatch(
         core::json::Parser::create<ExecutionReport>(message);
       handler(
           execution_report,
-          trace);
+          trace_info);
       break;
     }
     case EventType::LIST_STATUS:

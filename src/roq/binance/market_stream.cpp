@@ -303,13 +303,13 @@ void MarketStream::parse(const std::string_view& message) {
   _profile.parse(
       [&]() {
         try {
-          server::Trace trace;
+          server::TraceInfo trace_info;
           core::json::Buffer buffer(_decode_buffer);
           json::MarketStreamParser::dispatch(
               *this,
               message,
               buffer,
-              trace);
+              trace_info);
         } catch (std::exception& e) {
           LOG(WARNING)(
               FMT_STRING(R"(message="{}")"),
@@ -347,7 +347,7 @@ void MarketStream::operator()(
 
 void MarketStream::operator()(
     const json::AggTrade& agg_trade,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   _profile.agg_trade(
       [&]() {
         VLOG(3)(
@@ -355,13 +355,13 @@ void MarketStream::operator()(
             agg_trade);
         _handler(
             agg_trade,
-            trace);
+            trace_info);
       });
 }
 
 void MarketStream::operator()(
     const json::Trade& trade,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   _profile.trade(
       [&]() {
         VLOG(3)(
@@ -369,13 +369,13 @@ void MarketStream::operator()(
             trade);
         _handler(
             trade,
-            trace);
+            trace_info);
       });
 }
 
 void MarketStream::operator()(
     const json::MiniTicker& mini_ticker,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   _profile.mini_ticker(
       [&]() {
         VLOG(3)(
@@ -383,13 +383,13 @@ void MarketStream::operator()(
             mini_ticker);
         _handler(
             mini_ticker,
-            trace);
+            trace_info);
       });
 }
 
 void MarketStream::operator()(
     const json::BookTicker& book_ticker,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   _profile.book_ticker(
       [&]() {
         VLOG(3)(
@@ -397,14 +397,14 @@ void MarketStream::operator()(
             book_ticker);
         _handler(
             book_ticker,
-            trace);
+            trace_info);
       });
 }
 
 void MarketStream::operator()(
     const std::string_view& symbol,
     const json::Depth& depth,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   _profile.depth(
       [&]() {
         VLOG(3)(
@@ -414,14 +414,14 @@ void MarketStream::operator()(
         _handler(
             symbol,
             depth,
-            trace);
+            trace_info);
       });
 }
 
 void MarketStream::operator()(
     const std::string_view& symbol,
     const json::DepthUpdate& depth_update,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   _profile.depth_update(
       [&]() {
         VLOG(3)(
@@ -431,7 +431,7 @@ void MarketStream::operator()(
         _handler(
             symbol,
             depth_update,
-            trace);
+            trace_info);
       });
 }
 

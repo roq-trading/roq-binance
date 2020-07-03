@@ -23,23 +23,23 @@ struct UserStreamParser final {
   struct Handler {
     virtual void operator()(
         const OutboundAccountInfo&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const OutboundAccountPosition&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const BalanceUpdate&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const ExecutionReport&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
   };
 
   static void dispatch(
       Handler& handler,
       const std::string_view& message,
       core::json::Buffer& buffer,
-      const server::Trace& trace);
+      const server::TraceInfo& trace);
 
  private:
   static bool try_dispatch(
@@ -47,7 +47,7 @@ struct UserStreamParser final {
       const std::string_view& message,
       core::json::Buffer& buffer,
       EventType event_type,
-      const server::Trace& trace);
+      const server::TraceInfo& trace);
 };
 
 }  // namespace json

@@ -164,7 +164,7 @@ void Gateway::operator()(metrics::Writer& writer) {
 
 void Gateway::operator()(
     const json::AggTrade& agg_trade,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   Trade trade {
     .side = agg_trade.buyer_is_maker ? Side::BUY : Side::SELL,
     .price = agg_trade.price,
@@ -186,15 +186,16 @@ void Gateway::operator()(
   VLOG(3)(
       FMT_STRING(R"(trade_summary={})"),
       trade_summary);
-  enqueue(
+  create_trace_and_dispatch(
+      trace_info,
       trade_summary,
-      trace,
-      false);
+      _dispatcher,
+      true);
 }
 
 void Gateway::operator()(
     const json::Trade& trade,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   Trade trade_ {
     .side = trade.buyer_is_maker ? Side::BUY : Side::SELL,
     .price = trade.price,
@@ -216,15 +217,16 @@ void Gateway::operator()(
   VLOG(3)(
       FMT_STRING(R"(trade_summary={})"),
       trade_summary);
-  enqueue(
+  create_trace_and_dispatch(
+      trace_info,
       trade_summary,
-      trace,
-      false);  // XXX (2020-06-21) why ???
+      _dispatcher,
+      true);
 }
 
 void Gateway::operator()(
     const json::MiniTicker& mini_ticker,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   Statistics statistics[] = {
     {
       .type = StatisticsType::HIGHEST_TRADED_PRICE,
@@ -252,15 +254,16 @@ void Gateway::operator()(
   VLOG(3)(
       FMT_STRING("statistics_update={}"),
       statistics_update);
-  enqueue(
+  create_trace_and_dispatch(
+      trace_info,
       statistics_update,
-      trace,
+      _dispatcher,
       true);
 }
 
 void Gateway::operator()(
     const json::BookTicker& book_ticker,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   TopOfBook top_of_book {
     .exchange = FLAGS_exchange,
     .symbol = book_ticker.symbol,
@@ -276,16 +279,17 @@ void Gateway::operator()(
   VLOG(3)(
       FMT_STRING(R"(top_of_book={})"),
       top_of_book);
-  enqueue(
+  create_trace_and_dispatch(
+      trace_info,
       top_of_book,
-      trace,
+      _dispatcher,
       true);
 }
 
 void Gateway::operator()(
     const std::string_view& symbol,
     const json::Depth& depth,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   bool success = true;
   size_t bid_length = 0;
   for (auto& item : depth.bids) {
@@ -332,21 +336,22 @@ void Gateway::operator()(
   VLOG(3)(
       FMT_STRING(R"(market_by_price_update={})"),
       market_by_price_update);
-  enqueue(
+  create_trace_and_dispatch(
+      trace_info,
       market_by_price_update,
-      trace,
+      _dispatcher,
       true);
 }
 
 void Gateway::operator()(
     const std::string_view&,
     const json::DepthUpdate&,
-    const server::Trace&) {
+    const server::TraceInfo&) {
 }
 
 void Gateway::operator()(
     const json::OutboundAccountInfo& outbound_account_info,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   for (auto& item : outbound_account_info.balances) {
     FundsUpdate funds_update {
       .account = _account,
@@ -354,16 +359,17 @@ void Gateway::operator()(
       .balance = item.free_amount,
       .hold = item.locked_amount,
     };
-    enqueue(
+    create_trace_and_dispatch(
+        trace_info,
         funds_update,
-        trace,
+        _dispatcher,
         true);
   }
 }
 
 void Gateway::operator()(
     const json::OutboundAccountPosition& outbound_account_position,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   for (auto& item : outbound_account_position.balances) {
     FundsUpdate funds_update {
       .account = _account,
@@ -371,22 +377,23 @@ void Gateway::operator()(
       .balance = item.free_amount,
       .hold = item.locked_amount,
     };
-    enqueue(
+    create_trace_and_dispatch(
+        trace_info,
         funds_update,
-        trace,
+        _dispatcher,
         true);
   }
 }
 
 void Gateway::operator()(
     const json::BalanceUpdate&,
-    const server::Trace&) {
+    const server::TraceInfo&) {
   // contains delta (changes) -- we're not going to use here
 }
 
 void Gateway::operator()(
     const json::ExecutionReport& execution_report,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   server::OMS_Lookup order_lookup {
     .symbol = execution_report.symbol,
     .side = json::map(execution_report.side),
@@ -401,7 +408,7 @@ void Gateway::operator()(
       execution_report.original_client_order_id,
       execution_report.client_order_id,
       order_lookup,
-      trace,
+      trace_info,
       [&](const auto& order, auto& result) {
         (void)(order);
         (void)(result);
@@ -434,13 +441,14 @@ void Gateway::update_market_data(GatewayStatus gateway_status) {
   if (gateway_status == _market_data_status)
     return;
   _market_data_status = gateway_status;
-  server::Trace trace;
+  server::TraceInfo trace_info;
   MarketDataStatus market_data_status {
     .status = _market_data_status,
   };
-  enqueue(
+  create_trace_and_dispatch(
+      trace_info,
       market_data_status,
-      trace,
+      _dispatcher,
       true);
   LOG(INFO)(FMT_STRING("market_data_status={}"), _market_data_status);
 }
@@ -449,14 +457,15 @@ void Gateway::update_order_manager(GatewayStatus gateway_status) {
   if (gateway_status == _order_manager_status)
     return;
   _order_manager_status = gateway_status;
-  server::Trace trace;
+  server::TraceInfo trace_info;
   OrderManagerStatus order_manager_status {
     .account = _account,
     .status = _order_manager_status,
   };
-  enqueue(
+  create_trace_and_dispatch(
+      trace_info,
       order_manager_status,
-      trace,
+      _dispatcher,
       true);
   LOG(INFO)(FMT_STRING("order_manager_status={}"), _order_manager_status);
 }
@@ -592,7 +601,7 @@ void Gateway::download_account() {
 
 void Gateway::operator()(const json::ExchangeInfo& exchange_info) {
   assert(_symbols.empty());
-  server::Trace trace;  // note! not correct (*after* message parsing)
+  server::TraceInfo trace_info;  // note! not correct (*after* message parsing)
   for (const auto& item : exchange_info.symbols) {
     if (_dispatcher.discard_symbol(item.symbol)) {
       VLOG(1)(
@@ -627,9 +636,10 @@ void Gateway::operator()(const json::ExchangeInfo& exchange_info) {
     VLOG(1)(
         FMT_STRING(R"(reference_data={})"),
         reference_data);
-    enqueue(
+    create_trace_and_dispatch(
+        trace_info,
         reference_data,
-        trace,
+        _dispatcher,
         false);
     MarketStatus market_status {
       .exchange = FLAGS_exchange,
@@ -639,9 +649,10 @@ void Gateway::operator()(const json::ExchangeInfo& exchange_info) {
     VLOG(1)(
         FMT_STRING(R"(market_status={})"),
         market_status);
-    enqueue(
+    create_trace_and_dispatch(
+        trace_info,
         market_status,
-        trace,
+        _dispatcher,
         true);
   }
   LOG(INFO)(
@@ -670,7 +681,7 @@ void Gateway::operator()(const json::ListenKey& listen_key) {
 }
 
 void Gateway::operator()(const json::Account& account) {
-  server::Trace trace;  // note! not correct (*after* message parsing)
+  server::TraceInfo trace_info;  // note! not correct (*after* message parsing)
   for (auto& item : account.balances) {
     FundsUpdate funds_update {
       .account = _account,
@@ -678,9 +689,10 @@ void Gateway::operator()(const json::Account& account) {
       .balance = item.free,
       .hold = item.locked,
     };
-    enqueue(
+    create_trace_and_dispatch(
+        trace_info,
         funds_update,
-        trace,
+        _dispatcher,
         true);
   }
 }
@@ -706,6 +718,7 @@ void Gateway::refresh_listen_key() {
   });
 }
 
+/*
 template <typename T>
 void Gateway::enqueue(
     const T& event,
@@ -729,6 +742,7 @@ void Gateway::enqueue(
       trace,
       is_last);
 }
+*/
 
 }  // namespace binance
 }  // namespace roq

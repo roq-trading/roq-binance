@@ -80,38 +80,38 @@ class Gateway final
 
   void operator()(
       const json::AggTrade&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const json::Trade&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const json::MiniTicker&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const json::BookTicker&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const std::string_view& symbol,
       const json::Depth& depth,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const std::string_view& symbol,
       const json::DepthUpdate& depth_update,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
 
   // UserStream::Handler
   void operator()(
       const json::OutboundAccountInfo&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const json::OutboundAccountPosition&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const json::BalanceUpdate&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const json::ExecutionReport&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
 
   // Rest::Handler
 
@@ -140,6 +140,7 @@ class Gateway final
 
   void refresh_listen_key();
 
+  /*
   template <typename T>
   void enqueue(
       const T& event,
@@ -152,6 +153,7 @@ class Gateway final
       const T& event,
       const server::Trace& trace,
       bool is_last);
+      */
 
  private:
   server::Dispatcher& _dispatcher;

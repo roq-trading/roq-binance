@@ -32,24 +32,24 @@ class MarketStream final
   struct Handler {
     virtual void operator()(
         const json::AggTrade&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const json::Trade&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const json::MiniTicker&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const json::BookTicker&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const std::string_view& symbol,
         const json::Depth& depth,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const std::string_view& symbol,
         const json::DepthUpdate& depth_update,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
   };
   MarketStream(
       Handler& handler,
@@ -108,24 +108,24 @@ class MarketStream final
   // update
   void operator()(
       const json::AggTrade&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const json::Trade&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const json::MiniTicker&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const json::BookTicker&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const std::string_view& symbol,
       const json::Depth& depth,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const std::string_view& symbol,
       const json::DepthUpdate& depth_update,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
 
  private:
   Handler& _handler;

@@ -20,7 +20,7 @@ void MarketStreamParser::dispatch(
     MarketStreamParser::Handler& handler,
     const std::string_view& message,
     core::json::Buffer& buffer,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   int64_t id = -1;
   std::string symbol;  // allocating because we need uppercase
   auto stream = Stream::UNDEFINED;
@@ -100,7 +100,7 @@ void MarketStreamParser::dispatch(
               dispatched = true;
               handler(
                   agg_trade,
-                  trace);
+                  trace_info);
               break;
             }
             case Stream::TRADE: {
@@ -108,7 +108,7 @@ void MarketStreamParser::dispatch(
               dispatched = true;
               handler(
                   trade,
-                  trace);
+                  trace_info);
               break;
             }
             case Stream::MINI_TICKER: {
@@ -116,7 +116,7 @@ void MarketStreamParser::dispatch(
               dispatched = true;
               handler(
                   mini_ticker,
-                  trace);
+                  trace_info);
               break;
             }
             case Stream::BOOK_TICKER: {
@@ -124,7 +124,7 @@ void MarketStreamParser::dispatch(
               dispatched = true;
               handler(
                   book_ticker,
-                  trace);
+                  trace_info);
               break;
             }
             case Stream::DEPTH5:
@@ -138,7 +138,7 @@ void MarketStreamParser::dispatch(
               handler(
                   symbol,
                   depth,
-                  trace);
+                  trace_info);
               break;
             }
             case Stream::DEPTH: {
@@ -150,7 +150,7 @@ void MarketStreamParser::dispatch(
               handler(
                   symbol,
                   depth_update,
-                  trace);
+                  trace_info);
               break;
             }
           }

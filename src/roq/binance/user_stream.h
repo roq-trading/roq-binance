@@ -32,16 +32,16 @@ class UserStream final
   struct Handler {
     virtual void operator()(
         const json::OutboundAccountInfo&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const json::OutboundAccountPosition&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const json::BalanceUpdate&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
     virtual void operator()(
         const json::ExecutionReport&,
-        const server::Trace&) = 0;
+        const server::TraceInfo&) = 0;
   };
   UserStream(
       Handler& handler,
@@ -74,16 +74,16 @@ class UserStream final
 
   void operator()(
       const json::OutboundAccountInfo&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const json::OutboundAccountPosition&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const json::BalanceUpdate&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
   void operator()(
       const json::ExecutionReport&,
-      const server::Trace&) override;
+      const server::TraceInfo&) override;
 
  private:
   Handler& _handler;

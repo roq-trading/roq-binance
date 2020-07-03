@@ -149,13 +149,13 @@ void UserStream::parse(const std::string_view& message) {
   _profile.parse(
       [&]() {
         try {
-          server::Trace trace;
+          server::TraceInfo trace_info;
           core::json::Buffer buffer(_decode_buffer);
           json::UserStreamParser::dispatch(
               *this,
               message,
               buffer,
-              trace);
+              trace_info);
         } catch (std::exception& e) {
           LOG(WARNING)(
               FMT_STRING(R"(message="{}")"),
@@ -169,7 +169,7 @@ void UserStream::parse(const std::string_view& message) {
 
 void UserStream::operator()(
     const json::OutboundAccountInfo& outbound_account_info,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   _profile.outbound_account_info(
       [&]() {
         VLOG(3)(
@@ -177,13 +177,13 @@ void UserStream::operator()(
             outbound_account_info);
         _handler(
             outbound_account_info,
-            trace);
+            trace_info);
       });
 }
 
 void UserStream::operator()(
     const json::OutboundAccountPosition& outbound_account_position,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   _profile.outbound_account_position(
       [&]() {
         VLOG(3)(
@@ -191,13 +191,13 @@ void UserStream::operator()(
             outbound_account_position);
         _handler(
             outbound_account_position,
-            trace);
+            trace_info);
       });
 }
 
 void UserStream::operator()(
     const json::BalanceUpdate& balance_update,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   _profile.balance_update(
       [&]() {
         VLOG(3)(
@@ -205,13 +205,13 @@ void UserStream::operator()(
             balance_update);
         _handler(
             balance_update,
-            trace);
+            trace_info);
       });
 }
 
 void UserStream::operator()(
     const json::ExecutionReport& execution_report,
-    const server::Trace& trace) {
+    const server::TraceInfo& trace_info) {
   _profile.execution_report(
       [&]() {
         VLOG(3)(
@@ -219,7 +219,7 @@ void UserStream::operator()(
             execution_report);
         _handler(
             execution_report,
-            trace);
+            trace_info);
       });
 }
 
