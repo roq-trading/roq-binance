@@ -23,7 +23,7 @@ constexpr std::string_view CONNECTION = "market_stream";
 
 static auto create_connection_name(uint32_t market_stream_id) {
   return fmt::format(
-      FMT_STRING("{}_{}"),
+      "{}_{}",
       CONNECTION,
       market_stream_id);
 }
@@ -128,12 +128,11 @@ void MarketStream::subscribe_agg_trade(
     const std::vector<std::string>& symbols) {
   assert(symbols.empty() == false);
   auto message = fmt::format(
-      FMT_STRING(
-        R"({{)"
-        R"("method":"SUBSCRIBE",)"
-        R"("params":["{}@aggTrade"],)"
-        R"("id":{})"
-        R"(}})"),
+      R"({{)"
+      R"("method":"SUBSCRIBE",)"
+      R"("params":["{}@aggTrade"],)"
+      R"("id":{})"
+      R"(}})",
       fmt::join(
           symbols,
           R"(@aggTrade",")"),
@@ -146,12 +145,11 @@ void MarketStream::subscribe_trade(
     const std::vector<std::string>& symbols) {
   assert(symbols.empty() == false);
   auto message = fmt::format(
-      FMT_STRING(
-        R"({{)"
-        R"("method":"SUBSCRIBE",)"
-        R"("params":["{}@trade"],)"
-        R"("id":{})"
-        R"(}})"),
+      R"({{)"
+      R"("method":"SUBSCRIBE",)"
+      R"("params":["{}@trade"],)"
+      R"("id":{})"
+      R"(}})",
       fmt::join(
           symbols,
           R"(@trade",")"),
@@ -164,12 +162,11 @@ void MarketStream::subscribe_mini_ticker(
     const std::vector<std::string>& symbols) {
   assert(symbols.empty() == false);
   auto message = fmt::format(
-      FMT_STRING(
-        R"({{)"
-        R"("method":"SUBSCRIBE",)"
-        R"("params":["{}@miniTicker"],)"
-        R"("id":{})"
-        R"(}})"),
+      R"({{)"
+      R"("method":"SUBSCRIBE",)"
+      R"("params":["{}@miniTicker"],)"
+      R"("id":{})"
+      R"(}})",
       fmt::join(
           symbols,
           R"(@miniTicker",")"),
@@ -182,12 +179,11 @@ void MarketStream::subscribe_book_ticker(
     const std::vector<std::string>& symbols) {
   assert(symbols.empty() == false);
   auto message = fmt::format(
-      FMT_STRING(
-        R"({{)"
-        R"("method":"SUBSCRIBE",)"
-        R"("params":["{}@bookTicker"],)"
-        R"("id":{})"
-        R"(}})"),
+      R"({{)"
+      R"("method":"SUBSCRIBE",)"
+      R"("params":["{}@bookTicker"],)"
+      R"("id":{})"
+      R"(}})",
       fmt::join(
           symbols,
           R"(@bookTicker",")"),
@@ -200,19 +196,18 @@ void MarketStream::subscribe_depth(
     const std::vector<std::string>& symbols) {
   assert(symbols.empty() == false);
   auto stream = fmt::format(
-      FMT_STRING(R"(@depth{}@{}ms)"),
+      R"(@depth{}@{}ms)",
       FLAGS_ws_depth_levels,
       FLAGS_ws_depth_freq_msecs);
   auto separator = fmt::format(
-      FMT_STRING(R"({}",")"),
+      R"({}",")",
       stream);
   auto message = fmt::format(
-      FMT_STRING(
-        R"({{)"
-        R"("method":"SUBSCRIBE",)"
-        R"("params":["{}{}"],)"
-        R"("id":{})"
-        R"(}})"),
+      R"({{)"
+      R"("method":"SUBSCRIBE",)"
+      R"("params":["{}{}"],)"
+      R"("id":{})"
+      R"(}})",
       fmt::join(
           symbols,
           separator),
@@ -251,7 +246,7 @@ void MarketStream::operator()(const core::web::Socket::Disconnected&) {
 
 void MarketStream::operator()(const core::web::Socket::Ready&) {
   LOG(INFO)(
-      FMT_STRING("Ready (#{})"),
+      "Ready (#{})",
       _market_stream_id);
   if (FLAGS_ws_trade_details) {
     subscribe_trade(_symbols);
@@ -312,10 +307,10 @@ void MarketStream::parse(const std::string_view& message) {
               trace_info);
         } catch (std::exception& e) {
           LOG(WARNING)(
-              FMT_STRING(R"(message="{}")"),
+              R"(message="{}")",
               message);
           LOG(FATAL)(
-              FMT_STRING(R"(ERROR what="{}")"),
+              R"(ERROR what="{}")",
               e.what());
         }
       });
@@ -327,7 +322,7 @@ void MarketStream::operator()(
   _profile.error(
       [&]() {
         LOG(WARNING)(
-            FMT_STRING(R"(id={}, error={})"),
+            R"(id={}, error={})",
             id,
             error);
       });
@@ -339,7 +334,7 @@ void MarketStream::operator()(
   _profile.result(
       [&]() {
         LOG(INFO)(
-            FMT_STRING(R"(id={}, result={})"),
+            R"(id={}, result={})",
             id,
             result);
       });
@@ -351,7 +346,7 @@ void MarketStream::operator()(
   _profile.agg_trade(
       [&]() {
         VLOG(3)(
-            FMT_STRING(R"(agg_trade={})"),
+            R"(agg_trade={})",
             agg_trade);
         _handler(
             agg_trade,
@@ -365,7 +360,7 @@ void MarketStream::operator()(
   _profile.trade(
       [&]() {
         VLOG(3)(
-            FMT_STRING(R"(trade={})"),
+            R"(trade={})",
             trade);
         _handler(
             trade,
@@ -379,7 +374,7 @@ void MarketStream::operator()(
   _profile.mini_ticker(
       [&]() {
         VLOG(3)(
-            FMT_STRING(R"(mini_ticker={})"),
+            R"(mini_ticker={})",
             mini_ticker);
         _handler(
             mini_ticker,
@@ -393,7 +388,7 @@ void MarketStream::operator()(
   _profile.book_ticker(
       [&]() {
         VLOG(3)(
-            FMT_STRING(R"(book_ticker={})"),
+            R"(book_ticker={})",
             book_ticker);
         _handler(
             book_ticker,
@@ -408,7 +403,7 @@ void MarketStream::operator()(
   _profile.depth(
       [&]() {
         VLOG(3)(
-            FMT_STRING(R"(symbol="{}", depth={})"),
+            R"(symbol="{}", depth={})",
             symbol,
             depth);
         _handler(
@@ -425,7 +420,7 @@ void MarketStream::operator()(
   _profile.depth_update(
       [&]() {
         VLOG(3)(
-            FMT_STRING(R"(symbol="{}", depth_update={})"),
+            R"(symbol="{}", depth_update={})",
             symbol,
             depth_update);
         _handler(

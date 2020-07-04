@@ -36,7 +36,7 @@ void MarketStreamParser::dispatch(
           break;
         case Field::UNKNOWN:
           DLOG(FATAL)(
-              FMT_STRING(R"(Unknown key="{}")"),
+              R"(Unknown key="{}")",
               key);
           // XXX CALLBACK ?????????????
           break;
@@ -68,7 +68,7 @@ void MarketStreamParser::dispatch(
           auto full_name = std::get<std::string_view>(value);
           auto idx0 = full_name.find('@');  // <symbol>@<stream>
           LOG_IF(FATAL, idx0 == full_name.npos)(
-              FMT_STRING(R"(Unexpected: name="")"),
+              R"(Unexpected: name="")",
               full_name);
           symbol = std::string_view(
               full_name.begin(),
@@ -161,7 +161,7 @@ void MarketStreamParser::dispatch(
   if (dispatched)
     return;
   LOG(WARNING)(
-      FMT_STRING(R"(message="{}")"),
+      R"(message="{}")",
       message);
   LOG(FATAL)("Unexpected");
 }

@@ -21,7 +21,7 @@ namespace binance {
 namespace {
 static auto create_query(const std::string_view& listen_key) {
   return fmt::format(
-      FMT_STRING("?streams={}"),
+      "?streams={}",
       listen_key);
 }
 
@@ -158,10 +158,10 @@ void UserStream::parse(const std::string_view& message) {
               trace_info);
         } catch (std::exception& e) {
           LOG(WARNING)(
-              FMT_STRING(R"(message="{}")"),
+              R"(message="{}")",
               message);
           LOG(FATAL)(
-              FMT_STRING(R"(ERROR what="{}")"),
+              R"(ERROR what="{}")",
               e.what());
         }
       });
@@ -173,7 +173,7 @@ void UserStream::operator()(
   _profile.outbound_account_info(
       [&]() {
         VLOG(3)(
-            FMT_STRING(R"(outbound_account_info={})"),
+            R"(outbound_account_info={})",
             outbound_account_info);
         _handler(
             outbound_account_info,
@@ -187,7 +187,7 @@ void UserStream::operator()(
   _profile.outbound_account_position(
       [&]() {
         VLOG(3)(
-            FMT_STRING(R"(outbound_account_position={})"),
+            R"(outbound_account_position={})",
             outbound_account_position);
         _handler(
             outbound_account_position,
@@ -201,7 +201,7 @@ void UserStream::operator()(
   _profile.balance_update(
       [&]() {
         VLOG(3)(
-            FMT_STRING(R"(balance_update={})"),
+            R"(balance_update={})",
             balance_update);
         _handler(
             balance_update,
@@ -215,7 +215,7 @@ void UserStream::operator()(
   _profile.execution_report(
       [&]() {
         VLOG(3)(
-            FMT_STRING(R"(execution_report={})"),
+            R"(execution_report={})",
             execution_report);
         _handler(
             execution_report,

@@ -117,7 +117,7 @@ void Gateway::operator()(
     } catch (NetworkError& e) {
       // XXX send ack failure
       LOG(FATAL)(
-          FMT_STRING(R"(Unexpected what="{}")"),
+          R"(Unexpected what="{}")",
           e.what());
     }
   });
@@ -146,7 +146,7 @@ void Gateway::operator()(
     } catch (NetworkError& e) {
       // XXX send ack failure
       LOG(FATAL)(
-          FMT_STRING(R"(Unexpected what="{}")"),
+          R"(Unexpected what="{}")",
           e.what());
     }
   });
@@ -184,7 +184,7 @@ void Gateway::operator()(
     .exchange_time_utc = agg_trade.event_time,
   };
   VLOG(3)(
-      FMT_STRING(R"(trade_summary={})"),
+      R"(trade_summary={})",
       trade_summary);
   create_trace_and_dispatch(
       trace_info,
@@ -215,7 +215,7 @@ void Gateway::operator()(
     .exchange_time_utc = trade.event_time,
   };
   VLOG(3)(
-      FMT_STRING(R"(trade_summary={})"),
+      R"(trade_summary={})",
       trade_summary);
   create_trace_and_dispatch(
       trace_info,
@@ -252,7 +252,7 @@ void Gateway::operator()(
     .exchange_time_utc = mini_ticker.event_time,
   };
   VLOG(3)(
-      FMT_STRING("statistics_update={}"),
+      "statistics_update={}",
       statistics_update);
   create_trace_and_dispatch(
       trace_info,
@@ -277,7 +277,7 @@ void Gateway::operator()(
     .exchange_time_utc = {},
   };
   VLOG(3)(
-      FMT_STRING(R"(top_of_book={})"),
+      R"(top_of_book={})",
       top_of_book);
   create_trace_and_dispatch(
       trace_info,
@@ -311,9 +311,8 @@ void Gateway::operator()(
   }
   if (ROQ_PREDICT_FALSE(success == false)) {
     LOG(FATAL)(
-        FMT_STRING(
-          R"(Insufficient bid/ask array size(s): )"
-          R"(len(bid)={}/{}, len(ask)={}/{})"),
+        R"(Insufficient bid/ask array size(s): )"
+        R"(len(bid)={}/{}, len(ask)={}/{})",
         bid_length,
         _bid.size(),
         ask_length,
@@ -334,7 +333,7 @@ void Gateway::operator()(
     .exchange_time_utc = {},
     };
   VLOG(3)(
-      FMT_STRING(R"(market_by_price_update={})"),
+      R"(market_by_price_update={})",
       market_by_price_update);
   create_trace_and_dispatch(
       trace_info,
@@ -417,7 +416,7 @@ void Gateway::operator()(
   if (found == false) {
     LOG(WARNING)("*** EXTERNAL ORDER ***");
     LOG(WARNING)(
-        FMT_STRING("execution_report={}"),
+        "execution_report={}",
         execution_report);
   }
 }
@@ -450,7 +449,9 @@ void Gateway::update_market_data(GatewayStatus gateway_status) {
       market_data_status,
       _dispatcher,
       true);
-  LOG(INFO)(FMT_STRING("market_data_status={}"), _market_data_status);
+  LOG(INFO)(
+      "market_data_status={}",
+      _market_data_status);
 }
 
 void Gateway::update_order_manager(GatewayStatus gateway_status) {
@@ -467,7 +468,9 @@ void Gateway::update_order_manager(GatewayStatus gateway_status) {
       order_manager_status,
       _dispatcher,
       true);
-  LOG(INFO)(FMT_STRING("order_manager_status={}"), _order_manager_status);
+  LOG(INFO)(
+      "order_manager_status={}",
+      _order_manager_status);
 }
 
 uint32_t Gateway::download(RestDownload::State state) {
@@ -605,7 +608,7 @@ void Gateway::operator()(const json::ExchangeInfo& exchange_info) {
   for (const auto& item : exchange_info.symbols) {
     if (_dispatcher.discard_symbol(item.symbol)) {
       VLOG(1)(
-          FMT_STRING(R"(Drop symbol="{}")"),
+          R"(Drop symbol="{}")",
           item.symbol);
       continue;
     }
@@ -634,7 +637,7 @@ void Gateway::operator()(const json::ExchangeInfo& exchange_info) {
       .strike_price = std::numeric_limits<double>::quiet_NaN(),
     };
     VLOG(1)(
-        FMT_STRING(R"(reference_data={})"),
+        R"(reference_data={})",
         reference_data);
     create_trace_and_dispatch(
         trace_info,
@@ -647,7 +650,7 @@ void Gateway::operator()(const json::ExchangeInfo& exchange_info) {
       .trading_status = json::map(item.status),
     };
     VLOG(1)(
-        FMT_STRING(R"(market_status={})"),
+        R"(market_status={})",
         market_status);
     create_trace_and_dispatch(
         trace_info,
@@ -656,7 +659,7 @@ void Gateway::operator()(const json::ExchangeInfo& exchange_info) {
         true);
   }
   LOG(INFO)(
-      FMT_STRING("Exchange info: including symbols {}/{}"),
+      "Exchange info: including symbols {}/{}",
       _symbols.size(),
       exchange_info.symbols.size());
 }
@@ -669,7 +672,7 @@ void Gateway::operator()(const json::ListenKey& listen_key) {
   } else if (_listen_key.empty()) {
     _listen_key = value;
     LOG(INFO)(
-        FMT_STRING(R"(Listen key has been acquired (value="{}"))"),
+        R"(Listen key has been acquired (value="{}"))",
         _listen_key);
   } else {
     LOG(FATAL)("Unexpected");

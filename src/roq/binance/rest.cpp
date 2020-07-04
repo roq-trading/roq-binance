@@ -139,13 +139,13 @@ void Rest::get(
             response.body(),
             buffer);
         VLOG(1)(
-            FMT_STRING(R"(exchange_info={})"),
+            R"(exchange_info={})",
             exchange_info);
         core::Promise<json::ExchangeInfo> promise(exchange_info);
         callback(promise);
       } catch (NetworkError& e) {
         LOG(WARNING)(
-            FMT_STRING(R"(Exception type={}, what="{}")"),
+            R"(Exception type={}, what="{}")",
             typeid(e).name(),
             e.what());
         core::Promise<json::ExchangeInfo> promise(std::current_exception());
@@ -162,16 +162,16 @@ void Rest::get(
   constexpr std::string_view path = "/api/v3/account";
   auto now = core::get_realtime_clock();
   auto timestamp = fmt::format(
-      FMT_STRING(R"(timestamp={})"),
+      R"(timestamp={})",
       std::chrono::duration_cast<
         std::chrono::milliseconds>(now).count());
   auto signature = _random.create_signature(timestamp);
   auto query = fmt::format(
-      FMT_STRING(R"(?{}&signature={})"),
+      R"(?{}&signature={})",
       timestamp,
       signature);
   auto headers = fmt::format(
-      FMT_STRING("X-MBX-APIKEY: {}\r\n"),
+      "X-MBX-APIKEY: {}\r\n",
       _api_key);
   _connection.request(
       method,
@@ -189,13 +189,13 @@ void Rest::get(
             response.body(),
             buffer);
         VLOG(1)(
-            FMT_STRING(R"(account={})"),
+            R"(account={})",
             account);
         core::Promise<json::Account> promise(account);
         callback(promise);
       } catch (NetworkError& e) {
         LOG(WARNING)(
-            FMT_STRING(R"(Exception type={}, what="{}")"),
+            R"(Exception type={}, what="{}")",
             typeid(e).name(),
             e.what());
         core::Promise<json::Account> promise(std::current_exception());
@@ -211,7 +211,7 @@ void Rest::get(
   constexpr auto method = core::http::Method::POST;
   constexpr std::string_view path = "/api/v3/userDataStream";
   auto headers = fmt::format(
-      FMT_STRING("X-MBX-APIKEY: {}\r\n"),
+      "X-MBX-APIKEY: {}\r\n",
       _api_key);
   _connection.request(
       method,
@@ -227,13 +227,13 @@ void Rest::get(
         auto listen_key = core::json::Parser::create<json::ListenKey>(
             response.body());
         VLOG(1)(
-            FMT_STRING(R"(listen_key={})"),
+            R"(listen_key={})",
             listen_key);
         core::Promise<json::ListenKey> promise(listen_key);
         callback(promise);
       } catch (NetworkError& e) {
         LOG(WARNING)(
-            FMT_STRING(R"(Exception type={}, what="{}")"),
+            R"(Exception type={}, what="{}")",
             typeid(e).name(),
             e.what());
         core::Promise<json::ListenKey> promise(std::current_exception());
@@ -265,13 +265,13 @@ void Rest::get(
             response.body(),
             buffer);
         VLOG(1)(
-            FMT_STRING(R"(depth={})"),
+            R"(depth={})",
             depth);
         core::Promise<json::Depth> promise(depth);
         callback(promise);
       } catch (NetworkError& e) {
         LOG(WARNING)(
-            FMT_STRING(R"(Exception type={}, what="{}")"),
+            R"(Exception type={}, what="{}")",
             typeid(e).name(),
             e.what());
         core::Promise<json::Depth> promise(std::current_exception());
@@ -290,21 +290,20 @@ void Rest::create_order(
   auto timestamp = core::get_realtime_clock();
   // XXX use encode buffer
   auto message = fmt::format(
-      FMT_STRING(
-        R"({{)"
-        R"("symbol":"{}",)"
-        R"("side":"{}",)"
-        R"("type":"{}",)"
-        R"("timeInForce":"{}",)"
-        R"("quantity":{},)"
-        R"("quoteOrderQty":{},)"  // XXX ???
-        R"("price":{},)"
-        R"("newClientOrderId":"{}")"
-        R"("stopPrice":{},)"  // XXX ???
-        R"("icebergQty":{},)"  // XXX ???
-        R"("recvWindow":{},)"
-        R"("timestamp":{})"
-        R"(}})"),
+      R"({{)"
+      R"("symbol":"{}",)"
+      R"("side":"{}",)"
+      R"("type":"{}",)"
+      R"("timeInForce":"{}",)"
+      R"("quantity":{},)"
+      R"("quoteOrderQty":{},)"  // XXX ???
+      R"("price":{},)"
+      R"("newClientOrderId":"{}")"
+      R"("stopPrice":{},)"  // XXX ???
+      R"("icebergQty":{},)"  // XXX ???
+      R"("recvWindow":{},)"
+      R"("timestamp":{})"
+      R"(}})",
       create_order.symbol,
       json::map(create_order.side).as_raw_text(),
       json::map(create_order.order_type).as_raw_text(),
@@ -318,10 +317,10 @@ void Rest::create_order(
       FLAGS_rest_recv_window_secs * 1000,
       timestamp.count());
   DLOG(INFO)(
-      FMT_STRING(R"(body="{}")"),
+      R"(body="{}")",
       message);
   auto headers = fmt::format(
-      FMT_STRING("X-MBX-APIKEY: {}\r\n"),
+      "X-MBX-APIKEY: {}\r\n",
       _api_key);
   _connection.request(
       method,
@@ -339,13 +338,13 @@ void Rest::create_order(
             response.body(),
             buffer);
         VLOG(1)(
-            FMT_STRING(R"(new_order={})"),
+            R"(new_order={})",
             new_order);
         core::Promise<json::NewOrder> promise(new_order);
         callback(promise);
       } catch (NetworkError& e) {
         LOG(WARNING)(
-            FMT_STRING(R"(Exception type={}, what="{}")"),
+            R"(Exception type={}, what="{}")",
             typeid(e).name(),
             e.what());
         core::Promise<json::NewOrder> promise(std::current_exception());
@@ -366,24 +365,23 @@ void Rest::cancel_order(
   auto timestamp = core::get_realtime_clock();
   // XXX use encode buffer
   auto message = fmt::format(
-      FMT_STRING(
-        R"({{)"
-        R"("symbol":"{}",)"
-        R"("origClientOrderId":"{}")"
-        R"("newClientOrderId":"{}")"
-        R"("recvWindow":{},)"
-        R"("timestamp":{})"
-        R"(}})"),
+      R"({{)"
+      R"("symbol":"{}",)"
+      R"("origClientOrderId":"{}")"
+      R"("newClientOrderId":"{}")"
+      R"("recvWindow":{},)"
+      R"("timestamp":{})"
+      R"(}})",
       order.symbol,
       order.external_order_id,
       request_id,
       FLAGS_rest_recv_window_secs * 1000,
       timestamp.count());
   DLOG(INFO)(
-      FMT_STRING(R"(body="{}")"),
+      R"(body="{}")",
       message);
   auto headers = fmt::format(
-      FMT_STRING("X-MBX-APIKEY: {}\r\n"),
+      "X-MBX-APIKEY: {}\r\n",
       _api_key);
   _connection.request(
       method,
@@ -399,13 +397,13 @@ void Rest::cancel_order(
         auto cancel_order = core::json::Parser::create<json::CancelOrder>(
             response.body());
         VLOG(1)(
-            FMT_STRING(R"(cancel_order={})"),
+            R"(cancel_order={})",
             cancel_order);
         core::Promise<json::CancelOrder> promise(cancel_order);
         callback(promise);
       } catch (NetworkError& e) {
         LOG(WARNING)(
-            FMT_STRING(R"(Exception type={}, what="{}")"),
+            R"(Exception type={}, what="{}")",
             typeid(e).name(),
             e.what());
         core::Promise<json::CancelOrder> promise(std::current_exception());

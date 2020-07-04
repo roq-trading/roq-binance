@@ -31,7 +31,7 @@ void UserStreamParser::dispatch(
     break;
   }
   LOG(WARNING)(
-      FMT_STRING(R"(message="{}")"),
+      R"(message="{}")",
       message);
   LOG(FATAL)("Unexpected");
 }
