@@ -309,7 +309,7 @@ void Gateway::operator()(
         ask_length,
         item);
   }
-  if (ROQ_PREDICT_FALSE(success == false)) {
+  if (ROQ_UNLIKELY(success == false)) {
     LOG(FATAL)(
         R"(Insufficient bid/ask array size(s): )"
         R"(len(bid)={}/{}, len(ask)={}/{})",
