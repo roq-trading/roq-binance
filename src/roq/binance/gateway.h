@@ -2,13 +2,13 @@
 
 #pragma once
 
+#include <absl/container/flat_hash_set.h>
+
 #include <list>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include <absl/container/flat_hash_set.h>
 
 #include "roq/metrics.h"
 

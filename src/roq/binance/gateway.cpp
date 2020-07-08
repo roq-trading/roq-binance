@@ -6,7 +6,6 @@
 #include <limits>
 
 #include "roq/logging.h"
-#include "roq/format.h"
 
 #include "roq/core/string/builder.h"
 
@@ -578,7 +577,7 @@ void Gateway::subscribe_user_stream() {
       _dns_base,
       _ssl_context,
       _listen_key);
-  MessageInfo message_info; // XXX something sensible;
+  MessageInfo message_info;  // XXX something sensible
   Start start;
   create_event_and_dispatch(
       *_user_stream,
