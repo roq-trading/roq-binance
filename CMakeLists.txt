@@ -1,0 +1,75 @@
+cmake_minimum_required(VERSION 3.12)
+
+# cmake
+
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+
+# version (using git tag)
+
+include(GetGitRepoVersion)
+
+# project
+
+project(roq-binance VERSION ${GIT_REPO_VERSION})
+
+# conda
+
+if(DEFINED ENV{CONDA_PREFIX})
+  set(CMAKE_INSTALL_PREFIX $ENV{CONDA_PREFIX})
+  set(CMAKE_FIND_ROOT_PATH $ENV{CONDA_PREFIX})
+endif()
+
+# rpath
+
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+# c++
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# dependencies
+
+find_package(HttpParser REQUIRED)
+find_package(OpenSSL REQUIRED)
+find_package(Brotli REQUIRED)
+find_package(absl REQUIRED)
+find_package(fmt REQUIRED)
+find_package(gflags REQUIRED)
+find_package(roq-api REQUIRED)
+find_package(roq-core REQUIRED)
+find_package(roq-logging REQUIRED)
+find_package(roq-server REQUIRED)
+find_package(rt REQUIRED)
+
+# include
+
+include_directories(
+  "${CMAKE_SOURCE_DIR}/src"
+  # >>> autogen >>>
+  "${CMAKE_BINARY_DIR}/src")
+
+# sub-projects
+
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/src/roq/binance")
+
+# test
+
+option(ROQ_BINANCE_TEST "Enable test" OFF)
+
+if(ROQ_BINANCE_TEST)
+  include(GoogleTest)
+  add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/googletest" EXCLUDE_FROM_ALL)
+  enable_testing()
+  add_subdirectory("${CMAKE_SOURCE_DIR}/test")
+endif(ROQ_BINANCE_TEST)
+
+# benchmark
+
+option(ROQ_BINANCE_BENCHMARK "Enable benchmark" OFF)
+
+if(ROQ_BINANCE_BENCHMARK)
+  find_package(benchmark REQUIRED)
+  add_subdirectory("${CMAKE_SOURCE_DIR}/benchmark")
+endif(ROQ_BINANCE_BENCHMARK)

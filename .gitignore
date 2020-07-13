@@ -42,3 +42,5 @@ roq-binance-benchmark
 roq-binance-test
 
 *.roq
+
+build/
