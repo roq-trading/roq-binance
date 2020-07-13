@@ -56,18 +56,19 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/src/roq/binance")
 
 # test
 
-option(ROQ_BINANCE_TEST "Enable test" OFF)
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+  include(CTest)
+endif()
 
-if(ROQ_BINANCE_TEST)
+if(BUILD_TESTING)
   include(GoogleTest)
   add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/googletest" EXCLUDE_FROM_ALL)
-  enable_testing()
   add_subdirectory("${CMAKE_SOURCE_DIR}/test")
-endif(ROQ_BINANCE_TEST)
+endif(BUILD_TESTING)
 
 # benchmark
 
-option(ROQ_BINANCE_BENCHMARK "Enable benchmark" OFF)
+option(ROQ_BINANCE_BENCHMARK "Enable benchmark" ON)
 
 if(ROQ_BINANCE_BENCHMARK)
   find_package(benchmark REQUIRED)
