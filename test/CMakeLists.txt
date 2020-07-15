@@ -9,9 +9,14 @@ add_executable("${TARGET_NAME}"
 )
 
 target_link_libraries("${TARGET_NAME}"
-  # ${PROJECT_NAME}
+  "${PROJECT_NAME}-json"
+  roq-server
+  roq-core
+  fmt::fmt
   gtest_main
 )
+
+set_target_properties("${TARGET_NAME}" PROPERTIES LINK_FLAGS_RELEASE -s)
 
 # run
 

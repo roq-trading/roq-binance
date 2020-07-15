@@ -1,5 +1,19 @@
 set(TARGET_NAME "${PROJECT_NAME}")
 
+set(SOURCES
+  application.cpp
+  config.cpp
+  gateway.cpp
+  main.cpp
+  market_stream.cpp
+  options.cpp
+  random.cpp
+  rest.cpp
+  user_stream.cpp
+)
+
+add_subdirectory("json")
+
 include(RoqAutogen)
 
 roq_autogen(
@@ -12,7 +26,6 @@ roq_autogen(
 add_custom_target(autogen-headers ALL
   DEPENDS ${AUTOGEN_HEADERS})
 
-
 roq_autogen(
   OUTPUT AUTOGEN_SOURCES
   PATTERN "*.json"
@@ -20,65 +33,16 @@ roq_autogen(
   OUTPUT_TYPE "state"
   FILE_TYPE "cpp")
 
-add_custom_target(autogen-sources ALL
-  DEPENDS ${AUTOGEN_SOURCES})
-
-# json
-
-add_custom_target(ensure-json-directory-exists ALL
-  COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/json")
-
-roq_autogen(
-  OUTPUT AUTOGEN_JSON_HEADERS
-  PATTERN "json/*.json"
-  NAMESPACE "roq/binance/json"
-  OUTPUT_TYPE "json"
-  FILE_TYPE "h"
-  DEPENDS ensure-json-directory-exists)
-
-add_custom_target(autogen-json-headers ALL
-  DEPENDS ${AUTOGEN_JSON_HEADERS})
-
-roq_autogen(
-  OUTPUT AUTOGEN_JSON_SOURCES
-  PATTERN "json/*.json"
-  NAMESPACE "roq/binance/json"
-  OUTPUT_TYPE "json"
-  FILE_TYPE "cpp"
-  DEPENDS ensure-json-directory-exists)
-
-add_custom_target(autogen-json-sources ALL
-  DEPENDS ${AUTOGEN_JSON_SOURCES})
-
-# main
-
-set(SOURCES
-  application.cpp
-  config.cpp
-  gateway.cpp
-  json/market_stream_parser.cpp
-  json/user_stream_parser.cpp
-  json/utils.cpp
-  main.cpp
-  market_stream.cpp
-  options.cpp
-  random.cpp
-  rest.cpp
-  user_stream.cpp
-)
-
 add_executable("${TARGET_NAME}"
   ${SOURCES}
-  ${AUTOGEN_SOURCES}
-  ${AUTOGEN_JSON_SOURCES})
+  ${AUTOGEN_SOURCES})
 
 add_dependencies("${TARGET_NAME}"
   autogen-headers
-  autogen-sources
-  autogen-json-headers
-  autogen-json-sources)
+  autogen-json-headers)
 
 target_link_libraries("${TARGET_NAME}"
+  "${PROJECT_NAME}-json"
   roq-server
   roq-core
   roq-api::roq-api
@@ -91,6 +55,8 @@ target_link_libraries("${TARGET_NAME}"
   ${BROTLI_LIBRARIES}
   ${RT_LIBRARIES}
 )
+
+set_target_properties("${TARGET_NAME}" PROPERTIES LINK_FLAGS_RELEASE -s)
 
 target_compile_definitions("${TARGET_NAME}" PRIVATE
   PACKAGE_NAME="${TARGET_NAME}"

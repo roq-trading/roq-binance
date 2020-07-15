@@ -32,6 +32,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# filesystem
+
+include(GNUInstallDirs)
+
 # dependencies
 
 find_package(HttpParser REQUIRED)
@@ -77,3 +81,8 @@ if(ROQ_BINANCE_BENCHMARK)
   find_package(benchmark REQUIRED)
   add_subdirectory("${CMAKE_SOURCE_DIR}/benchmark")
 endif(ROQ_BINANCE_BENCHMARK)
+
+# install
+
+install(FILES "share/config.toml"
+  DESTINATION "${CMAKE_INSTALL_DATADIR}/roq/binance")
