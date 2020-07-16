@@ -8,22 +8,58 @@ set(SOURCES
 
 include(RoqAutogen)
 
+set(AUTOGEN_SCHEMAS
+  account.json
+  agg_trade.json
+  balance.json
+  balance_update.json
+  balances_item.json
+  book_ticker.json
+  cancel_order.json
+  depth.json
+  depth_item.json
+  depth_update.json
+  error.json
+  event_type.json
+  exchange_info.json
+  execution_report.json
+  execution_type.json
+  field.json
+  fill.json
+  filter_type.json
+  listen_key.json
+  mini_ticker.json
+  new_order.json
+  order_status.json
+  order_type.json
+  outbound_account_info.json
+  outbound_account_position.json
+  result.json
+  side.json
+  stream.json
+  symbol.json
+  symbol_status.json
+  ticker.json
+  time_in_force.json
+  trade.json
+)
+
 roq_autogen(
   OUTPUT AUTOGEN_HEADERS
-  PATTERN "*.json"
   NAMESPACE "roq/binance/json"
   OUTPUT_TYPE "json"
-  FILE_TYPE "h")
+  FILE_TYPE "h"
+  SOURCES ${AUTOGEN_SCHEMAS})
 
 add_custom_target(autogen-json-headers ALL
   DEPENDS ${AUTOGEN_HEADERS})
 
 roq_autogen(
   OUTPUT AUTOGEN_SOURCES
-  PATTERN "*.json"
   NAMESPACE "roq/binance/json"
   OUTPUT_TYPE "json"
-  FILE_TYPE "cpp")
+  FILE_TYPE "cpp"
+  SOURCES ${AUTOGEN_SCHEMAS})
 
 add_library("${TARGET_NAME}" STATIC
   ${SOURCES}
