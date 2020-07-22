@@ -57,6 +57,7 @@ build/
 
 # project specific
 
+roq-binance.pc
 roq-binance
 roq-binance-benchmark
 roq-binance-test
