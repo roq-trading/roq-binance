@@ -61,6 +61,15 @@ roq_autogen(
   FILE_TYPE "cpp"
   SOURCES ${AUTOGEN_SCHEMAS})
 
+set(GITIGNORE "${CMAKE_CURRENT_SOURCE_DIR}/.gitignore")
+
+file(WRITE "${GITIGNORE}" "")
+
+foreach(path ${AUTOGEN_SCHEMAS})
+  get_filename_component(name ${path} NAME_WE)
+  file(APPEND "${GITIGNORE}" "${name}.h\n${name}.cpp\n")
+endforeach()
+
 add_library("${TARGET_NAME}" STATIC
   ${SOURCES}
   ${AUTOGEN_SOURCES})
