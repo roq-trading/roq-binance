@@ -105,8 +105,7 @@ void Gateway::operator()(const Event<Connection>&) {
 void Gateway::operator()(
     const Event<CreateOrder>& event,
     const std::string_view& request_id,
-    uint32_t gateway_order_id) {
-  (void) gateway_order_id;  // avoid warning
+    [[ maybe_unused ]] uint32_t gateway_order_id) {
   _rest.connection.create_order(
       event.value,
       request_id,
@@ -407,9 +406,9 @@ void Gateway::operator()(
       execution_report.client_order_id,
       order_lookup,
       trace_info,
-      [&](const auto& order, auto& result) {
-        (void)(order);
-        (void)(result);
+      [&](
+          [[ maybe_unused ]] const auto& order,
+          [[ maybe_unused ]] auto& result) {
         // XXX IMPLEMENT
       });
   if (found == false) {

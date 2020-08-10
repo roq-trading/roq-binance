@@ -47,7 +47,7 @@ static auto create_latency(
 
 Rest::Rest(
     Handler& handler,
-    const Config& config,
+    [[ maybe_unused ]] const Config& config,
     Random& random,
     core::event::Base& base,
     core::event::DNSBase& dns_base,
@@ -84,7 +84,6 @@ Rest::Rest(
       _latency {
         .ping = create_latency("ping"),
       } {
-  (void) config;  // avoid warning
 }
 
 bool Rest::ready() const {
@@ -355,11 +354,10 @@ void Rest::create_order(
 }
 
 void Rest::cancel_order(
-    const CancelOrder& cancel_order,
+    [[ maybe_unused ]] const CancelOrder& cancel_order,
     const std::string_view& request_id,
     const server::OMS_Order& order,
     std::function<void(const core::Promise<json::CancelOrder>&)>&& callback) {
-  (void)cancel_order;
   constexpr auto method = core::http::Method::DELETE;
   constexpr std::string_view path = "/api/v3/order";
   auto timestamp = core::get_realtime_clock();
