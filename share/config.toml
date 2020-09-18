@@ -1,12 +1,4 @@
-symbols = [
-  "BTCUSDT",
-  ".*BTC",
-]
-
-[order_templates]
-
-  [order_templates.default]
-  self_trade_prevention = 'D'
+symbols = ".*"
 
 [accounts]
 
@@ -14,7 +6,7 @@ symbols = [
   master = true
   login = "YOUR_BINANCE_API_KEY_GOES_HERE"
   secret = "YOUR_BINANCE_SECRET_GOES_HERE"
-  symbols = [ "BTCUSDT", ".*BTC" ]
+  symbols = ".*"
 
 [users]
 
