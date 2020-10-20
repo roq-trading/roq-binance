@@ -17,10 +17,10 @@ namespace binance {
 namespace json {
 
 void MarketStreamParser::dispatch(
-    MarketStreamParser::Handler& handler,
-    const std::string_view& message,
-    core::json::Buffer& buffer,
-    const server::TraceInfo& trace_info) {
+    MarketStreamParser::Handler &handler,
+    const std::string_view &message,
+    core::json::Buffer &buffer,
+    const server::TraceInfo &trace_info) {
   int64_t id = -1;
   std::string symbol;  // allocating because we need uppercase
   auto stream = Stream::UNDEFINED;
@@ -35,29 +35,21 @@ void MarketStreamParser::dispatch(
           LOG(FATAL)("Unexpected");
           break;
         case Field::UNKNOWN:
-          DLOG(FATAL)(
-              R"(Unknown key="{}")",
-              key);
+          DLOG(FATAL)(R"(Unknown key="{}")", key);
           // XXX CALLBACK ?????????????
           break;
         case Field::ERROR:
           if (id >= 0) {
             Error error(value);
             dispatched = true;
-            handler(
-                id,
-                error);
+            handler(id, error);
           }
           break;
         case Field::RESULT:
           if (id >= 0) {
-            Result result(
-                value,
-                buffer);
+            Result result(value, buffer);
             dispatched = true;
-            handler(
-                id,
-                result);
+            handler(id, result);
           }
           break;
         case Field::ID:
@@ -67,24 +59,19 @@ void MarketStreamParser::dispatch(
           // <symbol>@<stream>[@<freq>]
           auto full_name = std::get<std::string_view>(value);
           auto idx0 = full_name.find('@');  // <symbol>@<stream>
-          LOG_IF(FATAL, idx0 == full_name.npos)(
-              R"(Unexpected: name="")",
-              full_name);
-          symbol = std::string_view(
-              full_name.begin(),
-              idx0);
+          LOG_IF(FATAL, idx0 == full_name.npos)
+          (R"(Unexpected: name="")", full_name);
+          symbol = std::string_view(full_name.begin(), idx0);
           // note! convert to uppercase
           std::transform(
-              symbol.begin(),
-              symbol.end(),
-              symbol.begin(),
-              [](auto c) { return std::toupper(c); });
+              symbol.begin(), symbol.end(), symbol.begin(), [](auto c) {
+                return std::toupper(c);
+              });
           auto idx1 = full_name.find('@', idx0 + 1);
           auto name = std::string_view(
               full_name.begin() + idx0 + 1,
-              (idx1 == full_name.npos)
-                ? full_name.size() - idx0 - 1
-                : idx1 - idx0 - 1);
+              (idx1 == full_name.npos) ? full_name.size() - idx0 - 1
+                                       : idx1 - idx0 - 1);
           stream = Stream(name);
           break;
         }
@@ -98,59 +85,41 @@ void MarketStreamParser::dispatch(
             case Stream::AGG_TRADE: {
               AggTrade agg_trade(value);
               dispatched = true;
-              handler(
-                  agg_trade,
-                  trace_info);
+              handler(agg_trade, trace_info);
               break;
             }
             case Stream::TRADE: {
               Trade trade(value);
               dispatched = true;
-              handler(
-                  trade,
-                  trace_info);
+              handler(trade, trace_info);
               break;
             }
             case Stream::MINI_TICKER: {
               MiniTicker mini_ticker(value);
               dispatched = true;
-              handler(
-                  mini_ticker,
-                  trace_info);
+              handler(mini_ticker, trace_info);
               break;
             }
             case Stream::BOOK_TICKER: {
               BookTicker book_ticker(value);
               dispatched = true;
-              handler(
-                  book_ticker,
-                  trace_info);
+              handler(book_ticker, trace_info);
               break;
             }
             case Stream::DEPTH5:
             case Stream::DEPTH10:
             case Stream::DEPTH20: {
               assert(symbol.empty() == false);
-              Depth depth(
-                  value,
-                  buffer);
+              Depth depth(value, buffer);
               dispatched = true;
-              handler(
-                  symbol,
-                  depth,
-                  trace_info);
+              handler(symbol, depth, trace_info);
               break;
             }
             case Stream::DEPTH: {
               assert(symbol.empty() == false);
-              DepthUpdate depth_update(
-                  value,
-                  buffer);
+              DepthUpdate depth_update(value, buffer);
               dispatched = true;
-              handler(
-                  symbol,
-                  depth_update,
-                  trace_info);
+              handler(symbol, depth_update, trace_info);
               break;
             }
           }
@@ -158,11 +127,8 @@ void MarketStreamParser::dispatch(
       }
     }
   }
-  if (dispatched)
-    return;
-  LOG(WARNING)(
-      R"(message="{}")",
-      message);
+  if (dispatched) return;
+  LOG(WARNING)(R"(message="{}")", message);
   LOG(FATAL)("Unexpected");
 }
 

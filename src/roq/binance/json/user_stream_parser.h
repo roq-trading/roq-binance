@@ -22,32 +22,28 @@ namespace json {
 struct UserStreamParser final {
   struct Handler {
     virtual void operator()(
-        const OutboundAccountInfo&,
-        const server::TraceInfo&) = 0;
+        const OutboundAccountInfo &, const server::TraceInfo &) = 0;
     virtual void operator()(
-        const OutboundAccountPosition&,
-        const server::TraceInfo&) = 0;
+        const OutboundAccountPosition &, const server::TraceInfo &) = 0;
     virtual void operator()(
-        const BalanceUpdate&,
-        const server::TraceInfo&) = 0;
+        const BalanceUpdate &, const server::TraceInfo &) = 0;
     virtual void operator()(
-        const ExecutionReport&,
-        const server::TraceInfo&) = 0;
+        const ExecutionReport &, const server::TraceInfo &) = 0;
   };
 
   static void dispatch(
-      Handler& handler,
-      const std::string_view& message,
-      core::json::Buffer& buffer,
-      const server::TraceInfo& trace);
+      Handler &handler,
+      const std::string_view &message,
+      core::json::Buffer &buffer,
+      const server::TraceInfo &trace);
 
  private:
   static bool try_dispatch(
-      UserStreamParser::Handler& handler,
-      const std::string_view& message,
-      core::json::Buffer& buffer,
+      UserStreamParser::Handler &handler,
+      const std::string_view &message,
+      core::json::Buffer &buffer,
       EventType event_type,
-      const server::TraceInfo& trace);
+      const server::TraceInfo &trace);
 };
 
 }  // namespace json
