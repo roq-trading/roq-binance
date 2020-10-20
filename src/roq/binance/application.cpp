@@ -12,15 +12,11 @@ namespace binance {
 int Application::main(int, char **) {
   LOG(INFO)("Parse configuration");
   Config config(FLAGS_config_file);
-  VLOG(1)(
-      "config={}",
-      config);
+  VLOG(1)("config={}", config);
   LOG(INFO)("Starting the gateway");
   roq::server::Trading<Gateway>(
-      ROQ_PACKAGE_NAME,
-      config,
-      server::RequestIdType::SEQUENTIAL,
-      config).dispatch();
+      ROQ_PACKAGE_NAME, config, server::RequestIdType::SEQUENTIAL, config)
+      .dispatch();
   return EXIT_SUCCESS;
 }
 

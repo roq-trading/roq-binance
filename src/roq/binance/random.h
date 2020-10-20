@@ -15,15 +15,12 @@ namespace binance {
 
 class Random final {
  public:
-  Random(
-      const std::string_view& key,
-      const std::string_view& secret);
+  Random(const std::string_view &key, const std::string_view &secret);
 
-  Random(Random&&) = delete;
-  Random(const Random&) = delete;
+  Random(Random &&) = delete;
+  Random(const Random &) = delete;
 
-  std::string create_signature(
-      const std::string_view& timestamp);
+  std::string create_signature(const std::string_view &timestamp);
 
  private:
   const std::string _key;

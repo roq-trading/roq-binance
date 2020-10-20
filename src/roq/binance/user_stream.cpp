@@ -19,49 +19,33 @@ namespace roq {
 namespace binance {
 
 namespace {
-static auto create_query(const std::string_view& listen_key) {
-  return fmt::format(
-      "?streams={}",
-      listen_key);
+static auto create_query(const std::string_view &listen_key) {
+  return fmt::format("?streams={}", listen_key);
 }
 
 constexpr std::string_view CONNECTION = "user_stream";
 
-static auto create_counter(
-    const std::string_view& function) {
-  return core::metrics::Counter(
-      FLAGS_name,
-      CONNECTION,
-      function);
+static auto create_counter(const std::string_view &function) {
+  return core::metrics::Counter(FLAGS_name, CONNECTION, function);
 }
 
-static auto create_profile(
-    const std::string_view& function) {
-  return core::metrics::Profile(
-      FLAGS_name,
-      CONNECTION,
-      function);
+static auto create_profile(const std::string_view &function) {
+  return core::metrics::Profile(FLAGS_name, CONNECTION, function);
 }
 
-static auto create_latency(
-    const std::string_view& function) {
-  return core::metrics::Latency(
-      FLAGS_name,
-      CONNECTION,
-      function);
+static auto create_latency(const std::string_view &function) {
+  return core::metrics::Latency(FLAGS_name, CONNECTION, function);
 }
 }  // namespace
 
 UserStream::UserStream(
-    Handler& handler,
-    Random& random,
-    core::event::Base& base,
-    core::event::DNSBase& dns_base,
-    core::ssl::Context& ssl_context,
-    const std::string_view& listen_key)
-    : _handler(handler),
-      _query(create_query(listen_key)),
-      _random(random),
+    Handler &handler,
+    Random &random,
+    core::event::Base &base,
+    core::event::DNSBase &dns_base,
+    core::ssl::Context &ssl_context,
+    const std::string_view &listen_key)
+    : _handler(handler), _query(create_query(listen_key)), _random(random),
       _connection(
           *this,
           base,
@@ -80,7 +64,8 @@ UserStream::UserStream(
       _profile {
         .parse = create_profile("parse"),
         .outbound_account_info = create_profile("outbound_account_info"),
-        .outbound_account_position = create_profile("outbound_account_position"),
+        .outbound_account_position =
+            create_profile("outbound_account_position"),
         .balance_update = create_profile("balance_update"),
         .execution_report = create_profile("execution_report"),
       },
@@ -94,133 +79,104 @@ bool UserStream::ready() const {
   return _connection.ready();
 }
 
-void UserStream::operator()(const Event<Start>&) {
+void UserStream::operator()(const Event<Start> &) {
   _connection.start();
 }
 
-void UserStream::operator()(const Event<Stop>&) {
+void UserStream::operator()(const Event<Stop> &) {
   _connection.stop();
 }
 
-void UserStream::operator()(const Event<Timer>& event) {
+void UserStream::operator()(const Event<Timer> &event) {
   _connection.refresh(event.value.now);
 }
 
-void UserStream::operator()(metrics::Writer& writer) {
+void UserStream::operator()(metrics::Writer &writer) {
   writer
-    // counter
-    .write(_counter.disconnect, metrics::COUNTER)
-    // profile
-    .write(_profile.parse, metrics::PROFILE)
-    .write(_profile.outbound_account_info, metrics::PROFILE)
-    .write(_profile.outbound_account_position, metrics::PROFILE)
-    .write(_profile.balance_update, metrics::PROFILE)
-    .write(_profile.execution_report, metrics::PROFILE)
-    // latency
-    .write(_latency.ping, metrics::LATENCY)
-    .write(_latency.heartbeat, metrics::LATENCY);
+      // counter
+      .write(_counter.disconnect, metrics::COUNTER)
+      // profile
+      .write(_profile.parse, metrics::PROFILE)
+      .write(_profile.outbound_account_info, metrics::PROFILE)
+      .write(_profile.outbound_account_position, metrics::PROFILE)
+      .write(_profile.balance_update, metrics::PROFILE)
+      .write(_profile.execution_report, metrics::PROFILE)
+      // latency
+      .write(_latency.ping, metrics::LATENCY)
+      .write(_latency.heartbeat, metrics::LATENCY);
 }
 
-void UserStream::operator()(const core::web::Socket::Connected&) {
+void UserStream::operator()(const core::web::Socket::Connected &) {
 }
 
-void UserStream::operator()(const core::web::Socket::Disconnected&) {
+void UserStream::operator()(const core::web::Socket::Disconnected &) {
   ++_counter.disconnect;
 }
 
-void UserStream::operator()(const core::web::Socket::Ready&) {
+void UserStream::operator()(const core::web::Socket::Ready &) {
   LOG(INFO)("Ready");
 }
 
-void UserStream::operator()(const core::web::Socket::Close&) {
+void UserStream::operator()(const core::web::Socket::Close &) {
 }
 
-void UserStream::operator()(const core::web::Socket::Latency& latency) {
+void UserStream::operator()(const core::web::Socket::Latency &latency) {
   _latency.ping.update(
-      std::chrono::duration_cast<std::chrono::nanoseconds>(
-          latency.sample).count());
+      std::chrono::duration_cast<std::chrono::nanoseconds>(latency.sample)
+          .count());
 }
 
-void UserStream::operator()(const core::web::Socket::Text& text) {
+void UserStream::operator()(const core::web::Socket::Text &text) {
   parse(text.payload);
 }
 
-void UserStream::parse(const std::string_view& message) {
-  _profile.parse(
-      [&]() {
-        try {
-          server::TraceInfo trace_info;
-          core::json::Buffer buffer(_decode_buffer);
-          json::UserStreamParser::dispatch(
-              *this,
-              message,
-              buffer,
-              trace_info);
-        } catch (std::exception& e) {
-          LOG(WARNING)(
-              R"(message="{}")",
-              message);
-          LOG(FATAL)(
-              R"(ERROR what="{}")",
-              e.what());
-        }
-      });
+void UserStream::parse(const std::string_view &message) {
+  _profile.parse([&]() {
+    try {
+      server::TraceInfo trace_info;
+      core::json::Buffer buffer(_decode_buffer);
+      json::UserStreamParser::dispatch(*this, message, buffer, trace_info);
+    } catch (std::exception &e) {
+      LOG(WARNING)(R"(message="{}")", message);
+      LOG(FATAL)(R"(ERROR what="{}")", e.what());
+    }
+  });
 }
 
 void UserStream::operator()(
-    const json::OutboundAccountInfo& outbound_account_info,
-    const server::TraceInfo& trace_info) {
-  _profile.outbound_account_info(
-      [&]() {
-        VLOG(3)(
-            R"(outbound_account_info={})",
-            outbound_account_info);
-        _handler(
-            outbound_account_info,
-            trace_info);
-      });
+    const json::OutboundAccountInfo &outbound_account_info,
+    const server::TraceInfo &trace_info) {
+  _profile.outbound_account_info([&]() {
+    VLOG(3)(R"(outbound_account_info={})", outbound_account_info);
+    _handler(outbound_account_info, trace_info);
+  });
 }
 
 void UserStream::operator()(
-    const json::OutboundAccountPosition& outbound_account_position,
-    const server::TraceInfo& trace_info) {
-  _profile.outbound_account_position(
-      [&]() {
-        VLOG(3)(
-            R"(outbound_account_position={})",
-            outbound_account_position);
-        _handler(
-            outbound_account_position,
-            trace_info);
-      });
+    const json::OutboundAccountPosition &outbound_account_position,
+    const server::TraceInfo &trace_info) {
+  _profile.outbound_account_position([&]() {
+    VLOG(3)(R"(outbound_account_position={})", outbound_account_position);
+    _handler(outbound_account_position, trace_info);
+  });
 }
 
 void UserStream::operator()(
-    const json::BalanceUpdate& balance_update,
-    const server::TraceInfo& trace_info) {
-  _profile.balance_update(
-      [&]() {
-        VLOG(3)(
-            R"(balance_update={})",
-            balance_update);
-        _handler(
-            balance_update,
-            trace_info);
-      });
+    const json::BalanceUpdate &balance_update,
+    const server::TraceInfo &trace_info) {
+  _profile.balance_update([&]() {
+    VLOG(3)(R"(balance_update={})", balance_update);
+    _handler(balance_update, trace_info);
+  });
 }
 
 void UserStream::operator()(
-    const json::ExecutionReport& execution_report,
-    const server::TraceInfo& trace_info) {
-  _profile.execution_report(
-      [&]() {
-        VLOG(3)(
-            R"(execution_report={})",
-            execution_report);
-        _handler(
-            execution_report,
-            trace_info);
-      });
+    const json::ExecutionReport &execution_report,
+    const server::TraceInfo &trace_info) {
+  _profile.execution_report([&]() {
+    VLOG(3)(R"(execution_report={})", execution_report);
+    _handler(execution_report, trace_info);
+  });
 }
 
 }  // namespace binance

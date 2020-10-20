@@ -12,8 +12,8 @@
 
 #include "roq/metrics.h"
 
-#include "roq/server.h"
 #include "roq/download.h"
+#include "roq/server.h"
 
 #include "roq/core/hash/map.h"
 
@@ -43,87 +43,73 @@
 namespace roq {
 namespace binance {
 
-class Gateway final
-    : public server::Handler,
-      public Rest::Handler,
-      public MarketStream::Handler,
-      public UserStream::Handler {
+class Gateway final : public server::Handler,
+                      public Rest::Handler,
+                      public MarketStream::Handler,
+                      public UserStream::Handler {
  public:
-  Gateway(
-      server::Dispatcher& dispatcher,
-      const Config& config);
+  Gateway(server::Dispatcher &dispatcher, const Config &config);
 
  protected:
   // server::Handler
 
-  void operator()(const Event<Start>&) override;
-  void operator()(const Event<Stop>&) override;
-  void operator()(const Event<Timer>&) override;
-  void operator()(const Event<Connection>&) override;
+  void operator()(const Event<Start> &) override;
+  void operator()(const Event<Stop> &) override;
+  void operator()(const Event<Timer> &) override;
+  void operator()(const Event<Connection> &) override;
 
   void operator()(
-      const Event<CreateOrder>& event,
-      const std::string_view& request_id,
+      const Event<CreateOrder> &event,
+      const std::string_view &request_id,
       uint32_t gateway_order_id) override;
   void operator()(
-      const Event<ModifyOrder>& event,
-      const std::string_view& request_id,
-      const server::OMS_Order& order) override;
+      const Event<ModifyOrder> &event,
+      const std::string_view &request_id,
+      const server::OMS_Order &order) override;
   void operator()(
-      const Event<CancelOrder>& event,
-      const std::string_view& request_id,
-      const server::OMS_Order& order) override;
+      const Event<CancelOrder> &event,
+      const std::string_view &request_id,
+      const server::OMS_Order &order) override;
 
-  void operator()(metrics::Writer& writer) override;
+  void operator()(metrics::Writer &writer) override;
 
   // MarketStream::Handler
 
+  void operator()(const json::AggTrade &, const server::TraceInfo &) override;
+  void operator()(const json::Trade &, const server::TraceInfo &) override;
+  void operator()(const json::MiniTicker &, const server::TraceInfo &) override;
+  void operator()(const json::BookTicker &, const server::TraceInfo &) override;
   void operator()(
-      const json::AggTrade&,
-      const server::TraceInfo&) override;
+      const std::string_view &symbol,
+      const json::Depth &depth,
+      const server::TraceInfo &) override;
   void operator()(
-      const json::Trade&,
-      const server::TraceInfo&) override;
-  void operator()(
-      const json::MiniTicker&,
-      const server::TraceInfo&) override;
-  void operator()(
-      const json::BookTicker&,
-      const server::TraceInfo&) override;
-  void operator()(
-      const std::string_view& symbol,
-      const json::Depth& depth,
-      const server::TraceInfo&) override;
-  void operator()(
-      const std::string_view& symbol,
-      const json::DepthUpdate& depth_update,
-      const server::TraceInfo&) override;
+      const std::string_view &symbol,
+      const json::DepthUpdate &depth_update,
+      const server::TraceInfo &) override;
 
   // UserStream::Handler
   void operator()(
-      const json::OutboundAccountInfo&,
-      const server::TraceInfo&) override;
+      const json::OutboundAccountInfo &, const server::TraceInfo &) override;
   void operator()(
-      const json::OutboundAccountPosition&,
-      const server::TraceInfo&) override;
+      const json::OutboundAccountPosition &,
+      const server::TraceInfo &) override;
   void operator()(
-      const json::BalanceUpdate&,
-      const server::TraceInfo&) override;
+      const json::BalanceUpdate &, const server::TraceInfo &) override;
   void operator()(
-      const json::ExecutionReport&,
-      const server::TraceInfo&) override;
+      const json::ExecutionReport &, const server::TraceInfo &) override;
 
   // Rest::Handler
 
-  void operator()(const Rest&) override;
+  void operator()(const Rest &) override;
 
-  void operator()(const json::NewOrder&);
-  void operator()(const json::CancelOrder&);
+  void operator()(const json::NewOrder &);
+  void operator()(const json::CancelOrder &);
 
  private:
-  void operator()(const json::ExchangeInfo&);
-  void operator()(const json::ListenKey&);
-  void operator()(const json::Account&);
+  void operator()(const json::ExchangeInfo &);
+  void operator()(const json::ListenKey &);
+  void operator()(const json::Account &);
 
   void update_market_data(GatewayStatus gateway_status);
   void update_order_manager(GatewayStatus gateway_status);
@@ -156,7 +142,7 @@ class Gateway final
       */
 
  private:
-  server::Dispatcher& _dispatcher;
+  server::Dispatcher &_dispatcher;
   // config
   const std::string _account;
   // authentication

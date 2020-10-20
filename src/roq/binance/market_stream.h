@@ -25,115 +25,101 @@
 namespace roq {
 namespace binance {
 
-class MarketStream final
-    : public core::web::Socket::Handler,
-      public json::MarketStreamParser::Handler {
+class MarketStream final : public core::web::Socket::Handler,
+                           public json::MarketStreamParser::Handler {
  public:
   struct Handler {
     virtual void operator()(
-        const json::AggTrade&,
-        const server::TraceInfo&) = 0;
+        const json::AggTrade &, const server::TraceInfo &) = 0;
+    virtual void operator()(const json::Trade &, const server::TraceInfo &) = 0;
     virtual void operator()(
-        const json::Trade&,
-        const server::TraceInfo&) = 0;
+        const json::MiniTicker &, const server::TraceInfo &) = 0;
     virtual void operator()(
-        const json::MiniTicker&,
-        const server::TraceInfo&) = 0;
+        const json::BookTicker &, const server::TraceInfo &) = 0;
     virtual void operator()(
-        const json::BookTicker&,
-        const server::TraceInfo&) = 0;
+        const std::string_view &symbol,
+        const json::Depth &depth,
+        const server::TraceInfo &) = 0;
     virtual void operator()(
-        const std::string_view& symbol,
-        const json::Depth& depth,
-        const server::TraceInfo&) = 0;
-    virtual void operator()(
-        const std::string_view& symbol,
-        const json::DepthUpdate& depth_update,
-        const server::TraceInfo&) = 0;
+        const std::string_view &symbol,
+        const json::DepthUpdate &depth_update,
+        const server::TraceInfo &) = 0;
   };
   MarketStream(
-      Handler& handler,
-      Random& random,
-      core::event::Base& base,
-      core::event::DNSBase& dns_base,
-      core::ssl::Context& ssl_context,
+      Handler &handler,
+      Random &random,
+      core::event::Base &base,
+      core::event::DNSBase &dns_base,
+      core::ssl::Context &ssl_context,
       uint32_t market_stream_id,
-      std::vector<std::string>&& symbols);
+      std::vector<std::string> &&symbols);
 
-  MarketStream(MarketStream&&) = delete;
-  MarketStream(const MarketStream&) = delete;
+  MarketStream(MarketStream &&) = delete;
+  MarketStream(const MarketStream &) = delete;
 
   bool ready() const;
 
-  void operator()(const Event<Start>&);
-  void operator()(const Event<Stop>&);
-  void operator()(const Event<Timer>&);
+  void operator()(const Event<Start> &);
+  void operator()(const Event<Stop> &);
+  void operator()(const Event<Timer> &);
 
-  void operator()(metrics::Writer& writer);
+  void operator()(metrics::Writer &writer);
 
   size_t capacity() const;
 
-  void subscribe(const std::vector<std::string>& symbols);
+  void subscribe(const std::vector<std::string> &symbols);
 
  protected:
   template <typename T>
-  void subscribe_agg_trade(const T& symbols);
+  void subscribe_agg_trade(const T &symbols);
 
   template <typename T>
-  void subscribe_trade(const T& symbols);
+  void subscribe_trade(const T &symbols);
 
   template <typename T>
-  void subscribe_mini_ticker(const T& symbols);
+  void subscribe_mini_ticker(const T &symbols);
 
   template <typename T>
-  void subscribe_book_ticker(const T& symbols);
+  void subscribe_book_ticker(const T &symbols);
 
   template <typename T>
-  void subscribe_depth(const T& symbols);
+  void subscribe_depth(const T &symbols);
 
  protected:
-  void operator()(const core::web::Socket::Connected&) override;
-  void operator()(const core::web::Socket::Disconnected&) override;
-  void operator()(const core::web::Socket::Ready&) override;
-  void operator()(const core::web::Socket::Close&) override;
-  void operator()(const core::web::Socket::Latency&) override;
-  void operator()(const core::web::Socket::Text&) override;
+  void operator()(const core::web::Socket::Connected &) override;
+  void operator()(const core::web::Socket::Disconnected &) override;
+  void operator()(const core::web::Socket::Ready &) override;
+  void operator()(const core::web::Socket::Close &) override;
+  void operator()(const core::web::Socket::Latency &) override;
+  void operator()(const core::web::Socket::Text &) override;
 
-  void parse(const std::string_view& message);
+  void parse(const std::string_view &message);
 
   // response
-  void operator()(int32_t, const json::Error&) override;
-  void operator()(int32_t, const json::Result&) override;
+  void operator()(int32_t, const json::Error &) override;
+  void operator()(int32_t, const json::Result &) override;
 
   // update
+  void operator()(const json::AggTrade &, const server::TraceInfo &) override;
+  void operator()(const json::Trade &, const server::TraceInfo &) override;
+  void operator()(const json::MiniTicker &, const server::TraceInfo &) override;
+  void operator()(const json::BookTicker &, const server::TraceInfo &) override;
   void operator()(
-      const json::AggTrade&,
-      const server::TraceInfo&) override;
+      const std::string_view &symbol,
+      const json::Depth &depth,
+      const server::TraceInfo &) override;
   void operator()(
-      const json::Trade&,
-      const server::TraceInfo&) override;
-  void operator()(
-      const json::MiniTicker&,
-      const server::TraceInfo&) override;
-  void operator()(
-      const json::BookTicker&,
-      const server::TraceInfo&) override;
-  void operator()(
-      const std::string_view& symbol,
-      const json::Depth& depth,
-      const server::TraceInfo&) override;
-  void operator()(
-      const std::string_view& symbol,
-      const json::DepthUpdate& depth_update,
-      const server::TraceInfo&) override;
+      const std::string_view &symbol,
+      const json::DepthUpdate &depth_update,
+      const server::TraceInfo &) override;
 
  private:
-  Handler& _handler;
+  Handler &_handler;
   // config
   uint32_t _market_stream_id;
   std::vector<std::string> _symbols;
   // authentication
-  Random& _random;
+  Random &_random;
   // web socket
   core::web::Socket _connection;
   // buffers
@@ -142,25 +128,14 @@ class MarketStream final
   uint64_t _request_id = 0;
   // metrics
   struct {
-    core::metrics::Counter
-      disconnect;
+    core::metrics::Counter disconnect;
   } _counter;
   struct {
-    core::metrics::Profile
-      parse,
-      error,
-      result,
-      agg_trade,
-      trade,
-      mini_ticker,
-      book_ticker,
-      depth,
-      depth_update;
+    core::metrics::Profile parse, error, result, agg_trade, trade, mini_ticker,
+        book_ticker, depth, depth_update;
   } _profile;
   struct {
-    core::metrics::Latency
-      ping,
-      heartbeat;
+    core::metrics::Latency ping, heartbeat;
   } _latency;
 };
 
