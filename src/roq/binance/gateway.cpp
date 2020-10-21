@@ -2,6 +2,7 @@
 
 #include "roq/binance/gateway.h"
 
+#include <algorithm>
 #include <cctype>
 #include <limits>
 
