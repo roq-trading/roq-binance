@@ -53,25 +53,25 @@ UserStream::UserStream(
           ssl_context,
           core::URI(FLAGS_ws_uri),
           _query,
-          std::chrono::seconds { FLAGS_ws_ping_freq_secs },
+          std::chrono::seconds{FLAGS_ws_ping_freq_secs},
           FLAGS_decode_buffer_size,
           FLAGS_encode_buffer_size,
           []() { return std::string(); }),
       _decode_buffer(FLAGS_decode_buffer_size),
-      _counter {
-        .disconnect = create_counter("disconnect"),
+      _counter{
+          .disconnect = create_counter("disconnect"),
       },
-      _profile {
-        .parse = create_profile("parse"),
-        .outbound_account_info = create_profile("outbound_account_info"),
-        .outbound_account_position =
-            create_profile("outbound_account_position"),
-        .balance_update = create_profile("balance_update"),
-        .execution_report = create_profile("execution_report"),
+      _profile{
+          .parse = create_profile("parse"),
+          .outbound_account_info = create_profile("outbound_account_info"),
+          .outbound_account_position =
+              create_profile("outbound_account_position"),
+          .balance_update = create_profile("balance_update"),
+          .execution_report = create_profile("execution_report"),
       },
-      _latency {
-        .ping = create_latency("ping"),
-        .heartbeat = create_latency("heartbeat"),
+      _latency{
+          .ping = create_latency("ping"),
+          .heartbeat = create_latency("heartbeat"),
       } {
 }
 

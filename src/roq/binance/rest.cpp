@@ -50,27 +50,27 @@ Rest::Rest(
           ROQ_PACKAGE_NAME,
           true,  // keep alive
           FLAGS_rest_request_queue_depth,
-          std::chrono::seconds { FLAGS_rest_request_timeout_secs },
-          std::chrono::seconds { FLAGS_rest_rate_limit_interval_secs },
+          std::chrono::seconds{FLAGS_rest_request_timeout_secs},
+          std::chrono::seconds{FLAGS_rest_rate_limit_interval_secs},
           FLAGS_rest_rate_limit_max_requests,
-          std::chrono::seconds { FLAGS_rest_ping_freq_secs },
+          std::chrono::seconds{FLAGS_rest_ping_freq_secs},
           FLAGS_decode_buffer_size,
           FLAGS_encode_buffer_size,
           FLAGS_rest_ping_path),
       _decode_buffer(FLAGS_decode_buffer_size),
-      _counter {
-        .disconnect = create_counter("disconnect"),
+      _counter{
+          .disconnect = create_counter("disconnect"),
       },
-      _profile {
-        .exchange_info = create_profile("exchange_info"),
-        .account = create_profile("account"),
-        .listen_key = create_profile("listen_key"),
-        .depth = create_profile("depth"),
-        .new_order = create_profile("new_order"),
-        .cancel_order = create_profile("cancel_order"),
+      _profile{
+          .exchange_info = create_profile("exchange_info"),
+          .account = create_profile("account"),
+          .listen_key = create_profile("listen_key"),
+          .depth = create_profile("depth"),
+          .new_order = create_profile("new_order"),
+          .cancel_order = create_profile("cancel_order"),
       },
-      _latency {
-        .ping = create_latency("ping"),
+      _latency{
+          .ping = create_latency("ping"),
       } {
 }
 
@@ -266,11 +266,11 @@ void Rest::create_order(
       json::map(create_order.order_type).as_raw_text(),
       json::map(create_order.time_in_force).as_raw_text(),
       create_order.quantity,
-      double { 0.0 },
+      double{0.0},
       create_order.price,
       cl_ord_id,
-      double { 0.0 },
-      double { 0.0 },
+      double{0.0},
+      double{0.0},
       FLAGS_rest_recv_window_secs * 1000,
       timestamp.count());
   DLOG(INFO)(R"(body="{}")", message);

@@ -21,49 +21,42 @@
 namespace roq {
 namespace binance {
 
-constexpr auto DEFAULT_MULTIPLIER = double { 1.0 };
+constexpr auto DEFAULT_MULTIPLIER = double{1.0};
 
-constexpr auto TOLERANCE = double { 1.0e-10 };
+constexpr auto TOLERANCE = double{1.0e-10};
 
-constexpr auto DEFAULT_LISTEN_KEY_REFRESH_SECS = uint32_t { 2 };
+constexpr auto DEFAULT_LISTEN_KEY_REFRESH_SECS = uint32_t{2};
 
 template <typename T>
 static bool mbp_update(auto &data, size_t &offset, const T &item) {
   auto &obj = data[offset];
-  new (&obj) MBPUpdate {
-    .price = item.price,
-    .quantity = item.qty,
+  new (&obj) MBPUpdate{
+      .price = item.price,
+      .quantity = item.qty,
   };
   ++offset;
   return offset < data.size();
 }
 
-Gateway::Gateway(
-    server::Dispatcher& dispatcher,
-    const Config& config)
-    : _dispatcher(dispatcher),
-      _account(config.get_account()),
-      _random(
-          config.get_api_key(),
-          config.get_secret()),
+Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
+    : _dispatcher(dispatcher), _account(config.get_account()),
+      _random(config.get_api_key(), config.get_secret()),
       _dns_base(_base, true),
-      _rest {
-        .connection = {
-          *this,
-          config,
-          _random,
-          _base,
-          _dns_base,
-          _ssl_context,
-        },
-        .download = RestDownload(
-            std::chrono::seconds { FLAGS_download_timeout_secs },
-            [this](auto state) {
-              return download(state);
-            }),
+      _rest{
+          .connection =
+              {
+                  *this,
+                  config,
+                  _random,
+                  _base,
+                  _dns_base,
+                  _ssl_context,
+              },
+          .download = RestDownload(
+              std::chrono::seconds{FLAGS_download_timeout_secs},
+              [this](auto state) { return download(state); }),
       },
-      _bid(FLAGS_cache_mbp_max_depth),
-      _ask(FLAGS_cache_mbp_max_depth) {
+      _bid(FLAGS_cache_mbp_max_depth), _ask(FLAGS_cache_mbp_max_depth) {
   LOG_IF(WARNING, FLAGS_cancel_on_disconnect == false)
   ("Orders will *NOT* be cancelled on disconnect");
 }
@@ -141,22 +134,23 @@ void Gateway::operator()(metrics::Writer &writer) {
 
 void Gateway::operator()(
     const json::AggTrade &agg_trade, const server::TraceInfo &trace_info) {
-  Trade trade {
-    .side = agg_trade.buyer_is_maker ? Side::BUY : Side::SELL,
-    .price = agg_trade.price,
-    .quantity = agg_trade.quantity,
-    .trade_id = {},
+  Trade trade{
+      .side = agg_trade.buyer_is_maker ? Side::BUY : Side::SELL,
+      .price = agg_trade.price,
+      .quantity = agg_trade.quantity,
+      .trade_id = {},
   };
   core::charconv::to_string(
       core::string::builder(trade.trade_id), agg_trade.agg_trade_id);
-  TradeSummary trade_summary {
-    .exchange = FLAGS_exchange,
-    .symbol = agg_trade.symbol,
-    .trades = {
-      .items = &trade,
-      .length = 1,
-    },
-    .exchange_time_utc = agg_trade.event_time,
+  TradeSummary trade_summary{
+      .exchange = FLAGS_exchange,
+      .symbol = agg_trade.symbol,
+      .trades =
+          {
+              .items = &trade,
+              .length = 1,
+          },
+      .exchange_time_utc = agg_trade.event_time,
   };
   VLOG(3)(R"(trade_summary={})", trade_summary);
   create_trace_and_dispatch(trace_info, trade_summary, _dispatcher, true);
@@ -164,22 +158,23 @@ void Gateway::operator()(
 
 void Gateway::operator()(
     const json::Trade &trade, const server::TraceInfo &trace_info) {
-  Trade trade_ {
-    .side = trade.buyer_is_maker ? Side::BUY : Side::SELL,
-    .price = trade.price,
-    .quantity = trade.quantity,
-    .trade_id = {},
+  Trade trade_{
+      .side = trade.buyer_is_maker ? Side::BUY : Side::SELL,
+      .price = trade.price,
+      .quantity = trade.quantity,
+      .trade_id = {},
   };
   core::charconv::to_string(
       core::string::builder(trade_.trade_id), trade.trade_id);
-  TradeSummary trade_summary {
-    .exchange = FLAGS_exchange,
-    .symbol = trade.symbol,
-    .trades = {
-      .items = &trade_,
-      .length = 1,
-    },
-    .exchange_time_utc = trade.event_time,
+  TradeSummary trade_summary{
+      .exchange = FLAGS_exchange,
+      .symbol = trade.symbol,
+      .trades =
+          {
+              .items = &trade_,
+              .length = 1,
+          },
+      .exchange_time_utc = trade.event_time,
   };
   VLOG(3)(R"(trade_summary={})", trade_summary);
   create_trace_and_dispatch(trace_info, trade_summary, _dispatcher, true);
@@ -188,30 +183,30 @@ void Gateway::operator()(
 void Gateway::operator()(
     const json::MiniTicker &mini_ticker, const server::TraceInfo &trace_info) {
   Statistics statistics[] = {
-    {
-        .type = StatisticsType::HIGHEST_TRADED_PRICE,
-        .value = mini_ticker.high_price,
-    },
-    {
-        .type = StatisticsType::LOWEST_TRADED_PRICE,
-        .value = mini_ticker.low_price,
-    },
-    {
-        .type = StatisticsType::OPEN_PRICE,
-        .value = mini_ticker.open_price,
-    },
-    {
-        .type = StatisticsType::CLOSE_PRICE,
-        .value = mini_ticker.close_price,
-    },
+      {
+          .type = StatisticsType::HIGHEST_TRADED_PRICE,
+          .value = mini_ticker.high_price,
+      },
+      {
+          .type = StatisticsType::LOWEST_TRADED_PRICE,
+          .value = mini_ticker.low_price,
+      },
+      {
+          .type = StatisticsType::OPEN_PRICE,
+          .value = mini_ticker.open_price,
+      },
+      {
+          .type = StatisticsType::CLOSE_PRICE,
+          .value = mini_ticker.close_price,
+      },
   };
   static_assert(std::size(statistics) == 4);  // just checking...
-  StatisticsUpdate statistics_update {
-    .exchange = FLAGS_exchange,
-    .symbol = mini_ticker.symbol,
-    .statistics = roq::span(statistics, std::size(statistics)),
-    .snapshot = false,
-    .exchange_time_utc = mini_ticker.event_time,
+  StatisticsUpdate statistics_update{
+      .exchange = FLAGS_exchange,
+      .symbol = mini_ticker.symbol,
+      .statistics = roq::span(statistics, std::size(statistics)),
+      .snapshot = false,
+      .exchange_time_utc = mini_ticker.event_time,
   };
   VLOG(3)("statistics_update={}", statistics_update);
   create_trace_and_dispatch(trace_info, statistics_update, _dispatcher, true);
@@ -219,17 +214,18 @@ void Gateway::operator()(
 
 void Gateway::operator()(
     const json::BookTicker &book_ticker, const server::TraceInfo &trace_info) {
-  TopOfBook top_of_book {
-    .exchange = FLAGS_exchange,
-    .symbol = book_ticker.symbol,
-    .layer = {
-      .bid_price = book_ticker.best_bid_price,
-      .bid_quantity = book_ticker.best_bid_qty,
-      .ask_price = book_ticker.best_ask_price,
-      .ask_quantity = book_ticker.best_ask_qty,
-    },
-    .snapshot = false,
-    .exchange_time_utc = {},
+  TopOfBook top_of_book{
+      .exchange = FLAGS_exchange,
+      .symbol = book_ticker.symbol,
+      .layer =
+          {
+              .bid_price = book_ticker.best_bid_price,
+              .bid_quantity = book_ticker.best_bid_qty,
+              .ask_price = book_ticker.best_ask_price,
+              .ask_quantity = book_ticker.best_ask_qty,
+          },
+      .snapshot = false,
+      .exchange_time_utc = {},
   };
   VLOG(3)(R"(top_of_book={})", top_of_book);
   create_trace_and_dispatch(trace_info, top_of_book, _dispatcher, true);
@@ -259,20 +255,22 @@ void Gateway::operator()(
      ask_length,
      _ask.size());
   }
-  MarketByPriceUpdate market_by_price_update {
-    .exchange = FLAGS_exchange,
-    .symbol = symbol,
-    .bids = {
-      .items = _bid.data(),
-      .length = bid_length,
-    },
-    .asks = {
-      .items = _ask.data(),
-      .length = ask_length,
-    },
-    .snapshot = true,
-    .exchange_time_utc = {},
-    };
+  MarketByPriceUpdate market_by_price_update{
+      .exchange = FLAGS_exchange,
+      .symbol = symbol,
+      .bids =
+          {
+              .items = _bid.data(),
+              .length = bid_length,
+          },
+      .asks =
+          {
+              .items = _ask.data(),
+              .length = ask_length,
+          },
+      .snapshot = true,
+      .exchange_time_utc = {},
+  };
   VLOG(3)(R"(market_by_price_update={})", market_by_price_update);
   create_trace_and_dispatch(
       trace_info, market_by_price_update, _dispatcher, true);
@@ -288,11 +286,11 @@ void Gateway::operator()(
     const json::OutboundAccountInfo &outbound_account_info,
     const server::TraceInfo &trace_info) {
   for (auto &item : outbound_account_info.balances) {
-    FundsUpdate funds_update {
-      .account = _account,
-      .currency = item.asset,
-      .balance = item.free_amount,
-      .hold = item.locked_amount,
+    FundsUpdate funds_update{
+        .account = _account,
+        .currency = item.asset,
+        .balance = item.free_amount,
+        .hold = item.locked_amount,
     };
     create_trace_and_dispatch(trace_info, funds_update, _dispatcher, true);
   }
@@ -302,11 +300,11 @@ void Gateway::operator()(
     const json::OutboundAccountPosition &outbound_account_position,
     const server::TraceInfo &trace_info) {
   for (auto &item : outbound_account_position.balances) {
-    FundsUpdate funds_update {
-      .account = _account,
-      .currency = item.asset,
-      .balance = item.free_amount,
-      .hold = item.locked_amount,
+    FundsUpdate funds_update{
+        .account = _account,
+        .currency = item.asset,
+        .balance = item.free_amount,
+        .hold = item.locked_amount,
     };
     create_trace_and_dispatch(trace_info, funds_update, _dispatcher, true);
   }
@@ -320,15 +318,15 @@ void Gateway::operator()(
 void Gateway::operator()(
     const json::ExecutionReport &execution_report,
     const server::TraceInfo &trace_info) {
-  server::OMS_Lookup order_lookup {
-    .symbol = execution_report.symbol,
-    .side = json::map(execution_report.side),
-    .status = json::map(execution_report.current_order_status),
-    .price = execution_report.price,
-    .remaining_quantity = std::numeric_limits<double>::quiet_NaN(),
-    .traded_quantity = execution_report.cumulative_filled_quantity,
-    .timestamp = execution_report.transaction_time,  // XXX transact_time?
-    .external_order_id = execution_report.client_order_id,
+  server::OMS_Lookup order_lookup{
+      .symbol = execution_report.symbol,
+      .side = json::map(execution_report.side),
+      .status = json::map(execution_report.current_order_status),
+      .price = execution_report.price,
+      .remaining_quantity = std::numeric_limits<double>::quiet_NaN(),
+      .traded_quantity = execution_report.cumulative_filled_quantity,
+      .timestamp = execution_report.transaction_time,  // XXX transact_time?
+      .external_order_id = execution_report.client_order_id,
   };
   auto found = _dispatcher.find_order(
       execution_report.original_client_order_id,
@@ -362,8 +360,8 @@ void Gateway::update_market_data(GatewayStatus gateway_status) {
   if (gateway_status == _market_data_status) return;
   _market_data_status = gateway_status;
   server::TraceInfo trace_info;
-  MarketDataStatus market_data_status {
-    .status = _market_data_status,
+  MarketDataStatus market_data_status{
+      .status = _market_data_status,
   };
   create_trace_and_dispatch(trace_info, market_data_status, _dispatcher, true);
   LOG(INFO)("market_data_status={}", _market_data_status);
@@ -373,9 +371,9 @@ void Gateway::update_order_manager(GatewayStatus gateway_status) {
   if (gateway_status == _order_manager_status) return;
   _order_manager_status = gateway_status;
   server::TraceInfo trace_info;
-  OrderManagerStatus order_manager_status {
-    .account = _account,
-    .status = _order_manager_status,
+  OrderManagerStatus order_manager_status{
+      .account = _account,
+      .status = _order_manager_status,
   };
   create_trace_and_dispatch(
       trace_info, order_manager_status, _dispatcher, true);
@@ -505,28 +503,28 @@ void Gateway::operator()(const json::ExchangeInfo &exchange_info) {
       return std::tolower(c);
     });
     _symbols.emplace(std::move(symbol));
-    ReferenceData reference_data {
-      .exchange = FLAGS_exchange,
-      .symbol = item.symbol,
-      .security_type = SecurityType::UNDEFINED,
-      .currency = item.base_asset,
-      .settlement_currency = item.quote_asset,
-      .commission_currency = std::string_view(),
-      .tick_size = std::numeric_limits<double>::quiet_NaN(),
-      .limit_up = std::numeric_limits<double>::quiet_NaN(),
-      .limit_down = std::numeric_limits<double>::quiet_NaN(),
-      .multiplier = std::numeric_limits<double>::quiet_NaN(),
-      .min_trade_vol = std::numeric_limits<double>::quiet_NaN(),
-      .option_type = OptionType::UNDEFINED,
-      .strike_currency = std::string_view(),
-      .strike_price = std::numeric_limits<double>::quiet_NaN(),
+    ReferenceData reference_data{
+        .exchange = FLAGS_exchange,
+        .symbol = item.symbol,
+        .security_type = SecurityType::UNDEFINED,
+        .currency = item.base_asset,
+        .settlement_currency = item.quote_asset,
+        .commission_currency = std::string_view(),
+        .tick_size = std::numeric_limits<double>::quiet_NaN(),
+        .limit_up = std::numeric_limits<double>::quiet_NaN(),
+        .limit_down = std::numeric_limits<double>::quiet_NaN(),
+        .multiplier = std::numeric_limits<double>::quiet_NaN(),
+        .min_trade_vol = std::numeric_limits<double>::quiet_NaN(),
+        .option_type = OptionType::UNDEFINED,
+        .strike_currency = std::string_view(),
+        .strike_price = std::numeric_limits<double>::quiet_NaN(),
     };
     VLOG(1)(R"(reference_data={})", reference_data);
     create_trace_and_dispatch(trace_info, reference_data, _dispatcher, false);
-    MarketStatus market_status {
-      .exchange = FLAGS_exchange,
-      .symbol = item.symbol,
-      .trading_status = json::map(item.status),
+    MarketStatus market_status{
+        .exchange = FLAGS_exchange,
+        .symbol = item.symbol,
+        .trading_status = json::map(item.status),
     };
     VLOG(1)(R"(market_status={})", market_status);
     create_trace_and_dispatch(trace_info, market_status, _dispatcher, true);
@@ -551,17 +549,17 @@ void Gateway::operator()(const json::ListenKey &listen_key) {
   }
   auto now = core::get_system_clock();
   _listen_key_refresh =
-      now + std::chrono::seconds { FLAGS_rest_listen_key_refresh_secs };
+      now + std::chrono::seconds{FLAGS_rest_listen_key_refresh_secs};
 }
 
 void Gateway::operator()(const json::Account &account) {
   server::TraceInfo trace_info;  // note! not correct (*after* message parsing)
   for (auto &item : account.balances) {
-    FundsUpdate funds_update {
-      .account = _account,
-      .currency = item.asset,
-      .balance = item.free,
-      .hold = item.locked,
+    FundsUpdate funds_update{
+        .account = _account,
+        .currency = item.asset,
+        .balance = item.free,
+        .hold = item.locked,
     };
     create_trace_and_dispatch(trace_info, funds_update, _dispatcher, true);
   }
@@ -572,7 +570,7 @@ void Gateway::refresh_listen_key() {
   if (_listen_key_refresh.count() == 0 || now < _listen_key_refresh) return;
   LOG(INFO)("Refreshing listen key...");
   _listen_key_refresh =
-      now + std::chrono::seconds { FLAGS_rest_listen_key_refresh_secs };
+      now + std::chrono::seconds{FLAGS_rest_listen_key_refresh_secs};
   _rest.connection.get<json::ListenKey>([this](auto &promise) {
     try {
       (*this)(promise.get());
@@ -580,7 +578,7 @@ void Gateway::refresh_listen_key() {
       LOG(WARNING)("Rescheduling listen key refresh!");
       auto now = core::get_system_clock();
       _listen_key_refresh =
-          now + std::chrono::seconds { DEFAULT_LISTEN_KEY_REFRESH_SECS };
+          now + std::chrono::seconds{DEFAULT_LISTEN_KEY_REFRESH_SECS};
     }
   });
 }

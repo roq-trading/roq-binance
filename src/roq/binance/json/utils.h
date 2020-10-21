@@ -73,14 +73,14 @@ template <>
 inline void update(
     std::chrono::nanoseconds &result, const core::json::value_t &value) {
   return std::visit(
-      overloaded {
+      overloaded{
           [&](const core::json::null_t &) {
-            result = std::chrono::nanoseconds {};
+            result = std::chrono::nanoseconds{};
           },
           [](bool) { throw std::bad_cast(); },
-          [&](int64_t value) { result = std::chrono::milliseconds { value }; },
+          [&](int64_t value) { result = std::chrono::milliseconds{value}; },
           [&](double value) {
-            result = std::chrono::milliseconds { static_cast<int64_t>(value) };
+            result = std::chrono::milliseconds{static_cast<int64_t>(value)};
           },
           [&](const std::string_view &value) {
             result = core::charconv::to_datetime(value);

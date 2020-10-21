@@ -59,8 +59,7 @@ DEFINE_uint32(
 
 DEFINE_bool(cancel_on_disconnect, true, "cancel orders on disconnect? (bool)");
 
-DEFINE_uint32(
-    max_trades, uint32_t { 16384 }, "maximum trades for trade summary");
+DEFINE_uint32(max_trades, uint32_t{16384}, "maximum trades for trade summary");
 
 DEFINE_uint32(encode_buffer_size, 1048576, "encode buffer size");
 

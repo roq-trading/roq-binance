@@ -61,28 +61,28 @@ MarketStream::MarketStream(
           ssl_context,
           core::URI(FLAGS_ws_uri),
           std::string_view(),  // query
-          std::chrono::seconds { FLAGS_ws_ping_freq_secs },
+          std::chrono::seconds{FLAGS_ws_ping_freq_secs},
           FLAGS_decode_buffer_size,
           FLAGS_encode_buffer_size,
           []() { return std::string(); }),
       _decode_buffer(FLAGS_decode_buffer_size),
-      _counter {
-        .disconnect = create_counter(market_stream_id, "disconnect"),
+      _counter{
+          .disconnect = create_counter(market_stream_id, "disconnect"),
       },
-      _profile {
-        .parse = create_profile(market_stream_id, "parse"),
-        .error = create_profile(market_stream_id, "error"),
-        .result = create_profile(market_stream_id, "result"),
-        .agg_trade = create_profile(market_stream_id, "agg_trade"),
-        .trade = create_profile(market_stream_id, "trade"),
-        .mini_ticker = create_profile(market_stream_id, "mini_ticker"),
-        .book_ticker = create_profile(market_stream_id, "book_ticker"),
-        .depth = create_profile(market_stream_id, "depth"),
-        .depth_update = create_profile(market_stream_id, "depth_update"),
+      _profile{
+          .parse = create_profile(market_stream_id, "parse"),
+          .error = create_profile(market_stream_id, "error"),
+          .result = create_profile(market_stream_id, "result"),
+          .agg_trade = create_profile(market_stream_id, "agg_trade"),
+          .trade = create_profile(market_stream_id, "trade"),
+          .mini_ticker = create_profile(market_stream_id, "mini_ticker"),
+          .book_ticker = create_profile(market_stream_id, "book_ticker"),
+          .depth = create_profile(market_stream_id, "depth"),
+          .depth_update = create_profile(market_stream_id, "depth_update"),
       },
-      _latency {
-        .ping = create_latency(market_stream_id, "ping"),
-        .heartbeat = create_latency(market_stream_id, "heartbeat"),
+      _latency{
+          .ping = create_latency(market_stream_id, "ping"),
+          .heartbeat = create_latency(market_stream_id, "heartbeat"),
       } {
 }
 
