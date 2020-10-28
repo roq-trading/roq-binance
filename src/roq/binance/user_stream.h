@@ -78,28 +78,28 @@ class UserStream final : public core::web::Socket::Handler,
       const json::ExecutionReport &, const server::TraceInfo &) override;
 
  private:
-  Handler &_handler;
+  Handler &handler_;
   // config
-  const std::string _query;
+  const std::string query_;
   // authentication
-  Random &_random;
+  Random &random_;
   // web socket
-  core::web::Socket _connection;
+  core::web::Socket connection_;
   // buffers
-  core::utils::Buffer _decode_buffer;
+  core::utils::Buffer decode_buffer_;
   // session
-  uint64_t _request_id = 0;
+  // uint64_t request_id_ = 0;
   // metrics
   struct {
     core::metrics::Counter disconnect;
-  } _counter;
+  } counter_;
   struct {
     core::metrics::Profile parse, outbound_account_info,
         outbound_account_position, balance_update, execution_report;
-  } _profile;
+  } profile_;
   struct {
     core::metrics::Latency ping, heartbeat;
-  } _latency;
+  } latency_;
 };
 
 }  // namespace binance

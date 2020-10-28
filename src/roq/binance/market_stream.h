@@ -114,29 +114,29 @@ class MarketStream final : public core::web::Socket::Handler,
       const server::TraceInfo &) override;
 
  private:
-  Handler &_handler;
+  Handler &handler_;
   // config
-  uint32_t _market_stream_id;
-  std::vector<std::string> _symbols;
+  uint32_t market_stream_id_;
+  std::vector<std::string> symbols_;
   // authentication
-  Random &_random;
+  Random &random_;
   // web socket
-  core::web::Socket _connection;
+  core::web::Socket connection_;
   // buffers
-  core::utils::Buffer _decode_buffer;
+  core::utils::Buffer decode_buffer_;
   // session
-  uint64_t _request_id = 0;
+  uint64_t request_id_ = 0;
   // metrics
   struct {
     core::metrics::Counter disconnect;
-  } _counter;
+  } counter_;
   struct {
     core::metrics::Profile parse, error, result, agg_trade, trade, mini_ticker,
         book_ticker, depth, depth_update;
-  } _profile;
+  } profile_;
   struct {
     core::metrics::Latency ping, heartbeat;
-  } _latency;
+  } latency_;
 };
 
 }  // namespace binance

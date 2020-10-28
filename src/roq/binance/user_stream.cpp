@@ -45,23 +45,23 @@ UserStream::UserStream(
     core::event::DNSBase &dns_base,
     core::ssl::Context &ssl_context,
     const std::string_view &listen_key)
-    : _handler(handler), _query(create_query(listen_key)), _random(random),
-      _connection(
+    : handler_(handler), query_(create_query(listen_key)), random_(random),
+      connection_(
           *this,
           base,
           dns_base,
           ssl_context,
           core::URI(FLAGS_ws_uri),
-          _query,
+          query_,
           std::chrono::seconds{FLAGS_ws_ping_freq_secs},
           FLAGS_decode_buffer_size,
           FLAGS_encode_buffer_size,
           []() { return std::string(); }),
-      _decode_buffer(FLAGS_decode_buffer_size),
-      _counter{
+      decode_buffer_(FLAGS_decode_buffer_size),
+      counter_{
           .disconnect = create_counter("disconnect"),
       },
-      _profile{
+      profile_{
           .parse = create_profile("parse"),
           .outbound_account_info = create_profile("outbound_account_info"),
           .outbound_account_position =
@@ -69,48 +69,48 @@ UserStream::UserStream(
           .balance_update = create_profile("balance_update"),
           .execution_report = create_profile("execution_report"),
       },
-      _latency{
+      latency_{
           .ping = create_latency("ping"),
           .heartbeat = create_latency("heartbeat"),
       } {
 }
 
 bool UserStream::ready() const {
-  return _connection.ready();
+  return connection_.ready();
 }
 
 void UserStream::operator()(const Event<Start> &) {
-  _connection.start();
+  connection_.start();
 }
 
 void UserStream::operator()(const Event<Stop> &) {
-  _connection.stop();
+  connection_.stop();
 }
 
 void UserStream::operator()(const Event<Timer> &event) {
-  _connection.refresh(event.value.now);
+  connection_.refresh(event.value.now);
 }
 
 void UserStream::operator()(metrics::Writer &writer) {
   writer
       // counter
-      .write(_counter.disconnect, metrics::COUNTER)
+      .write(counter_.disconnect, metrics::COUNTER)
       // profile
-      .write(_profile.parse, metrics::PROFILE)
-      .write(_profile.outbound_account_info, metrics::PROFILE)
-      .write(_profile.outbound_account_position, metrics::PROFILE)
-      .write(_profile.balance_update, metrics::PROFILE)
-      .write(_profile.execution_report, metrics::PROFILE)
+      .write(profile_.parse, metrics::PROFILE)
+      .write(profile_.outbound_account_info, metrics::PROFILE)
+      .write(profile_.outbound_account_position, metrics::PROFILE)
+      .write(profile_.balance_update, metrics::PROFILE)
+      .write(profile_.execution_report, metrics::PROFILE)
       // latency
-      .write(_latency.ping, metrics::LATENCY)
-      .write(_latency.heartbeat, metrics::LATENCY);
+      .write(latency_.ping, metrics::LATENCY)
+      .write(latency_.heartbeat, metrics::LATENCY);
 }
 
 void UserStream::operator()(const core::web::Socket::Connected &) {
 }
 
 void UserStream::operator()(const core::web::Socket::Disconnected &) {
-  ++_counter.disconnect;
+  ++counter_.disconnect;
 }
 
 void UserStream::operator()(const core::web::Socket::Ready &) {
@@ -121,7 +121,7 @@ void UserStream::operator()(const core::web::Socket::Close &) {
 }
 
 void UserStream::operator()(const core::web::Socket::Latency &latency) {
-  _latency.ping.update(
+  latency_.ping.update(
       std::chrono::duration_cast<std::chrono::nanoseconds>(latency.sample)
           .count());
 }
@@ -131,10 +131,10 @@ void UserStream::operator()(const core::web::Socket::Text &text) {
 }
 
 void UserStream::parse(const std::string_view &message) {
-  _profile.parse([&]() {
+  profile_.parse([&]() {
     try {
       server::TraceInfo trace_info;
-      core::json::Buffer buffer(_decode_buffer);
+      core::json::Buffer buffer(decode_buffer_);
       json::UserStreamParser::dispatch(*this, message, buffer, trace_info);
     } catch (std::exception &e) {
       LOG(WARNING)(R"(message="{}")", message);
@@ -146,36 +146,36 @@ void UserStream::parse(const std::string_view &message) {
 void UserStream::operator()(
     const json::OutboundAccountInfo &outbound_account_info,
     const server::TraceInfo &trace_info) {
-  _profile.outbound_account_info([&]() {
+  profile_.outbound_account_info([&]() {
     VLOG(3)(R"(outbound_account_info={})", outbound_account_info);
-    _handler(outbound_account_info, trace_info);
+    handler_(outbound_account_info, trace_info);
   });
 }
 
 void UserStream::operator()(
     const json::OutboundAccountPosition &outbound_account_position,
     const server::TraceInfo &trace_info) {
-  _profile.outbound_account_position([&]() {
+  profile_.outbound_account_position([&]() {
     VLOG(3)(R"(outbound_account_position={})", outbound_account_position);
-    _handler(outbound_account_position, trace_info);
+    handler_(outbound_account_position, trace_info);
   });
 }
 
 void UserStream::operator()(
     const json::BalanceUpdate &balance_update,
     const server::TraceInfo &trace_info) {
-  _profile.balance_update([&]() {
+  profile_.balance_update([&]() {
     VLOG(3)(R"(balance_update={})", balance_update);
-    _handler(balance_update, trace_info);
+    handler_(balance_update, trace_info);
   });
 }
 
 void UserStream::operator()(
     const json::ExecutionReport &execution_report,
     const server::TraceInfo &trace_info) {
-  _profile.execution_report([&]() {
+  profile_.execution_report([&]() {
     VLOG(3)(R"(execution_report={})", execution_report);
-    _handler(execution_report, trace_info);
+    handler_(execution_report, trace_info);
   });
 }
 

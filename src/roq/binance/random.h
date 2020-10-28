@@ -23,8 +23,8 @@ class Random final {
   std::string create_signature(const std::string_view &timestamp);
 
  private:
-  const std::string _key;
-  core::crypto::HMAC_SHA256 _hmac;
+  const std::string key_;
+  core::crypto::HMAC_SHA256 hmac_;
 };
 
 }  // namespace binance

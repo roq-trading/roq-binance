@@ -40,8 +40,8 @@ Rest::Rest(
     core::event::Base &base,
     core::event::DNSBase &dns_base,
     core::ssl::Context &ssl_context)
-    : _handler(handler), _random(random), _api_key(config.get_api_key()),
-      _connection(
+    : handler_(handler), random_(random), api_key_(config.get_api_key()),
+      connection_(
           *this,
           base,
           dns_base,
@@ -57,11 +57,11 @@ Rest::Rest(
           FLAGS_decode_buffer_size,
           FLAGS_encode_buffer_size,
           FLAGS_rest_ping_path),
-      _decode_buffer(FLAGS_decode_buffer_size),
-      _counter{
+      decode_buffer_(FLAGS_decode_buffer_size),
+      counter_{
           .disconnect = create_counter("disconnect"),
       },
-      _profile{
+      profile_{
           .exchange_info = create_profile("exchange_info"),
           .account = create_profile("account"),
           .listen_key = create_profile("listen_key"),
@@ -69,40 +69,40 @@ Rest::Rest(
           .new_order = create_profile("new_order"),
           .cancel_order = create_profile("cancel_order"),
       },
-      _latency{
+      latency_{
           .ping = create_latency("ping"),
       } {
 }
 
 bool Rest::ready() const {
-  return _connection.ready();
+  return connection_.ready();
 }
 
 void Rest::operator()(const Event<Start> &) {
-  _connection.start();
+  connection_.start();
 }
 
 void Rest::operator()(const Event<Stop> &) {
-  _connection.stop();
+  connection_.stop();
 }
 
 void Rest::operator()(const Event<Timer> &event) {
-  _connection.refresh(event.value.now);
+  connection_.refresh(event.value.now);
 }
 
 void Rest::operator()(metrics::Writer &writer) {
   writer
       // counter
-      .write(_counter.disconnect, metrics::COUNTER)
+      .write(counter_.disconnect, metrics::COUNTER)
       // profile
-      .write(_profile.exchange_info, metrics::PROFILE)
-      .write(_profile.account, metrics::PROFILE)
-      .write(_profile.listen_key, metrics::PROFILE)
-      .write(_profile.depth, metrics::PROFILE)
-      .write(_profile.new_order, metrics::PROFILE)
-      .write(_profile.cancel_order, metrics::PROFILE)
+      .write(profile_.exchange_info, metrics::PROFILE)
+      .write(profile_.account, metrics::PROFILE)
+      .write(profile_.listen_key, metrics::PROFILE)
+      .write(profile_.depth, metrics::PROFILE)
+      .write(profile_.new_order, metrics::PROFILE)
+      .write(profile_.cancel_order, metrics::PROFILE)
       // latency
-      .write(_latency.ping, metrics::LATENCY);
+      .write(latency_.ping, metrics::LATENCY);
 }
 
 template <>
@@ -110,17 +110,17 @@ void Rest::get(
     std::function<void(const core::Promise<json::ExchangeInfo> &)> &&callback) {
   constexpr auto method = core::http::Method::GET;
   constexpr std::string_view path = "/api/v3/exchangeInfo";
-  _connection.request(
+  connection_.request(
       method,
       path,
       std::string_view(),  // query
       std::string_view(),  // headers
       std::string_view(),  // body
       [this, callback](auto &response) {
-        _profile.exchange_info([&]() {
+        profile_.exchange_info([&]() {
           try {
             response.expect(core::http::Status::OK);
-            core::json::Buffer buffer(_decode_buffer);
+            core::json::Buffer buffer(decode_buffer_);
             auto exchange_info = core::json::Parser::create<json::ExchangeInfo>(
                 response.body(), buffer);
             VLOG(1)(R"(exchange_info={})", exchange_info);
@@ -145,20 +145,20 @@ void Rest::get(
   auto timestamp = fmt::format(
       R"(timestamp={})",
       std::chrono::duration_cast<std::chrono::milliseconds>(now).count());
-  auto signature = _random.create_signature(timestamp);
+  auto signature = random_.create_signature(timestamp);
   auto query = fmt::format(R"(?{}&signature={})", timestamp, signature);
-  auto headers = fmt::format("X-MBX-APIKEY: {}\r\n", _api_key);
-  _connection.request(
+  auto headers = fmt::format("X-MBX-APIKEY: {}\r\n", api_key_);
+  connection_.request(
       method,
       path,
       query,
       headers,
       std::string_view(),  // body
       [this, callback](auto &response) {
-        _profile.account([&]() {
+        profile_.account([&]() {
           try {
             response.expect(core::http::Status::OK);
-            core::json::Buffer buffer(_decode_buffer);
+            core::json::Buffer buffer(decode_buffer_);
             auto account = core::json::Parser::create<json::Account>(
                 response.body(), buffer);
             VLOG(1)(R"(account={})", account);
@@ -179,15 +179,15 @@ void Rest::get(
     std::function<void(const core::Promise<json::ListenKey> &)> &&callback) {
   constexpr auto method = core::http::Method::POST;
   constexpr std::string_view path = "/api/v3/userDataStream";
-  auto headers = fmt::format("X-MBX-APIKEY: {}\r\n", _api_key);
-  _connection.request(
+  auto headers = fmt::format("X-MBX-APIKEY: {}\r\n", api_key_);
+  connection_.request(
       method,
       path,
       std::string_view(),  // query
       headers,
       std::string_view(),  // body
       [this, callback](auto &response) {
-        _profile.listen_key([&]() {
+        profile_.listen_key([&]() {
           try {
             response.expect(core::http::Status::OK);
             auto listen_key =
@@ -212,17 +212,17 @@ void Rest::get(
   constexpr auto method = core::http::Method::GET;
   constexpr std::string_view path =
       "/api/v3/depth?symbol=BTCUSDT";  // XXX DEBUG
-  _connection.request(
+  connection_.request(
       method,
       path,
       std::string_view(),  // query
       std::string_view(),  // headers
       std::string_view(),  // body
       [this, callback](auto &response) {
-        _profile.depth([&]() {
+        profile_.depth([&]() {
           try {
             response.expect(core::http::Status::OK);
-            core::json::Buffer buffer(_decode_buffer);
+            core::json::Buffer buffer(decode_buffer_);
             auto depth = core::json::Parser::create<json::Depth>(
                 response.body(), buffer);
             VLOG(1)(R"(depth={})", depth);
@@ -274,18 +274,18 @@ void Rest::create_order(
       FLAGS_rest_recv_window_secs * 1000,
       timestamp.count());
   DLOG(INFO)(R"(body="{}")", message);
-  auto headers = fmt::format("X-MBX-APIKEY: {}\r\n", _api_key);
-  _connection.request(
+  auto headers = fmt::format("X-MBX-APIKEY: {}\r\n", api_key_);
+  connection_.request(
       method,
       path,
       std::string_view(),  // query
       headers,
       std::string_view(),  // body
       [this, callback](auto &response) {
-        _profile.new_order([&]() {
+        profile_.new_order([&]() {
           try {
             response.expect(core::http::Status::OK);
-            core::json::Buffer buffer(_decode_buffer);
+            core::json::Buffer buffer(decode_buffer_);
             auto new_order = core::json::Parser::create<json::NewOrder>(
                 response.body(), buffer);
             VLOG(1)(R"(new_order={})", new_order);
@@ -324,15 +324,15 @@ void Rest::cancel_order(
       FLAGS_rest_recv_window_secs * 1000,
       timestamp.count());
   DLOG(INFO)(R"(body="{}")", message);
-  auto headers = fmt::format("X-MBX-APIKEY: {}\r\n", _api_key);
-  _connection.request(
+  auto headers = fmt::format("X-MBX-APIKEY: {}\r\n", api_key_);
+  connection_.request(
       method,
       path,
       std::string_view(),  // query
       headers,
       std::string_view(),  // body
       [this, callback](auto &response) {
-        _profile.cancel_order([&]() {
+        profile_.cancel_order([&]() {
           try {
             response.expect(core::http::Status::OK);
             auto cancel_order =
@@ -351,16 +351,16 @@ void Rest::cancel_order(
 }
 
 void Rest::operator()(const core::web::Client::Connected &) {
-  _handler(*this);
+  handler_(*this);
 }
 
 void Rest::operator()(const core::web::Client::Disconnected &) {
-  _handler(*this);
-  ++_counter.disconnect;
+  handler_(*this);
+  ++counter_.disconnect;
 }
 
 void Rest::operator()(const core::web::Client::Latency &latency) {
-  _latency.ping.update(
+  latency_.ping.update(
       std::chrono::duration_cast<std::chrono::nanoseconds>(latency.sample)
           .count());
 }

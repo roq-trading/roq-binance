@@ -40,50 +40,50 @@ static bool mbp_update(auto &data, size_t &offset, const T &item) {
 }
 
 Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
-    : _dispatcher(dispatcher), _account(config.get_account()),
-      _random(config.get_api_key(), config.get_secret()),
-      _dns_base(_base, true),
-      _rest{
+    : dispatcher_(dispatcher), account_(config.get_account()),
+      random_(config.get_api_key(), config.get_secret()),
+      dns_base_(base_, true),
+      rest_{
           .connection =
               {
                   *this,
                   config,
-                  _random,
-                  _base,
-                  _dns_base,
-                  _ssl_context,
+                  random_,
+                  base_,
+                  dns_base_,
+                  ssl_context_,
               },
           .download = RestDownload(
               std::chrono::seconds{FLAGS_download_timeout_secs},
               [this](auto state) { return download(state); }),
       },
-      _bid(FLAGS_cache_mbp_max_depth), _ask(FLAGS_cache_mbp_max_depth) {
+      bid_(FLAGS_cache_mbp_max_depth), ask_(FLAGS_cache_mbp_max_depth) {
   LOG_IF(WARNING, FLAGS_cancel_on_disconnect == false)
   ("Orders will *NOT* be cancelled on disconnect");
 }
 
 void Gateway::operator()(const Event<Start> &event) {
   LOG(INFO)("Starting the gateway...");
-  _rest.connection(event);
-  assert(_symbols.empty());
-  assert(_market_streams.empty());
-  assert(static_cast<bool>(_user_stream) == false);
-  _rest.download.begin();
+  rest_.connection(event);
+  assert(symbols_.empty());
+  assert(market_streams_.empty());
+  assert(static_cast<bool>(user_stream_) == false);
+  rest_.download.begin();
 }
 
 void Gateway::operator()(const Event<Stop> &event) {
   LOG(INFO)("Stopping the gateway...");
-  _rest.connection(event);
-  for (auto &iter : _market_streams) (*iter)(event);
-  if (static_cast<bool>(_user_stream)) (*_user_stream)(event);
+  rest_.connection(event);
+  for (auto &iter : market_streams_) (*iter)(event);
+  if (static_cast<bool>(user_stream_)) (*user_stream_)(event);
 }
 
 void Gateway::operator()(const Event<Timer> &event) {
-  _rest.connection(event);
-  for (auto &iter : _market_streams) (*iter)(event);
-  if (static_cast<bool>(_user_stream)) (*_user_stream)(event);
+  rest_.connection(event);
+  for (auto &iter : market_streams_) (*iter)(event);
+  if (static_cast<bool>(user_stream_)) (*user_stream_)(event);
   refresh_listen_key();
-  _base.loop(EVLOOP_NONBLOCK);
+  base_.loop(EVLOOP_NONBLOCK);
 }
 
 void Gateway::operator()(const Event<Connection> &) {
@@ -93,7 +93,7 @@ void Gateway::operator()(
     const Event<CreateOrder> &event,
     const std::string_view &request_id,
     [[maybe_unused]] uint32_t gateway_order_id) {
-  _rest.connection.create_order(event.value, request_id, [this](auto &promise) {
+  rest_.connection.create_order(event.value, request_id, [this](auto &promise) {
     try {
       (*this)(promise.get());
     } catch (NetworkError &e) {
@@ -114,7 +114,7 @@ void Gateway::operator()(
     const Event<CancelOrder> &event,
     const std::string_view &request_id,
     const server::OMS_Order &order) {
-  _rest.connection.cancel_order(
+  rest_.connection.cancel_order(
       event.value, request_id, order, [this](auto &promise) {
         try {
           (*this)(promise.get());
@@ -126,9 +126,9 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(metrics::Writer &writer) {
-  _rest.connection(writer);
-  for (auto &iter : _market_streams) (*iter)(writer);
-  if (static_cast<bool>(_user_stream)) (*_user_stream)(writer);
+  rest_.connection(writer);
+  for (auto &iter : market_streams_) (*iter)(writer);
+  if (static_cast<bool>(user_stream_)) (*user_stream_)(writer);
 }
 
 // market stream
@@ -154,7 +154,7 @@ void Gateway::operator()(
       .exchange_time_utc = agg_trade.event_time,
   };
   VLOG(3)(R"(trade_summary={})", trade_summary);
-  create_trace_and_dispatch(trace_info, trade_summary, _dispatcher, true);
+  create_trace_and_dispatch(trace_info, trade_summary, dispatcher_, true);
 }
 
 void Gateway::operator()(
@@ -178,7 +178,7 @@ void Gateway::operator()(
       .exchange_time_utc = trade.event_time,
   };
   VLOG(3)(R"(trade_summary={})", trade_summary);
-  create_trace_and_dispatch(trace_info, trade_summary, _dispatcher, true);
+  create_trace_and_dispatch(trace_info, trade_summary, dispatcher_, true);
 }
 
 void Gateway::operator()(
@@ -210,7 +210,7 @@ void Gateway::operator()(
       .exchange_time_utc = mini_ticker.event_time,
   };
   VLOG(3)("statistics_update={}", statistics_update);
-  create_trace_and_dispatch(trace_info, statistics_update, _dispatcher, true);
+  create_trace_and_dispatch(trace_info, statistics_update, dispatcher_, true);
 }
 
 void Gateway::operator()(
@@ -229,7 +229,7 @@ void Gateway::operator()(
       .exchange_time_utc = {},
   };
   VLOG(3)(R"(top_of_book={})", top_of_book);
-  create_trace_and_dispatch(trace_info, top_of_book, _dispatcher, true);
+  create_trace_and_dispatch(trace_info, top_of_book, dispatcher_, true);
 }
 
 void Gateway::operator()(
@@ -240,33 +240,33 @@ void Gateway::operator()(
   size_t bid_length = 0;
   for (auto &item : depth.bids) {
     if (success == false) break;
-    success = mbp_update(_bid, bid_length, item);
+    success = mbp_update(bid_, bid_length, item);
   }
   size_t ask_length = 0;
   for (auto &item : depth.asks) {
     if (success == false) break;
-    success = mbp_update(_ask, ask_length, item);
+    success = mbp_update(ask_, ask_length, item);
   }
   if (ROQ_UNLIKELY(success == false)) {
     LOG(FATAL)
     (R"(Insufficient bid/ask array size(s): )"
      R"(len(bid)={}/{}, len(ask)={}/{})",
      bid_length,
-     _bid.size(),
+     bid_.size(),
      ask_length,
-     _ask.size());
+     ask_.size());
   }
   MarketByPriceUpdate market_by_price_update{
       .exchange = FLAGS_exchange,
       .symbol = symbol,
       .bids =
           {
-              .items = _bid.data(),
+              .items = bid_.data(),
               .length = bid_length,
           },
       .asks =
           {
-              .items = _ask.data(),
+              .items = ask_.data(),
               .length = ask_length,
           },
       .snapshot = true,
@@ -274,7 +274,7 @@ void Gateway::operator()(
   };
   VLOG(3)(R"(market_by_price_update={})", market_by_price_update);
   create_trace_and_dispatch(
-      trace_info, market_by_price_update, _dispatcher, true);
+      trace_info, market_by_price_update, dispatcher_, true);
 }
 
 void Gateway::operator()(
@@ -288,12 +288,12 @@ void Gateway::operator()(
     const server::TraceInfo &trace_info) {
   for (auto &item : outbound_account_info.balances) {
     FundsUpdate funds_update{
-        .account = _account,
+        .account = account_,
         .currency = item.asset,
         .balance = item.free_amount,
         .hold = item.locked_amount,
     };
-    create_trace_and_dispatch(trace_info, funds_update, _dispatcher, true);
+    create_trace_and_dispatch(trace_info, funds_update, dispatcher_, true);
   }
 }
 
@@ -302,12 +302,12 @@ void Gateway::operator()(
     const server::TraceInfo &trace_info) {
   for (auto &item : outbound_account_position.balances) {
     FundsUpdate funds_update{
-        .account = _account,
+        .account = account_,
         .currency = item.asset,
         .balance = item.free_amount,
         .hold = item.locked_amount,
     };
-    create_trace_and_dispatch(trace_info, funds_update, _dispatcher, true);
+    create_trace_and_dispatch(trace_info, funds_update, dispatcher_, true);
   }
 }
 
@@ -329,7 +329,7 @@ void Gateway::operator()(
       .timestamp = execution_report.transaction_time,  // XXX transact_time?
       .external_order_id = execution_report.client_order_id,
   };
-  auto found = _dispatcher.find_order(
+  auto found = dispatcher_.find_order(
       execution_report.original_client_order_id,
       execution_report.client_order_id,
       order_lookup,
@@ -346,7 +346,7 @@ void Gateway::operator()(
 // rest
 
 void Gateway::operator()(const Rest &) {
-  if (_rest.connection.ready()) _rest.download.bump();
+  if (rest_.connection.ready()) rest_.download.bump();
 }
 
 void Gateway::operator()(const json::NewOrder &) {
@@ -358,27 +358,27 @@ void Gateway::operator()(const json::CancelOrder &) {
 // UTILS:
 
 void Gateway::update_market_data(GatewayStatus gateway_status) {
-  if (gateway_status == _market_data_status) return;
-  _market_data_status = gateway_status;
+  if (gateway_status == market_data_status_) return;
+  market_data_status_ = gateway_status;
   server::TraceInfo trace_info;
   MarketDataStatus market_data_status{
-      .status = _market_data_status,
+      .status = market_data_status_,
   };
-  create_trace_and_dispatch(trace_info, market_data_status, _dispatcher, true);
-  LOG(INFO)("market_data_status={}", _market_data_status);
+  create_trace_and_dispatch(trace_info, market_data_status, dispatcher_, true);
+  LOG(INFO)("market_data_status={}", market_data_status_);
 }
 
 void Gateway::update_order_manager(GatewayStatus gateway_status) {
-  if (gateway_status == _order_manager_status) return;
-  _order_manager_status = gateway_status;
+  if (gateway_status == order_manager_status_) return;
+  order_manager_status_ = gateway_status;
   server::TraceInfo trace_info;
   OrderManagerStatus order_manager_status{
-      .account = _account,
-      .status = _order_manager_status,
+      .account = account_,
+      .status = order_manager_status_,
   };
   create_trace_and_dispatch(
-      trace_info, order_manager_status, _dispatcher, true);
-  LOG(INFO)("order_manager_status={}", _order_manager_status);
+      trace_info, order_manager_status, dispatcher_, true);
+  LOG(INFO)("order_manager_status={}", order_manager_status_);
 }
 
 uint32_t Gateway::download(RestDownload::State state) {
@@ -411,90 +411,90 @@ uint32_t Gateway::download(RestDownload::State state) {
 
 void Gateway::download_exchange_info() {
   constexpr auto state = RestDownload::State::EXCHANGE_INFO;
-  auto sequence = _rest.download.sequence();
-  _rest.connection.get<json::ExchangeInfo>([this, sequence](auto &promise) {
+  auto sequence = rest_.download.sequence();
+  rest_.connection.get<json::ExchangeInfo>([this, sequence](auto &promise) {
     try {
-      if (_rest.download.skip(sequence, state)) return;
+      if (rest_.download.skip(sequence, state)) return;
       (*this)(promise.get());
-      _rest.download.check(state);
+      rest_.download.check(state);
     } catch (NetworkError &) {
-      _rest.download.retry(state);
+      rest_.download.retry(state);
     }
   });
 }
 
 void Gateway::subscribe_market_streams() {
-  if (_symbols.empty()) return;
+  if (symbols_.empty()) return;
   assert(FLAGS_ws_max_subscriptions > 0);
   size_t max_length = FLAGS_ws_max_subscriptions / 4;
-  auto iter = _symbols.begin();
-  for (size_t major = 0; major < _symbols.size(); major += max_length) {
-    auto minor_length = std::min(_symbols.size() - major, max_length);
+  auto iter = symbols_.begin();
+  for (size_t major = 0; major < symbols_.size(); major += max_length) {
+    auto minor_length = std::min(symbols_.size() - major, max_length);
     assert(minor_length > 0);
     std::vector<std::string> symbols;
     symbols.reserve(max_length);
     for (size_t minor = 0; minor < minor_length; ++minor, ++iter) {
-      assert(iter != _symbols.end());
+      assert(iter != symbols_.end());
       symbols.emplace_back(*iter);
     }
     auto market_stream_ptr = std::make_unique<MarketStream>(
         *this,
-        _random,
-        _base,
-        _dns_base,
-        _ssl_context,
-        ++_market_stream_id,
+        random_,
+        base_,
+        dns_base_,
+        ssl_context_,
+        ++market_stream_id_,
         std::move(symbols));
     MessageInfo message_info;  // XXX something sensible
     Start start;
     create_event_and_dispatch(*market_stream_ptr, message_info, start);
-    _market_streams.emplace_back(std::move(market_stream_ptr));
+    market_streams_.emplace_back(std::move(market_stream_ptr));
   }
 }
 
 void Gateway::download_listen_key() {
   constexpr auto state = RestDownload::State::LISTEN_KEY;
-  auto sequence = _rest.download.sequence();
-  _rest.connection.get<json::ListenKey>([this, sequence](auto &promise) {
+  auto sequence = rest_.download.sequence();
+  rest_.connection.get<json::ListenKey>([this, sequence](auto &promise) {
     try {
-      if (_rest.download.skip(sequence, state)) return;
+      if (rest_.download.skip(sequence, state)) return;
       (*this)(promise.get());
-      _rest.download.check(state);
+      rest_.download.check(state);
     } catch (NetworkError &) {
-      _rest.download.retry(state);
+      rest_.download.retry(state);
     }
   });
 }
 
 void Gateway::subscribe_user_stream() {
-  assert(_listen_key.empty() == false);
-  assert(static_cast<bool>(_user_stream) == false);
-  _user_stream = std::make_unique<UserStream>(
-      *this, _random, _base, _dns_base, _ssl_context, _listen_key);
+  assert(listen_key_.empty() == false);
+  assert(static_cast<bool>(user_stream_) == false);
+  user_stream_ = std::make_unique<UserStream>(
+      *this, random_, base_, dns_base_, ssl_context_, listen_key_);
   MessageInfo message_info;  // XXX something sensible
   Start start;
-  create_event_and_dispatch(*_user_stream, message_info, start);
+  create_event_and_dispatch(*user_stream_, message_info, start);
 }
 
 void Gateway::download_account() {
   constexpr auto state = RestDownload::State::ACCOUNT;
-  auto sequence = _rest.download.sequence();
-  _rest.connection.get<json::Account>([this, sequence](auto &promise) {
+  auto sequence = rest_.download.sequence();
+  rest_.connection.get<json::Account>([this, sequence](auto &promise) {
     try {
-      if (_rest.download.skip(sequence, state)) return;
+      if (rest_.download.skip(sequence, state)) return;
       (*this)(promise.get());
-      _rest.download.check(state);
+      rest_.download.check(state);
     } catch (NetworkError &) {
-      _rest.download.retry(state);
+      rest_.download.retry(state);
     }
   });
 }
 
 void Gateway::operator()(const json::ExchangeInfo &exchange_info) {
-  assert(_symbols.empty());
+  assert(symbols_.empty());
   server::TraceInfo trace_info;  // note! not correct (*after* message parsing)
   for (const auto &item : exchange_info.symbols) {
-    if (_dispatcher.discard_symbol(item.symbol)) {
+    if (dispatcher_.discard_symbol(item.symbol)) {
       VLOG(1)(R"(Drop symbol="{}")", item.symbol);
       continue;
     }
@@ -503,7 +503,7 @@ void Gateway::operator()(const json::ExchangeInfo &exchange_info) {
     std::transform(symbol.begin(), symbol.end(), symbol.begin(), [](auto c) {
       return std::tolower(c);
     });
-    _symbols.emplace(std::move(symbol));
+    symbols_.emplace(std::move(symbol));
     ReferenceData reference_data{
         .exchange = FLAGS_exchange,
         .symbol = item.symbol,
@@ -521,35 +521,35 @@ void Gateway::operator()(const json::ExchangeInfo &exchange_info) {
         .strike_price = std::numeric_limits<double>::quiet_NaN(),
     };
     VLOG(1)(R"(reference_data={})", reference_data);
-    create_trace_and_dispatch(trace_info, reference_data, _dispatcher, false);
+    create_trace_and_dispatch(trace_info, reference_data, dispatcher_, false);
     MarketStatus market_status{
         .exchange = FLAGS_exchange,
         .symbol = item.symbol,
         .trading_status = json::map(item.status),
     };
     VLOG(1)(R"(market_status={})", market_status);
-    create_trace_and_dispatch(trace_info, market_status, _dispatcher, true);
+    create_trace_and_dispatch(trace_info, market_status, dispatcher_, true);
   }
   LOG(INFO)
   ("Exchange info: including symbols {}/{}",
-   _symbols.size(),
+   symbols_.size(),
    exchange_info.symbols.size());
 }
 
 void Gateway::operator()(const json::ListenKey &listen_key) {
   auto &value = listen_key.listen_key;
-  auto same = _listen_key.compare(value) == 0;
+  auto same = listen_key_.compare(value) == 0;
   if (same) {
     LOG(INFO)("Listen key has been refreshed!");
-  } else if (_listen_key.empty()) {
-    _listen_key = value;
-    LOG(INFO)(R"(Listen key has been acquired (value="{}"))", _listen_key);
+  } else if (listen_key_.empty()) {
+    listen_key_ = value;
+    LOG(INFO)(R"(Listen key has been acquired (value="{}"))", listen_key_);
   } else {
     LOG(FATAL)("Unexpected");
-    // XXX should we recreate _user_stream ?
+    // XXX should we recreate user_stream_ ?
   }
   auto now = core::get_system_clock();
-  _listen_key_refresh =
+  listen_key_refresh_ =
       now + std::chrono::seconds{FLAGS_rest_listen_key_refresh_secs};
 }
 
@@ -557,28 +557,28 @@ void Gateway::operator()(const json::Account &account) {
   server::TraceInfo trace_info;  // note! not correct (*after* message parsing)
   for (auto &item : account.balances) {
     FundsUpdate funds_update{
-        .account = _account,
+        .account = account_,
         .currency = item.asset,
         .balance = item.free,
         .hold = item.locked,
     };
-    create_trace_and_dispatch(trace_info, funds_update, _dispatcher, true);
+    create_trace_and_dispatch(trace_info, funds_update, dispatcher_, true);
   }
 }
 
 void Gateway::refresh_listen_key() {
   auto now = core::get_system_clock();
-  if (_listen_key_refresh.count() == 0 || now < _listen_key_refresh) return;
+  if (listen_key_refresh_.count() == 0 || now < listen_key_refresh_) return;
   LOG(INFO)("Refreshing listen key...");
-  _listen_key_refresh =
+  listen_key_refresh_ =
       now + std::chrono::seconds{FLAGS_rest_listen_key_refresh_secs};
-  _rest.connection.get<json::ListenKey>([this](auto &promise) {
+  rest_.connection.get<json::ListenKey>([this](auto &promise) {
     try {
       (*this)(promise.get());
     } catch (NetworkError &) {
       LOG(WARNING)("Rescheduling listen key refresh!");
       auto now = core::get_system_clock();
-      _listen_key_refresh =
+      listen_key_refresh_ =
           now + std::chrono::seconds{DEFAULT_LISTEN_KEY_REFRESH_SECS};
     }
   });
@@ -590,7 +590,7 @@ void Gateway::enqueue(
     const T& event,
     const server::Trace& trace,
     bool is_last) {
-  _dispatcher(
+  dispatcher_(
       event,
       trace,
       is_last);
@@ -602,7 +602,7 @@ void Gateway::enqueue(
     const T& event,
     const server::Trace& trace,
     bool is_last) {
-  _dispatcher(
+  dispatcher_(
       user_id,
       event,
       trace,

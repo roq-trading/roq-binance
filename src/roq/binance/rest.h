@@ -76,25 +76,25 @@ class Rest final : public core::web::Client::Handler {
   void operator()(const core::web::Client::Latency &);
 
  private:
-  Handler &_handler;
+  Handler &handler_;
   // authentication
-  Random &_random;
-  const std::string _api_key;
+  Random &random_;
+  const std::string api_key_;
   // connection
-  core::web::Client _connection;
+  core::web::Client connection_;
   // buffers
-  core::utils::Buffer _decode_buffer;
+  core::utils::Buffer decode_buffer_;
   // metrics
   struct {
     core::metrics::Counter disconnect;
-  } _counter;
+  } counter_;
   struct {
     core::metrics::Profile exchange_info, account, listen_key, depth, new_order,
         cancel_order;
-  } _profile;
+  } profile_;
   struct {
     core::metrics::Latency ping;
-  } _latency;
+  } latency_;
 };
 
 }  // namespace binance

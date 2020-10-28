@@ -142,35 +142,35 @@ class Gateway final : public server::Handler,
       */
 
  private:
-  server::Dispatcher &_dispatcher;
+  server::Dispatcher &dispatcher_;
   // config
-  const std::string _account;
+  const std::string account_;
   // authentication
-  Random _random;
+  Random random_;
   // async
-  core::event::Base _base;
-  core::event::DNSBase _dns_base;
+  core::event::Base base_;
+  core::event::DNSBase dns_base_;
   // crypto
-  core::ssl::Context _ssl_context;
+  core::ssl::Context ssl_context_;
   // connections
   struct {
     Rest connection;
     RestDownload download;
-  } _rest;
+  } rest_;
   // ... market streams
-  uint32_t _market_stream_id = 0;
-  std::list<std::unique_ptr<MarketStream> > _market_streams;
+  uint32_t market_stream_id_ = 0;
+  std::list<std::unique_ptr<MarketStream> > market_streams_;
   // ... user streams
-  std::string _listen_key;
-  std::chrono::nanoseconds _listen_key_refresh = {};
-  std::unique_ptr<UserStream> _user_stream;
+  std::string listen_key_;
+  std::chrono::nanoseconds listen_key_refresh_ = {};
+  std::unique_ptr<UserStream> user_stream_;
   // reference data
-  absl::flat_hash_set<std::string> _symbols;
+  absl::flat_hash_set<std::string> symbols_;
   // market data
-  GatewayStatus _market_data_status = GatewayStatus::DISCONNECTED;
-  core::page_aligned_vector<MBPUpdate> _bid, _ask;
+  GatewayStatus market_data_status_ = GatewayStatus::DISCONNECTED;
+  core::page_aligned_vector<MBPUpdate> bid_, ask_;
   // order manager
-  GatewayStatus _order_manager_status = GatewayStatus::DISCONNECTED;
+  GatewayStatus order_manager_status_ = GatewayStatus::DISCONNECTED;
 };
 
 }  // namespace binance
