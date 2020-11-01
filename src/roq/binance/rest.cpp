@@ -20,6 +20,11 @@ namespace binance {
 namespace {
 constexpr std::string_view CONNECTION = "rest";
 
+static const std::string_view ACCEPT_ALL{"*/*"};
+static const std::string_view ACCEPT_JSON{"application/json"};
+
+static const std::string_view CONTENT_TYPE_JSON{"application/json"};
+
 static auto create_counter(const std::string_view &function) {
   return core::metrics::Counter(FLAGS_name, CONNECTION, function);
 }
@@ -114,6 +119,8 @@ void Rest::get(
       method,
       path,
       std::string_view(),  // query
+      ACCEPT_ALL,
+      std::string_view(),  // content_type
       std::string_view(),  // headers
       std::string_view(),  // body
       [this, callback](auto &response) {
@@ -152,6 +159,8 @@ void Rest::get(
       method,
       path,
       query,
+      ACCEPT_ALL,
+      std::string_view(),  // content_type
       headers,
       std::string_view(),  // body
       [this, callback](auto &response) {
@@ -184,6 +193,8 @@ void Rest::get(
       method,
       path,
       std::string_view(),  // query
+      ACCEPT_ALL,
+      std::string_view(),  // content_type
       headers,
       std::string_view(),  // body
       [this, callback](auto &response) {
@@ -216,6 +227,8 @@ void Rest::get(
       method,
       path,
       std::string_view(),  // query
+      ACCEPT_ALL,
+      std::string_view(),  // content_type
       std::string_view(),  // headers
       std::string_view(),  // body
       [this, callback](auto &response) {
@@ -279,6 +292,8 @@ void Rest::create_order(
       method,
       path,
       std::string_view(),  // query
+      ACCEPT_JSON,
+      CONTENT_TYPE_JSON,
       headers,
       std::string_view(),  // body
       [this, callback](auto &response) {
@@ -329,6 +344,8 @@ void Rest::cancel_order(
       method,
       path,
       std::string_view(),  // query
+      ACCEPT_JSON,
+      CONTENT_TYPE_JSON,
       headers,
       std::string_view(),  // body
       [this, callback](auto &response) {
