@@ -383,24 +383,14 @@ void Gateway::update_order_manager(GatewayStatus gateway_status) {
 
 uint32_t Gateway::download(RestDownload::State state) {
   switch (state) {
-    case RestDownload::State::UNDEFINED:
-      assert(false);
-      break;
-    case RestDownload::State::EXCHANGE_INFO:
-      download_exchange_info();
-      return 1;
+    case RestDownload::State::UNDEFINED: assert(false); break;
+    case RestDownload::State::EXCHANGE_INFO: download_exchange_info(); return 1;
     case RestDownload::State::MARKET_STREAM:
       subscribe_market_streams();
       return 0;
-    case RestDownload::State::LISTEN_KEY:
-      download_listen_key();
-      return 1;
-    case RestDownload::State::USER_STREAM:
-      subscribe_user_stream();
-      return 0;
-    case RestDownload::State::ACCOUNT:
-      download_account();
-      return 1;
+    case RestDownload::State::LISTEN_KEY: download_listen_key(); return 1;
+    case RestDownload::State::USER_STREAM: subscribe_user_stream(); return 0;
+    case RestDownload::State::ACCOUNT: download_account(); return 1;
     case RestDownload::State::DONE:
       // update(GatewayStatus::READY);
       return 0;

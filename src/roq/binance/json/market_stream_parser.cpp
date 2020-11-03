@@ -31,9 +31,7 @@ void MarketStreamParser::dispatch(
     for (auto [key, value] : std::get<core::json::object_t>(root)) {
       auto field = Field(key);
       switch (field) {
-        case Field::UNDEFINED:
-          LOG(FATAL)("Unexpected");
-          break;
+        case Field::UNDEFINED: LOG(FATAL)("Unexpected"); break;
         case Field::UNKNOWN:
           DLOG(FATAL)(R"(Unknown key="{}")", key);
           // XXX CALLBACK ?????????????
@@ -52,9 +50,7 @@ void MarketStreamParser::dispatch(
             handler(id, result);
           }
           break;
-        case Field::ID:
-          id = std::get<decltype(id)>(value);
-          break;
+        case Field::ID: id = std::get<decltype(id)>(value); break;
         case Field::STREAM: {
           // <symbol>@<stream>[@<freq>]
           auto full_name = std::get<std::string_view>(value);
@@ -77,8 +73,7 @@ void MarketStreamParser::dispatch(
         }
         case Field::DATA:
           switch (stream) {
-            case Stream::UNDEFINED:
-              break;  // wait
+            case Stream::UNDEFINED: break;  // wait
             case Stream::UNKNOWN:
               DLOG(FATAL)("Unexpected (unknown stream)");
               return;
