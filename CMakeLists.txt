@@ -9,6 +9,8 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
 
 include(GetGitRepoVersion)
 
+message("Using GIT_REPO_VERSION=${GIT_REPO_VERSION}")
+
 # project
 
 project(roq-binance VERSION ${GIT_REPO_VERSION})
