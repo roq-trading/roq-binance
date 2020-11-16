@@ -123,7 +123,7 @@ void Rest::get(
       std::string_view(),  // content_type
       std::string_view(),  // headers
       std::string_view(),  // body
-      [this, callback](auto &response) {
+      [this, callback{std::move(callback)}](auto &response) {
         profile_.exchange_info([&]() {
           try {
             response.expect(core::http::Status::OK);
@@ -163,7 +163,7 @@ void Rest::get(
       std::string_view(),  // content_type
       headers,
       std::string_view(),  // body
-      [this, callback](auto &response) {
+      [this, callback{std::move(callback)}](auto &response) {
         profile_.account([&]() {
           try {
             response.expect(core::http::Status::OK);
@@ -197,7 +197,7 @@ void Rest::get(
       std::string_view(),  // content_type
       headers,
       std::string_view(),  // body
-      [this, callback](auto &response) {
+      [this, callback{std::move(callback)}](auto &response) {
         profile_.listen_key([&]() {
           try {
             response.expect(core::http::Status::OK);
@@ -231,7 +231,7 @@ void Rest::get(
       std::string_view(),  // content_type
       std::string_view(),  // headers
       std::string_view(),  // body
-      [this, callback](auto &response) {
+      [this, callback{std::move(callback)}](auto &response) {
         profile_.depth([&]() {
           try {
             response.expect(core::http::Status::OK);
@@ -296,7 +296,7 @@ void Rest::create_order(
       CONTENT_TYPE_JSON,
       headers,
       std::string_view(),  // body
-      [this, callback](auto &response) {
+      [this, callback{std::move(callback)}](auto &response) {
         profile_.new_order([&]() {
           try {
             response.expect(core::http::Status::OK);
@@ -348,7 +348,7 @@ void Rest::cancel_order(
       CONTENT_TYPE_JSON,
       headers,
       std::string_view(),  // body
-      [this, callback](auto &response) {
+      [this, callback{std::move(callback)}](auto &response) {
         profile_.cancel_order([&]() {
           try {
             response.expect(core::http::Status::OK);
