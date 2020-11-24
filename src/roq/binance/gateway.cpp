@@ -502,8 +502,6 @@ void Gateway::operator()(const json::ExchangeInfo &exchange_info) {
         .settlement_currency = item.quote_asset,
         .commission_currency = std::string_view(),
         .tick_size = std::numeric_limits<double>::quiet_NaN(),
-        .limit_up = std::numeric_limits<double>::quiet_NaN(),
-        .limit_down = std::numeric_limits<double>::quiet_NaN(),
         .multiplier = std::numeric_limits<double>::quiet_NaN(),
         .min_trade_vol = std::numeric_limits<double>::quiet_NaN(),
         .option_type = OptionType::UNDEFINED,
