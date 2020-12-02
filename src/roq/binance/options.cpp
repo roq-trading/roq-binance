@@ -6,7 +6,7 @@ DEFINE_string(config_file, "", "config file (path)");
 
 DEFINE_string(exchange, "binance", "exchange identifier (string)");
 
-DEFINE_uint32(download_timeout_secs, 15, "download time-out (seconds)");
+// rest
 
 DEFINE_string(
     rest_uri, "https://testnet.binance.com/api/v1", "REST end-point (URI)");
@@ -32,34 +32,44 @@ DEFINE_uint32(
     1200,
     "rate limit: max requests (per interval)");
 
-DEFINE_uint32(rest_depth_limit, 100, "depth limit (levels)");
+// DEFINE_uint32(rest_depth_limit, 100, "depth limit (levels)");
 
 DEFINE_uint32(
     rest_listen_key_refresh_secs, 1800, "listen key refresh period (seconds)");
 
-DEFINE_uint32(rest_recv_window_secs, 5000, "receive window (seconds)");
+DEFINE_uint32(
+    rest_order_recv_window_msecs,
+    5000,
+    "receive window (milliseconds), please refer to Binance documentation!");
+
+DEFINE_bool(
+    rest_cancel_on_disconnect, false, "cancel orders on disconnect? (bool)");
+
+// ws
 
 DEFINE_string(
     ws_uri, "wss://testnet.binance.com/realtime", "WebSocket end-point (URI)");
 
 DEFINE_uint32(ws_ping_freq_secs, 5, "ping frequency (seconds)");
 
-DEFINE_uint32(ws_depth_levels, 20, "depth levels (count)");
+DEFINE_uint32(
+    ws_max_subscriptions_per_stream,
+    1024,
+    "max subscriptions per connection (count)");
+
+DEFINE_uint32(ws_subscribe_depth_levels, 20, "depth levels (count)");
 
 DEFINE_uint32(
-    ws_depth_freq_msecs, 100, "depth update frequency (milliseconds)");
+    ws_subscribe_depth_freq_msecs,
+    100,
+    "depth update frequency (milliseconds)");
 
 DEFINE_bool(
-    ws_trade_details,
+    ws_subscribe_trade_details,
     false,
     "report individual matches for trade summary? (bool)");
 
-DEFINE_uint32(
-    ws_max_subscriptions, 1024, "max subscriptions per connection (count)");
-
-DEFINE_bool(cancel_on_disconnect, true, "cancel orders on disconnect? (bool)");
-
-DEFINE_uint32(max_trades, uint32_t{16384}, "maximum trades for trade summary");
+// XXX review
 
 DEFINE_uint32(encode_buffer_size, 1048576, "encode buffer size");
 

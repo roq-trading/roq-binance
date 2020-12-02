@@ -54,12 +54,12 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
                   ssl_context_,
               },
           .download = RestDownload(
-              std::chrono::seconds{FLAGS_download_timeout_secs},
+              std::chrono::seconds{FLAGS_rest_request_timeout_secs},
               [this](auto state) { return download(state); }),
       },
       bid_(FLAGS_cache_mbp_max_depth), ask_(FLAGS_cache_mbp_max_depth) {
-  LOG_IF(WARNING, FLAGS_cancel_on_disconnect == false)
-  ("Orders will *NOT* be cancelled on disconnect");
+  LOG_IF(FATAL, FLAGS_rest_cancel_on_disconnect)
+  ("Exchange does *NOT* support cancel on disconnect");
 }
 
 void Gateway::operator()(const Event<Start> &event) {
@@ -415,8 +415,8 @@ void Gateway::download_exchange_info() {
 
 void Gateway::subscribe_market_streams() {
   if (symbols_.empty()) return;
-  assert(FLAGS_ws_max_subscriptions > 0);
-  size_t max_length = FLAGS_ws_max_subscriptions / 4;
+  assert(FLAGS_ws_max_subscriptions_per_stream > 0);
+  size_t max_length = FLAGS_ws_max_subscriptions_per_stream / 4;
   auto iter = symbols_.begin();
   for (size_t major = 0; major < symbols_.size(); major += max_length) {
     auto minor_length = std::min(symbols_.size() - major, max_length);

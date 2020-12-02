@@ -286,7 +286,7 @@ void Rest::create_order(
       cl_ord_id,
       double{0.0},
       double{0.0},
-      FLAGS_rest_recv_window_secs * 1000,
+      FLAGS_rest_order_recv_window_msecs,
       timestamp.count());
   DLOG(INFO)(R"(body="{}")", message);
   auto headers = fmt::format("X-MBX-APIKEY: {}\r\n", api_key_);
@@ -338,7 +338,7 @@ void Rest::cancel_order(
       order.symbol,
       order.external_order_id,
       request_id,
-      FLAGS_rest_recv_window_secs * 1000,
+      FLAGS_rest_order_recv_window_msecs,
       timestamp.count());
   DLOG(INFO)(R"(body="{}")", message);
   auto headers = fmt::format("X-MBX-APIKEY: {}\r\n", api_key_);

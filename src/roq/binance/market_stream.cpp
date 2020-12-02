@@ -103,8 +103,8 @@ void MarketStream::operator()(const Event<Timer> &event) {
 }
 
 size_t MarketStream::capacity() const {
-  assert(FLAGS_ws_max_subscriptions > 0);
-  size_t max_length = FLAGS_ws_max_subscriptions / 4;
+  assert(FLAGS_ws_max_subscriptions_per_stream > 0);
+  size_t max_length = FLAGS_ws_max_subscriptions_per_stream / 4;
   assert(max_length >= symbols_.size());
   return max_length - symbols_.size();
 }
@@ -172,7 +172,9 @@ template <>
 void MarketStream::subscribe_depth(const std::vector<std::string> &symbols) {
   assert(symbols.empty() == false);
   auto stream = fmt::format(
-      R"(@depth{}@{}ms)", FLAGS_ws_depth_levels, FLAGS_ws_depth_freq_msecs);
+      R"(@depth{}@{}ms)",
+      FLAGS_ws_subscribe_depth_levels,
+      FLAGS_ws_subscribe_depth_freq_msecs);
   auto separator = fmt::format(R"({}",")", stream);
   auto message = fmt::format(
       R"({{)"
@@ -216,7 +218,7 @@ void MarketStream::operator()(const core::web::Socket::Disconnected &) {
 
 void MarketStream::operator()(const core::web::Socket::Ready &) {
   LOG(INFO)("Ready (#{})", market_stream_id_);
-  if (FLAGS_ws_trade_details) {
+  if (FLAGS_ws_subscribe_trade_details) {
     subscribe_trade(symbols_);
   } else {
     subscribe_agg_trade(symbols_);
@@ -236,7 +238,7 @@ void MarketStream::subscribe(const std::vector<std::string> &symbols) {
     symbols_.emplace_back(symbol);
   }
   // only subscribe incremental symbols
-  if (FLAGS_ws_trade_details) {
+  if (FLAGS_ws_subscribe_trade_details) {
     subscribe_trade(symbols);
   } else {
     subscribe_agg_trade(symbols);
