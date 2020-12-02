@@ -3,7 +3,7 @@
 "type": "comp",
 "values": [
 	{ "name": "timezone", "type": "std::string_view" },
-	{ "name": "serverTime", "type": "std::chrono::nanoseconds" },
+	{ "name": "serverTime", "type": "std::chrono::milliseconds" },
 	{ "name": "rateLimits" },
 	{ "name": "exchangeFilters" },
 	{ "name": "symbols", "type": "roq::span<Symbol>" }

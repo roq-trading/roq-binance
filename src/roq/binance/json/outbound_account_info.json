@@ -3,7 +3,7 @@
 "type": "comp",
 "values": [
 	{ "raw": "e", "name": "event_type", "type": "std::string_view" },
-	{ "raw": "E", "name": "event_time", "type": "std::chrono::nanoseconds" },
+	{ "raw": "E", "name": "event_time", "type": "std::chrono::milliseconds" },
 	{ "raw": "m", "name": "maker_commission_rate_bips", "type": "double" },
 	{ "raw": "t", "name": "taker_commission_rate_bips", "type": "double" },
 	{ "raw": "b", "name": "buyer_commission_rate_bips", "type": "double" },
@@ -11,7 +11,7 @@
 	{ "raw": "T", "name": "can_trade", "type": "bool" },
 	{ "raw": "W", "name": "can_withdraw", "type": "bool" },
 	{ "raw": "D", "name": "can_deposit", "type": "bool" },
-	{ "raw": "u", "name": "time_of_last_account_update", "type": "std::chrono::nanoseconds" },
+	{ "raw": "u", "name": "time_of_last_account_update", "type": "std::chrono::milliseconds" },
 	{ "raw": "B", "name": "balances", "type": "roq::span<BalancesItem>" },
 	{ "raw": "P", "name": "permissions" }
 ]

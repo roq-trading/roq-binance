@@ -3,7 +3,7 @@
 "type": "item",
 "values": [
 	{ "raw": "e", "name": "event_type", "type": "EventType" },
-	{ "raw": "E", "name": "event_time", "type": "std::chrono::nanoseconds" },
+	{ "raw": "E", "name": "event_time", "type": "std::chrono::milliseconds" },
 	{ "raw": "s", "name": "symbol", "type": "std::string_view" },
 	{ "raw": "c", "name": "close_price", "type": "double" },
 	{ "raw": "o", "name": "open_price", "type": "double" },

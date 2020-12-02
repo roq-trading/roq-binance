@@ -6,7 +6,7 @@
 	{ "name": "orderId", "type": "int64_t" },
 	{ "name": "orderListId", "type": "int64_t" },
 	{ "name": "clientOrderId", "type": "std::string_view" },
-	{ "name": "transactTime", "type": "std::chrono::nanoseconds" },
+	{ "name": "transactTime", "type": "std::chrono::milliseconds" },
 	{ "name": "price", "type": "double" },
 	{ "name": "origQty", "type": "double" },
 	{ "name": "executedQty", "type": "double" },

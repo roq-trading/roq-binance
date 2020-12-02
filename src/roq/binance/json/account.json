@@ -9,7 +9,7 @@
 	{ "name": "canTrade", "type": "bool" },
 	{ "name": "canWithdraw", "type": "bool" },
 	{ "name": "canDeposit", "type": "bool" },
-	{ "name": "updateTime", "type": "std::chrono::nanoseconds" },
+	{ "name": "updateTime", "type": "std::chrono::milliseconds" },
 	{ "name": "accountType", "type": "std::string_view" },
 	{ "name": "balances", "type": "roq::span<Balance>" },
 	{ "name": "permissions" }
