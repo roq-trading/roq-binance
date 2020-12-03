@@ -292,6 +292,7 @@ void Gateway::operator()(
         .currency = item.asset,
         .balance = item.free_amount,
         .hold = item.locked_amount,
+        .external_account = {},
     };
     create_trace_and_dispatch(trace_info, funds_update, dispatcher_, true);
   }
@@ -306,6 +307,7 @@ void Gateway::operator()(
         .currency = item.asset,
         .balance = item.free_amount,
         .hold = item.locked_amount,
+        .external_account = {},
     };
     create_trace_and_dispatch(trace_info, funds_update, dispatcher_, true);
   }
@@ -327,6 +329,7 @@ void Gateway::operator()(
       .remaining_quantity = std::numeric_limits<double>::quiet_NaN(),
       .traded_quantity = execution_report.cumulative_filled_quantity,
       .timestamp = execution_report.transaction_time,  // XXX transact_time?
+      .external_account = {},
       .external_order_id = execution_report.client_order_id,
   };
   auto found = dispatcher_.find_order(
@@ -497,20 +500,23 @@ void Gateway::operator()(const json::ExchangeInfo &exchange_info) {
     ReferenceData reference_data{
         .exchange = FLAGS_exchange,
         .symbol = item.symbol,
+        .description = {},
         .security_type = SecurityType::UNDEFINED,
         .currency = item.base_asset,
         .settlement_currency = item.quote_asset,
-        .commission_currency = std::string_view(),
+        .commission_currency = {},
         .tick_size = std::numeric_limits<double>::quiet_NaN(),
         .multiplier = std::numeric_limits<double>::quiet_NaN(),
         .min_trade_vol = std::numeric_limits<double>::quiet_NaN(),
         .option_type = OptionType::UNDEFINED,
-        .strike_currency = std::string_view(),
+        .strike_currency = {},
         .strike_price = std::numeric_limits<double>::quiet_NaN(),
-        .underlying = std::string_view(),
-        .issue_date_utc = {},
-        .expiry_time_utc = {},
-        .settlement_date_utc = {},
+        .underlying = {},
+        .time_zone = {},
+        .issue_date = {},
+        .settlement_date = {},
+        .expiry_datetime = {},
+        .expiry_datetime_utc = {},
     };
     VLOG(1)(R"(reference_data={})", reference_data);
     create_trace_and_dispatch(trace_info, reference_data, dispatcher_, false);
@@ -553,6 +559,7 @@ void Gateway::operator()(const json::Account &account) {
         .currency = item.asset,
         .balance = item.free,
         .hold = item.locked,
+        .external_account = {},
     };
     create_trace_and_dispatch(trace_info, funds_update, dispatcher_, true);
   }
