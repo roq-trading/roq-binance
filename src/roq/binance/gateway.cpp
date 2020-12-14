@@ -8,7 +8,7 @@
 
 #include "roq/logging.h"
 
-#include "roq/core/string/builder.h"
+#include "roq/core/string_utils/fixed_string_builder.h"
 
 #include "roq/core/charconv.h"
 #include "roq/core/clock.h"
@@ -28,8 +28,8 @@ constexpr auto TOLERANCE = double{1.0e-10};
 
 constexpr auto DEFAULT_LISTEN_KEY_REFRESH_SECS = uint32_t{2};
 
-template <typename T>
-static bool mbp_update(auto &data, size_t &offset, const T &item) {
+template <typename C, typename T>
+static bool mbp_update(C &data, size_t &offset, const T &item) {
   auto &obj = data[offset];
   new (&obj) MBPUpdate{
       .price = item.price,
@@ -142,7 +142,8 @@ void Gateway::operator()(
       .trade_id = {},
   };
   core::charconv::to_string(
-      core::string::builder(trade.trade_id), agg_trade.agg_trade_id);
+      core::string_utils::fixed_string_builder(trade.trade_id),
+      agg_trade.agg_trade_id);
   TradeSummary trade_summary{
       .exchange = FLAGS_exchange,
       .symbol = agg_trade.symbol,
@@ -166,7 +167,8 @@ void Gateway::operator()(
       .trade_id = {},
   };
   core::charconv::to_string(
-      core::string::builder(trade_.trade_id), trade.trade_id);
+      core::string_utils::fixed_string_builder(trade_.trade_id),
+      trade.trade_id);
   TradeSummary trade_summary{
       .exchange = FLAGS_exchange,
       .symbol = trade.symbol,
