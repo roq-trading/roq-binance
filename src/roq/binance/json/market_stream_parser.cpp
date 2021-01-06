@@ -122,7 +122,8 @@ void MarketStreamParser::dispatch(
       }
     }
   }
-  if (dispatched) return;
+  if (dispatched)
+    return;
   LOG(WARNING)(R"(message="{}")", message);
   LOG(FATAL)("Unexpected");
 }

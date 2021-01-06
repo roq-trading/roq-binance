@@ -18,9 +18,11 @@ void UserStreamParser::dispatch(
   core::json::Parser parser(message);
   auto root = parser.root();
   for (auto [key, value] : std::get<core::json::object_t>(root)) {
-    if (key.compare("e") != 0) continue;
+    if (key.compare("e") != 0)
+      continue;
     EventType event_type(value);
-    if (try_dispatch(handler, message, buffer, event_type, trace_info)) return;
+    if (try_dispatch(handler, message, buffer, event_type, trace_info))
+      return;
     break;
   }
   LOG(WARNING)(R"(message="{}")", message);

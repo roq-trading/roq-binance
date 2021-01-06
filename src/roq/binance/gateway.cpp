@@ -75,13 +75,15 @@ void Gateway::operator()(const Event<Stop> &event) {
   LOG(INFO)("Stopping the gateway...");
   rest_.connection(event);
   for (auto &iter : market_streams_) (*iter)(event);
-  if (static_cast<bool>(user_stream_)) (*user_stream_)(event);
+  if (static_cast<bool>(user_stream_))
+    (*user_stream_)(event);
 }
 
 void Gateway::operator()(const Event<Timer> &event) {
   rest_.connection(event);
   for (auto &iter : market_streams_) (*iter)(event);
-  if (static_cast<bool>(user_stream_)) (*user_stream_)(event);
+  if (static_cast<bool>(user_stream_))
+    (*user_stream_)(event);
   refresh_listen_key();
   base_.loop(EVLOOP_NONBLOCK);
 }
@@ -128,7 +130,8 @@ void Gateway::operator()(
 void Gateway::operator()(metrics::Writer &writer) {
   rest_.connection(writer);
   for (auto &iter : market_streams_) (*iter)(writer);
-  if (static_cast<bool>(user_stream_)) (*user_stream_)(writer);
+  if (static_cast<bool>(user_stream_))
+    (*user_stream_)(writer);
 }
 
 // market stream
@@ -241,12 +244,14 @@ void Gateway::operator()(
   bool success = true;
   size_t bid_length = 0;
   for (auto &item : depth.bids) {
-    if (success == false) break;
+    if (success == false)
+      break;
     success = mbp_update(bid_, bid_length, item);
   }
   size_t ask_length = 0;
   for (auto &item : depth.asks) {
-    if (success == false) break;
+    if (success == false)
+      break;
     success = mbp_update(ask_, ask_length, item);
   }
   if (ROQ_UNLIKELY(success == false)) {
@@ -351,7 +356,8 @@ void Gateway::operator()(
 // rest
 
 void Gateway::operator()(const Rest &) {
-  if (rest_.connection.ready()) rest_.download.bump();
+  if (rest_.connection.ready())
+    rest_.download.bump();
 }
 
 void Gateway::operator()(const json::NewOrder &) {
@@ -363,7 +369,8 @@ void Gateway::operator()(const json::CancelOrder &) {
 // UTILS:
 
 void Gateway::update_market_data(GatewayStatus gateway_status) {
-  if (gateway_status == market_data_status_) return;
+  if (gateway_status == market_data_status_)
+    return;
   market_data_status_ = gateway_status;
   server::TraceInfo trace_info;
   MarketDataStatus market_data_status{
@@ -374,7 +381,8 @@ void Gateway::update_market_data(GatewayStatus gateway_status) {
 }
 
 void Gateway::update_order_manager(GatewayStatus gateway_status) {
-  if (gateway_status == order_manager_status_) return;
+  if (gateway_status == order_manager_status_)
+    return;
   order_manager_status_ = gateway_status;
   server::TraceInfo trace_info;
   OrderManagerStatus order_manager_status{
@@ -409,7 +417,8 @@ void Gateway::download_exchange_info() {
   auto sequence = rest_.download.sequence();
   rest_.connection.get<json::ExchangeInfo>([this, sequence](auto &promise) {
     try {
-      if (rest_.download.skip(sequence, state)) return;
+      if (rest_.download.skip(sequence, state))
+        return;
       (*this)(promise.get());
       rest_.download.check(state);
     } catch (NetworkError &) {
@@ -419,7 +428,8 @@ void Gateway::download_exchange_info() {
 }
 
 void Gateway::subscribe_market_streams() {
-  if (symbols_.empty()) return;
+  if (symbols_.empty())
+    return;
   assert(FLAGS_ws_max_subscriptions_per_stream > 0);
   size_t max_length = FLAGS_ws_max_subscriptions_per_stream / 4;
   auto iter = symbols_.begin();
@@ -452,7 +462,8 @@ void Gateway::download_listen_key() {
   auto sequence = rest_.download.sequence();
   rest_.connection.get<json::ListenKey>([this, sequence](auto &promise) {
     try {
-      if (rest_.download.skip(sequence, state)) return;
+      if (rest_.download.skip(sequence, state))
+        return;
       (*this)(promise.get());
       rest_.download.check(state);
     } catch (NetworkError &) {
@@ -476,7 +487,8 @@ void Gateway::download_account() {
   auto sequence = rest_.download.sequence();
   rest_.connection.get<json::Account>([this, sequence](auto &promise) {
     try {
-      if (rest_.download.skip(sequence, state)) return;
+      if (rest_.download.skip(sequence, state))
+        return;
       (*this)(promise.get());
       rest_.download.check(state);
     } catch (NetworkError &) {
@@ -569,7 +581,8 @@ void Gateway::operator()(const json::Account &account) {
 
 void Gateway::refresh_listen_key() {
   auto now = core::get_system_clock();
-  if (listen_key_refresh_.count() == 0 || now < listen_key_refresh_) return;
+  if (listen_key_refresh_.count() == 0 || now < listen_key_refresh_)
+    return;
   LOG(INFO)("Refreshing listen key...");
   listen_key_refresh_ =
       now + std::chrono::seconds{FLAGS_rest_listen_key_refresh_secs};
