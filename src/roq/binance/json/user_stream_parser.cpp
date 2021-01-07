@@ -42,7 +42,9 @@ bool UserStreamParser::try_dispatch(
     case EventType::TRADE:
     case EventType::_24HR_MINI_TICKER:
     case EventType::BOOK_TICKER:
-    case EventType::DEPTH_UPDATE: LOG(FATAL)("Unexpected"); break;
+    case EventType::DEPTH_UPDATE:
+      LOG(FATAL)("Unexpected");
+      break;
     case EventType::OUTBOUND_ACCOUNT_INFO: {
       auto outbound_account_info =
           core::json::Parser::create<OutboundAccountInfo>(message, buffer);
@@ -66,8 +68,10 @@ bool UserStreamParser::try_dispatch(
       handler(execution_report, trace_info);
       break;
     }
-    case EventType::LIST_STATUS: return false;  // XXX implement this
-    default: return false;
+    case EventType::LIST_STATUS:
+      return false;  // XXX implement this
+    default:
+      return false;
   }
   return true;
 }
