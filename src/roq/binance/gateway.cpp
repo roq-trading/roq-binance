@@ -74,14 +74,16 @@ void Gateway::operator()(const Event<Start> &event) {
 void Gateway::operator()(const Event<Stop> &event) {
   LOG(INFO)("Stopping the gateway...");
   rest_.connection(event);
-  for (auto &iter : market_streams_) (*iter)(event);
+  for (auto &iter : market_streams_)
+    (*iter)(event);
   if (static_cast<bool>(user_stream_))
     (*user_stream_)(event);
 }
 
 void Gateway::operator()(const Event<Timer> &event) {
   rest_.connection(event);
-  for (auto &iter : market_streams_) (*iter)(event);
+  for (auto &iter : market_streams_)
+    (*iter)(event);
   if (static_cast<bool>(user_stream_))
     (*user_stream_)(event);
   refresh_listen_key();
@@ -129,7 +131,8 @@ void Gateway::operator()(
 
 void Gateway::operator()(metrics::Writer &writer) {
   rest_.connection(writer);
-  for (auto &iter : market_streams_) (*iter)(writer);
+  for (auto &iter : market_streams_)
+    (*iter)(writer);
   if (static_cast<bool>(user_stream_))
     (*user_stream_)(writer);
 }
