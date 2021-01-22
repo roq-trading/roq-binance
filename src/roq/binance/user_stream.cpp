@@ -2,6 +2,8 @@
 
 #include "roq/binance/user_stream.h"
 
+#include <absl/flags/flag.h>
+
 #include <fmt/format.h>
 
 #include <cassert>
@@ -26,15 +28,18 @@ static auto create_query(const std::string_view &listen_key) {
 constexpr std::string_view CONNECTION = "user_stream";
 
 static auto create_counter(const std::string_view &function) {
-  return core::metrics::Counter(FLAGS_name, CONNECTION, function);
+  return core::metrics::Counter(
+      absl::GetFlag(FLAGS_name), CONNECTION, function);
 }
 
 static auto create_profile(const std::string_view &function) {
-  return core::metrics::Profile(FLAGS_name, CONNECTION, function);
+  return core::metrics::Profile(
+      absl::GetFlag(FLAGS_name), CONNECTION, function);
 }
 
 static auto create_latency(const std::string_view &function) {
-  return core::metrics::Latency(FLAGS_name, CONNECTION, function);
+  return core::metrics::Latency(
+      absl::GetFlag(FLAGS_name), CONNECTION, function);
 }
 }  // namespace
 
@@ -51,13 +56,13 @@ UserStream::UserStream(
           base,
           dns_base,
           ssl_context,
-          core::URI(FLAGS_ws_uri),
+          core::URI(absl::GetFlag(FLAGS_ws_uri)),
           query_,
-          std::chrono::seconds{FLAGS_ws_ping_freq_secs},
-          FLAGS_decode_buffer_size,
-          FLAGS_encode_buffer_size,
+          std::chrono::seconds{absl::GetFlag(FLAGS_ws_ping_freq_secs)},
+          absl::GetFlag(FLAGS_decode_buffer_size),
+          absl::GetFlag(FLAGS_encode_buffer_size),
           []() { return std::string(); }),
-      decode_buffer_(FLAGS_decode_buffer_size),
+      decode_buffer_(absl::GetFlag(FLAGS_decode_buffer_size)),
       counter_{
           .disconnect = create_counter("disconnect"),
       },

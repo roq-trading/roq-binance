@@ -53,9 +53,9 @@ target_link_libraries(
   roq-server::roq-server
   roq-core::roq-core
   roq-logging::roq-logging
+  absl::flags
   absl::flat_hash_map
   absl::flat_hash_set
-  gflags
   ${UUID_LIBRARIES}
   ${RT_LIBRARIES})
 
