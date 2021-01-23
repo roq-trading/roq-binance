@@ -2,14 +2,12 @@
 
 #include "roq/binance/rest.h"
 
-#include <absl/flags/flag.h>
-
 #include <fmt/chrono.h>
 #include <fmt/format.h>
 
 #include <utility>
 
-#include "roq/binance/options.h"
+#include "roq/binance/flags.h"
 
 #include "roq/binance/json/account.h"
 #include "roq/binance/json/depth.h"
@@ -30,18 +28,15 @@ static const std::string_view ACCEPT_JSON{"application/json"};
 static const std::string_view CONTENT_TYPE_JSON{"application/json"};
 
 static auto create_counter(const std::string_view &function) {
-  return core::metrics::Counter(
-      absl::GetFlag(FLAGS_name), CONNECTION, function);
+  return core::metrics::Counter(Flags::name(), CONNECTION, function);
 }
 
 static auto create_profile(const std::string_view &function) {
-  return core::metrics::Profile(
-      absl::GetFlag(FLAGS_name), CONNECTION, function);
+  return core::metrics::Profile(Flags::name(), CONNECTION, function);
 }
 
 static auto create_latency(const std::string_view &function) {
-  return core::metrics::Latency(
-      absl::GetFlag(FLAGS_name), CONNECTION, function);
+  return core::metrics::Latency(Flags::name(), CONNECTION, function);
 }
 }  // namespace
 
@@ -58,19 +53,18 @@ Rest::Rest(
           base,
           dns_base,
           ssl_context,
-          core::URI(absl::GetFlag(FLAGS_rest_uri)),
+          core::URI(Flags::rest_uri()),
           ROQ_PACKAGE_NAME,
           true,  // keep alive
-          absl::GetFlag(FLAGS_rest_request_queue_depth),
-          std::chrono::seconds{absl::GetFlag(FLAGS_rest_request_timeout_secs)},
-          std::chrono::seconds{
-              absl::GetFlag(FLAGS_rest_rate_limit_interval_secs)},
-          absl::GetFlag(FLAGS_rest_rate_limit_max_requests),
-          std::chrono::seconds{absl::GetFlag(FLAGS_rest_ping_freq_secs)},
-          absl::GetFlag(FLAGS_decode_buffer_size),
-          absl::GetFlag(FLAGS_encode_buffer_size),
-          absl::GetFlag(FLAGS_rest_ping_path)),
-      decode_buffer_(absl::GetFlag(FLAGS_decode_buffer_size)),
+          Flags::rest_request_queue_depth(),
+          std::chrono::seconds{Flags::rest_request_timeout_secs()},
+          std::chrono::seconds{Flags::rest_rate_limit_interval_secs()},
+          Flags::rest_rate_limit_max_requests(),
+          std::chrono::seconds{Flags::rest_ping_freq_secs()},
+          Flags::decode_buffer_size(),
+          Flags::encode_buffer_size(),
+          Flags::rest_ping_path()),
+      decode_buffer_(Flags::decode_buffer_size()),
       counter_{
           .disconnect = create_counter("disconnect"),
       },
@@ -292,7 +286,7 @@ void Rest::create_order(
       cl_ord_id,
       double{0.0},
       double{0.0},
-      absl::GetFlag(FLAGS_rest_order_recv_window_msecs),
+      Flags::rest_order_recv_window_msecs(),
       timestamp.count());
   DLOG(INFO)(R"(body="{}")", message);
   auto headers = fmt::format("X-MBX-APIKEY: {}\r\n", api_key_);
@@ -344,7 +338,7 @@ void Rest::cancel_order(
       order.symbol,
       order.external_order_id,
       request_id,
-      absl::GetFlag(FLAGS_rest_order_recv_window_msecs),
+      Flags::rest_order_recv_window_msecs(),
       timestamp.count());
   DLOG(INFO)(R"(body="{}")", message);
   auto headers = fmt::format("X-MBX-APIKEY: {}\r\n", api_key_);

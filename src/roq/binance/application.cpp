@@ -2,18 +2,16 @@
 
 #include "roq/binance/application.h"
 
-#include <absl/flags/flag.h>
-
 #include "roq/binance/config.h"
+#include "roq/binance/flags.h"
 #include "roq/binance/gateway.h"
-#include "roq/binance/options.h"
 
 namespace roq {
 namespace binance {
 
 int Application::main(int, char **) {
   LOG(INFO)("Parse configuration");
-  Config config(absl::GetFlag(FLAGS_config_file));
+  Config config(Flags::config_file());
   VLOG(1)("config={}", config);
   LOG(INFO)("Starting the gateway");
   roq::server::Trading<Gateway>(

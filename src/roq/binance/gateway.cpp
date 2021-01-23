@@ -2,8 +2,6 @@
 
 #include "roq/binance/gateway.h"
 
-#include <absl/flags/flag.h>
-
 #include <algorithm>
 #include <cctype>
 #include <limits>
@@ -17,7 +15,7 @@
 #include "roq/core/utils.h"
 #include "roq/core/view.h"
 
-#include "roq/binance/options.h"
+#include "roq/binance/flags.h"
 
 #include "roq/binance/json/utils.h"
 
@@ -56,13 +54,11 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
                   ssl_context_,
               },
           .download = RestDownload(
-              std::chrono::seconds{
-                  absl::GetFlag(FLAGS_rest_request_timeout_secs)},
+              std::chrono::seconds{Flags::rest_request_timeout_secs()},
               [this](auto state) { return download(state); }),
       },
-      bid_(absl::GetFlag(FLAGS_cache_mbp_max_depth)),
-      ask_(absl::GetFlag(FLAGS_cache_mbp_max_depth)) {
-  LOG_IF(FATAL, absl::GetFlag(FLAGS_rest_cancel_on_disconnect))
+      bid_(Flags::cache_mbp_max_depth()), ask_(Flags::cache_mbp_max_depth()) {
+  LOG_IF(FATAL, Flags::rest_cancel_on_disconnect())
   ("Exchange does *NOT* support cancel on disconnect");
 }
 
@@ -155,7 +151,7 @@ void Gateway::operator()(
       core::string_utils::fixed_string_builder(trade.trade_id),
       agg_trade.agg_trade_id);
   TradeSummary trade_summary{
-      .exchange = absl::GetFlag(FLAGS_exchange),
+      .exchange = Flags::exchange(),
       .symbol = agg_trade.symbol,
       .trades =
           {
@@ -180,7 +176,7 @@ void Gateway::operator()(
       core::string_utils::fixed_string_builder(trade_.trade_id),
       trade.trade_id);
   TradeSummary trade_summary{
-      .exchange = absl::GetFlag(FLAGS_exchange),
+      .exchange = Flags::exchange(),
       .symbol = trade.symbol,
       .trades =
           {
@@ -215,7 +211,7 @@ void Gateway::operator()(
   };
   static_assert(std::size(statistics) == 4);  // just checking...
   StatisticsUpdate statistics_update{
-      .exchange = absl::GetFlag(FLAGS_exchange),
+      .exchange = Flags::exchange(),
       .symbol = mini_ticker.symbol,
       .statistics = roq::span(statistics, std::size(statistics)),
       .snapshot = false,
@@ -228,7 +224,7 @@ void Gateway::operator()(
 void Gateway::operator()(
     const json::BookTicker &book_ticker, const server::TraceInfo &trace_info) {
   TopOfBook top_of_book{
-      .exchange = absl::GetFlag(FLAGS_exchange),
+      .exchange = Flags::exchange(),
       .symbol = book_ticker.symbol,
       .layer =
           {
@@ -271,7 +267,7 @@ void Gateway::operator()(
      ask_.size());
   }
   MarketByPriceUpdate market_by_price_update{
-      .exchange = absl::GetFlag(FLAGS_exchange),
+      .exchange = Flags::exchange(),
       .symbol = symbol,
       .bids =
           {
@@ -447,8 +443,8 @@ void Gateway::download_exchange_info() {
 void Gateway::subscribe_market_streams() {
   if (symbols_.empty())
     return;
-  assert(absl::GetFlag(FLAGS_ws_max_subscriptions_per_stream) > 0);
-  size_t max_length = absl::GetFlag(FLAGS_ws_max_subscriptions_per_stream) / 4;
+  assert(Flags::ws_max_subscriptions_per_stream() > 0);
+  size_t max_length = Flags::ws_max_subscriptions_per_stream() / 4;
   auto iter = symbols_.begin();
   for (size_t major = 0; major < symbols_.size(); major += max_length) {
     auto minor_length = std::min(symbols_.size() - major, max_length);
@@ -529,7 +525,7 @@ void Gateway::operator()(const json::ExchangeInfo &exchange_info) {
     });
     symbols_.emplace(std::move(symbol));
     ReferenceData reference_data{
-        .exchange = absl::GetFlag(FLAGS_exchange),
+        .exchange = Flags::exchange(),
         .symbol = item.symbol,
         .description = {},
         .security_type = SecurityType::UNDEFINED,
@@ -552,7 +548,7 @@ void Gateway::operator()(const json::ExchangeInfo &exchange_info) {
     VLOG(1)(R"(reference_data={})", reference_data);
     create_trace_and_dispatch(trace_info, reference_data, dispatcher_, false);
     MarketStatus market_status{
-        .exchange = absl::GetFlag(FLAGS_exchange),
+        .exchange = Flags::exchange(),
         .symbol = item.symbol,
         .trading_status = json::map(item.status),
     };
@@ -579,8 +575,7 @@ void Gateway::operator()(const json::ListenKey &listen_key) {
   }
   auto now = core::get_system_clock();
   listen_key_refresh_ =
-      now +
-      std::chrono::seconds{absl::GetFlag(FLAGS_rest_listen_key_refresh_secs)};
+      now + std::chrono::seconds{Flags::rest_listen_key_refresh_secs()};
 }
 
 void Gateway::operator()(const json::Account &account) {
@@ -603,8 +598,7 @@ void Gateway::refresh_listen_key() {
     return;
   LOG(INFO)("Refreshing listen key...");
   listen_key_refresh_ =
-      now +
-      std::chrono::seconds{absl::GetFlag(FLAGS_rest_listen_key_refresh_secs)};
+      now + std::chrono::seconds{Flags::rest_listen_key_refresh_secs()};
   rest_.connection.get<json::ListenKey>([this](auto &promise) {
     try {
       (*this)(promise.get());

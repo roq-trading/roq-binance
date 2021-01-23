@@ -2,8 +2,6 @@
 
 #include "roq/binance/market_stream.h"
 
-#include <absl/flags/flag.h>
-
 #include <fmt/format.h>
 
 #include <cassert>
@@ -15,7 +13,7 @@
 
 #include "roq/core/charconv.h"
 
-#include "roq/binance/options.h"
+#include "roq/binance/flags.h"
 
 namespace roq {
 namespace binance {
@@ -30,25 +28,19 @@ static auto create_connection_name(uint32_t market_stream_id) {
 static auto create_counter(
     uint32_t market_stream_id, const std::string_view &function) {
   return core::metrics::Counter(
-      absl::GetFlag(FLAGS_name),
-      create_connection_name(market_stream_id),
-      function);
+      Flags::name(), create_connection_name(market_stream_id), function);
 }
 
 static auto create_profile(
     uint32_t market_stream_id, const std::string_view &function) {
   return core::metrics::Profile(
-      absl::GetFlag(FLAGS_name),
-      create_connection_name(market_stream_id),
-      function);
+      Flags::name(), create_connection_name(market_stream_id), function);
 }
 
 static auto create_latency(
     uint32_t market_stream_id, const std::string_view &function) {
   return core::metrics::Latency(
-      absl::GetFlag(FLAGS_name),
-      create_connection_name(market_stream_id),
-      function);
+      Flags::name(), create_connection_name(market_stream_id), function);
 }
 }  // namespace
 
@@ -67,13 +59,13 @@ MarketStream::MarketStream(
           base,
           dns_base,
           ssl_context,
-          core::URI(absl::GetFlag(FLAGS_ws_uri)),
+          core::URI(Flags::ws_uri()),
           std::string_view(),  // query
-          std::chrono::seconds{absl::GetFlag(FLAGS_ws_ping_freq_secs)},
-          absl::GetFlag(FLAGS_decode_buffer_size),
-          absl::GetFlag(FLAGS_encode_buffer_size),
+          std::chrono::seconds{Flags::ws_ping_freq_secs()},
+          Flags::decode_buffer_size(),
+          Flags::encode_buffer_size(),
           []() { return std::string(); }),
-      decode_buffer_(absl::GetFlag(FLAGS_decode_buffer_size)),
+      decode_buffer_(Flags::decode_buffer_size()),
       counter_{
           .disconnect = create_counter(market_stream_id, "disconnect"),
       },
@@ -111,8 +103,8 @@ void MarketStream::operator()(const Event<Timer> &event) {
 }
 
 size_t MarketStream::capacity() const {
-  assert(absl::GetFlag(FLAGS_ws_max_subscriptions_per_stream) > 0);
-  size_t max_length = absl::GetFlag(FLAGS_ws_max_subscriptions_per_stream) / 4;
+  assert(Flags::ws_max_subscriptions_per_stream() > 0);
+  size_t max_length = Flags::ws_max_subscriptions_per_stream() / 4;
   assert(max_length >= symbols_.size());
   return max_length - symbols_.size();
 }
@@ -181,8 +173,8 @@ void MarketStream::subscribe_depth(const std::vector<std::string> &symbols) {
   assert(symbols.empty() == false);
   auto stream = fmt::format(
       R"(@depth{}@{}ms)",
-      absl::GetFlag(FLAGS_ws_subscribe_depth_levels),
-      absl::GetFlag(FLAGS_ws_subscribe_depth_freq_msecs));
+      Flags::ws_subscribe_depth_levels(),
+      Flags::ws_subscribe_depth_freq_msecs());
   auto separator = fmt::format(R"({}",")", stream);
   auto message = fmt::format(
       R"({{)"
@@ -226,7 +218,7 @@ void MarketStream::operator()(const core::web::Socket::Disconnected &) {
 
 void MarketStream::operator()(const core::web::Socket::Ready &) {
   LOG(INFO)("Ready (#{})", market_stream_id_);
-  if (absl::GetFlag(FLAGS_ws_subscribe_trade_details)) {
+  if (Flags::ws_subscribe_trade_details()) {
     subscribe_trade(symbols_);
   } else {
     subscribe_agg_trade(symbols_);
@@ -246,7 +238,7 @@ void MarketStream::subscribe(const std::vector<std::string> &symbols) {
     symbols_.emplace_back(symbol);
   }
   // only subscribe incremental symbols
-  if (absl::GetFlag(FLAGS_ws_subscribe_trade_details)) {
+  if (Flags::ws_subscribe_trade_details()) {
     subscribe_trade(symbols);
   } else {
     subscribe_agg_trade(symbols);
