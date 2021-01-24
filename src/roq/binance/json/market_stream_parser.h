@@ -38,9 +38,7 @@ struct MarketStreamParser final {
     virtual void operator()(const BookTicker &, const server::TraceInfo &) = 0;
 
     virtual void operator()(
-        const std::string_view &symbol,
-        const Depth &depth,
-        const server::TraceInfo &) = 0;
+        const std::string_view &symbol, const Depth &depth, const server::TraceInfo &) = 0;
 
     virtual void operator()(
         const std::string_view &symbol,

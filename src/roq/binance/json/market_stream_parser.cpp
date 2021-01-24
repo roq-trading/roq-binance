@@ -64,14 +64,11 @@ void MarketStreamParser::dispatch(
           symbol = std::string_view(full_name.begin(), idx0);
           // note! convert to uppercase
           std::transform(
-              symbol.begin(), symbol.end(), symbol.begin(), [](auto c) {
-                return std::toupper(c);
-              });
+              symbol.begin(), symbol.end(), symbol.begin(), [](auto c) { return std::toupper(c); });
           auto idx1 = full_name.find('@', idx0 + 1);
           auto name = std::string_view(
               full_name.begin() + idx0 + 1,
-              (idx1 == full_name.npos) ? full_name.size() - idx0 - 1
-                                       : idx1 - idx0 - 1);
+              (idx1 == full_name.npos) ? full_name.size() - idx0 - 1 : idx1 - idx0 - 1);
           stream = Stream(name);
           break;
         }

@@ -29,17 +29,12 @@ class MarketStream final : public core::web::Socket::Handler,
                            public json::MarketStreamParser::Handler {
  public:
   struct Handler {
-    virtual void operator()(
-        const json::AggTrade &, const server::TraceInfo &) = 0;
+    virtual void operator()(const json::AggTrade &, const server::TraceInfo &) = 0;
     virtual void operator()(const json::Trade &, const server::TraceInfo &) = 0;
+    virtual void operator()(const json::MiniTicker &, const server::TraceInfo &) = 0;
+    virtual void operator()(const json::BookTicker &, const server::TraceInfo &) = 0;
     virtual void operator()(
-        const json::MiniTicker &, const server::TraceInfo &) = 0;
-    virtual void operator()(
-        const json::BookTicker &, const server::TraceInfo &) = 0;
-    virtual void operator()(
-        const std::string_view &symbol,
-        const json::Depth &depth,
-        const server::TraceInfo &) = 0;
+        const std::string_view &symbol, const json::Depth &depth, const server::TraceInfo &) = 0;
     virtual void operator()(
         const std::string_view &symbol,
         const json::DepthUpdate &depth_update,
@@ -105,9 +100,7 @@ class MarketStream final : public core::web::Socket::Handler,
   void operator()(const json::MiniTicker &, const server::TraceInfo &) override;
   void operator()(const json::BookTicker &, const server::TraceInfo &) override;
   void operator()(
-      const std::string_view &symbol,
-      const json::Depth &depth,
-      const server::TraceInfo &) override;
+      const std::string_view &symbol, const json::Depth &depth, const server::TraceInfo &) override;
   void operator()(
       const std::string_view &symbol,
       const json::DepthUpdate &depth_update,
@@ -131,8 +124,8 @@ class MarketStream final : public core::web::Socket::Handler,
     core::metrics::Counter disconnect;
   } counter_;
   struct {
-    core::metrics::Profile parse, error, result, agg_trade, trade, mini_ticker,
-        book_ticker, depth, depth_update;
+    core::metrics::Profile parse, error, result, agg_trade, trade, mini_ticker, book_ticker, depth,
+        depth_update;
   } profile_;
   struct {
     core::metrics::Latency ping, heartbeat;

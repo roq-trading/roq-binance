@@ -113,8 +113,7 @@ void Rest::operator()(metrics::Writer &writer) {
 }
 
 template <>
-void Rest::get(
-    std::function<void(const core::Promise<json::ExchangeInfo> &)> &&callback) {
+void Rest::get(std::function<void(const core::Promise<json::ExchangeInfo> &)> &&callback) {
   constexpr auto method = core::http::Method::GET;
   constexpr std::string_view path = "/api/v3/exchangeInfo";
   connection_.request(
@@ -130,8 +129,8 @@ void Rest::get(
           try {
             response.expect(core::http::Status::OK);
             core::json::Buffer buffer(decode_buffer_);
-            auto exchange_info = core::json::Parser::create<json::ExchangeInfo>(
-                response.body(), buffer);
+            auto exchange_info =
+                core::json::Parser::create<json::ExchangeInfo>(response.body(), buffer);
             VLOG(1)(R"(exchange_info={})", exchange_info);
             core::Promise<json::ExchangeInfo> promise(exchange_info);
             callback(promise);
@@ -146,14 +145,12 @@ void Rest::get(
 }
 
 template <>
-void Rest::get(
-    std::function<void(const core::Promise<json::Account> &)> &&callback) {
+void Rest::get(std::function<void(const core::Promise<json::Account> &)> &&callback) {
   constexpr auto method = core::http::Method::GET;
   constexpr std::string_view path = "/api/v3/account";
   auto now = core::get_realtime_clock();
   auto timestamp = fmt::format(
-      R"(timestamp={})",
-      std::chrono::duration_cast<std::chrono::milliseconds>(now).count());
+      R"(timestamp={})", std::chrono::duration_cast<std::chrono::milliseconds>(now).count());
   auto signature = random_.create_signature(timestamp);
   auto query = fmt::format(R"(?{}&signature={})", timestamp, signature);
   auto headers = fmt::format("X-MBX-APIKEY: {}\r\n", api_key_);
@@ -170,8 +167,7 @@ void Rest::get(
           try {
             response.expect(core::http::Status::OK);
             core::json::Buffer buffer(decode_buffer_);
-            auto account = core::json::Parser::create<json::Account>(
-                response.body(), buffer);
+            auto account = core::json::Parser::create<json::Account>(response.body(), buffer);
             VLOG(1)(R"(account={})", account);
             core::Promise<json::Account> promise(account);
             callback(promise);
@@ -186,8 +182,7 @@ void Rest::get(
 }
 
 template <>
-void Rest::get(
-    std::function<void(const core::Promise<json::ListenKey> &)> &&callback) {
+void Rest::get(std::function<void(const core::Promise<json::ListenKey> &)> &&callback) {
   constexpr auto method = core::http::Method::POST;
   constexpr std::string_view path = "/api/v3/userDataStream";
   auto headers = fmt::format("X-MBX-APIKEY: {}\r\n", api_key_);
@@ -203,8 +198,7 @@ void Rest::get(
         profile_.listen_key([&]() {
           try {
             response.expect(core::http::Status::OK);
-            auto listen_key =
-                core::json::Parser::create<json::ListenKey>(response.body());
+            auto listen_key = core::json::Parser::create<json::ListenKey>(response.body());
             VLOG(1)(R"(listen_key={})", listen_key);
             core::Promise<json::ListenKey> promise(listen_key);
             callback(promise);
@@ -219,12 +213,10 @@ void Rest::get(
 }
 
 template <>
-void Rest::get(
-    std::function<void(const core::Promise<json::Depth> &)> &&callback) {
+void Rest::get(std::function<void(const core::Promise<json::Depth> &)> &&callback) {
   assert(false);  // XXX not ready
   constexpr auto method = core::http::Method::GET;
-  constexpr std::string_view path =
-      "/api/v3/depth?symbol=BTCUSDT";  // XXX DEBUG
+  constexpr std::string_view path = "/api/v3/depth?symbol=BTCUSDT";  // XXX DEBUG
   connection_.request(
       method,
       path,
@@ -238,8 +230,7 @@ void Rest::get(
           try {
             response.expect(core::http::Status::OK);
             core::json::Buffer buffer(decode_buffer_);
-            auto depth = core::json::Parser::create<json::Depth>(
-                response.body(), buffer);
+            auto depth = core::json::Parser::create<json::Depth>(response.body(), buffer);
             VLOG(1)(R"(depth={})", depth);
             core::Promise<json::Depth> promise(depth);
             callback(promise);
@@ -303,8 +294,7 @@ void Rest::create_order(
           try {
             response.expect(core::http::Status::OK);
             core::json::Buffer buffer(decode_buffer_);
-            auto new_order = core::json::Parser::create<json::NewOrder>(
-                response.body(), buffer);
+            auto new_order = core::json::Parser::create<json::NewOrder>(response.body(), buffer);
             VLOG(1)(R"(new_order={})", new_order);
             core::Promise<json::NewOrder> promise(new_order);
             callback(promise);
@@ -354,8 +344,7 @@ void Rest::cancel_order(
         profile_.cancel_order([&]() {
           try {
             response.expect(core::http::Status::OK);
-            auto cancel_order =
-                core::json::Parser::create<json::CancelOrder>(response.body());
+            auto cancel_order = core::json::Parser::create<json::CancelOrder>(response.body());
             VLOG(1)(R"(cancel_order={})", cancel_order);
             core::Promise<json::CancelOrder> promise(cancel_order);
             callback(promise);
@@ -380,8 +369,7 @@ void Rest::operator()(const core::web::Client::Disconnected &) {
 
 void Rest::operator()(const core::web::Client::Latency &latency) {
   latency_.ping.update(
-      std::chrono::duration_cast<std::chrono::nanoseconds>(latency.sample)
-          .count());
+      std::chrono::duration_cast<std::chrono::nanoseconds>(latency.sample).count());
 }
 
 }  // namespace binance

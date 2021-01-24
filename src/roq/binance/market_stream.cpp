@@ -25,22 +25,16 @@ static auto create_connection_name(uint32_t market_stream_id) {
   return fmt::format("{}_{}", CONNECTION, market_stream_id);
 }
 
-static auto create_counter(
-    uint32_t market_stream_id, const std::string_view &function) {
-  return core::metrics::Counter(
-      Flags::name(), create_connection_name(market_stream_id), function);
+static auto create_counter(uint32_t market_stream_id, const std::string_view &function) {
+  return core::metrics::Counter(Flags::name(), create_connection_name(market_stream_id), function);
 }
 
-static auto create_profile(
-    uint32_t market_stream_id, const std::string_view &function) {
-  return core::metrics::Profile(
-      Flags::name(), create_connection_name(market_stream_id), function);
+static auto create_profile(uint32_t market_stream_id, const std::string_view &function) {
+  return core::metrics::Profile(Flags::name(), create_connection_name(market_stream_id), function);
 }
 
-static auto create_latency(
-    uint32_t market_stream_id, const std::string_view &function) {
-  return core::metrics::Latency(
-      Flags::name(), create_connection_name(market_stream_id), function);
+static auto create_latency(uint32_t market_stream_id, const std::string_view &function) {
+  return core::metrics::Latency(Flags::name(), create_connection_name(market_stream_id), function);
 }
 }  // namespace
 
@@ -52,19 +46,18 @@ MarketStream::MarketStream(
     core::ssl::Context &ssl_context,
     uint32_t market_stream_id,
     std::vector<std::string> &&symbols)
-    : handler_(handler), market_stream_id_(market_stream_id),
-      symbols_(std::move(symbols)), random_(random),
-      connection_(
-          *this,
-          base,
-          dns_base,
-          ssl_context,
-          core::URI(Flags::ws_uri()),
-          std::string_view(),  // query
-          std::chrono::seconds{Flags::ws_ping_freq_secs()},
-          Flags::decode_buffer_size(),
-          Flags::encode_buffer_size(),
-          []() { return std::string(); }),
+    : handler_(handler), market_stream_id_(market_stream_id), symbols_(std::move(symbols)),
+      random_(random), connection_(
+                           *this,
+                           base,
+                           dns_base,
+                           ssl_context,
+                           core::URI(Flags::ws_uri()),
+                           std::string_view(),  // query
+                           std::chrono::seconds{Flags::ws_ping_freq_secs()},
+                           Flags::decode_buffer_size(),
+                           Flags::encode_buffer_size(),
+                           []() { return std::string(); }),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
           .disconnect = create_counter(market_stream_id, "disconnect"),
@@ -110,8 +103,7 @@ size_t MarketStream::capacity() const {
 }
 
 template <>
-void MarketStream::subscribe_agg_trade(
-    const std::vector<std::string> &symbols) {
+void MarketStream::subscribe_agg_trade(const std::vector<std::string> &symbols) {
   assert(symbols.empty() == false);
   auto message = fmt::format(
       R"({{)"
@@ -139,8 +131,7 @@ void MarketStream::subscribe_trade(const std::vector<std::string> &symbols) {
 }
 
 template <>
-void MarketStream::subscribe_mini_ticker(
-    const std::vector<std::string> &symbols) {
+void MarketStream::subscribe_mini_ticker(const std::vector<std::string> &symbols) {
   assert(symbols.empty() == false);
   auto message = fmt::format(
       R"({{)"
@@ -154,8 +145,7 @@ void MarketStream::subscribe_mini_ticker(
 }
 
 template <>
-void MarketStream::subscribe_book_ticker(
-    const std::vector<std::string> &symbols) {
+void MarketStream::subscribe_book_ticker(const std::vector<std::string> &symbols) {
   assert(symbols.empty() == false);
   auto message = fmt::format(
       R"({{)"
@@ -253,8 +243,7 @@ void MarketStream::operator()(const core::web::Socket::Close &) {
 
 void MarketStream::operator()(const core::web::Socket::Latency &latency) {
   latency_.ping.update(
-      std::chrono::duration_cast<std::chrono::nanoseconds>(latency.sample)
-          .count());
+      std::chrono::duration_cast<std::chrono::nanoseconds>(latency.sample).count());
 }
 
 void MarketStream::operator()(const core::web::Socket::Text &text) {
@@ -290,8 +279,7 @@ void MarketStream::operator()(
   });
 }
 
-void MarketStream::operator()(
-    const json::Trade &trade, const server::TraceInfo &trace_info) {
+void MarketStream::operator()(const json::Trade &trade, const server::TraceInfo &trace_info) {
   profile_.trade([&]() {
     VLOG(3)(R"(trade={})", trade);
     handler_(trade, trace_info);
@@ -315,9 +303,7 @@ void MarketStream::operator()(
 }
 
 void MarketStream::operator()(
-    const std::string_view &symbol,
-    const json::Depth &depth,
-    const server::TraceInfo &trace_info) {
+    const std::string_view &symbol, const json::Depth &depth, const server::TraceInfo &trace_info) {
   profile_.depth([&]() {
     VLOG(3)(R"(symbol="{}", depth={})", symbol, depth);
     handler_(symbol, depth, trace_info);

@@ -46,8 +46,7 @@ bool UserStreamParser::try_dispatch(
       LOG(FATAL)("Unexpected");
       break;
     case EventType::OUTBOUND_ACCOUNT_INFO: {
-      auto outbound_account_info =
-          core::json::Parser::create<OutboundAccountInfo>(message, buffer);
+      auto outbound_account_info = core::json::Parser::create<OutboundAccountInfo>(message, buffer);
       handler(outbound_account_info, trace_info);
       break;
     }
@@ -63,8 +62,7 @@ bool UserStreamParser::try_dispatch(
       break;
     }
     case EventType::EXECUTION_REPORT: {
-      auto execution_report =
-          core::json::Parser::create<ExecutionReport>(message);
+      auto execution_report = core::json::Parser::create<ExecutionReport>(message);
       handler(execution_report, trace_info);
       break;
     }

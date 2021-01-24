@@ -41,8 +41,7 @@ static bool mbp_update(C &data, size_t &offset, const T &item) {
 
 Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
     : dispatcher_(dispatcher), account_(config.get_account()),
-      random_(config.get_api_key(), config.get_secret()),
-      dns_base_(base_, true),
+      random_(config.get_api_key(), config.get_secret()), dns_base_(base_, true),
       rest_{
           .connection =
               {
@@ -108,9 +107,7 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(
-    const Event<ModifyOrder> &,
-    const std::string_view &,
-    const server::OMS_Order &order) {
+    const Event<ModifyOrder> &, const std::string_view &, const server::OMS_Order &order) {
   throw server::OMS_Exception(Error::MODIFY_ORDER_NOT_SUPPORTED, order);
 }
 
@@ -118,15 +115,14 @@ void Gateway::operator()(
     const Event<CancelOrder> &event,
     const std::string_view &request_id,
     const server::OMS_Order &order) {
-  rest_.connection.cancel_order(
-      event.value, request_id, order, [this](auto &promise) {
-        try {
-          (*this)(promise.get());
-        } catch (NetworkError &e) {
-          // XXX send ack failure
-          LOG(FATAL)(R"(Unexpected what="{}")", e.what());
-        }
-      });
+  rest_.connection.cancel_order(event.value, request_id, order, [this](auto &promise) {
+    try {
+      (*this)(promise.get());
+    } catch (NetworkError &e) {
+      // XXX send ack failure
+      LOG(FATAL)(R"(Unexpected what="{}")", e.what());
+    }
+  });
 }
 
 void Gateway::operator()(metrics::Writer &writer) {
@@ -139,8 +135,7 @@ void Gateway::operator()(metrics::Writer &writer) {
 
 // market stream
 
-void Gateway::operator()(
-    const json::AggTrade &agg_trade, const server::TraceInfo &trace_info) {
+void Gateway::operator()(const json::AggTrade &agg_trade, const server::TraceInfo &trace_info) {
   Trade trade{
       .side = agg_trade.buyer_is_maker ? Side::BUY : Side::SELL,
       .price = agg_trade.price,
@@ -148,8 +143,7 @@ void Gateway::operator()(
       .trade_id = {},
   };
   core::charconv::to_string(
-      core::string_utils::fixed_string_builder(trade.trade_id),
-      agg_trade.agg_trade_id);
+      core::string_utils::fixed_string_builder(trade.trade_id), agg_trade.agg_trade_id);
   TradeSummary trade_summary{
       .exchange = Flags::exchange(),
       .symbol = agg_trade.symbol,
@@ -164,8 +158,7 @@ void Gateway::operator()(
   create_trace_and_dispatch(trace_info, trade_summary, dispatcher_, true);
 }
 
-void Gateway::operator()(
-    const json::Trade &trade, const server::TraceInfo &trace_info) {
+void Gateway::operator()(const json::Trade &trade, const server::TraceInfo &trace_info) {
   Trade trade_{
       .side = trade.buyer_is_maker ? Side::BUY : Side::SELL,
       .price = trade.price,
@@ -173,8 +166,7 @@ void Gateway::operator()(
       .trade_id = {},
   };
   core::charconv::to_string(
-      core::string_utils::fixed_string_builder(trade_.trade_id),
-      trade.trade_id);
+      core::string_utils::fixed_string_builder(trade_.trade_id), trade.trade_id);
   TradeSummary trade_summary{
       .exchange = Flags::exchange(),
       .symbol = trade.symbol,
@@ -189,8 +181,7 @@ void Gateway::operator()(
   create_trace_and_dispatch(trace_info, trade_summary, dispatcher_, true);
 }
 
-void Gateway::operator()(
-    const json::MiniTicker &mini_ticker, const server::TraceInfo &trace_info) {
+void Gateway::operator()(const json::MiniTicker &mini_ticker, const server::TraceInfo &trace_info) {
   Statistics statistics[] = {
       {
           .type = StatisticsType::HIGHEST_TRADED_PRICE,
@@ -221,8 +212,7 @@ void Gateway::operator()(
   create_trace_and_dispatch(trace_info, statistics_update, dispatcher_, true);
 }
 
-void Gateway::operator()(
-    const json::BookTicker &book_ticker, const server::TraceInfo &trace_info) {
+void Gateway::operator()(const json::BookTicker &book_ticker, const server::TraceInfo &trace_info) {
   TopOfBook top_of_book{
       .exchange = Flags::exchange(),
       .symbol = book_ticker.symbol,
@@ -241,9 +231,7 @@ void Gateway::operator()(
 }
 
 void Gateway::operator()(
-    const std::string_view &symbol,
-    const json::Depth &depth,
-    const server::TraceInfo &trace_info) {
+    const std::string_view &symbol, const json::Depth &depth, const server::TraceInfo &trace_info) {
   bool success = true;
   size_t bid_length = 0;
   for (auto &item : depth.bids) {
@@ -283,19 +271,15 @@ void Gateway::operator()(
       .exchange_time_utc = {},
   };
   VLOG(3)(R"(market_by_price_update={})", market_by_price_update);
-  create_trace_and_dispatch(
-      trace_info, market_by_price_update, dispatcher_, true);
+  create_trace_and_dispatch(trace_info, market_by_price_update, dispatcher_, true);
 }
 
 void Gateway::operator()(
-    const std::string_view &,
-    const json::DepthUpdate &,
-    const server::TraceInfo &) {
+    const std::string_view &, const json::DepthUpdate &, const server::TraceInfo &) {
 }
 
 void Gateway::operator()(
-    const json::OutboundAccountInfo &outbound_account_info,
-    const server::TraceInfo &trace_info) {
+    const json::OutboundAccountInfo &outbound_account_info, const server::TraceInfo &trace_info) {
   for (auto &item : outbound_account_info.balances) {
     FundsUpdate funds_update{
         .account = account_,
@@ -323,14 +307,12 @@ void Gateway::operator()(
   }
 }
 
-void Gateway::operator()(
-    const json::BalanceUpdate &, const server::TraceInfo &) {
+void Gateway::operator()(const json::BalanceUpdate &, const server::TraceInfo &) {
   // contains delta (changes) -- we're not going to use here
 }
 
 void Gateway::operator()(
-    const json::ExecutionReport &execution_report,
-    const server::TraceInfo &trace_info) {
+    const json::ExecutionReport &execution_report, const server::TraceInfo &trace_info) {
   server::OMS_Lookup order_lookup{
       .symbol = execution_report.symbol,
       .side = json::map(execution_report.side),
@@ -392,8 +374,7 @@ void Gateway::update_order_manager(GatewayStatus gateway_status) {
       .account = account_,
       .status = order_manager_status_,
   };
-  create_trace_and_dispatch(
-      trace_info, order_manager_status, dispatcher_, true);
+  create_trace_and_dispatch(trace_info, order_manager_status, dispatcher_, true);
   LOG(INFO)("order_manager_status={}", order_manager_status_);
 }
 
@@ -456,13 +437,7 @@ void Gateway::subscribe_market_streams() {
       symbols.emplace_back(*iter);
     }
     auto market_stream_ptr = std::make_unique<MarketStream>(
-        *this,
-        random_,
-        base_,
-        dns_base_,
-        ssl_context_,
-        ++market_stream_id_,
-        std::move(symbols));
+        *this, random_, base_, dns_base_, ssl_context_, ++market_stream_id_, std::move(symbols));
     MessageInfo message_info;  // XXX something sensible
     Start start;
     create_event_and_dispatch(*market_stream_ptr, message_info, start);
@@ -488,8 +463,8 @@ void Gateway::download_listen_key() {
 void Gateway::subscribe_user_stream() {
   assert(listen_key_.empty() == false);
   assert(static_cast<bool>(user_stream_) == false);
-  user_stream_ = std::make_unique<UserStream>(
-      *this, random_, base_, dns_base_, ssl_context_, listen_key_);
+  user_stream_ =
+      std::make_unique<UserStream>(*this, random_, base_, dns_base_, ssl_context_, listen_key_);
   MessageInfo message_info;  // XXX something sensible
   Start start;
   create_event_and_dispatch(*user_stream_, message_info, start);
@@ -520,9 +495,8 @@ void Gateway::operator()(const json::ExchangeInfo &exchange_info) {
     }
     // note! convert to lowercase
     std::string symbol(item.symbol);
-    std::transform(symbol.begin(), symbol.end(), symbol.begin(), [](auto c) {
-      return std::tolower(c);
-    });
+    std::transform(
+        symbol.begin(), symbol.end(), symbol.begin(), [](auto c) { return std::tolower(c); });
     symbols_.emplace(std::move(symbol));
     ReferenceData reference_data{
         .exchange = Flags::exchange(),
@@ -556,9 +530,7 @@ void Gateway::operator()(const json::ExchangeInfo &exchange_info) {
     create_trace_and_dispatch(trace_info, market_status, dispatcher_, true);
   }
   LOG(INFO)
-  ("Exchange info: including symbols {}/{}",
-   symbols_.size(),
-   exchange_info.symbols.size());
+  ("Exchange info: including symbols {}/{}", symbols_.size(), exchange_info.symbols.size());
 }
 
 void Gateway::operator()(const json::ListenKey &listen_key) {
@@ -574,8 +546,7 @@ void Gateway::operator()(const json::ListenKey &listen_key) {
     // XXX should we recreate user_stream_ ?
   }
   auto now = core::get_system_clock();
-  listen_key_refresh_ =
-      now + std::chrono::seconds{Flags::rest_listen_key_refresh_secs()};
+  listen_key_refresh_ = now + std::chrono::seconds{Flags::rest_listen_key_refresh_secs()};
 }
 
 void Gateway::operator()(const json::Account &account) {
@@ -597,16 +568,14 @@ void Gateway::refresh_listen_key() {
   if (listen_key_refresh_.count() == 0 || now < listen_key_refresh_)
     return;
   LOG(INFO)("Refreshing listen key...");
-  listen_key_refresh_ =
-      now + std::chrono::seconds{Flags::rest_listen_key_refresh_secs()};
+  listen_key_refresh_ = now + std::chrono::seconds{Flags::rest_listen_key_refresh_secs()};
   rest_.connection.get<json::ListenKey>([this](auto &promise) {
     try {
       (*this)(promise.get());
     } catch (NetworkError &) {
       LOG(WARNING)("Rescheduling listen key refresh!");
       auto now = core::get_system_clock();
-      listen_key_refresh_ =
-          now + std::chrono::seconds{DEFAULT_LISTEN_KEY_REFRESH_SECS};
+      listen_key_refresh_ = now + std::chrono::seconds{DEFAULT_LISTEN_KEY_REFRESH_SECS};
     }
   });
 }

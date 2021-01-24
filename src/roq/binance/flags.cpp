@@ -13,11 +13,7 @@ ABSL_FLAG(std::string, exchange, "binance", "exchange identifier (string)");
 
 // rest
 
-ABSL_FLAG(
-    std::string,
-    rest_uri,
-    "https://testnet.binance.com/api/v1",
-    "REST end-point (URI)");
+ABSL_FLAG(std::string, rest_uri, "https://testnet.binance.com/api/v1", "REST end-point (URI)");
 
 ABSL_FLAG(uint32_t, rest_ping_freq_secs, 5, "ping frequency (seconds)");
 
@@ -29,28 +25,15 @@ ABSL_FLAG(
 
 ABSL_FLAG(uint32_t, rest_request_queue_depth, 5, "request: max queue depth");
 
-ABSL_FLAG(
-    uint32_t, rest_request_timeout_secs, 30, "request: timeout (seconds)");
+ABSL_FLAG(uint32_t, rest_request_timeout_secs, 30, "request: timeout (seconds)");
 
-ABSL_FLAG(
-    uint32_t,
-    rest_rate_limit_interval_secs,
-    60,
-    "rate limit: monitor interval (seconds)");
+ABSL_FLAG(uint32_t, rest_rate_limit_interval_secs, 60, "rate limit: monitor interval (seconds)");
 
-ABSL_FLAG(
-    uint32_t,
-    rest_rate_limit_max_requests,
-    1200,
-    "rate limit: max requests (per interval)");
+ABSL_FLAG(uint32_t, rest_rate_limit_max_requests, 1200, "rate limit: max requests (per interval)");
 
 // DEFINE_uint32_t, rest_depth_limit, 100, "depth limit (levels)");
 
-ABSL_FLAG(
-    uint32_t,
-    rest_listen_key_refresh_secs,
-    1800,
-    "listen key refresh period (seconds)");
+ABSL_FLAG(uint32_t, rest_listen_key_refresh_secs, 1800, "listen key refresh period (seconds)");
 
 ABSL_FLAG(
     uint32_t,
@@ -58,41 +41,23 @@ ABSL_FLAG(
     5000,
     "receive window (milliseconds), please refer to Binance documentation!");
 
-ABSL_FLAG(
-    bool,
-    rest_cancel_on_disconnect,
-    false,
-    "cancel orders on disconnect? (bool)");
+ABSL_FLAG(bool, rest_cancel_on_disconnect, false, "cancel orders on disconnect? (bool)");
 
 // ws
 
-ABSL_FLAG(
-    std::string,
-    ws_uri,
-    "wss://testnet.binance.com/realtime",
-    "WebSocket end-point (URI)");
+ABSL_FLAG(std::string, ws_uri, "wss://testnet.binance.com/realtime", "WebSocket end-point (URI)");
 
 ABSL_FLAG(uint32_t, ws_ping_freq_secs, 5, "ping frequency (seconds)");
 
 ABSL_FLAG(
-    uint32_t,
-    ws_max_subscriptions_per_stream,
-    1024,
-    "max subscriptions per connection (count)");
+    uint32_t, ws_max_subscriptions_per_stream, 1024, "max subscriptions per connection (count)");
 
 ABSL_FLAG(uint32_t, ws_subscribe_depth_levels, 20, "depth levels (count)");
 
-ABSL_FLAG(
-    uint32_t,
-    ws_subscribe_depth_freq_msecs,
-    100,
-    "depth update frequency (milliseconds)");
+ABSL_FLAG(uint32_t, ws_subscribe_depth_freq_msecs, 100, "depth update frequency (milliseconds)");
 
 ABSL_FLAG(
-    bool,
-    ws_subscribe_trade_details,
-    false,
-    "report individual matches for trade summary? (bool)");
+    bool, ws_subscribe_trade_details, false, "report individual matches for trade summary? (bool)");
 
 // XXX review
 
@@ -144,26 +109,22 @@ uint32_t Flags::rest_request_timeout_secs() {
 }
 
 uint32_t Flags::rest_rate_limit_interval_secs() {
-  static const uint32_t result =
-      absl::GetFlag(FLAGS_rest_rate_limit_interval_secs);
+  static const uint32_t result = absl::GetFlag(FLAGS_rest_rate_limit_interval_secs);
   return result;
 }
 
 uint32_t Flags::rest_rate_limit_max_requests() {
-  static const uint32_t result =
-      absl::GetFlag(FLAGS_rest_rate_limit_max_requests);
+  static const uint32_t result = absl::GetFlag(FLAGS_rest_rate_limit_max_requests);
   return result;
 }
 
 uint32_t Flags::rest_listen_key_refresh_secs() {
-  static const uint32_t result =
-      absl::GetFlag(FLAGS_rest_listen_key_refresh_secs);
+  static const uint32_t result = absl::GetFlag(FLAGS_rest_listen_key_refresh_secs);
   return result;
 }
 
 uint32_t Flags::rest_order_recv_window_msecs() {
-  static const uint32_t result =
-      absl::GetFlag(FLAGS_rest_order_recv_window_msecs);
+  static const uint32_t result = absl::GetFlag(FLAGS_rest_order_recv_window_msecs);
   return result;
 }
 
@@ -183,8 +144,7 @@ uint32_t Flags::ws_ping_freq_secs() {
 }
 
 uint32_t Flags::ws_max_subscriptions_per_stream() {
-  static const uint32_t result =
-      absl::GetFlag(FLAGS_ws_max_subscriptions_per_stream);
+  static const uint32_t result = absl::GetFlag(FLAGS_ws_max_subscriptions_per_stream);
   return result;
 }
 
@@ -194,8 +154,7 @@ uint32_t Flags::ws_subscribe_depth_levels() {
 }
 
 uint32_t Flags::ws_subscribe_depth_freq_msecs() {
-  static const uint32_t result =
-      absl::GetFlag(FLAGS_ws_subscribe_depth_freq_msecs);
+  static const uint32_t result = absl::GetFlag(FLAGS_ws_subscribe_depth_freq_msecs);
   return result;
 }
 

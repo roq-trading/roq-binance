@@ -25,18 +25,13 @@
 namespace roq {
 namespace binance {
 
-class UserStream final : public core::web::Socket::Handler,
-                         public json::UserStreamParser::Handler {
+class UserStream final : public core::web::Socket::Handler, public json::UserStreamParser::Handler {
  public:
   struct Handler {
-    virtual void operator()(
-        const json::OutboundAccountInfo &, const server::TraceInfo &) = 0;
-    virtual void operator()(
-        const json::OutboundAccountPosition &, const server::TraceInfo &) = 0;
-    virtual void operator()(
-        const json::BalanceUpdate &, const server::TraceInfo &) = 0;
-    virtual void operator()(
-        const json::ExecutionReport &, const server::TraceInfo &) = 0;
+    virtual void operator()(const json::OutboundAccountInfo &, const server::TraceInfo &) = 0;
+    virtual void operator()(const json::OutboundAccountPosition &, const server::TraceInfo &) = 0;
+    virtual void operator()(const json::BalanceUpdate &, const server::TraceInfo &) = 0;
+    virtual void operator()(const json::ExecutionReport &, const server::TraceInfo &) = 0;
   };
   UserStream(
       Handler &handler,
@@ -67,15 +62,10 @@ class UserStream final : public core::web::Socket::Handler,
 
   void parse(const std::string_view &message);
 
-  void operator()(
-      const json::OutboundAccountInfo &, const server::TraceInfo &) override;
-  void operator()(
-      const json::OutboundAccountPosition &,
-      const server::TraceInfo &) override;
-  void operator()(
-      const json::BalanceUpdate &, const server::TraceInfo &) override;
-  void operator()(
-      const json::ExecutionReport &, const server::TraceInfo &) override;
+  void operator()(const json::OutboundAccountInfo &, const server::TraceInfo &) override;
+  void operator()(const json::OutboundAccountPosition &, const server::TraceInfo &) override;
+  void operator()(const json::BalanceUpdate &, const server::TraceInfo &) override;
+  void operator()(const json::ExecutionReport &, const server::TraceInfo &) override;
 
  private:
   Handler &handler_;
@@ -94,8 +84,8 @@ class UserStream final : public core::web::Socket::Handler,
     core::metrics::Counter disconnect;
   } counter_;
   struct {
-    core::metrics::Profile parse, outbound_account_info,
-        outbound_account_position, balance_update, execution_report;
+    core::metrics::Profile parse, outbound_account_info, outbound_account_position, balance_update,
+        execution_report;
   } profile_;
   struct {
     core::metrics::Latency ping, heartbeat;

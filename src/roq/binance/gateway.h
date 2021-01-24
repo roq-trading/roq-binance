@@ -78,24 +78,17 @@ class Gateway final : public server::Handler,
   void operator()(const json::MiniTicker &, const server::TraceInfo &) override;
   void operator()(const json::BookTicker &, const server::TraceInfo &) override;
   void operator()(
-      const std::string_view &symbol,
-      const json::Depth &depth,
-      const server::TraceInfo &) override;
+      const std::string_view &symbol, const json::Depth &depth, const server::TraceInfo &) override;
   void operator()(
       const std::string_view &symbol,
       const json::DepthUpdate &depth_update,
       const server::TraceInfo &) override;
 
   // UserStream::Handler
-  void operator()(
-      const json::OutboundAccountInfo &, const server::TraceInfo &) override;
-  void operator()(
-      const json::OutboundAccountPosition &,
-      const server::TraceInfo &) override;
-  void operator()(
-      const json::BalanceUpdate &, const server::TraceInfo &) override;
-  void operator()(
-      const json::ExecutionReport &, const server::TraceInfo &) override;
+  void operator()(const json::OutboundAccountInfo &, const server::TraceInfo &) override;
+  void operator()(const json::OutboundAccountPosition &, const server::TraceInfo &) override;
+  void operator()(const json::BalanceUpdate &, const server::TraceInfo &) override;
+  void operator()(const json::ExecutionReport &, const server::TraceInfo &) override;
 
   // Rest::Handler
 

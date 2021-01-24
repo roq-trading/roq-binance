@@ -64,8 +64,7 @@ UserStream::UserStream(
       profile_{
           .parse = create_profile("parse"),
           .outbound_account_info = create_profile("outbound_account_info"),
-          .outbound_account_position =
-              create_profile("outbound_account_position"),
+          .outbound_account_position = create_profile("outbound_account_position"),
           .balance_update = create_profile("balance_update"),
           .execution_report = create_profile("execution_report"),
       },
@@ -122,8 +121,7 @@ void UserStream::operator()(const core::web::Socket::Close &) {
 
 void UserStream::operator()(const core::web::Socket::Latency &latency) {
   latency_.ping.update(
-      std::chrono::duration_cast<std::chrono::nanoseconds>(latency.sample)
-          .count());
+      std::chrono::duration_cast<std::chrono::nanoseconds>(latency.sample).count());
 }
 
 void UserStream::operator()(const core::web::Socket::Text &text) {
@@ -144,8 +142,7 @@ void UserStream::parse(const std::string_view &message) {
 }
 
 void UserStream::operator()(
-    const json::OutboundAccountInfo &outbound_account_info,
-    const server::TraceInfo &trace_info) {
+    const json::OutboundAccountInfo &outbound_account_info, const server::TraceInfo &trace_info) {
   profile_.outbound_account_info([&]() {
     VLOG(3)(R"(outbound_account_info={})", outbound_account_info);
     handler_(outbound_account_info, trace_info);
@@ -162,8 +159,7 @@ void UserStream::operator()(
 }
 
 void UserStream::operator()(
-    const json::BalanceUpdate &balance_update,
-    const server::TraceInfo &trace_info) {
+    const json::BalanceUpdate &balance_update, const server::TraceInfo &trace_info) {
   profile_.balance_update([&]() {
     VLOG(3)(R"(balance_update={})", balance_update);
     handler_(balance_update, trace_info);
@@ -171,8 +167,7 @@ void UserStream::operator()(
 }
 
 void UserStream::operator()(
-    const json::ExecutionReport &execution_report,
-    const server::TraceInfo &trace_info) {
+    const json::ExecutionReport &execution_report, const server::TraceInfo &trace_info) {
   profile_.execution_report([&]() {
     VLOG(3)(R"(execution_report={})", execution_report);
     handler_(execution_report, trace_info);

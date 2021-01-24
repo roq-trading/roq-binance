@@ -89,8 +89,7 @@ class Rest final : public core::web::Client::Handler {
     core::metrics::Counter disconnect;
   } counter_;
   struct {
-    core::metrics::Profile exchange_info, account, listen_key, depth, new_order,
-        cancel_order;
+    core::metrics::Profile exchange_info, account, listen_key, depth, new_order, cancel_order;
   } profile_;
   struct {
     core::metrics::Latency ping;

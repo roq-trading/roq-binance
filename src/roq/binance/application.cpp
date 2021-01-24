@@ -14,8 +14,7 @@ int Application::main(int, char **) {
   Config config(Flags::config_file());
   VLOG(1)("config={}", config);
   LOG(INFO)("Starting the gateway");
-  roq::server::Trading<Gateway>(
-      ROQ_PACKAGE_NAME, config, server::RequestIdType::SEQUENTIAL, config)
+  roq::server::Trading<Gateway>(ROQ_PACKAGE_NAME, config, server::RequestIdType::SEQUENTIAL, config)
       .dispatch();
   return EXIT_SUCCESS;
 }
