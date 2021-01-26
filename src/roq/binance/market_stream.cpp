@@ -25,16 +25,16 @@ static auto create_connection_name(uint32_t market_stream_id) {
   return fmt::format("{}_{}", CONNECTION, market_stream_id);
 }
 
-static auto create_counter(uint32_t market_stream_id, const std::string_view &function) {
-  return core::metrics::Counter(Flags::name(), create_connection_name(market_stream_id), function);
+static auto create_counter(const std::string_view &name, const std::string_view &function) {
+  return core::metrics::Counter(Flags::name(), name, function);
 }
 
-static auto create_profile(uint32_t market_stream_id, const std::string_view &function) {
-  return core::metrics::Profile(Flags::name(), create_connection_name(market_stream_id), function);
+static auto create_profile(const std::string_view &name, const std::string_view &function) {
+  return core::metrics::Profile(Flags::name(), name, function);
 }
 
-static auto create_latency(uint32_t market_stream_id, const std::string_view &function) {
-  return core::metrics::Latency(Flags::name(), create_connection_name(market_stream_id), function);
+static auto create_latency(const std::string_view &name, const std::string_view &function) {
+  return core::metrics::Latency(Flags::name(), name, function);
 }
 }  // namespace
 
@@ -47,35 +47,36 @@ MarketStream::MarketStream(
     uint32_t market_stream_id,
     std::vector<std::string> &&symbols)
     : handler_(handler), market_stream_id_(market_stream_id), symbols_(std::move(symbols)),
-      random_(random), connection_(
-                           *this,
-                           base,
-                           dns_base,
-                           ssl_context,
-                           core::URI(Flags::ws_uri()),
-                           std::string_view(),  // query
-                           std::chrono::seconds{Flags::ws_ping_freq_secs()},
-                           Flags::decode_buffer_size(),
-                           Flags::encode_buffer_size(),
-                           []() { return std::string(); }),
+      name_(create_connection_name(market_stream_id)), random_(random),
+      connection_(
+          *this,
+          base,
+          dns_base,
+          ssl_context,
+          core::URI(Flags::ws_uri()),
+          std::string_view(),  // query
+          std::chrono::seconds{Flags::ws_ping_freq_secs()},
+          Flags::decode_buffer_size(),
+          Flags::encode_buffer_size(),
+          []() { return std::string(); }),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
-          .disconnect = create_counter(market_stream_id, "disconnect"),
+          .disconnect = create_counter(name_, "disconnect"),
       },
       profile_{
-          .parse = create_profile(market_stream_id, "parse"),
-          .error = create_profile(market_stream_id, "error"),
-          .result = create_profile(market_stream_id, "result"),
-          .agg_trade = create_profile(market_stream_id, "agg_trade"),
-          .trade = create_profile(market_stream_id, "trade"),
-          .mini_ticker = create_profile(market_stream_id, "mini_ticker"),
-          .book_ticker = create_profile(market_stream_id, "book_ticker"),
-          .depth = create_profile(market_stream_id, "depth"),
-          .depth_update = create_profile(market_stream_id, "depth_update"),
+          .parse = create_profile(name_, "parse"),
+          .error = create_profile(name_, "error"),
+          .result = create_profile(name_, "result"),
+          .agg_trade = create_profile(name_, "agg_trade"),
+          .trade = create_profile(name_, "trade"),
+          .mini_ticker = create_profile(name_, "mini_ticker"),
+          .book_ticker = create_profile(name_, "book_ticker"),
+          .depth = create_profile(name_, "depth"),
+          .depth_update = create_profile(name_, "depth_update"),
       },
       latency_{
-          .ping = create_latency(market_stream_id, "ping"),
-          .heartbeat = create_latency(market_stream_id, "heartbeat"),
+          .ping = create_latency(name_, "ping"),
+          .heartbeat = create_latency(name_, "heartbeat"),
       } {
 }
 
@@ -242,6 +243,12 @@ void MarketStream::operator()(const core::web::Socket::Close &) {
 }
 
 void MarketStream::operator()(const core::web::Socket::Latency &latency) {
+  server::TraceInfo trace_info;
+  ExternalLatency external_latency{
+      .name = name_,
+      .latency = latency.sample,
+  };
+  handler_(external_latency, trace_info);
   latency_.ping.update(latency.sample);
 }
 

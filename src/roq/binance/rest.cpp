@@ -368,6 +368,12 @@ void Rest::operator()(const core::web::Client::Disconnected &) {
 }
 
 void Rest::operator()(const core::web::Client::Latency &latency) {
+  server::TraceInfo trace_info;
+  ExternalLatency external_latency{
+      .name = CONNECTION,
+      .latency = latency.sample,
+  };
+  handler_(external_latency, trace_info);
   latency_.ping.update(latency.sample);
 }
 

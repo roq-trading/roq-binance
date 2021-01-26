@@ -29,6 +29,7 @@ class MarketStream final : public core::web::Socket::Handler,
                            public json::MarketStreamParser::Handler {
  public:
   struct Handler {
+    virtual void operator()(const ExternalLatency &, const server::TraceInfo &) = 0;
     virtual void operator()(const json::AggTrade &, const server::TraceInfo &) = 0;
     virtual void operator()(const json::Trade &, const server::TraceInfo &) = 0;
     virtual void operator()(const json::MiniTicker &, const server::TraceInfo &) = 0;
@@ -109,8 +110,9 @@ class MarketStream final : public core::web::Socket::Handler,
  private:
   Handler &handler_;
   // config
-  uint32_t market_stream_id_;
+  const uint32_t market_stream_id_;
   std::vector<std::string> symbols_;
+  const std::string name_;
   // authentication
   Random &random_;
   // web socket

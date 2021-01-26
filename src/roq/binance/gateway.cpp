@@ -133,6 +133,13 @@ void Gateway::operator()(metrics::Writer &writer) {
     (*user_stream_)(writer);
 }
 
+// all
+
+void Gateway::operator()(
+    const ExternalLatency &external_latency, const server::TraceInfo &trace_info) {
+  create_trace_and_dispatch(trace_info, external_latency, dispatcher_);
+}
+
 // market stream
 
 void Gateway::operator()(const json::AggTrade &agg_trade, const server::TraceInfo &trace_info) {

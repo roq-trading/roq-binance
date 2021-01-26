@@ -71,8 +71,10 @@ class Gateway final : public server::Handler,
 
   void operator()(metrics::Writer &writer) override;
 
-  // MarketStream::Handler
+  // all
+  void operator()(const ExternalLatency &, const server::TraceInfo &) override;
 
+  // MarketStream::Handler
   void operator()(const json::AggTrade &, const server::TraceInfo &) override;
   void operator()(const json::Trade &, const server::TraceInfo &) override;
   void operator()(const json::MiniTicker &, const server::TraceInfo &) override;

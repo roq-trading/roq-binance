@@ -28,6 +28,7 @@ namespace binance {
 class UserStream final : public core::web::Socket::Handler, public json::UserStreamParser::Handler {
  public:
   struct Handler {
+    virtual void operator()(const ExternalLatency &, const server::TraceInfo &) = 0;
     virtual void operator()(const json::OutboundAccountInfo &, const server::TraceInfo &) = 0;
     virtual void operator()(const json::OutboundAccountPosition &, const server::TraceInfo &) = 0;
     virtual void operator()(const json::BalanceUpdate &, const server::TraceInfo &) = 0;
