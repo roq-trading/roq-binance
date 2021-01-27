@@ -30,13 +30,15 @@ constexpr auto DEFAULT_LISTEN_KEY_REFRESH_SECS = uint32_t{2};
 
 template <typename C, typename T>
 static bool mbp_update(C &data, size_t &offset, const T &item) {
+  if (offset >= data.size())
+    return false;
   auto &obj = data[offset];
   new (&obj) MBPUpdate{
       .price = item.price,
       .quantity = item.qty,
   };
   ++offset;
-  return offset < data.size();
+  return offset <= data.size();
 }
 
 Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
@@ -252,15 +254,13 @@ void Gateway::operator()(
       break;
     success = mbp_update(ask_, ask_length, item);
   }
-  if (ROQ_UNLIKELY(success == false)) {
-    LOG(FATAL)
-    (R"(Insufficient bid/ask array size(s): )"
-     R"(len(bid)={}/{}, len(ask)={}/{})",
-     bid_length,
-     bid_.size(),
-     ask_length,
-     ask_.size());
-  }
+  LOG_IF(WARNING, !success)
+  (R"(Insufficient bid/ask array size(s): symbol="{}", len(bid)={}/{}, len(ask)={}/{})",
+   symbol,
+   depth.bids.size(),
+   bid_.size(),
+   depth.asks.size(),
+   ask_.size());
   MarketByPriceUpdate market_by_price_update{
       .exchange = Flags::exchange(),
       .symbol = symbol,

@@ -3,7 +3,7 @@
 CWD="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 
 if [ "$1" == "debug" ]; then
-	PREFIX="libtool --mode=execute gdb --args"
+	PREFIX="gdb --args"
 else
 	PREFIX=
 fi
@@ -21,9 +21,9 @@ echo "$WS_URI"
 
 $PREFIX ./roq-binance \
 	--name "$NAME" \
-	--config-file "$CONFIG_FILE" \
-	--client-listen-address $CWD/$NAME.sock \
-	--metrics-listen-address $CWD/${NAME}_metrics.sock \
-	--ws-uri "$WS_URI" \
-	--rest-uri "$REST_URI" \
+	--config_file "$CONFIG_FILE" \
+	--client_listen_address $CWD/$NAME.sock \
+	--metrics_listen_address $CWD/${NAME}_metrics.sock \
+	--ws_uri "$WS_URI" \
+	--rest_uri "$REST_URI" \
 	$@
