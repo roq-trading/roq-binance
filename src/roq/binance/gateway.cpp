@@ -572,7 +572,7 @@ void Gateway::operator()(const json::Account &account) {
 
 void Gateway::refresh_listen_key() {
   auto now = core::get_system_clock();
-  if (listen_key_refresh_.count() == 0 || now < listen_key_refresh_)
+  if (listen_key_refresh_ == listen_key_refresh_.zero() || now < listen_key_refresh_)
     return;
   LOG(INFO)("Refreshing listen key...");
   listen_key_refresh_ = now + std::chrono::seconds{Flags::rest_listen_key_refresh_secs()};
