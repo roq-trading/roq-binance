@@ -10,7 +10,7 @@ namespace roq {
 namespace binance {
 
 int Application::main(int, char **) {
-  LOG(INFO)("Parse configuration");
+  LOG(INFO)(R"(Parse config_file="{}")", Flags::config_file());
   Config config(Flags::config_file());
   VLOG(1)("config={}", config);
   LOG(INFO)("Starting the gateway");
