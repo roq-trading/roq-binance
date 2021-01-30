@@ -28,7 +28,10 @@ void Config::dispatch(server::Config::Handler &handler) const {
     handler(iter.second);
   for (auto &user : users)
     handler(user);
-  server::Settings settings{};
+  server::Settings settings{
+      .mbp_depth = Flags::ws_subscribe_depth_levels(),
+      .cache_clear_other_side = false,
+  };
   handler(settings);
 }
 
