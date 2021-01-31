@@ -50,7 +50,7 @@ ABSL_FLAG(std::string, ws_uri, "wss://testnet.binance.com/realtime", "WebSocket 
 ABSL_FLAG(uint32_t, ws_ping_freq_secs, 5, "ping frequency (seconds)");
 
 ABSL_FLAG(
-    uint32_t, ws_max_subscriptions_per_stream, 1024, "max subscriptions per connection (count)");
+    uint32_t, ws_max_subscriptions_per_stream, 512, "max subscriptions per connection (count)");
 
 ABSL_FLAG(uint32_t, ws_subscribe_depth_levels, 20, "depth levels (count)");
 

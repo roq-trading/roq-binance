@@ -4,6 +4,11 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Changed
+
+* Fixed quote/base currency (ReferenceData)
+* Fixed tick_size and min_trade_vol (ReferenceData)
+
 ## 0.5.0 &ndash; 2020-12-04
 
 ## 0.4.5 &ndash; 2020-11-09

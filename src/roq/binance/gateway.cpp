@@ -496,6 +496,7 @@ void Gateway::operator()(const json::ExchangeInfo &exchange_info) {
   assert(symbols_.empty());
   server::TraceInfo trace_info;  // note! not correct (*after* message parsing)
   for (const auto &item : exchange_info.symbols) {
+    VLOG(1)(R"(item={})", item);
     if (dispatcher_.discard_symbol(item.symbol)) {
       VLOG(1)(R"(Drop symbol="{}")", item.symbol);
       continue;
@@ -505,17 +506,19 @@ void Gateway::operator()(const json::ExchangeInfo &exchange_info) {
     std::transform(
         symbol.begin(), symbol.end(), symbol.begin(), [](auto c) { return std::tolower(c); });
     symbols_.emplace(std::move(symbol));
+    auto tick_size = std::pow(10.0, -static_cast<double>(item.quote_precision));
+    auto min_trade_vol = std::pow(10.0, -static_cast<double>(item.base_asset_precision));
     ReferenceData reference_data{
         .exchange = Flags::exchange(),
         .symbol = item.symbol,
         .description = {},
         .security_type = SecurityType::UNDEFINED,
-        .currency = item.base_asset,
-        .settlement_currency = item.quote_asset,
+        .currency = item.quote_asset,
+        .settlement_currency = item.base_asset,
         .commission_currency = {},
-        .tick_size = std::numeric_limits<double>::quiet_NaN(),
+        .tick_size = tick_size,
         .multiplier = std::numeric_limits<double>::quiet_NaN(),
-        .min_trade_vol = std::numeric_limits<double>::quiet_NaN(),
+        .min_trade_vol = min_trade_vol,
         .option_type = OptionType::UNDEFINED,
         .strike_currency = {},
         .strike_price = std::numeric_limits<double>::quiet_NaN(),
