@@ -156,11 +156,7 @@ void Gateway::operator()(const json::AggTrade &agg_trade, const server::TraceInf
   TradeSummary trade_summary{
       .exchange = Flags::exchange(),
       .symbol = agg_trade.symbol,
-      .trades =
-          {
-              .items = &trade,
-              .length = 1,
-          },
+      .trades = {&trade, 1},
       .exchange_time_utc = agg_trade.event_time,
   };
   VLOG(3)(R"(trade_summary={})", trade_summary);
@@ -179,11 +175,7 @@ void Gateway::operator()(const json::Trade &trade, const server::TraceInfo &trac
   TradeSummary trade_summary{
       .exchange = Flags::exchange(),
       .symbol = trade.symbol,
-      .trades =
-          {
-              .items = &trade_,
-              .length = 1,
-          },
+      .trades = {&trade_, 1},
       .exchange_time_utc = trade.event_time,
   };
   VLOG(3)(R"(trade_summary={})", trade_summary);
@@ -264,16 +256,8 @@ void Gateway::operator()(
   MarketByPriceUpdate market_by_price_update{
       .exchange = Flags::exchange(),
       .symbol = symbol,
-      .bids =
-          {
-              .items = bid_.data(),
-              .length = bid_length,
-          },
-      .asks =
-          {
-              .items = ask_.data(),
-              .length = ask_length,
-          },
+      .bids = {bid_.data(), bid_length},
+      .asks = {ask_.data(), ask_length},
       .snapshot = true,
       .exchange_time_utc = {},
   };
