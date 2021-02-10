@@ -16,16 +16,18 @@
 
 #include "roq/binance/json/utils.h"
 
+using namespace std::literals;  // NOLINT
+
 namespace roq {
 namespace binance {
 
 namespace {
-constexpr std::string_view CONNECTION = "rest";
+constexpr std::string_view CONNECTION = "rest"sv;
 
-static const std::string_view ACCEPT_ALL{"*/*"};
-static const std::string_view ACCEPT_JSON{"application/json"};
+static const std::string_view ACCEPT_ALL{"*/*"sv};
+static const std::string_view ACCEPT_JSON{"application/json"sv};
 
-static const std::string_view CONTENT_TYPE_JSON{"application/json"};
+static const std::string_view CONTENT_TYPE_JSON{"application/json"sv};
 
 static auto create_counter(const std::string_view &function) {
   return core::metrics::Counter(Flags::name(), CONNECTION, function);
@@ -66,18 +68,18 @@ Rest::Rest(
           Flags::rest_ping_path()),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
-          .disconnect = create_counter("disconnect"),
+          .disconnect = create_counter("disconnect"sv),
       },
       profile_{
-          .exchange_info = create_profile("exchange_info"),
-          .account = create_profile("account"),
-          .listen_key = create_profile("listen_key"),
-          .depth = create_profile("depth"),
-          .new_order = create_profile("new_order"),
-          .cancel_order = create_profile("cancel_order"),
+          .exchange_info = create_profile("exchange_info"sv),
+          .account = create_profile("account"sv),
+          .listen_key = create_profile("listen_key"sv),
+          .depth = create_profile("depth"sv),
+          .new_order = create_profile("new_order"sv),
+          .cancel_order = create_profile("cancel_order"sv),
       },
       latency_{
-          .ping = create_latency("ping"),
+          .ping = create_latency("ping"sv),
       } {
 }
 
@@ -115,7 +117,7 @@ void Rest::operator()(metrics::Writer &writer) {
 template <>
 void Rest::get(std::function<void(const core::Promise<json::ExchangeInfo> &)> &&callback) {
   constexpr auto method = core::http::Method::GET;
-  constexpr std::string_view path = "/api/v3/exchangeInfo";
+  constexpr std::string_view path = "/api/v3/exchangeInfo"sv;
   connection_.request(
       method,
       path,
@@ -131,12 +133,12 @@ void Rest::get(std::function<void(const core::Promise<json::ExchangeInfo> &)> &&
             core::json::Buffer buffer(decode_buffer_);
             auto exchange_info =
                 core::json::Parser::create<json::ExchangeInfo>(response.body(), buffer);
-            VLOG(1)(R"(exchange_info={})", exchange_info);
+            VLOG(1)(R"(exchange_info={})"sv, exchange_info);
             core::Promise<json::ExchangeInfo> promise(exchange_info);
             callback(promise);
           } catch (NetworkError &e) {
             LOG(WARNING)
-            (R"(Exception type={}, what="{}")", typeid(e).name(), e.what());
+            (R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
             core::Promise<json::ExchangeInfo> promise(std::current_exception());
             callback(promise);
           }
@@ -147,13 +149,13 @@ void Rest::get(std::function<void(const core::Promise<json::ExchangeInfo> &)> &&
 template <>
 void Rest::get(std::function<void(const core::Promise<json::Account> &)> &&callback) {
   constexpr auto method = core::http::Method::GET;
-  constexpr std::string_view path = "/api/v3/account";
+  constexpr std::string_view path = "/api/v3/account"sv;
   auto now = core::get_realtime_clock();
   auto timestamp = fmt::format(
-      R"(timestamp={})", std::chrono::duration_cast<std::chrono::milliseconds>(now).count());
+      R"(timestamp={})"sv, std::chrono::duration_cast<std::chrono::milliseconds>(now).count());
   auto signature = random_.create_signature(timestamp);
-  auto query = fmt::format(R"(?{}&signature={})", timestamp, signature);
-  auto headers = fmt::format("X-MBX-APIKEY: {}\r\n", api_key_);
+  auto query = fmt::format(R"(?{}&signature={})"sv, timestamp, signature);
+  auto headers = fmt::format("X-MBX-APIKEY: {}\r\n"sv, api_key_);
   connection_.request(
       method,
       path,
@@ -168,12 +170,12 @@ void Rest::get(std::function<void(const core::Promise<json::Account> &)> &&callb
             response.expect(core::http::Status::OK);
             core::json::Buffer buffer(decode_buffer_);
             auto account = core::json::Parser::create<json::Account>(response.body(), buffer);
-            VLOG(1)(R"(account={})", account);
+            VLOG(1)(R"(account={})"sv, account);
             core::Promise<json::Account> promise(account);
             callback(promise);
           } catch (NetworkError &e) {
             LOG(WARNING)
-            (R"(Exception type={}, what="{}")", typeid(e).name(), e.what());
+            (R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
             core::Promise<json::Account> promise(std::current_exception());
             callback(promise);
           }
@@ -184,8 +186,8 @@ void Rest::get(std::function<void(const core::Promise<json::Account> &)> &&callb
 template <>
 void Rest::get(std::function<void(const core::Promise<json::ListenKey> &)> &&callback) {
   constexpr auto method = core::http::Method::POST;
-  constexpr std::string_view path = "/api/v3/userDataStream";
-  auto headers = fmt::format("X-MBX-APIKEY: {}\r\n", api_key_);
+  constexpr std::string_view path = "/api/v3/userDataStream"sv;
+  auto headers = fmt::format("X-MBX-APIKEY: {}\r\n"sv, api_key_);
   connection_.request(
       method,
       path,
@@ -199,12 +201,12 @@ void Rest::get(std::function<void(const core::Promise<json::ListenKey> &)> &&cal
           try {
             response.expect(core::http::Status::OK);
             auto listen_key = core::json::Parser::create<json::ListenKey>(response.body());
-            VLOG(1)(R"(listen_key={})", listen_key);
+            VLOG(1)(R"(listen_key={})"sv, listen_key);
             core::Promise<json::ListenKey> promise(listen_key);
             callback(promise);
           } catch (NetworkError &e) {
             LOG(WARNING)
-            (R"(Exception type={}, what="{}")", typeid(e).name(), e.what());
+            (R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
             core::Promise<json::ListenKey> promise(std::current_exception());
             callback(promise);
           }
@@ -216,7 +218,7 @@ template <>
 void Rest::get(std::function<void(const core::Promise<json::Depth> &)> &&callback) {
   assert(false);  // XXX not ready
   constexpr auto method = core::http::Method::GET;
-  constexpr std::string_view path = "/api/v3/depth?symbol=BTCUSDT";  // XXX DEBUG
+  constexpr std::string_view path = "/api/v3/depth?symbol=BTCUSDT"sv;  // XXX DEBUG
   connection_.request(
       method,
       path,
@@ -231,12 +233,12 @@ void Rest::get(std::function<void(const core::Promise<json::Depth> &)> &&callbac
             response.expect(core::http::Status::OK);
             core::json::Buffer buffer(decode_buffer_);
             auto depth = core::json::Parser::create<json::Depth>(response.body(), buffer);
-            VLOG(1)(R"(depth={})", depth);
+            VLOG(1)(R"(depth={})"sv, depth);
             core::Promise<json::Depth> promise(depth);
             callback(promise);
           } catch (NetworkError &e) {
             LOG(WARNING)
-            (R"(Exception type={}, what="{}")", typeid(e).name(), e.what());
+            (R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
             core::Promise<json::Depth> promise(std::current_exception());
             callback(promise);
           }
@@ -249,7 +251,7 @@ void Rest::create_order(
     const std::string_view &cl_ord_id,
     std::function<void(const core::Promise<json::NewOrder> &)> &&callback) {
   constexpr auto method = core::http::Method::POST;
-  constexpr std::string_view path = "/api/v3/order";
+  constexpr std::string_view path = "/api/v3/order"sv;
   auto timestamp = core::get_realtime_clock();
   // XXX use encode buffer
   auto message = fmt::format(
@@ -266,7 +268,7 @@ void Rest::create_order(
       R"("icebergQty":{},)"  // XXX ???
       R"("recvWindow":{},)"
       R"("timestamp":{})"
-      R"(}})",
+      R"(}})"sv,
       create_order.symbol,
       json::map(create_order.side).as_raw_text(),
       json::map(create_order.order_type).as_raw_text(),
@@ -279,8 +281,8 @@ void Rest::create_order(
       double{0.0},
       Flags::rest_order_recv_window_msecs(),
       timestamp.count());
-  DLOG(INFO)(R"(body="{}")", message);
-  auto headers = fmt::format("X-MBX-APIKEY: {}\r\n", api_key_);
+  DLOG(INFO)(R"(body="{}")"sv, message);
+  auto headers = fmt::format("X-MBX-APIKEY: {}\r\n"sv, api_key_);
   connection_.request(
       method,
       path,
@@ -295,12 +297,12 @@ void Rest::create_order(
             response.expect(core::http::Status::OK);
             core::json::Buffer buffer(decode_buffer_);
             auto new_order = core::json::Parser::create<json::NewOrder>(response.body(), buffer);
-            VLOG(1)(R"(new_order={})", new_order);
+            VLOG(1)(R"(new_order={})"sv, new_order);
             core::Promise<json::NewOrder> promise(new_order);
             callback(promise);
           } catch (NetworkError &e) {
             LOG(WARNING)
-            (R"(Exception type={}, what="{}")", typeid(e).name(), e.what());
+            (R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
             core::Promise<json::NewOrder> promise(std::current_exception());
             callback(promise);
           }
@@ -314,7 +316,7 @@ void Rest::cancel_order(
     const server::OMS_Order &order,
     std::function<void(const core::Promise<json::CancelOrder> &)> &&callback) {
   constexpr auto method = core::http::Method::DELETE;
-  constexpr std::string_view path = "/api/v3/order";
+  constexpr std::string_view path = "/api/v3/order"sv;
   auto timestamp = core::get_realtime_clock();
   // XXX use encode buffer
   auto message = fmt::format(
@@ -324,14 +326,14 @@ void Rest::cancel_order(
       R"("newClientOrderId":"{}")"
       R"("recvWindow":{},)"
       R"("timestamp":{})"
-      R"(}})",
+      R"(}})"sv,
       order.symbol,
       order.external_order_id,
       request_id,
       Flags::rest_order_recv_window_msecs(),
       timestamp.count());
-  DLOG(INFO)(R"(body="{}")", message);
-  auto headers = fmt::format("X-MBX-APIKEY: {}\r\n", api_key_);
+  DLOG(INFO)(R"(body="{}")"sv, message);
+  auto headers = fmt::format("X-MBX-APIKEY: {}\r\n"sv, api_key_);
   connection_.request(
       method,
       path,
@@ -345,12 +347,12 @@ void Rest::cancel_order(
           try {
             response.expect(core::http::Status::OK);
             auto cancel_order = core::json::Parser::create<json::CancelOrder>(response.body());
-            VLOG(1)(R"(cancel_order={})", cancel_order);
+            VLOG(1)(R"(cancel_order={})"sv, cancel_order);
             core::Promise<json::CancelOrder> promise(cancel_order);
             callback(promise);
           } catch (NetworkError &e) {
             LOG(WARNING)
-            (R"(Exception type={}, what="{}")", typeid(e).name(), e.what());
+            (R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
             core::Promise<json::CancelOrder> promise(std::current_exception());
             callback(promise);
           }

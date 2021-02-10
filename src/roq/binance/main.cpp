@@ -2,8 +2,10 @@
 
 #include "roq/binance/application.h"
 
+using namespace std::literals;  // NOLINT
+
 namespace {
-constexpr std::string_view DESCRIPTION = "Roq Binance Gateway";
+static const auto DESCRIPTION = "Roq Binance Gateway"sv;
 }  // namespace
 
 int main(int argc, char **argv) {
