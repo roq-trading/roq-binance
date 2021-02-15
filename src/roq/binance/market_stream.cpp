@@ -208,7 +208,7 @@ void MarketStream::operator()(const core::web::Socket::Disconnected &) {
 }
 
 void MarketStream::operator()(const core::web::Socket::Ready &) {
-  LOG(INFO)("Ready (#{})"_sv, market_stream_id_);
+  LOG(INFO)("Ready (#{})"_fmt, market_stream_id_);
   if (Flags::ws_subscribe_trade_details()) {
     subscribe_trade(symbols_);
   } else {
@@ -263,31 +263,31 @@ void MarketStream::parse(const std::string_view &message) {
       core::json::Buffer buffer(decode_buffer_);
       json::MarketStreamParser::dispatch(*this, message, buffer, trace_info);
     } catch (std::exception &e) {
-      LOG(WARNING)(R"(message="{}")"_sv, message);
-      LOG(FATAL)(R"(ERROR what="{}")"_sv, e.what());
+      LOG(WARNING)(R"(message="{}")"_fmt, message);
+      LOG(FATAL)(R"(ERROR what="{}")"_fmt, e.what());
     }
   });
 }
 
 void MarketStream::operator()(int32_t id, const json::Error &error) {
-  profile_.error([&]() { LOG(WARNING)(R"(id={}, error={})"_sv, id, error); });
+  profile_.error([&]() { LOG(WARNING)(R"(id={}, error={})"_fmt, id, error); });
 }
 
 void MarketStream::operator()(int32_t id, const json::Result &result) {
-  profile_.result([&]() { LOG(INFO)(R"(id={}, result={})"_sv, id, result); });
+  profile_.result([&]() { LOG(INFO)(R"(id={}, result={})"_fmt, id, result); });
 }
 
 void MarketStream::operator()(
     const json::AggTrade &agg_trade, const server::TraceInfo &trace_info) {
   profile_.agg_trade([&]() {
-    VLOG(3)(R"(agg_trade={})"_sv, agg_trade);
+    VLOG(3)(R"(agg_trade={})"_fmt, agg_trade);
     handler_(agg_trade, trace_info);
   });
 }
 
 void MarketStream::operator()(const json::Trade &trade, const server::TraceInfo &trace_info) {
   profile_.trade([&]() {
-    VLOG(3)(R"(trade={})"_sv, trade);
+    VLOG(3)(R"(trade={})"_fmt, trade);
     handler_(trade, trace_info);
   });
 }
@@ -295,7 +295,7 @@ void MarketStream::operator()(const json::Trade &trade, const server::TraceInfo 
 void MarketStream::operator()(
     const json::MiniTicker &mini_ticker, const server::TraceInfo &trace_info) {
   profile_.mini_ticker([&]() {
-    VLOG(3)(R"(mini_ticker={})"_sv, mini_ticker);
+    VLOG(3)(R"(mini_ticker={})"_fmt, mini_ticker);
     handler_(mini_ticker, trace_info);
   });
 }
@@ -303,7 +303,7 @@ void MarketStream::operator()(
 void MarketStream::operator()(
     const json::BookTicker &book_ticker, const server::TraceInfo &trace_info) {
   profile_.book_ticker([&]() {
-    VLOG(3)(R"(book_ticker={})"_sv, book_ticker);
+    VLOG(3)(R"(book_ticker={})"_fmt, book_ticker);
     handler_(book_ticker, trace_info);
   });
 }
@@ -311,7 +311,7 @@ void MarketStream::operator()(
 void MarketStream::operator()(
     const std::string_view &symbol, const json::Depth &depth, const server::TraceInfo &trace_info) {
   profile_.depth([&]() {
-    VLOG(3)(R"(symbol="{}", depth={})"_sv, symbol, depth);
+    VLOG(3)(R"(symbol="{}", depth={})"_fmt, symbol, depth);
     handler_(symbol, depth, trace_info);
   });
 }
@@ -321,7 +321,7 @@ void MarketStream::operator()(
     const json::DepthUpdate &depth_update,
     const server::TraceInfo &trace_info) {
   profile_.depth_update([&]() {
-    VLOG(3)(R"(symbol="{}", depth_update={})"_sv, symbol, depth_update);
+    VLOG(3)(R"(symbol="{}", depth_update={})"_fmt, symbol, depth_update);
     handler_(symbol, depth_update, trace_info);
   });
 }

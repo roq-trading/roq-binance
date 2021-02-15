@@ -27,7 +27,7 @@ void UserStreamParser::dispatch(
       return;
     break;
   }
-  LOG(WARNING)(R"(message="{}")"_sv, message);
+  LOG(WARNING)(R"(message="{}")"_fmt, message);
   LOG(FATAL)("Unexpected"_sv);
 }
 

@@ -132,12 +132,12 @@ void Rest::get(std::function<void(const core::Promise<json::ExchangeInfo> &)> &&
             core::json::Buffer buffer(decode_buffer_);
             auto exchange_info =
                 core::json::Parser::create<json::ExchangeInfo>(response.body(), buffer);
-            VLOG(1)(R"(exchange_info={})"_sv, exchange_info);
+            VLOG(1)(R"(exchange_info={})"_fmt, exchange_info);
             core::Promise<json::ExchangeInfo> promise(exchange_info);
             callback(promise);
           } catch (NetworkError &e) {
             LOG(WARNING)
-            (R"(Exception type={}, what="{}")"_sv, typeid(e).name(), e.what());
+            (R"(Exception type={}, what="{}")"_fmt, typeid(e).name(), e.what());
             core::Promise<json::ExchangeInfo> promise(std::current_exception());
             callback(promise);
           }
@@ -169,12 +169,12 @@ void Rest::get(std::function<void(const core::Promise<json::Account> &)> &&callb
             response.expect(core::http::Status::OK);
             core::json::Buffer buffer(decode_buffer_);
             auto account = core::json::Parser::create<json::Account>(response.body(), buffer);
-            VLOG(1)(R"(account={})"_sv, account);
+            VLOG(1)(R"(account={})"_fmt, account);
             core::Promise<json::Account> promise(account);
             callback(promise);
           } catch (NetworkError &e) {
             LOG(WARNING)
-            (R"(Exception type={}, what="{}")"_sv, typeid(e).name(), e.what());
+            (R"(Exception type={}, what="{}")"_fmt, typeid(e).name(), e.what());
             core::Promise<json::Account> promise(std::current_exception());
             callback(promise);
           }
@@ -200,12 +200,12 @@ void Rest::get(std::function<void(const core::Promise<json::ListenKey> &)> &&cal
           try {
             response.expect(core::http::Status::OK);
             auto listen_key = core::json::Parser::create<json::ListenKey>(response.body());
-            VLOG(1)(R"(listen_key={})"_sv, listen_key);
+            VLOG(1)(R"(listen_key={})"_fmt, listen_key);
             core::Promise<json::ListenKey> promise(listen_key);
             callback(promise);
           } catch (NetworkError &e) {
             LOG(WARNING)
-            (R"(Exception type={}, what="{}")"_sv, typeid(e).name(), e.what());
+            (R"(Exception type={}, what="{}")"_fmt, typeid(e).name(), e.what());
             core::Promise<json::ListenKey> promise(std::current_exception());
             callback(promise);
           }
@@ -232,12 +232,12 @@ void Rest::get(std::function<void(const core::Promise<json::Depth> &)> &&callbac
             response.expect(core::http::Status::OK);
             core::json::Buffer buffer(decode_buffer_);
             auto depth = core::json::Parser::create<json::Depth>(response.body(), buffer);
-            VLOG(1)(R"(depth={})"_sv, depth);
+            VLOG(1)(R"(depth={})"_fmt, depth);
             core::Promise<json::Depth> promise(depth);
             callback(promise);
           } catch (NetworkError &e) {
             LOG(WARNING)
-            (R"(Exception type={}, what="{}")"_sv, typeid(e).name(), e.what());
+            (R"(Exception type={}, what="{}")"_fmt, typeid(e).name(), e.what());
             core::Promise<json::Depth> promise(std::current_exception());
             callback(promise);
           }
@@ -280,7 +280,7 @@ void Rest::create_order(
       double{0.0},
       Flags::rest_order_recv_window_msecs(),
       timestamp.count());
-  DLOG(INFO)(R"(body="{}")"_sv, message);
+  DLOG(INFO)(R"(body="{}")"_fmt, message);
   auto headers = roq::format("X-MBX-APIKEY: {}\r\n"_fmt, api_key_);
   connection_.request(
       method,
@@ -296,12 +296,12 @@ void Rest::create_order(
             response.expect(core::http::Status::OK);
             core::json::Buffer buffer(decode_buffer_);
             auto new_order = core::json::Parser::create<json::NewOrder>(response.body(), buffer);
-            VLOG(1)(R"(new_order={})"_sv, new_order);
+            VLOG(1)(R"(new_order={})"_fmt, new_order);
             core::Promise<json::NewOrder> promise(new_order);
             callback(promise);
           } catch (NetworkError &e) {
             LOG(WARNING)
-            (R"(Exception type={}, what="{}")"_sv, typeid(e).name(), e.what());
+            (R"(Exception type={}, what="{}")"_fmt, typeid(e).name(), e.what());
             core::Promise<json::NewOrder> promise(std::current_exception());
             callback(promise);
           }
@@ -331,7 +331,7 @@ void Rest::cancel_order(
       request_id,
       Flags::rest_order_recv_window_msecs(),
       timestamp.count());
-  DLOG(INFO)(R"(body="{}")"_sv, message);
+  DLOG(INFO)(R"(body="{}")"_fmt, message);
   auto headers = roq::format("X-MBX-APIKEY: {}\r\n"_fmt, api_key_);
   connection_.request(
       method,
@@ -346,12 +346,12 @@ void Rest::cancel_order(
           try {
             response.expect(core::http::Status::OK);
             auto cancel_order = core::json::Parser::create<json::CancelOrder>(response.body());
-            VLOG(1)(R"(cancel_order={})"_sv, cancel_order);
+            VLOG(1)(R"(cancel_order={})"_fmt, cancel_order);
             core::Promise<json::CancelOrder> promise(cancel_order);
             callback(promise);
           } catch (NetworkError &e) {
             LOG(WARNING)
-            (R"(Exception type={}, what="{}")"_sv, typeid(e).name(), e.what());
+            (R"(Exception type={}, what="{}")"_fmt, typeid(e).name(), e.what());
             core::Promise<json::CancelOrder> promise(std::current_exception());
             callback(promise);
           }
