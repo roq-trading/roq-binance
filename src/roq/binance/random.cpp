@@ -2,8 +2,6 @@
 
 #include "roq/binance/random.h"
 
-#include <fmt/format.h>
-
 #include <cassert>
 
 #include "roq/core/binascii/hex.h"

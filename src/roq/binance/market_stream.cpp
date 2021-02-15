@@ -2,8 +2,6 @@
 
 #include "roq/binance/market_stream.h"
 
-#include <fmt/format.h>
-
 #include <cassert>
 #include <utility>
 
@@ -24,7 +22,7 @@ namespace {
 constexpr std::string_view CONNECTION = "market_stream"_sv;
 
 static auto create_connection_name(uint32_t market_stream_id) {
-  return roq::format("{}_{}"_sv, CONNECTION, market_stream_id);
+  return roq::format("{}_{}"_fmt, CONNECTION, market_stream_id);
 }
 
 static auto create_counter(const std::string_view &name, const std::string_view &function) {
@@ -113,8 +111,8 @@ void MarketStream::subscribe_agg_trade(const std::vector<std::string> &symbols) 
       R"("method":"SUBSCRIBE",)"
       R"("params":["{}@aggTrade"],)"
       R"("id":{})"
-      R"(}})"_sv,
-      fmt::join(symbols, R"(@aggTrade",")"_sv),
+      R"(}})"_fmt,
+      roq::join(symbols, R"(@aggTrade",")"_sv),
       ++request_id_);
   connection_.send_text(message);
 }
@@ -127,8 +125,8 @@ void MarketStream::subscribe_trade(const std::vector<std::string> &symbols) {
       R"("method":"SUBSCRIBE",)"
       R"("params":["{}@trade"],)"
       R"("id":{})"
-      R"(}})"_sv,
-      fmt::join(symbols, R"(@trade",")"_sv),
+      R"(}})"_fmt,
+      roq::join(symbols, R"(@trade",")"_sv),
       ++request_id_);
   connection_.send_text(message);
 }
@@ -141,8 +139,8 @@ void MarketStream::subscribe_mini_ticker(const std::vector<std::string> &symbols
       R"("method":"SUBSCRIBE",)"
       R"("params":["{}@miniTicker"],)"
       R"("id":{})"
-      R"(}})"_sv,
-      fmt::join(symbols, R"(@miniTicker",")"_sv),
+      R"(}})"_fmt,
+      roq::join(symbols, R"(@miniTicker",")"_sv),
       ++request_id_);
   connection_.send_text(message);
 }
@@ -155,8 +153,8 @@ void MarketStream::subscribe_book_ticker(const std::vector<std::string> &symbols
       R"("method":"SUBSCRIBE",)"
       R"("params":["{}@bookTicker"],)"
       R"("id":{})"
-      R"(}})"_sv,
-      fmt::join(symbols, R"(@bookTicker",")"_sv),
+      R"(}})"_fmt,
+      roq::join(symbols, R"(@bookTicker",")"_sv),
       ++request_id_);
   connection_.send_text(message);
 }
@@ -165,17 +163,17 @@ template <>
 void MarketStream::subscribe_depth(const std::vector<std::string> &symbols) {
   assert(symbols.empty() == false);
   auto stream = roq::format(
-      R"(@depth{}@{}ms)"_sv,
+      R"(@depth{}@{}ms)"_fmt,
       Flags::ws_subscribe_depth_levels(),
       Flags::ws_subscribe_depth_freq_msecs());
-  auto separator = roq::format(R"({}",")"_sv, stream);
+  auto separator = roq::format(R"({}",")"_fmt, stream);
   auto message = roq::format(
       R"({{)"
       R"("method":"SUBSCRIBE",)"
       R"("params":["{}{}"],)"
       R"("id":{})"
-      R"(}})"_sv,
-      fmt::join(symbols, separator),
+      R"(}})"_fmt,
+      roq::join(symbols, separator),
       stream,
       ++request_id_);
   connection_.send_text(message);

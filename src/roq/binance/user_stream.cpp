@@ -2,8 +2,6 @@
 
 #include "roq/binance/user_stream.h"
 
-#include <fmt/format.h>
-
 #include <cassert>
 #include <utility>
 
@@ -22,7 +20,7 @@ namespace binance {
 
 namespace {
 static auto create_query(const std::string_view &listen_key) {
-  return roq::format("?streams={}"_sv, listen_key);
+  return roq::format("?streams={}"_fmt, listen_key);
 }
 
 constexpr std::string_view CONNECTION = "user_stream"_sv;

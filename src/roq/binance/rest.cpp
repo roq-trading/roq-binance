@@ -3,7 +3,6 @@
 #include "roq/binance/rest.h"
 
 #include <fmt/chrono.h>
-#include <fmt/format.h>
 
 #include <utility>
 
@@ -152,10 +151,10 @@ void Rest::get(std::function<void(const core::Promise<json::Account> &)> &&callb
   constexpr std::string_view path = "/api/v3/account"_sv;
   auto now = core::get_realtime_clock();
   auto timestamp = roq::format(
-      R"(timestamp={})"_sv, std::chrono::duration_cast<std::chrono::milliseconds>(now).count());
+      R"(timestamp={})"_fmt, std::chrono::duration_cast<std::chrono::milliseconds>(now).count());
   auto signature = random_.create_signature(timestamp);
-  auto query = roq::format(R"(?{}&signature={})"_sv, timestamp, signature);
-  auto headers = roq::format("X-MBX-APIKEY: {}\r\n"_sv, api_key_);
+  auto query = roq::format(R"(?{}&signature={})"_fmt, timestamp, signature);
+  auto headers = roq::format("X-MBX-APIKEY: {}\r\n"_fmt, api_key_);
   connection_.request(
       method,
       path,
@@ -187,7 +186,7 @@ template <>
 void Rest::get(std::function<void(const core::Promise<json::ListenKey> &)> &&callback) {
   constexpr auto method = core::http::Method::POST;
   constexpr std::string_view path = "/api/v3/userDataStream"_sv;
-  auto headers = roq::format("X-MBX-APIKEY: {}\r\n"_sv, api_key_);
+  auto headers = roq::format("X-MBX-APIKEY: {}\r\n"_fmt, api_key_);
   connection_.request(
       method,
       path,
@@ -268,7 +267,7 @@ void Rest::create_order(
       R"("icebergQty":{},)"  // XXX ???
       R"("recvWindow":{},)"
       R"("timestamp":{})"
-      R"(}})"_sv,
+      R"(}})"_fmt,
       create_order.symbol,
       json::map(create_order.side).as_raw_text(),
       json::map(create_order.order_type).as_raw_text(),
@@ -282,7 +281,7 @@ void Rest::create_order(
       Flags::rest_order_recv_window_msecs(),
       timestamp.count());
   DLOG(INFO)(R"(body="{}")"_sv, message);
-  auto headers = roq::format("X-MBX-APIKEY: {}\r\n"_sv, api_key_);
+  auto headers = roq::format("X-MBX-APIKEY: {}\r\n"_fmt, api_key_);
   connection_.request(
       method,
       path,
@@ -326,14 +325,14 @@ void Rest::cancel_order(
       R"("newClientOrderId":"{}")"
       R"("recvWindow":{},)"
       R"("timestamp":{})"
-      R"(}})"_sv,
+      R"(}})"_fmt,
       order.symbol,
       order.external_order_id,
       request_id,
       Flags::rest_order_recv_window_msecs(),
       timestamp.count());
   DLOG(INFO)(R"(body="{}")"_sv, message);
-  auto headers = roq::format("X-MBX-APIKEY: {}\r\n"_sv, api_key_);
+  auto headers = roq::format("X-MBX-APIKEY: {}\r\n"_fmt, api_key_);
   connection_.request(
       method,
       path,
