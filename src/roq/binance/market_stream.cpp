@@ -15,16 +15,16 @@
 
 #include "roq/binance/flags.h"
 
-using namespace std::literals;  // NOLINT
+using namespace roq::literals;
 
 namespace roq {
 namespace binance {
 
 namespace {
-constexpr std::string_view CONNECTION = "market_stream"sv;
+constexpr std::string_view CONNECTION = "market_stream"_sv;
 
 static auto create_connection_name(uint32_t market_stream_id) {
-  return fmt::format("{}_{}"sv, CONNECTION, market_stream_id);
+  return roq::format("{}_{}"_sv, CONNECTION, market_stream_id);
 }
 
 static auto create_counter(const std::string_view &name, const std::string_view &function) {
@@ -63,22 +63,22 @@ MarketStream::MarketStream(
           []() { return std::string(); }),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
-          .disconnect = create_counter(name_, "disconnect"sv),
+          .disconnect = create_counter(name_, "disconnect"_sv),
       },
       profile_{
-          .parse = create_profile(name_, "parse"sv),
-          .error = create_profile(name_, "error"sv),
-          .result = create_profile(name_, "result"sv),
-          .agg_trade = create_profile(name_, "agg_trade"sv),
-          .trade = create_profile(name_, "trade"sv),
-          .mini_ticker = create_profile(name_, "mini_ticker"sv),
-          .book_ticker = create_profile(name_, "book_ticker"sv),
-          .depth = create_profile(name_, "depth"sv),
-          .depth_update = create_profile(name_, "depth_update"sv),
+          .parse = create_profile(name_, "parse"_sv),
+          .error = create_profile(name_, "error"_sv),
+          .result = create_profile(name_, "result"_sv),
+          .agg_trade = create_profile(name_, "agg_trade"_sv),
+          .trade = create_profile(name_, "trade"_sv),
+          .mini_ticker = create_profile(name_, "mini_ticker"_sv),
+          .book_ticker = create_profile(name_, "book_ticker"_sv),
+          .depth = create_profile(name_, "depth"_sv),
+          .depth_update = create_profile(name_, "depth_update"_sv),
       },
       latency_{
-          .ping = create_latency(name_, "ping"sv),
-          .heartbeat = create_latency(name_, "heartbeat"sv),
+          .ping = create_latency(name_, "ping"_sv),
+          .heartbeat = create_latency(name_, "heartbeat"_sv),
       } {
 }
 
@@ -108,13 +108,13 @@ size_t MarketStream::capacity() const {
 template <>
 void MarketStream::subscribe_agg_trade(const std::vector<std::string> &symbols) {
   assert(symbols.empty() == false);
-  auto message = fmt::format(
+  auto message = roq::format(
       R"({{)"
       R"("method":"SUBSCRIBE",)"
       R"("params":["{}@aggTrade"],)"
       R"("id":{})"
-      R"(}})"sv,
-      fmt::join(symbols, R"(@aggTrade",")"sv),
+      R"(}})"_sv,
+      fmt::join(symbols, R"(@aggTrade",")"_sv),
       ++request_id_);
   connection_.send_text(message);
 }
@@ -122,13 +122,13 @@ void MarketStream::subscribe_agg_trade(const std::vector<std::string> &symbols) 
 template <>
 void MarketStream::subscribe_trade(const std::vector<std::string> &symbols) {
   assert(symbols.empty() == false);
-  auto message = fmt::format(
+  auto message = roq::format(
       R"({{)"
       R"("method":"SUBSCRIBE",)"
       R"("params":["{}@trade"],)"
       R"("id":{})"
-      R"(}})"sv,
-      fmt::join(symbols, R"(@trade",")"sv),
+      R"(}})"_sv,
+      fmt::join(symbols, R"(@trade",")"_sv),
       ++request_id_);
   connection_.send_text(message);
 }
@@ -136,13 +136,13 @@ void MarketStream::subscribe_trade(const std::vector<std::string> &symbols) {
 template <>
 void MarketStream::subscribe_mini_ticker(const std::vector<std::string> &symbols) {
   assert(symbols.empty() == false);
-  auto message = fmt::format(
+  auto message = roq::format(
       R"({{)"
       R"("method":"SUBSCRIBE",)"
       R"("params":["{}@miniTicker"],)"
       R"("id":{})"
-      R"(}})"sv,
-      fmt::join(symbols, R"(@miniTicker",")"sv),
+      R"(}})"_sv,
+      fmt::join(symbols, R"(@miniTicker",")"_sv),
       ++request_id_);
   connection_.send_text(message);
 }
@@ -150,13 +150,13 @@ void MarketStream::subscribe_mini_ticker(const std::vector<std::string> &symbols
 template <>
 void MarketStream::subscribe_book_ticker(const std::vector<std::string> &symbols) {
   assert(symbols.empty() == false);
-  auto message = fmt::format(
+  auto message = roq::format(
       R"({{)"
       R"("method":"SUBSCRIBE",)"
       R"("params":["{}@bookTicker"],)"
       R"("id":{})"
-      R"(}})"sv,
-      fmt::join(symbols, R"(@bookTicker",")"sv),
+      R"(}})"_sv,
+      fmt::join(symbols, R"(@bookTicker",")"_sv),
       ++request_id_);
   connection_.send_text(message);
 }
@@ -164,17 +164,17 @@ void MarketStream::subscribe_book_ticker(const std::vector<std::string> &symbols
 template <>
 void MarketStream::subscribe_depth(const std::vector<std::string> &symbols) {
   assert(symbols.empty() == false);
-  auto stream = fmt::format(
-      R"(@depth{}@{}ms)"sv,
+  auto stream = roq::format(
+      R"(@depth{}@{}ms)"_sv,
       Flags::ws_subscribe_depth_levels(),
       Flags::ws_subscribe_depth_freq_msecs());
-  auto separator = fmt::format(R"({}",")"sv, stream);
-  auto message = fmt::format(
+  auto separator = roq::format(R"({}",")"_sv, stream);
+  auto message = roq::format(
       R"({{)"
       R"("method":"SUBSCRIBE",)"
       R"("params":["{}{}"],)"
       R"("id":{})"
-      R"(}})"sv,
+      R"(}})"_sv,
       fmt::join(symbols, separator),
       stream,
       ++request_id_);
@@ -210,7 +210,7 @@ void MarketStream::operator()(const core::web::Socket::Disconnected &) {
 }
 
 void MarketStream::operator()(const core::web::Socket::Ready &) {
-  LOG(INFO)("Ready (#{})"sv, market_stream_id_);
+  LOG(INFO)("Ready (#{})"_sv, market_stream_id_);
   if (Flags::ws_subscribe_trade_details()) {
     subscribe_trade(symbols_);
   } else {
@@ -226,7 +226,7 @@ void MarketStream::subscribe(const std::vector<std::string> &symbols) {
   for (auto &symbol : symbols) {
 #if !defined(NDEBUG)
     auto iter = std::find(symbols_.begin(), symbols_.end(), symbol);
-    LOG_IF(FATAL, iter != symbols_.end())("Unexpected"sv);
+    LOG_IF(FATAL, iter != symbols_.end())("Unexpected"_sv);
 #endif
     symbols_.emplace_back(symbol);
   }
@@ -265,31 +265,31 @@ void MarketStream::parse(const std::string_view &message) {
       core::json::Buffer buffer(decode_buffer_);
       json::MarketStreamParser::dispatch(*this, message, buffer, trace_info);
     } catch (std::exception &e) {
-      LOG(WARNING)(R"(message="{}")"sv, message);
-      LOG(FATAL)(R"(ERROR what="{}")"sv, e.what());
+      LOG(WARNING)(R"(message="{}")"_sv, message);
+      LOG(FATAL)(R"(ERROR what="{}")"_sv, e.what());
     }
   });
 }
 
 void MarketStream::operator()(int32_t id, const json::Error &error) {
-  profile_.error([&]() { LOG(WARNING)(R"(id={}, error={})"sv, id, error); });
+  profile_.error([&]() { LOG(WARNING)(R"(id={}, error={})"_sv, id, error); });
 }
 
 void MarketStream::operator()(int32_t id, const json::Result &result) {
-  profile_.result([&]() { LOG(INFO)(R"(id={}, result={})"sv, id, result); });
+  profile_.result([&]() { LOG(INFO)(R"(id={}, result={})"_sv, id, result); });
 }
 
 void MarketStream::operator()(
     const json::AggTrade &agg_trade, const server::TraceInfo &trace_info) {
   profile_.agg_trade([&]() {
-    VLOG(3)(R"(agg_trade={})"sv, agg_trade);
+    VLOG(3)(R"(agg_trade={})"_sv, agg_trade);
     handler_(agg_trade, trace_info);
   });
 }
 
 void MarketStream::operator()(const json::Trade &trade, const server::TraceInfo &trace_info) {
   profile_.trade([&]() {
-    VLOG(3)(R"(trade={})"sv, trade);
+    VLOG(3)(R"(trade={})"_sv, trade);
     handler_(trade, trace_info);
   });
 }
@@ -297,7 +297,7 @@ void MarketStream::operator()(const json::Trade &trade, const server::TraceInfo 
 void MarketStream::operator()(
     const json::MiniTicker &mini_ticker, const server::TraceInfo &trace_info) {
   profile_.mini_ticker([&]() {
-    VLOG(3)(R"(mini_ticker={})"sv, mini_ticker);
+    VLOG(3)(R"(mini_ticker={})"_sv, mini_ticker);
     handler_(mini_ticker, trace_info);
   });
 }
@@ -305,7 +305,7 @@ void MarketStream::operator()(
 void MarketStream::operator()(
     const json::BookTicker &book_ticker, const server::TraceInfo &trace_info) {
   profile_.book_ticker([&]() {
-    VLOG(3)(R"(book_ticker={})"sv, book_ticker);
+    VLOG(3)(R"(book_ticker={})"_sv, book_ticker);
     handler_(book_ticker, trace_info);
   });
 }
@@ -313,7 +313,7 @@ void MarketStream::operator()(
 void MarketStream::operator()(
     const std::string_view &symbol, const json::Depth &depth, const server::TraceInfo &trace_info) {
   profile_.depth([&]() {
-    VLOG(3)(R"(symbol="{}", depth={})"sv, symbol, depth);
+    VLOG(3)(R"(symbol="{}", depth={})"_sv, symbol, depth);
     handler_(symbol, depth, trace_info);
   });
 }
@@ -323,7 +323,7 @@ void MarketStream::operator()(
     const json::DepthUpdate &depth_update,
     const server::TraceInfo &trace_info) {
   profile_.depth_update([&]() {
-    VLOG(3)(R"(symbol="{}", depth_update={})"sv, symbol, depth_update);
+    VLOG(3)(R"(symbol="{}", depth_update={})"_sv, symbol, depth_update);
     handler_(symbol, depth_update, trace_info);
   });
 }

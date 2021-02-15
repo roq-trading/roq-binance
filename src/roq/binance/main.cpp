@@ -2,10 +2,12 @@
 
 #include "roq/binance/application.h"
 
-using namespace std::literals;  // NOLINT
+#include "roq/literals.h"
+
+using namespace roq::literals;
 
 namespace {
-static const auto DESCRIPTION = "Roq Binance Gateway"sv;
+static const auto DESCRIPTION = "Roq Binance Gateway"_sv;
 }  // namespace
 
 int main(int argc, char **argv) {

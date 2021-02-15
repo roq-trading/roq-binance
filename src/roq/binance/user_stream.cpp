@@ -15,17 +15,17 @@
 
 #include "roq/binance/flags.h"
 
-using namespace std::literals;  // NOLINT
+using namespace roq::literals;
 
 namespace roq {
 namespace binance {
 
 namespace {
 static auto create_query(const std::string_view &listen_key) {
-  return fmt::format("?streams={}"sv, listen_key);
+  return roq::format("?streams={}"_sv, listen_key);
 }
 
-constexpr std::string_view CONNECTION = "user_stream"sv;
+constexpr std::string_view CONNECTION = "user_stream"_sv;
 
 static auto create_counter(const std::string_view &function) {
   return core::metrics::Counter(Flags::name(), CONNECTION, function);
@@ -61,18 +61,18 @@ UserStream::UserStream(
           []() { return std::string(); }),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
-          .disconnect = create_counter("disconnect"sv),
+          .disconnect = create_counter("disconnect"_sv),
       },
       profile_{
-          .parse = create_profile("parse"sv),
-          .outbound_account_info = create_profile("outbound_account_info"sv),
-          .outbound_account_position = create_profile("outbound_account_position"sv),
-          .balance_update = create_profile("balance_update"sv),
-          .execution_report = create_profile("execution_report"sv),
+          .parse = create_profile("parse"_sv),
+          .outbound_account_info = create_profile("outbound_account_info"_sv),
+          .outbound_account_position = create_profile("outbound_account_position"_sv),
+          .balance_update = create_profile("balance_update"_sv),
+          .execution_report = create_profile("execution_report"_sv),
       },
       latency_{
-          .ping = create_latency("ping"sv),
-          .heartbeat = create_latency("heartbeat"sv),
+          .ping = create_latency("ping"_sv),
+          .heartbeat = create_latency("heartbeat"_sv),
       } {
 }
 
@@ -115,7 +115,7 @@ void UserStream::operator()(const core::web::Socket::Disconnected &) {
 }
 
 void UserStream::operator()(const core::web::Socket::Ready &) {
-  LOG(INFO)("Ready"sv);
+  LOG(INFO)("Ready"_sv);
 }
 
 void UserStream::operator()(const core::web::Socket::Close &) {
@@ -142,8 +142,8 @@ void UserStream::parse(const std::string_view &message) {
       core::json::Buffer buffer(decode_buffer_);
       json::UserStreamParser::dispatch(*this, message, buffer, trace_info);
     } catch (std::exception &e) {
-      LOG(WARNING)(R"(message="{}")"sv, message);
-      LOG(FATAL)(R"(ERROR what="{}")"sv, e.what());
+      LOG(WARNING)(R"(message="{}")"_sv, message);
+      LOG(FATAL)(R"(ERROR what="{}")"_sv, e.what());
     }
   });
 }
@@ -151,7 +151,7 @@ void UserStream::parse(const std::string_view &message) {
 void UserStream::operator()(
     const json::OutboundAccountInfo &outbound_account_info, const server::TraceInfo &trace_info) {
   profile_.outbound_account_info([&]() {
-    VLOG(3)(R"(outbound_account_info={})"sv, outbound_account_info);
+    VLOG(3)(R"(outbound_account_info={})"_sv, outbound_account_info);
     handler_(outbound_account_info, trace_info);
   });
 }
@@ -160,7 +160,7 @@ void UserStream::operator()(
     const json::OutboundAccountPosition &outbound_account_position,
     const server::TraceInfo &trace_info) {
   profile_.outbound_account_position([&]() {
-    VLOG(3)(R"(outbound_account_position={})"sv, outbound_account_position);
+    VLOG(3)(R"(outbound_account_position={})"_sv, outbound_account_position);
     handler_(outbound_account_position, trace_info);
   });
 }
@@ -168,7 +168,7 @@ void UserStream::operator()(
 void UserStream::operator()(
     const json::BalanceUpdate &balance_update, const server::TraceInfo &trace_info) {
   profile_.balance_update([&]() {
-    VLOG(3)(R"(balance_update={})"sv, balance_update);
+    VLOG(3)(R"(balance_update={})"_sv, balance_update);
     handler_(balance_update, trace_info);
   });
 }
@@ -176,7 +176,7 @@ void UserStream::operator()(
 void UserStream::operator()(
     const json::ExecutionReport &execution_report, const server::TraceInfo &trace_info) {
   profile_.execution_report([&]() {
-    VLOG(3)(R"(execution_report={})"sv, execution_report);
+    VLOG(3)(R"(execution_report={})"_sv, execution_report);
     handler_(execution_report, trace_info);
   });
 }

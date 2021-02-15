@@ -6,7 +6,7 @@
 
 #include "roq/core/json/parser.h"
 
-using namespace std::literals;  // NOLINT
+using namespace roq::literals;
 
 namespace roq {
 namespace binance {
@@ -20,15 +20,15 @@ void UserStreamParser::dispatch(
   core::json::Parser parser(message);
   auto root = parser.root();
   for (auto [key, value] : std::get<core::json::object_t>(root)) {
-    if (key.compare("e"sv) != 0)
+    if (key.compare("e"_sv) != 0)
       continue;
     EventType event_type(value);
     if (try_dispatch(handler, message, buffer, event_type, trace_info))
       return;
     break;
   }
-  LOG(WARNING)(R"(message="{}")"sv, message);
-  LOG(FATAL)("Unexpected"sv);
+  LOG(WARNING)(R"(message="{}")"_sv, message);
+  LOG(FATAL)("Unexpected"_sv);
 }
 
 bool UserStreamParser::try_dispatch(
@@ -45,7 +45,7 @@ bool UserStreamParser::try_dispatch(
     case EventType::_24HR_MINI_TICKER:
     case EventType::BOOK_TICKER:
     case EventType::DEPTH_UPDATE:
-      LOG(FATAL)("Unexpected"sv);
+      LOG(FATAL)("Unexpected"_sv);
       break;
     case EventType::OUTBOUND_ACCOUNT_INFO: {
       auto outbound_account_info = core::json::Parser::create<OutboundAccountInfo>(message, buffer);

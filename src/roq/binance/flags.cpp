@@ -12,119 +12,119 @@
 #include "roq/core/flags/path.h"
 #include "roq/core/flags/uri.h"
 
-using namespace std::literals;  // NOLINT
+using namespace roq::literals;
 
 ABSL_FLAG(  //
     roq::core::flags::Path<std::string>,
     config_file,
     {},
-    "config file (path)"sv);
+    "config file (path)"_sv);
 
 ABSL_FLAG(  //
     roq::core::flags::NonEmpty<std::string>,
     exchange,
-    "binance"s,
-    "exchange identifier (string)"sv);
+    "binance"_s,
+    "exchange identifier (string)"_sv);
 
 // rest
 
 ABSL_FLAG(  //
     roq::core::flags::URI<std::string>,
     rest_uri,
-    "https://testnet.binance.com/api/v1"s,
-    "REST end-point (URI)"sv);
+    "https://testnet.binance.com/api/v1"_s,
+    "REST end-point (URI)"_sv);
 
 ABSL_FLAG(  //
     uint32_t,
     rest_ping_freq_secs,
     uint32_t{5},
-    "ping frequency (seconds)"sv);
+    "ping frequency (seconds)"_sv);
 
 ABSL_FLAG(  //
     roq::core::flags::Path<std::string>,
     rest_ping_path,
-    "/api/v3/time"s,
-    "URI path used for REST connection keep-alive messages"sv);
+    "/api/v3/time"_s,
+    "URI path used for REST connection keep-alive messages"_sv);
 
 ABSL_FLAG(  //
     uint32_t,
     rest_request_queue_depth,
     uint32_t{5},
-    "request: max queue depth"sv);
+    "request: max queue depth"_sv);
 
 ABSL_FLAG(  //
     uint32_t,
     rest_request_timeout_secs,
     uint32_t{30},
-    "request: timeout (seconds)"sv);
+    "request: timeout (seconds)"_sv);
 
 ABSL_FLAG(  //
     uint32_t,
     rest_rate_limit_interval_secs,
     uint32_t{60},
-    "rate limit: monitor interval (seconds)"sv);
+    "rate limit: monitor interval (seconds)"_sv);
 
 ABSL_FLAG(  //
     uint32_t,
     rest_rate_limit_max_requests,
     uint32_t{1200},
-    "rate limit: max requests (per interval)"sv);
+    "rate limit: max requests (per interval)"_sv);
 
 ABSL_FLAG(  //
     uint32_t,
     rest_listen_key_refresh_secs,
     uint32_t{1800},
-    "listen key refresh period (seconds)"sv);
+    "listen key refresh period (seconds)"_sv);
 
 ABSL_FLAG(  //
     uint32_t,
     rest_order_recv_window_msecs,
     uint32_t{5000},
-    "receive window (milliseconds), please refer to Binance documentation!"sv);
+    "receive window (milliseconds), please refer to Binance documentation!"_sv);
 
 ABSL_FLAG(  //
     bool,
     rest_cancel_on_disconnect,
     false,
-    "cancel orders on disconnect? (bool)"sv);
+    "cancel orders on disconnect? (bool)"_sv);
 
 // ws
 
 ABSL_FLAG(  //
     roq::core::flags::URI<std::string>,
     ws_uri,
-    "wss://testnet.binance.com/realtime"s,
-    "WebSocket end-point (URI)"sv);
+    "wss://testnet.binance.com/realtime"_s,
+    "WebSocket end-point (URI)"_sv);
 
 ABSL_FLAG(  //
     uint32_t,
     ws_ping_freq_secs,
     uint32_t{5},
-    "ping frequency (seconds)"sv);
+    "ping frequency (seconds)"_sv);
 
 ABSL_FLAG(  //
     roq::core::flags::NonZero<uint32_t>,
     ws_max_subscriptions_per_stream,
     uint32_t{512},
-    "max subscriptions per connection (count)"sv);
+    "max subscriptions per connection (count)"_sv);
 
 ABSL_FLAG(  //
     uint32_t,
     ws_subscribe_depth_levels,
     uint32_t{20},
-    "depth levels (count)"sv);
+    "depth levels (count)"_sv);
 
 ABSL_FLAG(  //
     uint32_t,
     ws_subscribe_depth_freq_msecs,
     uint32_t{100},
-    "depth update frequency (milliseconds)"sv);
+    "depth update frequency (milliseconds)"_sv);
 
 ABSL_FLAG(  //
     bool,
     ws_subscribe_trade_details,
     false,
-    "report individual matches for trade summary? (bool)"sv);
+    "report individual matches for trade summary? (bool)"_sv);
 
 // XXX review
 
@@ -132,13 +132,13 @@ ABSL_FLAG(  //
     roq::core::flags::NonZero<uint32_t>,
     encode_buffer_size,
     uint32_t{1048576},
-    "encode buffer size"sv);
+    "encode buffer size"_sv);
 
 ABSL_FLAG(  //
     roq::core::flags::NonZero<uint32_t>,
     decode_buffer_size,
     uint32_t{10485760},
-    "decode buffer size"sv);
+    "decode buffer size"_sv);
 
 // external
 

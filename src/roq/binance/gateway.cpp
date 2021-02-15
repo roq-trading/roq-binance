@@ -19,7 +19,7 @@
 
 #include "roq/binance/json/utils.h"
 
-using namespace std::literals;  // NOLINT
+using namespace roq::literals;
 
 namespace roq {
 namespace binance {
@@ -62,11 +62,11 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
       },
       bid_(Flags::cache_mbp_max_depth()), ask_(Flags::cache_mbp_max_depth()) {
   LOG_IF(FATAL, Flags::rest_cancel_on_disconnect())
-  ("Exchange does *NOT* support cancel on disconnect"sv);
+  ("Exchange does *NOT* support cancel on disconnect"_sv);
 }
 
 void Gateway::operator()(const Event<Start> &event) {
-  LOG(INFO)("Starting the gateway..."sv);
+  LOG(INFO)("Starting the gateway..."_sv);
   rest_.connection(event);
   assert(symbols_.empty());
   assert(market_streams_.empty());
@@ -75,7 +75,7 @@ void Gateway::operator()(const Event<Start> &event) {
 }
 
 void Gateway::operator()(const Event<Stop> &event) {
-  LOG(INFO)("Stopping the gateway..."sv);
+  LOG(INFO)("Stopping the gateway..."_sv);
   rest_.connection(event);
   for (auto &iter : market_streams_)
     (*iter)(event);
@@ -105,7 +105,7 @@ void Gateway::operator()(
       (*this)(promise.get());
     } catch (NetworkError &e) {
       // XXX send ack failure
-      LOG(FATAL)(R"(Unexpected what="{}")"sv, e.what());
+      LOG(FATAL)(R"(Unexpected what="{}")"_sv, e.what());
     }
   });
 }
@@ -124,7 +124,7 @@ void Gateway::operator()(
       (*this)(promise.get());
     } catch (NetworkError &e) {
       // XXX send ack failure
-      LOG(FATAL)(R"(Unexpected what="{}")"sv, e.what());
+      LOG(FATAL)(R"(Unexpected what="{}")"_sv, e.what());
     }
   });
 }
@@ -161,7 +161,7 @@ void Gateway::operator()(const json::AggTrade &agg_trade, const server::TraceInf
       .trades = {&trade, 1},
       .exchange_time_utc = agg_trade.event_time,
   };
-  VLOG(3)(R"(trade_summary={})"sv, trade_summary);
+  VLOG(3)(R"(trade_summary={})"_sv, trade_summary);
   create_trace_and_dispatch(trace_info, trade_summary, dispatcher_, true);
 }
 
@@ -180,7 +180,7 @@ void Gateway::operator()(const json::Trade &trade, const server::TraceInfo &trac
       .trades = {&trade_, 1},
       .exchange_time_utc = trade.event_time,
   };
-  VLOG(3)(R"(trade_summary={})"sv, trade_summary);
+  VLOG(3)(R"(trade_summary={})"_sv, trade_summary);
   create_trace_and_dispatch(trace_info, trade_summary, dispatcher_, true);
 }
 
@@ -211,7 +211,7 @@ void Gateway::operator()(const json::MiniTicker &mini_ticker, const server::Trac
       .snapshot = false,
       .exchange_time_utc = mini_ticker.event_time,
   };
-  VLOG(3)("statistics_update={}"sv, statistics_update);
+  VLOG(3)("statistics_update={}"_sv, statistics_update);
   create_trace_and_dispatch(trace_info, statistics_update, dispatcher_, true);
 }
 
@@ -229,7 +229,7 @@ void Gateway::operator()(const json::BookTicker &book_ticker, const server::Trac
       .snapshot = false,
       .exchange_time_utc = {},
   };
-  VLOG(3)(R"(top_of_book={})"sv, top_of_book);
+  VLOG(3)(R"(top_of_book={})"_sv, top_of_book);
   create_trace_and_dispatch(trace_info, top_of_book, dispatcher_, true);
 }
 
@@ -250,7 +250,7 @@ void Gateway::operator()(
   }
   LOG_IF(WARNING, !success)
   (R"(Insufficient bid/ask array size(s): )"
-   R"(symbol="{}", len(bid)={}/{}, len(ask)={}/{})"sv,
+   R"(symbol="{}", len(bid)={}/{}, len(ask)={}/{})"_sv,
    symbol,
    depth.bids.size(),
    bid_.size(),
@@ -264,7 +264,7 @@ void Gateway::operator()(
       .snapshot = true,
       .exchange_time_utc = {},
   };
-  VLOG(3)(R"(market_by_price_update={})"sv, market_by_price_update);
+  VLOG(3)(R"(market_by_price_update={})"_sv, market_by_price_update);
   create_trace_and_dispatch(trace_info, market_by_price_update, dispatcher_, true);
 }
 
@@ -327,8 +327,8 @@ void Gateway::operator()(
         // XXX IMPLEMENT
       });
   if (found == false) {
-    LOG(WARNING)("*** EXTERNAL ORDER ***"sv);
-    LOG(WARNING)("execution_report={}"sv, execution_report);
+    LOG(WARNING)("*** EXTERNAL ORDER ***"_sv);
+    LOG(WARNING)("execution_report={}"_sv, execution_report);
   }
 }
 
@@ -356,7 +356,7 @@ void Gateway::update_market_data(GatewayStatus gateway_status) {
       .status = market_data_status_,
   };
   create_trace_and_dispatch(trace_info, market_data_status, dispatcher_, true);
-  LOG(INFO)("market_data_status={}"sv, market_data_status_);
+  LOG(INFO)("market_data_status={}"_sv, market_data_status_);
 }
 
 void Gateway::update_order_manager(GatewayStatus gateway_status) {
@@ -369,7 +369,7 @@ void Gateway::update_order_manager(GatewayStatus gateway_status) {
       .status = order_manager_status_,
   };
   create_trace_and_dispatch(trace_info, order_manager_status, dispatcher_, true);
-  LOG(INFO)("order_manager_status={}"sv, order_manager_status_);
+  LOG(INFO)("order_manager_status={}"_sv, order_manager_status_);
 }
 
 uint32_t Gateway::download(RestDownload::State state) {
@@ -483,9 +483,9 @@ void Gateway::operator()(const json::ExchangeInfo &exchange_info) {
   assert(symbols_.empty());
   server::TraceInfo trace_info;  // note! not correct (*after* message parsing)
   for (const auto &item : exchange_info.symbols) {
-    VLOG(1)(R"(item={})"sv, item);
+    VLOG(1)(R"(item={})"_sv, item);
     if (dispatcher_.discard_symbol(item.symbol)) {
-      VLOG(1)(R"(Drop symbol="{}")"sv, item.symbol);
+      VLOG(1)(R"(Drop symbol="{}")"_sv, item.symbol);
       continue;
     }
     // note! convert to lowercase
@@ -516,30 +516,30 @@ void Gateway::operator()(const json::ExchangeInfo &exchange_info) {
         .expiry_datetime = {},
         .expiry_datetime_utc = {},
     };
-    VLOG(1)(R"(reference_data={})"sv, reference_data);
+    VLOG(1)(R"(reference_data={})"_sv, reference_data);
     create_trace_and_dispatch(trace_info, reference_data, dispatcher_, false);
     MarketStatus market_status{
         .exchange = Flags::exchange(),
         .symbol = item.symbol,
         .trading_status = json::map(item.status),
     };
-    VLOG(1)(R"(market_status={})"sv, market_status);
+    VLOG(1)(R"(market_status={})"_sv, market_status);
     create_trace_and_dispatch(trace_info, market_status, dispatcher_, true);
   }
   LOG(INFO)
-  ("Exchange info: including symbols {}/{}"sv, symbols_.size(), exchange_info.symbols.size());
+  ("Exchange info: including symbols {}/{}"_sv, symbols_.size(), exchange_info.symbols.size());
 }
 
 void Gateway::operator()(const json::ListenKey &listen_key) {
   auto &value = listen_key.listen_key;
   auto same = listen_key_.compare(value) == 0;
   if (same) {
-    LOG(INFO)("Listen key has been refreshed!"sv);
+    LOG(INFO)("Listen key has been refreshed!"_sv);
   } else if (listen_key_.empty()) {
     listen_key_ = value;
-    LOG(INFO)(R"(Listen key has been acquired (value="{}"))"sv, listen_key_);
+    LOG(INFO)(R"(Listen key has been acquired (value="{}"))"_sv, listen_key_);
   } else {
-    LOG(FATAL)("Unexpected"sv);
+    LOG(FATAL)("Unexpected"_sv);
     // XXX should we recreate user_stream_ ?
   }
   auto now = core::get_system_clock();
@@ -564,13 +564,13 @@ void Gateway::refresh_listen_key() {
   auto now = core::get_system_clock();
   if (listen_key_refresh_ == listen_key_refresh_.zero() || now < listen_key_refresh_)
     return;
-  LOG(INFO)("Refreshing listen key..."sv);
+  LOG(INFO)("Refreshing listen key..."_sv);
   listen_key_refresh_ = now + std::chrono::seconds{Flags::rest_listen_key_refresh_secs()};
   rest_.connection.get<json::ListenKey>([this](auto &promise) {
     try {
       (*this)(promise.get());
     } catch (NetworkError &) {
-      LOG(WARNING)("Rescheduling listen key refresh!"sv);
+      LOG(WARNING)("Rescheduling listen key refresh!"_sv);
       auto now = core::get_system_clock();
       listen_key_refresh_ = now + std::chrono::seconds{DEFAULT_LISTEN_KEY_REFRESH_SECS};
     }
