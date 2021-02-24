@@ -21,39 +21,36 @@ namespace roq {
 namespace binance {
 
 namespace {
-constexpr std::string_view CONNECTION = "rest"_sv;
+static const auto CONNECTION = "rest"_sv;
 
-static const std::string_view ACCEPT_ALL = "*/*"_sv;
-static const std::string_view ACCEPT_JSON = "application/json"_sv;
+static const auto ACCEPT_ALL = "*/*"_sv;
+static const auto ACCEPT_JSON = "application/json"_sv;
+static const auto CONTENT_TYPE_JSON = "application/json"_sv;
 
-static const std::string_view CONTENT_TYPE_JSON = "application/json"_sv;
+class create_metrics final {
+ public:
+  explicit create_metrics(const std::string_view &function) : function_(function) {}
+  create_metrics(create_metrics &&) = default;
+  create_metrics(const create_metrics &) = delete;
+  template <typename T>
+  operator T() {
+    return T(Flags::name(), CONNECTION, function_);
+  }
 
-static auto create_counter(const std::string_view &function) {
-  return core::metrics::Counter(Flags::name(), CONNECTION, function);
-}
-
-static auto create_profile(const std::string_view &function) {
-  return core::metrics::Profile(Flags::name(), CONNECTION, function);
-}
-
-static auto create_latency(const std::string_view &function) {
-  return core::metrics::Latency(Flags::name(), CONNECTION, function);
-}
+ private:
+  std::string_view function_;
+};
 }  // namespace
 
 Rest::Rest(
     Handler &handler,
     [[maybe_unused]] const Config &config,
     Random &random,
-    core::event::Base &base,
-    core::event::DNSBase &dns_base,
-    core::ssl::Context &ssl_context)
+    core::io::Context &context)
     : handler_(handler), random_(random), api_key_(config.get_api_key()),
       connection_(
           *this,
-          base,
-          dns_base,
-          ssl_context,
+          context,
           core::URI(Flags::rest_uri()),
           ROQ_PACKAGE_NAME,
           true,  // keep alive
@@ -67,18 +64,18 @@ Rest::Rest(
           Flags::rest_ping_path()),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
-          .disconnect = create_counter("disconnect"_sv),
+          .disconnect = create_metrics("disconnect"_sv),
       },
       profile_{
-          .exchange_info = create_profile("exchange_info"_sv),
-          .account = create_profile("account"_sv),
-          .listen_key = create_profile("listen_key"_sv),
-          .depth = create_profile("depth"_sv),
-          .new_order = create_profile("new_order"_sv),
-          .cancel_order = create_profile("cancel_order"_sv),
+          .exchange_info = create_metrics("exchange_info"_sv),
+          .account = create_metrics("account"_sv),
+          .listen_key = create_metrics("listen_key"_sv),
+          .depth = create_metrics("depth"_sv),
+          .new_order = create_metrics("new_order"_sv),
+          .cancel_order = create_metrics("cancel_order"_sv),
       },
       latency_{
-          .ping = create_latency("ping"_sv),
+          .ping = create_metrics("ping"_sv),
       } {
 }
 

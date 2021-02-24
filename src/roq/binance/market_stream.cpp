@@ -19,40 +19,40 @@ namespace roq {
 namespace binance {
 
 namespace {
-constexpr std::string_view CONNECTION = "market_stream"_sv;
+static const auto CONNECTION = "market_stream"_sv;
 
 static auto create_connection_name(uint32_t market_stream_id) {
   return roq::format("{}_{}"_fmt, CONNECTION, market_stream_id);
 }
 
-static auto create_counter(const std::string_view &name, const std::string_view &function) {
-  return core::metrics::Counter(Flags::name(), name, function);
-}
+class create_metrics final {
+ public:
+  create_metrics(const std::string_view &name, const std::string_view &function)
+      : name_(name), function_(function) {}
+  create_metrics(create_metrics &&) = default;
+  create_metrics(const create_metrics &) = delete;
+  template <typename T>
+  operator T() {
+    return T(Flags::name(), name_, function_);
+  }
 
-static auto create_profile(const std::string_view &name, const std::string_view &function) {
-  return core::metrics::Profile(Flags::name(), name, function);
-}
-
-static auto create_latency(const std::string_view &name, const std::string_view &function) {
-  return core::metrics::Latency(Flags::name(), name, function);
-}
+ private:
+  std::string_view name_;
+  std::string_view function_;
+};
 }  // namespace
 
 MarketStream::MarketStream(
     Handler &handler,
     Random &random,
-    core::event::Base &base,
-    core::event::DNSBase &dns_base,
-    core::ssl::Context &ssl_context,
+    core::io::Context &context,
     uint32_t market_stream_id,
     std::vector<std::string> &&symbols)
     : handler_(handler), market_stream_id_(market_stream_id), symbols_(std::move(symbols)),
       name_(create_connection_name(market_stream_id)), random_(random),
       connection_(
           *this,
-          base,
-          dns_base,
-          ssl_context,
+          context,
           core::URI(Flags::ws_uri()),
           std::string_view(),  // query
           std::chrono::seconds{Flags::ws_ping_freq_secs()},
@@ -61,22 +61,22 @@ MarketStream::MarketStream(
           []() { return std::string(); }),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
-          .disconnect = create_counter(name_, "disconnect"_sv),
+          .disconnect = create_metrics(name_, "disconnect"_sv),
       },
       profile_{
-          .parse = create_profile(name_, "parse"_sv),
-          .error = create_profile(name_, "error"_sv),
-          .result = create_profile(name_, "result"_sv),
-          .agg_trade = create_profile(name_, "agg_trade"_sv),
-          .trade = create_profile(name_, "trade"_sv),
-          .mini_ticker = create_profile(name_, "mini_ticker"_sv),
-          .book_ticker = create_profile(name_, "book_ticker"_sv),
-          .depth = create_profile(name_, "depth"_sv),
-          .depth_update = create_profile(name_, "depth_update"_sv),
+          .parse = create_metrics(name_, "parse"_sv),
+          .error = create_metrics(name_, "error"_sv),
+          .result = create_metrics(name_, "result"_sv),
+          .agg_trade = create_metrics(name_, "agg_trade"_sv),
+          .trade = create_metrics(name_, "trade"_sv),
+          .mini_ticker = create_metrics(name_, "mini_ticker"_sv),
+          .book_ticker = create_metrics(name_, "book_ticker"_sv),
+          .depth = create_metrics(name_, "depth"_sv),
+          .depth_update = create_metrics(name_, "depth_update"_sv),
       },
       latency_{
-          .ping = create_latency(name_, "ping"_sv),
-          .heartbeat = create_latency(name_, "heartbeat"_sv),
+          .ping = create_metrics(name_, "ping"_sv),
+          .heartbeat = create_metrics(name_, "heartbeat"_sv),
       } {
 }
 
@@ -199,11 +199,9 @@ void MarketStream::operator()(metrics::Writer &writer) {
 }
 
 void MarketStream::operator()(const core::web::Socket::Connected &) {
-  // handler_(*this);
 }
 
 void MarketStream::operator()(const core::web::Socket::Disconnected &) {
-  // handler_(*this);
   ++counter_.disconnect;
 }
 

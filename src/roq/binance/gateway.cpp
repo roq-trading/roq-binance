@@ -24,11 +24,10 @@ using namespace roq::literals;
 namespace roq {
 namespace binance {
 
-constexpr auto DEFAULT_MULTIPLIER = double{1.0};
-
-constexpr auto TOLERANCE = double{1.0e-10};
-
-constexpr auto DEFAULT_LISTEN_KEY_REFRESH_SECS = uint32_t{2};
+namespace {
+constexpr auto DEFAULT_MULTIPLIER = 1.0;
+constexpr auto TOLERANCE = 1.0e-10;
+constexpr auto DEFAULT_LISTEN_KEY_REFRESH_SECS = uint32_t{2u};
 
 template <typename C, typename T>
 static bool mbp_update(C &data, size_t &offset, const T &item) {
@@ -42,19 +41,18 @@ static bool mbp_update(C &data, size_t &offset, const T &item) {
   ++offset;
   return offset <= data.size();
 }
+}  // namespace
 
 Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
     : dispatcher_(dispatcher), account_(config.get_account()),
-      random_(config.get_api_key(), config.get_secret()), dns_base_(base_, true),
+      random_(config.get_api_key(), config.get_secret()),
       rest_{
           .connection =
               {
                   *this,
                   config,
                   random_,
-                  base_,
-                  dns_base_,
-                  ssl_context_,
+                  context_,
               },
           .download = RestDownload(
               std::chrono::seconds{Flags::rest_request_timeout_secs()},
@@ -90,7 +88,7 @@ void Gateway::operator()(const Event<Timer> &event) {
   if (static_cast<bool>(user_stream_))
     (*user_stream_)(event);
   refresh_listen_key();
-  base_.loop(EVLOOP_NONBLOCK);
+  context_.dispatch(true);
 }
 
 void Gateway::operator()(const Event<Connection> &) {
@@ -431,7 +429,7 @@ void Gateway::subscribe_market_streams() {
       symbols.emplace_back(*iter);
     }
     auto market_stream_ptr = std::make_unique<MarketStream>(
-        *this, random_, base_, dns_base_, ssl_context_, ++market_stream_id_, std::move(symbols));
+        *this, random_, context_, ++market_stream_id_, std::move(symbols));
     MessageInfo message_info;  // XXX something sensible
     Start start;
     create_event_and_dispatch(*market_stream_ptr, message_info, start);
@@ -457,8 +455,7 @@ void Gateway::download_listen_key() {
 void Gateway::subscribe_user_stream() {
   assert(listen_key_.empty() == false);
   assert(static_cast<bool>(user_stream_) == false);
-  user_stream_ =
-      std::make_unique<UserStream>(*this, random_, base_, dns_base_, ssl_context_, listen_key_);
+  user_stream_ = std::make_unique<UserStream>(*this, random_, context_, listen_key_);
   MessageInfo message_info;  // XXX something sensible
   Start start;
   create_event_and_dispatch(*user_stream_, message_info, start);

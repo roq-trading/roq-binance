@@ -11,8 +11,7 @@
 #include "roq/core/metrics/latency.h"
 #include "roq/core/metrics/profile.h"
 
-#include "roq/core/event/base.h"
-#include "roq/core/event/dns_base.h"
+#include "roq/core/io/context.h"
 
 #include "roq/core/web/socket.h"
 
@@ -44,9 +43,7 @@ class MarketStream final : public core::web::Socket::Handler,
   MarketStream(
       Handler &handler,
       Random &random,
-      core::event::Base &base,
-      core::event::DNSBase &dns_base,
-      core::ssl::Context &ssl_context,
+      core::io::Context &context,
       uint32_t market_stream_id,
       std::vector<std::string> &&symbols);
 

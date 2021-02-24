@@ -19,38 +19,36 @@ namespace roq {
 namespace binance {
 
 namespace {
+static const auto CONNECTION = "user_stream"_sv;
+
 static auto create_query(const std::string_view &listen_key) {
   return roq::format("?streams={}"_fmt, listen_key);
 }
 
-constexpr std::string_view CONNECTION = "user_stream"_sv;
+class create_metrics final {
+ public:
+  explicit create_metrics(const std::string_view &function) : function_(function) {}
+  create_metrics(create_metrics &&) = default;
+  create_metrics(const create_metrics &) = delete;
+  template <typename T>
+  operator T() {
+    return T(Flags::name(), CONNECTION, function_);
+  }
 
-static auto create_counter(const std::string_view &function) {
-  return core::metrics::Counter(Flags::name(), CONNECTION, function);
-}
-
-static auto create_profile(const std::string_view &function) {
-  return core::metrics::Profile(Flags::name(), CONNECTION, function);
-}
-
-static auto create_latency(const std::string_view &function) {
-  return core::metrics::Latency(Flags::name(), CONNECTION, function);
-}
+ private:
+  std::string_view function_;
+};
 }  // namespace
 
 UserStream::UserStream(
     Handler &handler,
     Random &random,
-    core::event::Base &base,
-    core::event::DNSBase &dns_base,
-    core::ssl::Context &ssl_context,
+    core::io::Context &context,
     const std::string_view &listen_key)
     : handler_(handler), query_(create_query(listen_key)), random_(random),
       connection_(
           *this,
-          base,
-          dns_base,
-          ssl_context,
+          context,
           core::URI(Flags::ws_uri()),
           query_,
           std::chrono::seconds{Flags::ws_ping_freq_secs()},
@@ -59,18 +57,18 @@ UserStream::UserStream(
           []() { return std::string(); }),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
-          .disconnect = create_counter("disconnect"_sv),
+          .disconnect = create_metrics("disconnect"_sv),
       },
       profile_{
-          .parse = create_profile("parse"_sv),
-          .outbound_account_info = create_profile("outbound_account_info"_sv),
-          .outbound_account_position = create_profile("outbound_account_position"_sv),
-          .balance_update = create_profile("balance_update"_sv),
-          .execution_report = create_profile("execution_report"_sv),
+          .parse = create_metrics("parse"_sv),
+          .outbound_account_info = create_metrics("outbound_account_info"_sv),
+          .outbound_account_position = create_metrics("outbound_account_position"_sv),
+          .balance_update = create_metrics("balance_update"_sv),
+          .execution_report = create_metrics("execution_report"_sv),
       },
       latency_{
-          .ping = create_latency("ping"_sv),
-          .heartbeat = create_latency("heartbeat"_sv),
+          .ping = create_metrics("ping"_sv),
+          .heartbeat = create_metrics("heartbeat"_sv),
       } {
 }
 

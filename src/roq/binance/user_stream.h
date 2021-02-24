@@ -11,8 +11,7 @@
 #include "roq/core/metrics/latency.h"
 #include "roq/core/metrics/profile.h"
 
-#include "roq/core/event/base.h"
-#include "roq/core/event/dns_base.h"
+#include "roq/core/io/context.h"
 
 #include "roq/core/web/socket.h"
 
@@ -37,9 +36,7 @@ class UserStream final : public core::web::Socket::Handler, public json::UserStr
   UserStream(
       Handler &handler,
       Random &random,
-      core::event::Base &base,
-      core::event::DNSBase &dns_base,
-      core::ssl::Context &ssl_context,
+      core::io::Context &context,
       const std::string_view &listen_key);
 
   UserStream(UserStream &&) = delete;

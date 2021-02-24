@@ -15,10 +15,7 @@
 #include "roq/download.h"
 #include "roq/server.h"
 
-#include "roq/core/ssl/ssl.h"
-
-#include "roq/core/event/base.h"
-#include "roq/core/event/dns_base.h"
+#include "roq/core/io/context.h"
 
 #include "roq/binance/config.h"
 #include "roq/binance/random.h"
@@ -140,18 +137,15 @@ class Gateway final : public server::Handler,
   const std::string account_;
   // authentication
   Random random_;
-  // async
-  core::event::Base base_;
-  core::event::DNSBase dns_base_;
-  // crypto
-  core::ssl::Context ssl_context_;
+  // io
+  core::io::Context context_;
   // connections
   struct {
     Rest connection;
     RestDownload download;
   } rest_;
   // ... market streams
-  uint32_t market_stream_id_ = 0;
+  uint32_t market_stream_id_ = {};
   std::list<std::unique_ptr<MarketStream> > market_streams_;
   // ... user streams
   std::string listen_key_;
