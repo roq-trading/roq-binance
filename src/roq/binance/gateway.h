@@ -18,7 +18,7 @@
 #include "roq/core/io/context.h"
 
 #include "roq/binance/config.h"
-#include "roq/binance/random.h"
+#include "roq/binance/security.h"
 
 #include "roq/binance/market_stream.h"
 #include "roq/binance/user_stream.h"
@@ -116,27 +116,12 @@ class Gateway final : public server::Handler,
 
   void refresh_listen_key();
 
-  /*
-  template <typename T>
-  void enqueue(
-      const T& event,
-      const server::Trace& trace,
-      bool is_last);
-
-  template <typename T>
-  void enqueue(
-      uint8_t user_id,
-      const T& event,
-      const server::Trace& trace,
-      bool is_last);
-      */
-
  private:
   server::Dispatcher &dispatcher_;
   // config
   const std::string account_;
-  // authentication
-  Random random_;
+  // security
+  Security security_;
   // io
   core::io::Context context_;
   // connections

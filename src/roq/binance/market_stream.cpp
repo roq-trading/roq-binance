@@ -44,12 +44,11 @@ class create_metrics final {
 
 MarketStream::MarketStream(
     Handler &handler,
-    Random &random,
     core::io::Context &context,
     uint32_t market_stream_id,
     std::vector<std::string> &&symbols)
     : handler_(handler), market_stream_id_(market_stream_id), symbols_(std::move(symbols)),
-      name_(create_connection_name(market_stream_id)), random_(random),
+      name_(create_connection_name(market_stream_id)),
       connection_(
           *this,
           context,
@@ -97,8 +96,8 @@ void MarketStream::operator()(const Event<Timer> &event) {
 }
 
 size_t MarketStream::capacity() const {
-  assert(Flags::ws_max_subscriptions_per_stream() > 0);
-  size_t max_length = Flags::ws_max_subscriptions_per_stream() / 4;
+  assert(Flags::ws_max_subscriptions_per_stream() > 0u);
+  size_t max_length = Flags::ws_max_subscriptions_per_stream() / 4u;
   assert(max_length >= symbols_.size());
   return max_length - symbols_.size();
 }

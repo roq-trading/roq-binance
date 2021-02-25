@@ -41,11 +41,8 @@ class create_metrics final {
 }  // namespace
 
 UserStream::UserStream(
-    Handler &handler,
-    Random &random,
-    core::io::Context &context,
-    const std::string_view &listen_key)
-    : handler_(handler), query_(create_query(listen_key)), random_(random),
+    Handler &handler, core::io::Context &context, const std::string_view &listen_key)
+    : handler_(handler), query_(create_query(listen_key)),
       connection_(
           *this,
           context,

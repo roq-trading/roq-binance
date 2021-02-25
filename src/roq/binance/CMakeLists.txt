@@ -6,8 +6,8 @@ set(SOURCES
     flags.cpp
     gateway.cpp
     market_stream.cpp
-    random.cpp
     rest.cpp
+    security.cpp
     user_stream.cpp
     main.cpp)
 

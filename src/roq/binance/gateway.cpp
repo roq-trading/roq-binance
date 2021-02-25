@@ -25,9 +25,9 @@ namespace roq {
 namespace binance {
 
 namespace {
-constexpr auto DEFAULT_MULTIPLIER = 1.0;
-constexpr auto TOLERANCE = 1.0e-10;
-constexpr auto DEFAULT_LISTEN_KEY_REFRESH_SECS = uint32_t{2u};
+constexpr const auto DEFAULT_MULTIPLIER = 1.0;
+constexpr const auto TOLERANCE = 1.0e-10;
+constexpr const auto DEFAULT_LISTEN_KEY_REFRESH = std::chrono::seconds{2};
 
 template <typename C, typename T>
 static bool mbp_update(C &data, size_t &offset, const T &item) {
@@ -44,14 +44,13 @@ static bool mbp_update(C &data, size_t &offset, const T &item) {
 }  // namespace
 
 Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
-    : dispatcher_(dispatcher), account_(config.get_account()),
-      random_(config.get_api_key(), config.get_secret()),
+    : dispatcher_(dispatcher), account_(config.get_account()), security_(config),
       rest_{
           .connection =
               {
                   *this,
                   config,
-                  random_,
+                  security_,
                   context_,
               },
           .download = RestDownload(
@@ -156,7 +155,7 @@ void Gateway::operator()(const json::AggTrade &agg_trade, const server::TraceInf
   TradeSummary trade_summary{
       .exchange = Flags::exchange(),
       .symbol = agg_trade.symbol,
-      .trades = {&trade, 1},
+      .trades = {&trade, 1u},
       .exchange_time_utc = agg_trade.event_time,
   };
   VLOG(3)(R"(trade_summary={})"_fmt, trade_summary);
@@ -175,7 +174,7 @@ void Gateway::operator()(const json::Trade &trade, const server::TraceInfo &trac
   TradeSummary trade_summary{
       .exchange = Flags::exchange(),
       .symbol = trade.symbol,
-      .trades = {&trade_, 1},
+      .trades = {&trade_, 1u},
       .exchange_time_utc = trade.event_time,
   };
   VLOG(3)(R"(trade_summary={})"_fmt, trade_summary);
@@ -184,24 +183,12 @@ void Gateway::operator()(const json::Trade &trade, const server::TraceInfo &trac
 
 void Gateway::operator()(const json::MiniTicker &mini_ticker, const server::TraceInfo &trace_info) {
   Statistics statistics[] = {
-      {
-          .type = StatisticsType::HIGHEST_TRADED_PRICE,
-          .value = mini_ticker.high_price,
-      },
-      {
-          .type = StatisticsType::LOWEST_TRADED_PRICE,
-          .value = mini_ticker.low_price,
-      },
-      {
-          .type = StatisticsType::OPEN_PRICE,
-          .value = mini_ticker.open_price,
-      },
-      {
-          .type = StatisticsType::CLOSE_PRICE,
-          .value = mini_ticker.close_price,
-      },
+      {.type = StatisticsType::HIGHEST_TRADED_PRICE, .value = mini_ticker.high_price},
+      {.type = StatisticsType::LOWEST_TRADED_PRICE, .value = mini_ticker.low_price},
+      {.type = StatisticsType::OPEN_PRICE, .value = mini_ticker.open_price},
+      {.type = StatisticsType::CLOSE_PRICE, .value = mini_ticker.close_price},
   };
-  static_assert(std::size(statistics) == 4);  // just checking...
+  static_assert(std::size(statistics) == 4u);  // just checking...
   StatisticsUpdate statistics_update{
       .exchange = Flags::exchange(),
       .symbol = mini_ticker.symbol,
@@ -234,13 +221,13 @@ void Gateway::operator()(const json::BookTicker &book_ticker, const server::Trac
 void Gateway::operator()(
     const std::string_view &symbol, const json::Depth &depth, const server::TraceInfo &trace_info) {
   bool success = true;
-  size_t bid_length = 0;
+  size_t bid_length = {};
   for (auto &item : depth.bids) {
     if (success == false)
       break;
     success = mbp_update(bid_, bid_length, item);
   }
-  size_t ask_length = 0;
+  size_t ask_length = {};
   for (auto &item : depth.asks) {
     if (success == false)
       break;
@@ -377,25 +364,25 @@ uint32_t Gateway::download(RestDownload::State state) {
       break;
     case RestDownload::State::EXCHANGE_INFO:
       download_exchange_info();
-      return 1;
+      return 1u;
     case RestDownload::State::MARKET_STREAM:
       subscribe_market_streams();
-      return 0;
+      return 0u;
     case RestDownload::State::LISTEN_KEY:
       download_listen_key();
-      return 1;
+      return 1u;
     case RestDownload::State::USER_STREAM:
       subscribe_user_stream();
-      return 0;
+      return 0u;
     case RestDownload::State::ACCOUNT:
       download_account();
-      return 1;
+      return 1u;
     case RestDownload::State::DONE:
       // update(GatewayStatus::READY);
-      return 0;
+      return 0u;
   }
   assert(false);
-  return 0;
+  return 0u;
 }
 
 void Gateway::download_exchange_info() {
@@ -419,17 +406,17 @@ void Gateway::subscribe_market_streams() {
   assert(Flags::ws_max_subscriptions_per_stream() > 0);
   size_t max_length = Flags::ws_max_subscriptions_per_stream() / 4;
   auto iter = symbols_.begin();
-  for (size_t major = 0; major < symbols_.size(); major += max_length) {
+  for (size_t major = {}; major < symbols_.size(); major += max_length) {
     auto minor_length = std::min(symbols_.size() - major, max_length);
-    assert(minor_length > 0);
+    assert(minor_length > 0u);
     std::vector<std::string> symbols;
     symbols.reserve(max_length);
-    for (size_t minor = 0; minor < minor_length; ++minor, ++iter) {
+    for (size_t minor = {}; minor < minor_length; ++minor, ++iter) {
       assert(iter != symbols_.end());
       symbols.emplace_back(*iter);
     }
-    auto market_stream_ptr = std::make_unique<MarketStream>(
-        *this, random_, context_, ++market_stream_id_, std::move(symbols));
+    auto market_stream_ptr =
+        std::make_unique<MarketStream>(*this, context_, ++market_stream_id_, std::move(symbols));
     MessageInfo message_info;  // XXX something sensible
     Start start;
     create_event_and_dispatch(*market_stream_ptr, message_info, start);
@@ -455,7 +442,7 @@ void Gateway::download_listen_key() {
 void Gateway::subscribe_user_stream() {
   assert(listen_key_.empty() == false);
   assert(static_cast<bool>(user_stream_) == false);
-  user_stream_ = std::make_unique<UserStream>(*this, random_, context_, listen_key_);
+  user_stream_ = std::make_unique<UserStream>(*this, context_, listen_key_);
   MessageInfo message_info;  // XXX something sensible
   Start start;
   create_event_and_dispatch(*user_stream_, message_info, start);
@@ -569,36 +556,10 @@ void Gateway::refresh_listen_key() {
     } catch (NetworkError &) {
       LOG(WARNING)("Rescheduling listen key refresh!"_sv);
       auto now = core::get_system_clock();
-      listen_key_refresh_ = now + std::chrono::seconds{DEFAULT_LISTEN_KEY_REFRESH_SECS};
+      listen_key_refresh_ = now + DEFAULT_LISTEN_KEY_REFRESH;
     }
   });
 }
-
-/*
-template <typename T>
-void Gateway::enqueue(
-    const T& event,
-    const server::Trace& trace,
-    bool is_last) {
-  dispatcher_(
-      event,
-      trace,
-      is_last);
-}
-
-template <typename T>
-void Gateway::enqueue(
-    uint8_t user_id,
-    const T& event,
-    const server::Trace& trace,
-    bool is_last) {
-  dispatcher_(
-      user_id,
-      event,
-      trace,
-      is_last);
-}
-*/
 
 }  // namespace binance
 }  // namespace roq

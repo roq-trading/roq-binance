@@ -17,8 +17,6 @@
 
 #include "roq/server.h"
 
-#include "roq/binance/random.h"
-
 #include "roq/binance/json/user_stream_parser.h"
 
 namespace roq {
@@ -33,11 +31,7 @@ class UserStream final : public core::web::Socket::Handler, public json::UserStr
     virtual void operator()(const json::BalanceUpdate &, const server::TraceInfo &) = 0;
     virtual void operator()(const json::ExecutionReport &, const server::TraceInfo &) = 0;
   };
-  UserStream(
-      Handler &handler,
-      Random &random,
-      core::io::Context &context,
-      const std::string_view &listen_key);
+  UserStream(Handler &handler, core::io::Context &context, const std::string_view &listen_key);
 
   UserStream(UserStream &&) = delete;
   UserStream(const UserStream &) = delete;
@@ -69,14 +63,10 @@ class UserStream final : public core::web::Socket::Handler, public json::UserStr
   Handler &handler_;
   // config
   const std::string query_;
-  // authentication
-  Random &random_;
   // web socket
   core::web::Socket connection_;
   // buffers
   core::utils::Buffer decode_buffer_;
-  // session
-  // uint64_t request_id_ = 0;
   // metrics
   struct {
     core::metrics::Counter disconnect;

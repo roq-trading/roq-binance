@@ -17,8 +17,6 @@
 
 #include "roq/server.h"
 
-#include "roq/binance/random.h"
-
 #include "roq/binance/json/market_stream_parser.h"
 
 namespace roq {
@@ -42,7 +40,6 @@ class MarketStream final : public core::web::Socket::Handler,
   };
   MarketStream(
       Handler &handler,
-      Random &random,
       core::io::Context &context,
       uint32_t market_stream_id,
       std::vector<std::string> &&symbols);
@@ -110,8 +107,6 @@ class MarketStream final : public core::web::Socket::Handler,
   const uint32_t market_stream_id_;
   std::vector<std::string> symbols_;
   const std::string name_;
-  // authentication
-  Random &random_;
   // web socket
   core::web::Socket connection_;
   // buffers

@@ -45,9 +45,9 @@ class create_metrics final {
 Rest::Rest(
     Handler &handler,
     [[maybe_unused]] const Config &config,
-    Random &random,
+    Security &security,
     core::io::Context &context)
-    : handler_(handler), random_(random), api_key_(config.get_api_key()),
+    : handler_(handler), security_(security),
       connection_(
           *this,
           context,
@@ -147,11 +147,9 @@ void Rest::get(std::function<void(const core::Promise<json::Account> &)> &&callb
   constexpr auto method = core::http::Method::GET;
   constexpr std::string_view path = "/api/v3/account"_sv;
   auto now = core::get_realtime_clock();
-  auto timestamp = roq::format(
-      R"(timestamp={})"_fmt, std::chrono::duration_cast<std::chrono::milliseconds>(now).count());
-  auto signature = random_.create_signature(timestamp);
+  auto [timestamp, signature] = security_.create_signature(now);
   auto query = roq::format(R"(?{}&signature={})"_fmt, timestamp, signature);
-  auto headers = roq::format("X-MBX-APIKEY: {}\r\n"_fmt, api_key_);
+  auto headers = roq::format("X-MBX-APIKEY: {}\r\n"_fmt, security_.get_api_key());
   connection_.request(
       method,
       path,
@@ -183,7 +181,7 @@ template <>
 void Rest::get(std::function<void(const core::Promise<json::ListenKey> &)> &&callback) {
   constexpr auto method = core::http::Method::POST;
   constexpr std::string_view path = "/api/v3/userDataStream"_sv;
-  auto headers = roq::format("X-MBX-APIKEY: {}\r\n"_fmt, api_key_);
+  auto headers = roq::format("X-MBX-APIKEY: {}\r\n"_fmt, security_.get_api_key());
   connection_.request(
       method,
       path,
@@ -278,7 +276,7 @@ void Rest::create_order(
       Flags::rest_order_recv_window_msecs(),
       timestamp.count());
   DLOG(INFO)(R"(body="{}")"_fmt, message);
-  auto headers = roq::format("X-MBX-APIKEY: {}\r\n"_fmt, api_key_);
+  auto headers = roq::format("X-MBX-APIKEY: {}\r\n"_fmt, security_.get_api_key());
   connection_.request(
       method,
       path,
@@ -329,7 +327,7 @@ void Rest::cancel_order(
       Flags::rest_order_recv_window_msecs(),
       timestamp.count());
   DLOG(INFO)(R"(body="{}")"_fmt, message);
-  auto headers = roq::format("X-MBX-APIKEY: {}\r\n"_fmt, api_key_);
+  auto headers = roq::format("X-MBX-APIKEY: {}\r\n"_fmt, security_.get_api_key());
   connection_.request(
       method,
       path,
