@@ -149,102 +149,102 @@ namespace roq {
 namespace binance {
 
 std::string_view Flags::config_file() {
-  static const std::string result = absl::GetFlag(FLAGS_config_file);
+  static const std::string result{absl::GetFlag(FLAGS_config_file)};
   return result;
 }
 
 std::string_view Flags::exchange() {
-  static const std::string result = absl::GetFlag(FLAGS_exchange);
+  static const std::string result{absl::GetFlag(FLAGS_exchange)};
   return result;
 }
 
-std::string_view Flags::rest_uri() {
-  static const std::string result = absl::GetFlag(FLAGS_rest_uri);
+const core::URI &Flags::rest_uri() {
+  static const core::URI result{absl::GetFlag(FLAGS_rest_uri)};
   return result;
 }
 
-uint32_t Flags::rest_ping_freq_secs() {
-  static const uint32_t result = absl::GetFlag(FLAGS_rest_ping_freq_secs);
+std::chrono::seconds Flags::rest_ping_freq() {
+  static const std::chrono::seconds result{absl::GetFlag(FLAGS_rest_ping_freq_secs)};
   return result;
 }
 
 std::string_view Flags::rest_ping_path() {
-  static const std::string result = absl::GetFlag(FLAGS_rest_ping_path);
+  static const std::string result{absl::GetFlag(FLAGS_rest_ping_path)};
   return result;
 }
 
 uint32_t Flags::rest_request_queue_depth() {
-  static const uint32_t result = absl::GetFlag(FLAGS_rest_request_queue_depth);
+  static const uint32_t result{absl::GetFlag(FLAGS_rest_request_queue_depth)};
   return result;
 }
 
-uint32_t Flags::rest_request_timeout_secs() {
-  static const uint32_t result = absl::GetFlag(FLAGS_rest_request_timeout_secs);
+std::chrono::seconds Flags::rest_request_timeout() {
+  static const std::chrono::seconds result{absl::GetFlag(FLAGS_rest_request_timeout_secs)};
   return result;
 }
 
-uint32_t Flags::rest_rate_limit_interval_secs() {
-  static const uint32_t result = absl::GetFlag(FLAGS_rest_rate_limit_interval_secs);
+std::chrono::seconds Flags::rest_rate_limit_interval() {
+  static const std::chrono::seconds result{absl::GetFlag(FLAGS_rest_rate_limit_interval_secs)};
   return result;
 }
 
 uint32_t Flags::rest_rate_limit_max_requests() {
-  static const uint32_t result = absl::GetFlag(FLAGS_rest_rate_limit_max_requests);
+  static const uint32_t result{absl::GetFlag(FLAGS_rest_rate_limit_max_requests)};
   return result;
 }
 
-uint32_t Flags::rest_listen_key_refresh_secs() {
-  static const uint32_t result = absl::GetFlag(FLAGS_rest_listen_key_refresh_secs);
+std::chrono::seconds Flags::rest_listen_key_refresh() {
+  static const std::chrono::seconds result{absl::GetFlag(FLAGS_rest_listen_key_refresh_secs)};
   return result;
 }
 
-uint32_t Flags::rest_order_recv_window_msecs() {
-  static const uint32_t result = absl::GetFlag(FLAGS_rest_order_recv_window_msecs);
+std::chrono::milliseconds Flags::rest_order_recv_window() {
+  static const std::chrono::milliseconds result{absl::GetFlag(FLAGS_rest_order_recv_window_msecs)};
   return result;
 }
 
 bool Flags::rest_cancel_on_disconnect() {
-  static const bool result = absl::GetFlag(FLAGS_rest_cancel_on_disconnect);
+  static const bool result{absl::GetFlag(FLAGS_rest_cancel_on_disconnect)};
   return result;
 }
 
-std::string_view Flags::ws_uri() {
-  static const std::string result = absl::GetFlag(FLAGS_ws_uri);
+const core::URI &Flags::ws_uri() {
+  static const core::URI result{absl::GetFlag(FLAGS_ws_uri)};
   return result;
 }
 
-uint32_t Flags::ws_ping_freq_secs() {
-  static const uint32_t result = absl::GetFlag(FLAGS_ws_ping_freq_secs);
+std::chrono::seconds Flags::ws_ping_freq() {
+  static const std::chrono::seconds result{absl::GetFlag(FLAGS_ws_ping_freq_secs)};
   return result;
 }
 
 uint32_t Flags::ws_max_subscriptions_per_stream() {
-  static const uint32_t result = absl::GetFlag(FLAGS_ws_max_subscriptions_per_stream);
+  static const uint32_t result{absl::GetFlag(FLAGS_ws_max_subscriptions_per_stream)};
   return result;
 }
 
 uint32_t Flags::ws_subscribe_depth_levels() {
-  static const uint32_t result = absl::GetFlag(FLAGS_ws_subscribe_depth_levels);
+  static const uint32_t result{absl::GetFlag(FLAGS_ws_subscribe_depth_levels)};
   return result;
 }
 
-uint32_t Flags::ws_subscribe_depth_freq_msecs() {
-  static const uint32_t result = absl::GetFlag(FLAGS_ws_subscribe_depth_freq_msecs);
+std::chrono::milliseconds Flags::ws_subscribe_depth_freq() {
+  static const std::chrono::milliseconds result{absl::GetFlag(FLAGS_ws_subscribe_depth_freq_msecs)};
   return result;
 }
 
 bool Flags::ws_subscribe_trade_details() {
-  static const bool result = absl::GetFlag(FLAGS_ws_subscribe_trade_details);
+  static const bool result{absl::GetFlag(FLAGS_ws_subscribe_trade_details)};
   return result;
 }
 
 uint32_t Flags::encode_buffer_size() {
-  static const uint32_t result = absl::GetFlag(FLAGS_encode_buffer_size);
+  static const uint32_t result{absl::GetFlag(FLAGS_encode_buffer_size)};
   return result;
 }
 
 uint32_t Flags::decode_buffer_size() {
-  static const uint32_t result = absl::GetFlag(FLAGS_decode_buffer_size);
+  static const uint32_t result{absl::GetFlag(FLAGS_decode_buffer_size)};
   return result;
 }
 
@@ -254,7 +254,7 @@ std::string_view Flags::name() {
 }
 
 uint32_t Flags::cache_mbp_max_depth() {
-  static const uint32_t result = absl::GetFlag(FLAGS_cache_mbp_max_depth);
+  static const uint32_t result{absl::GetFlag(FLAGS_cache_mbp_max_depth)};
   return result;
 }
 

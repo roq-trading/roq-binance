@@ -6,6 +6,8 @@
 
 #include <utility>
 
+#include "roq/core/metrics/factory.h"
+
 #include "roq/binance/flags.h"
 
 #include "roq/binance/json/account.h"
@@ -27,18 +29,9 @@ static const auto ACCEPT_ALL = "*/*"_sv;
 static const auto ACCEPT_JSON = "application/json"_sv;
 static const auto CONTENT_TYPE_JSON = "application/json"_sv;
 
-class create_metrics final {
- public:
-  explicit create_metrics(const std::string_view &function) : function_(function) {}
-  create_metrics(create_metrics &&) = default;
-  create_metrics(const create_metrics &) = delete;
-  template <typename T>
-  operator T() {
-    return T(Flags::name(), CONNECTION, function_);
-  }
-
- private:
-  std::string_view function_;
+struct create_metrics final : public core::metrics::Factory {
+  explicit create_metrics(const std::string_view &function)
+      : core::metrics::Factory(Flags::name(), CONNECTION, function) {}
 };
 }  // namespace
 
@@ -47,21 +40,20 @@ Rest::Rest(
     [[maybe_unused]] const Config &config,
     Security &security,
     core::io::Context &context)
-    : handler_(handler), security_(security),
-      connection_(
-          *this,
-          context,
-          core::URI(Flags::rest_uri()),
-          ROQ_PACKAGE_NAME,
-          true,  // keep alive
-          Flags::rest_request_queue_depth(),
-          std::chrono::seconds{Flags::rest_request_timeout_secs()},
-          std::chrono::seconds{Flags::rest_rate_limit_interval_secs()},
-          Flags::rest_rate_limit_max_requests(),
-          std::chrono::seconds{Flags::rest_ping_freq_secs()},
-          Flags::decode_buffer_size(),
-          Flags::encode_buffer_size(),
-          Flags::rest_ping_path()),
+    : handler_(handler), security_(security), connection_(
+                                                  *this,
+                                                  context,
+                                                  core::URI(Flags::rest_uri()),
+                                                  ROQ_PACKAGE_NAME,
+                                                  true,  // keep alive
+                                                  Flags::rest_request_queue_depth(),
+                                                  Flags::rest_request_timeout(),
+                                                  Flags::rest_rate_limit_interval(),
+                                                  Flags::rest_rate_limit_max_requests(),
+                                                  Flags::rest_ping_freq(),
+                                                  Flags::decode_buffer_size(),
+                                                  Flags::encode_buffer_size(),
+                                                  Flags::rest_ping_path()),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics("disconnect"_sv),
@@ -244,9 +236,12 @@ void Rest::create_order(
     const CreateOrder &create_order,
     const std::string_view &cl_ord_id,
     std::function<void(const core::Promise<json::NewOrder> &)> &&callback) {
-  constexpr auto method = core::http::Method::POST;
-  constexpr std::string_view path = "/api/v3/order"_sv;
+  auto method = core::http::Method::POST;
+  auto path = "/api/v3/order"_sv;
   auto timestamp = core::get_realtime_clock();
+  auto side = json::map(create_order.side).as_raw_text();
+  auto type = json::map(create_order.order_type).as_raw_text();
+  auto time_in_force = json::map(create_order.time_in_force).as_raw_text();
   // XXX use encode buffer
   auto message = roq::format(
       R"({{)"
@@ -264,16 +259,16 @@ void Rest::create_order(
       R"("timestamp":{})"
       R"(}})"_fmt,
       create_order.symbol,
-      json::map(create_order.side).as_raw_text(),
-      json::map(create_order.order_type).as_raw_text(),
-      json::map(create_order.time_in_force).as_raw_text(),
+      side,
+      type,
+      time_in_force,
       create_order.quantity,
-      double{0.0},
+      0.0,
       create_order.price,
       cl_ord_id,
-      double{0.0},
-      double{0.0},
-      Flags::rest_order_recv_window_msecs(),
+      0.0,
+      0.0,
+      Flags::rest_order_recv_window().count(),
       timestamp.count());
   DLOG(INFO)(R"(body="{}")"_fmt, message);
   auto headers = roq::format("X-MBX-APIKEY: {}\r\n"_fmt, security_.get_api_key());
@@ -309,8 +304,8 @@ void Rest::cancel_order(
     const std::string_view &request_id,
     const server::OMS_Order &order,
     std::function<void(const core::Promise<json::CancelOrder> &)> &&callback) {
-  constexpr auto method = core::http::Method::DELETE;
-  constexpr std::string_view path = "/api/v3/order"_sv;
+  auto method = core::http::Method::DELETE;
+  auto path = "/api/v3/order"_sv;
   auto timestamp = core::get_realtime_clock();
   // XXX use encode buffer
   auto message = roq::format(
@@ -324,7 +319,7 @@ void Rest::cancel_order(
       order.symbol,
       order.external_order_id,
       request_id,
-      Flags::rest_order_recv_window_msecs(),
+      Flags::rest_order_recv_window().count(),
       timestamp.count());
   DLOG(INFO)(R"(body="{}")"_fmt, message);
   auto headers = roq::format("X-MBX-APIKEY: {}\r\n"_fmt, security_.get_api_key());

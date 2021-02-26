@@ -25,10 +25,6 @@ namespace roq {
 namespace binance {
 
 namespace {
-constexpr const auto DEFAULT_MULTIPLIER = 1.0;
-constexpr const auto TOLERANCE = 1.0e-10;
-constexpr const auto DEFAULT_LISTEN_KEY_REFRESH = std::chrono::seconds{2};
-
 template <typename C, typename T>
 static bool mbp_update(C &data, size_t &offset, const T &item) {
   if (offset >= data.size())
@@ -54,8 +50,7 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
                   context_,
               },
           .download = RestDownload(
-              std::chrono::seconds{Flags::rest_request_timeout_secs()},
-              [this](auto state) { return download(state); }),
+              Flags::rest_request_timeout(), [this](auto state) { return download(state); }),
       },
       bid_(Flags::cache_mbp_max_depth()), ask_(Flags::cache_mbp_max_depth()) {
   LOG_IF(FATAL, Flags::rest_cancel_on_disconnect())
@@ -144,8 +139,9 @@ void Gateway::operator()(
 // market stream
 
 void Gateway::operator()(const json::AggTrade &agg_trade, const server::TraceInfo &trace_info) {
+  auto side = agg_trade.buyer_is_maker ? Side::BUY : Side::SELL;
   Trade trade{
-      .side = agg_trade.buyer_is_maker ? Side::BUY : Side::SELL,
+      .side = side,
       .price = agg_trade.price,
       .quantity = agg_trade.quantity,
       .trade_id = {},
@@ -163,8 +159,9 @@ void Gateway::operator()(const json::AggTrade &agg_trade, const server::TraceInf
 }
 
 void Gateway::operator()(const json::Trade &trade, const server::TraceInfo &trace_info) {
+  auto side = trade.buyer_is_maker ? Side::BUY : Side::SELL;
   Trade trade_{
-      .side = trade.buyer_is_maker ? Side::BUY : Side::SELL,
+      .side = side,
       .price = trade.price,
       .quantity = trade.quantity,
       .trade_id = {},
@@ -192,7 +189,7 @@ void Gateway::operator()(const json::MiniTicker &mini_ticker, const server::Trac
   StatisticsUpdate statistics_update{
       .exchange = Flags::exchange(),
       .symbol = mini_ticker.symbol,
-      .statistics = roq::span(statistics, std::size(statistics)),
+      .statistics = {statistics, std::size(statistics)},
       .snapshot = false,
       .exchange_time_utc = mini_ticker.event_time,
   };
@@ -292,10 +289,12 @@ void Gateway::operator()(const json::BalanceUpdate &, const server::TraceInfo &)
 
 void Gateway::operator()(
     const json::ExecutionReport &execution_report, const server::TraceInfo &trace_info) {
+  auto side = json::map(execution_report.side);
+  auto status = json::map(execution_report.current_order_status);
   server::OMS_Lookup order_lookup{
       .symbol = execution_report.symbol,
-      .side = json::map(execution_report.side),
-      .status = json::map(execution_report.current_order_status),
+      .side = side,
+      .status = status,
       .price = execution_report.price,
       .remaining_quantity = NaN,
       .traded_quantity = execution_report.cumulative_filled_quantity,
@@ -483,14 +482,14 @@ void Gateway::operator()(const json::ExchangeInfo &exchange_info) {
         .exchange = Flags::exchange(),
         .symbol = item.symbol,
         .description = {},
-        .security_type = SecurityType::UNDEFINED,
+        .security_type = {},
         .currency = item.quote_asset,
         .settlement_currency = item.base_asset,
         .commission_currency = {},
         .tick_size = tick_size,
         .multiplier = NaN,
         .min_trade_vol = min_trade_vol,
-        .option_type = OptionType::UNDEFINED,
+        .option_type = {},
         .strike_currency = {},
         .strike_price = NaN,
         .underlying = {},
@@ -502,10 +501,11 @@ void Gateway::operator()(const json::ExchangeInfo &exchange_info) {
     };
     VLOG(1)(R"(reference_data={})"_fmt, reference_data);
     create_trace_and_dispatch(trace_info, reference_data, dispatcher_, false);
+    auto trading_status = json::map(item.status);
     MarketStatus market_status{
         .exchange = Flags::exchange(),
         .symbol = item.symbol,
-        .trading_status = json::map(item.status),
+        .trading_status = trading_status,
     };
     VLOG(1)(R"(market_status={})"_fmt, market_status);
     create_trace_and_dispatch(trace_info, market_status, dispatcher_, true);
@@ -527,7 +527,7 @@ void Gateway::operator()(const json::ListenKey &listen_key) {
     // XXX should we recreate user_stream_ ?
   }
   auto now = core::get_system_clock();
-  listen_key_refresh_ = now + std::chrono::seconds{Flags::rest_listen_key_refresh_secs()};
+  listen_key_refresh_ = now + Flags::rest_listen_key_refresh();
 }
 
 void Gateway::operator()(const json::Account &account) {
@@ -549,14 +549,14 @@ void Gateway::refresh_listen_key() {
   if (listen_key_refresh_ == listen_key_refresh_.zero() || now < listen_key_refresh_)
     return;
   LOG(INFO)("Refreshing listen key..."_sv);
-  listen_key_refresh_ = now + std::chrono::seconds{Flags::rest_listen_key_refresh_secs()};
+  listen_key_refresh_ = now + Flags::rest_listen_key_refresh();
   rest_.connection.get<json::ListenKey>([this](auto &promise) {
     try {
       (*this)(promise.get());
     } catch (NetworkError &) {
       LOG(WARNING)("Rescheduling listen key refresh!"_sv);
       auto now = core::get_system_clock();
-      listen_key_refresh_ = now + DEFAULT_LISTEN_KEY_REFRESH;
+      listen_key_refresh_ = now + Flags::rest_listen_key_refresh();
     }
   });
 }

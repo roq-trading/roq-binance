@@ -5,11 +5,11 @@
 #include <cassert>
 #include <utility>
 
+#include "roq/core/charconv.h"
+#include "roq/core/clock.h"
 #include "roq/core/patterns.h"
 
-#include "roq/core/clock.h"
-
-#include "roq/core/charconv.h"
+#include "roq/core/metrics/factory.h"
 
 #include "roq/binance/flags.h"
 
@@ -25,33 +25,23 @@ static auto create_query(const std::string_view &listen_key) {
   return roq::format("?streams={}"_fmt, listen_key);
 }
 
-class create_metrics final {
- public:
-  explicit create_metrics(const std::string_view &function) : function_(function) {}
-  create_metrics(create_metrics &&) = default;
-  create_metrics(const create_metrics &) = delete;
-  template <typename T>
-  operator T() {
-    return T(Flags::name(), CONNECTION, function_);
-  }
-
- private:
-  std::string_view function_;
+struct create_metrics final : public core::metrics::Factory {
+  explicit create_metrics(const std::string_view &function)
+      : core::metrics::Factory(Flags::name(), CONNECTION, function) {}
 };
 }  // namespace
 
 UserStream::UserStream(
     Handler &handler, core::io::Context &context, const std::string_view &listen_key)
-    : handler_(handler), query_(create_query(listen_key)),
-      connection_(
-          *this,
-          context,
-          core::URI(Flags::ws_uri()),
-          query_,
-          std::chrono::seconds{Flags::ws_ping_freq_secs()},
-          Flags::decode_buffer_size(),
-          Flags::encode_buffer_size(),
-          []() { return std::string(); }),
+    : handler_(handler), connection_(
+                             *this,
+                             context,
+                             core::URI(Flags::ws_uri()),
+                             create_query(listen_key),
+                             Flags::ws_ping_freq(),
+                             Flags::decode_buffer_size(),
+                             Flags::encode_buffer_size(),
+                             []() { return std::string(); }),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics("disconnect"_sv),

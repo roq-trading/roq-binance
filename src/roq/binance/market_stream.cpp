@@ -5,11 +5,10 @@
 #include <cassert>
 #include <utility>
 
-#include "roq/core/patterns.h"
-
+#include "roq/core/charconv.h"
 #include "roq/core/clock.h"
 
-#include "roq/core/charconv.h"
+#include "roq/core/metrics/factory.h"
 
 #include "roq/binance/flags.h"
 
@@ -25,20 +24,9 @@ static auto create_connection_name(uint32_t market_stream_id) {
   return roq::format("{}_{}"_fmt, CONNECTION, market_stream_id);
 }
 
-class create_metrics final {
- public:
-  create_metrics(const std::string_view &name, const std::string_view &function)
-      : name_(name), function_(function) {}
-  create_metrics(create_metrics &&) = default;
-  create_metrics(const create_metrics &) = delete;
-  template <typename T>
-  operator T() {
-    return T(Flags::name(), name_, function_);
-  }
-
- private:
-  std::string_view name_;
-  std::string_view function_;
+struct create_metrics final : public core::metrics::Factory {
+  create_metrics(const std::string_view &group, const std::string_view &function)
+      : core::metrics::Factory(Flags::name(), group, function) {}
 };
 }  // namespace
 
@@ -48,16 +36,15 @@ MarketStream::MarketStream(
     uint32_t market_stream_id,
     std::vector<std::string> &&symbols)
     : handler_(handler), market_stream_id_(market_stream_id), symbols_(std::move(symbols)),
-      name_(create_connection_name(market_stream_id)),
-      connection_(
-          *this,
-          context,
-          core::URI(Flags::ws_uri()),
-          std::string_view(),  // query
-          std::chrono::seconds{Flags::ws_ping_freq_secs()},
-          Flags::decode_buffer_size(),
-          Flags::encode_buffer_size(),
-          []() { return std::string(); }),
+      name_(create_connection_name(market_stream_id)), connection_(
+                                                           *this,
+                                                           context,
+                                                           core::URI(Flags::ws_uri()),
+                                                           std::string_view(),  // query
+                                                           Flags::ws_ping_freq(),
+                                                           Flags::decode_buffer_size(),
+                                                           Flags::encode_buffer_size(),
+                                                           []() { return std::string(); }),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"_sv),
@@ -105,6 +92,7 @@ size_t MarketStream::capacity() const {
 template <>
 void MarketStream::subscribe_agg_trade(const std::vector<std::string> &symbols) {
   assert(symbols.empty() == false);
+  auto id = ++request_id_;
   auto message = roq::format(
       R"({{)"
       R"("method":"SUBSCRIBE",)"
@@ -112,13 +100,14 @@ void MarketStream::subscribe_agg_trade(const std::vector<std::string> &symbols) 
       R"("id":{})"
       R"(}})"_fmt,
       roq::join(symbols, R"(@aggTrade",")"_sv),
-      ++request_id_);
+      id);
   connection_.send_text(message);
 }
 
 template <>
 void MarketStream::subscribe_trade(const std::vector<std::string> &symbols) {
   assert(symbols.empty() == false);
+  auto id = ++request_id_;
   auto message = roq::format(
       R"({{)"
       R"("method":"SUBSCRIBE",)"
@@ -126,13 +115,14 @@ void MarketStream::subscribe_trade(const std::vector<std::string> &symbols) {
       R"("id":{})"
       R"(}})"_fmt,
       roq::join(symbols, R"(@trade",")"_sv),
-      ++request_id_);
+      id);
   connection_.send_text(message);
 }
 
 template <>
 void MarketStream::subscribe_mini_ticker(const std::vector<std::string> &symbols) {
   assert(symbols.empty() == false);
+  auto id = ++request_id_;
   auto message = roq::format(
       R"({{)"
       R"("method":"SUBSCRIBE",)"
@@ -140,13 +130,14 @@ void MarketStream::subscribe_mini_ticker(const std::vector<std::string> &symbols
       R"("id":{})"
       R"(}})"_fmt,
       roq::join(symbols, R"(@miniTicker",")"_sv),
-      ++request_id_);
+      id);
   connection_.send_text(message);
 }
 
 template <>
 void MarketStream::subscribe_book_ticker(const std::vector<std::string> &symbols) {
   assert(symbols.empty() == false);
+  auto id = ++request_id_;
   auto message = roq::format(
       R"({{)"
       R"("method":"SUBSCRIBE",)"
@@ -154,7 +145,7 @@ void MarketStream::subscribe_book_ticker(const std::vector<std::string> &symbols
       R"("id":{})"
       R"(}})"_fmt,
       roq::join(symbols, R"(@bookTicker",")"_sv),
-      ++request_id_);
+      id);
   connection_.send_text(message);
 }
 
@@ -164,7 +155,8 @@ void MarketStream::subscribe_depth(const std::vector<std::string> &symbols) {
   auto stream = roq::format(
       R"(@depth{}@{}ms)"_fmt,
       Flags::ws_subscribe_depth_levels(),
-      Flags::ws_subscribe_depth_freq_msecs());
+      Flags::ws_subscribe_depth_freq().count());
+  auto id = ++request_id_;
   auto separator = roq::format(R"({}",")"_fmt, stream);
   auto message = roq::format(
       R"({{)"
@@ -174,7 +166,7 @@ void MarketStream::subscribe_depth(const std::vector<std::string> &symbols) {
       R"(}})"_fmt,
       roq::join(symbols, separator),
       stream,
-      ++request_id_);
+      id);
   connection_.send_text(message);
 }
 

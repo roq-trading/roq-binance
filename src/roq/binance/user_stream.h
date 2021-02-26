@@ -61,8 +61,6 @@ class UserStream final : public core::web::Socket::Handler, public json::UserStr
 
  private:
   Handler &handler_;
-  // config
-  const std::string query_;
   // web socket
   core::web::Socket connection_;
   // buffers
