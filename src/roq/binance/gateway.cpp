@@ -149,6 +149,7 @@ void Gateway::operator()(const json::AggTrade &agg_trade, const server::TraceInf
   core::charconv::to_string(
       core::string_utils::fixed_string_builder(trade.trade_id), agg_trade.agg_trade_id);
   TradeSummary trade_summary{
+      .stream_id = {},
       .exchange = Flags::exchange(),
       .symbol = agg_trade.symbol,
       .trades = {&trade, 1u},
@@ -169,6 +170,7 @@ void Gateway::operator()(const json::Trade &trade, const server::TraceInfo &trac
   core::charconv::to_string(
       core::string_utils::fixed_string_builder(trade_.trade_id), trade.trade_id);
   TradeSummary trade_summary{
+      .stream_id = {},
       .exchange = Flags::exchange(),
       .symbol = trade.symbol,
       .trades = {&trade_, 1u},
@@ -187,6 +189,7 @@ void Gateway::operator()(const json::MiniTicker &mini_ticker, const server::Trac
   };
   static_assert(std::size(statistics) == 4u);  // just checking...
   StatisticsUpdate statistics_update{
+      .stream_id = {},
       .exchange = Flags::exchange(),
       .symbol = mini_ticker.symbol,
       .statistics = {statistics, std::size(statistics)},
@@ -199,6 +202,7 @@ void Gateway::operator()(const json::MiniTicker &mini_ticker, const server::Trac
 
 void Gateway::operator()(const json::BookTicker &book_ticker, const server::TraceInfo &trace_info) {
   TopOfBook top_of_book{
+      .stream_id = {},
       .exchange = Flags::exchange(),
       .symbol = book_ticker.symbol,
       .layer =
@@ -239,6 +243,7 @@ void Gateway::operator()(
    depth.asks.size(),
    ask_.size());
   MarketByPriceUpdate market_by_price_update{
+      .stream_id = {},
       .exchange = Flags::exchange(),
       .symbol = symbol,
       .bids = {bid_.data(), bid_length},
@@ -258,6 +263,7 @@ void Gateway::operator()(
     const json::OutboundAccountInfo &outbound_account_info, const server::TraceInfo &trace_info) {
   for (auto &item : outbound_account_info.balances) {
     FundsUpdate funds_update{
+        .stream_id = {},
         .account = account_,
         .currency = item.asset,
         .balance = item.free_amount,
@@ -273,6 +279,7 @@ void Gateway::operator()(
     const server::TraceInfo &trace_info) {
   for (auto &item : outbound_account_position.balances) {
     FundsUpdate funds_update{
+        .stream_id = {},
         .account = account_,
         .currency = item.asset,
         .balance = item.free_amount,
@@ -337,6 +344,7 @@ void Gateway::update_market_data(GatewayStatus gateway_status) {
   market_data_status_ = gateway_status;
   server::TraceInfo trace_info;
   MarketDataStatus market_data_status{
+      .stream_id = {},
       .status = market_data_status_,
   };
   create_trace_and_dispatch(trace_info, market_data_status, dispatcher_, true);
@@ -349,6 +357,7 @@ void Gateway::update_order_manager(GatewayStatus gateway_status) {
   order_manager_status_ = gateway_status;
   server::TraceInfo trace_info;
   OrderManagerStatus order_manager_status{
+      .stream_id = {},
       .account = account_,
       .status = order_manager_status_,
   };
@@ -479,6 +488,7 @@ void Gateway::operator()(const json::ExchangeInfo &exchange_info) {
     auto tick_size = std::pow(10.0, -static_cast<double>(item.quote_precision));
     auto min_trade_vol = std::pow(10.0, -static_cast<double>(item.base_asset_precision));
     ReferenceData reference_data{
+        .stream_id = {},
         .exchange = Flags::exchange(),
         .symbol = item.symbol,
         .description = {},
@@ -503,6 +513,7 @@ void Gateway::operator()(const json::ExchangeInfo &exchange_info) {
     create_trace_and_dispatch(trace_info, reference_data, dispatcher_, false);
     auto trading_status = json::map(item.status);
     MarketStatus market_status{
+        .stream_id = {},
         .exchange = Flags::exchange(),
         .symbol = item.symbol,
         .trading_status = trading_status,
@@ -534,6 +545,7 @@ void Gateway::operator()(const json::Account &account) {
   server::TraceInfo trace_info;  // note! not correct (*after* message parsing)
   for (auto &item : account.balances) {
     FundsUpdate funds_update{
+        .stream_id = {},
         .account = account_,
         .currency = item.asset,
         .balance = item.free,
