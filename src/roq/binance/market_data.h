@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <chrono>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -15,37 +14,33 @@
 
 #include "roq/core/web/socket.h"
 
+#include "roq/download.h"
 #include "roq/server.h"
+
+#include "roq/binance/market_data_state.h"
+#include "roq/binance/shared.h"
 
 #include "roq/binance/json/market_stream_parser.h"
 
 namespace roq {
 namespace binance {
 
-class MarketStream final : public core::web::Socket::Handler,
-                           public json::MarketStreamParser::Handler {
+class MarketData final : public core::web::Socket::Handler,
+                         public json::MarketStreamParser::Handler {
  public:
   struct Handler {
-    virtual void operator()(const ExternalLatency &, const server::TraceInfo &) = 0;
-    virtual void operator()(const json::AggTrade &, const server::TraceInfo &) = 0;
-    virtual void operator()(const json::Trade &, const server::TraceInfo &) = 0;
-    virtual void operator()(const json::MiniTicker &, const server::TraceInfo &) = 0;
-    virtual void operator()(const json::BookTicker &, const server::TraceInfo &) = 0;
-    virtual void operator()(
-        const std::string_view &symbol, const json::Depth &depth, const server::TraceInfo &) = 0;
-    virtual void operator()(
-        const std::string_view &symbol,
-        const json::DepthUpdate &depth_update,
-        const server::TraceInfo &) = 0;
+    virtual void operator()(const server::Trace<ExternalLatency> &) = 0;
+    virtual void operator()(const server::Trace<MarketDataStatus> &) = 0;
+    virtual void operator()(const server::Trace<TopOfBook> &, bool is_last) = 0;
+    virtual void operator()(const server::Trace<MarketByPriceUpdate> &, bool is_last) = 0;
+    virtual void operator()(const server::Trace<TradeSummary> &, bool is_last) = 0;
+    virtual void operator()(const server::Trace<StatisticsUpdate> &, bool is_last) = 0;
   };
-  MarketStream(
-      Handler &handler,
-      core::io::Context &context,
-      uint32_t market_stream_id,
-      std::vector<std::string> &&symbols);
 
-  MarketStream(MarketStream &&) = delete;
-  MarketStream(const MarketStream &) = delete;
+  MarketData(Handler &, core::io::Context &, uint32_t stream_id, Shared &);
+
+  MarketData(MarketData &&) = delete;
+  MarketData(const MarketData &) = delete;
 
   bool ready() const;
 
@@ -53,27 +48,9 @@ class MarketStream final : public core::web::Socket::Handler,
   void operator()(const Event<Stop> &);
   void operator()(const Event<Timer> &);
 
-  void operator()(metrics::Writer &writer);
+  void operator()(metrics::Writer &);
 
-  size_t capacity() const;
-
-  void subscribe(const std::vector<std::string> &symbols);
-
- protected:
-  template <typename T>
-  void subscribe_agg_trade(const T &symbols);
-
-  template <typename T>
-  void subscribe_trade(const T &symbols);
-
-  template <typename T>
-  void subscribe_mini_ticker(const T &symbols);
-
-  template <typename T>
-  void subscribe_book_ticker(const T &symbols);
-
-  template <typename T>
-  void subscribe_depth(const T &symbols);
+  void update_subscriptions(std::vector<std::string> &symbols);
 
  protected:
   void operator()(const core::web::Socket::Connected &) override;
@@ -82,6 +59,19 @@ class MarketStream final : public core::web::Socket::Handler,
   void operator()(const core::web::Socket::Close &) override;
   void operator()(const core::web::Socket::Latency &) override;
   void operator()(const core::web::Socket::Text &) override;
+
+ private:
+  void operator()(GatewayStatus);
+
+  uint32_t download(MarketDataState);
+
+  void subscribe(const roq::span<std::string> &symbols);
+
+  void subscribe_agg_trade(const roq::span<std::string> &symbols);
+  void subscribe_trade(const roq::span<std::string> &symbols);
+  void subscribe_mini_ticker(const roq::span<std::string> &symbols);
+  void subscribe_book_ticker(const roq::span<std::string> &symbols);
+  void subscribe_depth(const roq::span<std::string> &symbols);
 
   void parse(const std::string_view &message);
 
@@ -98,21 +88,20 @@ class MarketStream final : public core::web::Socket::Handler,
       const std::string_view &symbol, const json::Depth &depth, const server::TraceInfo &) override;
   void operator()(
       const std::string_view &symbol,
-      const json::DepthUpdate &depth_update,
+      const json::DepthUpdate &,
       const server::TraceInfo &) override;
 
  private:
   Handler &handler_;
   // config
-  const uint32_t market_stream_id_;
-  std::vector<std::string> symbols_;
+  const uint16_t stream_id_;
   const std::string name_;
   // web socket
   core::web::Socket connection_;
   // buffers
   core::utils::Buffer decode_buffer_;
   // session
-  uint64_t request_id_ = 0;
+  uint64_t request_id_ = {};
   // metrics
   struct {
     core::metrics::Counter disconnect;
@@ -124,6 +113,13 @@ class MarketStream final : public core::web::Socket::Handler,
   struct {
     core::metrics::Latency ping, heartbeat;
   } latency_;
+  // cache
+  Shared &shared_;
+  std::vector<std::string> symbols_;
+  // state
+  bool ready_ = false;
+  GatewayStatus status_ = {};
+  server::Download<MarketDataState> download_;
 };
 
 }  // namespace binance

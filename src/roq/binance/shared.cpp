@@ -1,0 +1,18 @@
+/* Copyright (c) 2017-2021, Hans Erik Thrane */
+
+#include "roq/binance/shared.h"
+
+#include <magic_enum.hpp>
+
+#include "roq/binance/flags.h"
+
+namespace roq {
+namespace binance {
+
+Shared::Shared(server::Dispatcher &dispatcher)
+    : bids(Flags::cache_mbp_max_depth()), asks(Flags::cache_mbp_max_depth()),
+      dispatcher_(dispatcher) {
+}
+
+}  // namespace binance
+}  // namespace roq

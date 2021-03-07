@@ -2,147 +2,93 @@
 
 #pragma once
 
-#include <absl/container/flat_hash_set.h>
+#include <absl/container/flat_hash_map.h>
 
 #include <list>
 #include <memory>
 #include <string>
 #include <utility>
-#include <vector>
 
-#include "roq/metrics.h"
-
-#include "roq/download.h"
 #include "roq/server.h"
 
 #include "roq/core/io/context.h"
 
 #include "roq/binance/config.h"
+#include "roq/binance/drop_copy.h"
+#include "roq/binance/market_data.h"
+#include "roq/binance/order_entry.h"
 #include "roq/binance/security.h"
-
-#include "roq/binance/market_stream.h"
-#include "roq/binance/user_stream.h"
-
-#include "roq/binance/rest.h"
-#include "roq/binance/rest_state.h"
-
-#include "roq/binance/json/account.h"
-#include "roq/binance/json/exchange_info.h"
-#include "roq/binance/json/listen_key.h"
-
-#include "roq/binance/json/cancel_order.h"
-#include "roq/binance/json/new_order.h"
-
-// json (inbound)
+#include "roq/binance/shared.h"
 
 namespace roq {
 namespace binance {
 
 class Gateway final : public server::Handler,
-                      public Rest::Handler,
-                      public MarketStream::Handler,
-                      public UserStream::Handler {
+                      public OrderEntry::Handler,
+                      public DropCopy::Handler,
+                      public MarketData::Handler {
  public:
-  Gateway(server::Dispatcher &dispatcher, const Config &config);
+  Gateway(server::Dispatcher &, const Config &);
 
  protected:
-  // server::Handler
-
   void operator()(const Event<Start> &) override;
   void operator()(const Event<Stop> &) override;
   void operator()(const Event<Timer> &) override;
   void operator()(const Event<Connection> &) override;
 
   void operator()(
-      const Event<CreateOrder> &event,
+      const Event<CreateOrder> &,
       const std::string_view &request_id,
       uint32_t gateway_order_id) override;
   void operator()(
-      const Event<ModifyOrder> &event,
+      const Event<ModifyOrder> &,
       const std::string_view &request_id,
-      const server::OMS_Order &order) override;
+      const server::OMS_Order &) override;
   void operator()(
-      const Event<CancelOrder> &event,
+      const Event<CancelOrder> &,
       const std::string_view &request_id,
-      const server::OMS_Order &order) override;
+      const server::OMS_Order &) override;
 
-  void operator()(metrics::Writer &writer) override;
+  void operator()(metrics::Writer &) override;
 
-  // all
-  void operator()(const ExternalLatency &, const server::TraceInfo &) override;
+  // many
 
-  // MarketStream::Handler
-  void operator()(const json::AggTrade &, const server::TraceInfo &) override;
-  void operator()(const json::Trade &, const server::TraceInfo &) override;
-  void operator()(const json::MiniTicker &, const server::TraceInfo &) override;
-  void operator()(const json::BookTicker &, const server::TraceInfo &) override;
-  void operator()(
-      const std::string_view &symbol, const json::Depth &depth, const server::TraceInfo &) override;
-  void operator()(
-      const std::string_view &symbol,
-      const json::DepthUpdate &depth_update,
-      const server::TraceInfo &) override;
+  void operator()(const server::Trace<ExternalLatency> &) override;
 
-  // UserStream::Handler
-  void operator()(const json::OutboundAccountInfo &, const server::TraceInfo &) override;
-  void operator()(const json::OutboundAccountPosition &, const server::TraceInfo &) override;
-  void operator()(const json::BalanceUpdate &, const server::TraceInfo &) override;
-  void operator()(const json::ExecutionReport &, const server::TraceInfo &) override;
+  void operator()(const server::Trace<MarketDataStatus> &) override;
+  void operator()(const server::Trace<ReferenceData> &, bool is_last) override;
+  void operator()(const server::Trace<MarketStatus> &, bool is_last) override;
+  void operator()(const server::Trace<TopOfBook> &, bool is_last) override;
+  void operator()(const server::Trace<MarketByPriceUpdate> &, bool is_last) override;
+  void operator()(const server::Trace<TradeSummary> &, bool is_last) override;
+  void operator()(const server::Trace<StatisticsUpdate> &, bool is_last) override;
 
-  // Rest::Handler
+  void operator()(const server::Trace<OrderManagerStatus> &) override;
+  void operator()(const server::Trace<FundsUpdate> &, bool is_last) override;
 
-  void operator()(const Rest &) override;
+  void operator()(const OrderEntry::ListenKeyUpdate &) override;
+  void operator()(OrderEntry::SymbolsUpdate &) override;
 
-  void operator()(const json::NewOrder &);
-  void operator()(const json::CancelOrder &);
+  // utilities
 
- private:
-  void operator()(const json::ExchangeInfo &);
-  void operator()(const json::ListenKey &);
-  void operator()(const json::Account &);
-
-  void update_market_data(GatewayStatus gateway_status);
-  void update_order_manager(GatewayStatus gateway_status);
-
-  using RestDownload = server::Download<RestState>;
-
-  uint32_t download(RestDownload::State state);
-
-  void download_exchange_info();
-  void subscribe_market_streams();
-  void download_listen_key();
-  void subscribe_user_stream();
-  void download_account();
-
-  void refresh_listen_key();
+  OrderEntry &get_order_entry(const std::string_view &account);
 
  private:
   server::Dispatcher &dispatcher_;
   // config
-  const std::string account_;
+  const std::string master_account_;
   // security
-  Security security_;
+  absl::flat_hash_map<std::string, std::unique_ptr<Security>> security_;
   // io
   core::io::Context context_;
-  // connections
-  struct {
-    Rest connection;
-    RestDownload download;
-  } rest_;
-  // ... market streams
-  uint32_t market_stream_id_ = {};
-  std::list<std::unique_ptr<MarketStream> > market_streams_;
-  // ... user streams
-  std::string listen_key_;
-  std::chrono::nanoseconds listen_key_refresh_ = {};
-  std::unique_ptr<UserStream> user_stream_;
-  // reference data
-  absl::flat_hash_set<std::string> symbols_;
-  // market data
-  GatewayStatus market_data_status_ = GatewayStatus::DISCONNECTED;
-  core::page_aligned_vector<MBPUpdate> bid_, ask_;
-  // order manager
-  GatewayStatus order_manager_status_ = GatewayStatus::DISCONNECTED;
+  // shared
+  Shared shared_;
+  // seed
+  uint16_t stream_id_ = {};
+  // streams
+  absl::flat_hash_map<std::string, std::unique_ptr<OrderEntry>> order_entry_;
+  absl::flat_hash_map<std::string, std::unique_ptr<DropCopy>> drop_copy_;
+  std::list<std::unique_ptr<MarketData>> market_data_;
 };
 
 }  // namespace binance

@@ -108,8 +108,8 @@
       "name": "ws_max_subscriptions_per_stream",
       "type": "uint32_t",
       "validator": "roq::core::flags::NonZero<uint32_t>",
-      "default": 512,
-      "description": "max subscriptions per connection (count)"
+      "default": 128,
+      "description": "max symbols per connection (count)"
     },
     {
       "name": "ws_subscribe_depth_levels",
