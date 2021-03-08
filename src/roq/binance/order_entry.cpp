@@ -149,6 +149,8 @@ void OrderEntry::operator()(const core::web::Client::Disconnected &) {
   ++counter_.disconnect;
   ready_ = false;
   (*this)(GatewayStatus::DISCONNECTED);
+  if (!download_.downloading())
+    download_.reset();
 }
 
 void OrderEntry::operator()(const core::web::Client::Latency &latency) {
