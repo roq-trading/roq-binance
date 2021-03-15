@@ -37,15 +37,15 @@ DropCopy::DropCopy(
     Shared &shared,
     const std::string_view &listen_key)
     : handler_(handler), stream_id_(stream_id),
-      name_(roq::format("{}_{}"_fmt, CONNECTION, stream_id)), connection_(
-                                                                  *this,
-                                                                  context,
-                                                                  core::URI(Flags::ws_uri()),
-                                                                  create_query(listen_key),
-                                                                  Flags::ws_ping_freq(),
-                                                                  Flags::decode_buffer_size(),
-                                                                  Flags::encode_buffer_size(),
-                                                                  []() { return std::string(); }),
+      name_(roq::format("{}:{}"_fmt, stream_id_, CONNECTION)), connection_(
+                                                                   *this,
+                                                                   context,
+                                                                   core::URI(Flags::ws_uri()),
+                                                                   create_query(listen_key),
+                                                                   Flags::ws_ping_freq(),
+                                                                   Flags::decode_buffer_size(),
+                                                                   Flags::encode_buffer_size(),
+                                                                   []() { return std::string(); }),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"_sv),

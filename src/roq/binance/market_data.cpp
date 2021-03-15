@@ -39,15 +39,15 @@ void emplace(MBPUpdate &result, const T &value) {
 MarketData::MarketData(
     Handler &handler, core::io::Context &context, uint32_t stream_id, Shared &shared)
     : handler_(handler), stream_id_(stream_id),
-      name_(roq::format("{}_{}"_fmt, CONNECTION, stream_id)), connection_(
-                                                                  *this,
-                                                                  context,
-                                                                  core::URI(Flags::ws_uri()),
-                                                                  std::string_view{},  // query
-                                                                  Flags::ws_ping_freq(),
-                                                                  Flags::decode_buffer_size(),
-                                                                  Flags::encode_buffer_size(),
-                                                                  []() { return std::string(); }),
+      name_(roq::format("{}:{}"_fmt, stream_id_, CONNECTION)), connection_(
+                                                                   *this,
+                                                                   context,
+                                                                   core::URI(Flags::ws_uri()),
+                                                                   std::string_view{},  // query
+                                                                   Flags::ws_ping_freq(),
+                                                                   Flags::decode_buffer_size(),
+                                                                   Flags::encode_buffer_size(),
+                                                                   []() { return std::string(); }),
       decode_buffer_(Flags::decode_buffer_size()),
       request_id_(static_cast<uint64_t>(stream_id_) * 1000000u),  // scale (debugging)
       counter_{

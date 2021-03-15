@@ -12,7 +12,7 @@ namespace roq {
 namespace binance {
 
 Security::Security(const Config &config, const std::string_view &account)
-    : account_(account), key_(config.get_api_key()), hmac_(config.get_secret()) {
+    : account_(account), key_(config.get_api_key(account_)), hmac_(config.get_secret(account_)) {
 }
 
 std::pair<std::string, std::string> Security::create_signature(
