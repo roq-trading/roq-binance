@@ -10,7 +10,7 @@ namespace roq {
 namespace binance {
 
 Shared::Shared(server::Dispatcher &dispatcher)
-    : bids(Flags::cache_mbp_max_depth()), asks(Flags::cache_mbp_max_depth()),
+    : bids(server::Flags::cache_mbp_max_depth()), asks(server::Flags::cache_mbp_max_depth()),
       dispatcher_(dispatcher) {
 }
 
