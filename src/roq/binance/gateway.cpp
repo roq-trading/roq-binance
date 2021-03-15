@@ -13,7 +13,6 @@
 #include "roq/core/charconv.h"
 #include "roq/core/clock.h"
 #include "roq/core/utils.h"
-#include "roq/core/view.h"
 
 #include "roq/binance/flags.h"
 
