@@ -4,9 +4,10 @@
 
 #include <algorithm>
 
+#include "roq/update.h"
+
 #include "roq/core/back_emplacer.h"
 #include "roq/core/charconv.h"
-#include "roq/core/update.h"
 
 #include "roq/core/string_utils/fixed_string_builder.h"
 
@@ -160,7 +161,7 @@ void MarketData::operator()(const core::web::Socket::Text &text) {
 }
 
 void MarketData::operator()(GatewayStatus status) {
-  if (core::update(status_, status)) {
+  if (update(status_, status)) {
     server::TraceInfo trace_info;
     MarketDataStatus market_data_status{
         .stream_id = stream_id_,

@@ -4,7 +4,7 @@
 
 #include <utility>
 
-#include "roq/core/update.h"
+#include "roq/update.h"
 
 #include "roq/core/metrics/factory.h"
 
@@ -165,7 +165,7 @@ void OrderEntry::operator()(const core::web::Client::Latency &latency) {
 }
 
 void OrderEntry::operator()(GatewayStatus status) {
-  if (core::update(status_, status)) {
+  if (update(status_, status)) {
     server::TraceInfo trace_info;
     OrderManagerStatus order_manager_status{
         .stream_id = stream_id_,
@@ -491,7 +491,7 @@ void OrderEntry::operator()(const json::CancelOrder &) {
 void OrderEntry::operator()(const json::ListenKey &listen_key) {
   server::TraceInfo trace_info;  // note! not correct (*after* message parsing)
   bool initial = listen_key_.empty();
-  if (core::update(listen_key_, listen_key.listen_key)) {
+  if (update(listen_key_, listen_key.listen_key)) {
     if (initial) {
       LOG(INFO)(R"(Listen key has been acquired (value="{}"))"_fmt, listen_key_);
       ListenKeyUpdate listen_key_update{
