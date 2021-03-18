@@ -2,6 +2,7 @@
 
 #include "roq/binance/drop_copy.h"
 
+#include "roq/mask.h"
 #include "roq/update.h"
 
 #include "roq/core/metrics/factory.h"
@@ -16,7 +17,10 @@ namespace roq {
 namespace binance {
 
 namespace {
-static const auto CONNECTION = "ex"_sv;
+static const auto NAME = "ex"_sv;
+static const auto SUPPORTS = Mask{
+    SupportType::FUNDS,
+};
 
 static auto create_query(const std::string_view &listen_key) {
   assert(!listen_key.empty());
@@ -36,16 +40,16 @@ DropCopy::DropCopy(
     Security &security,
     Shared &shared,
     const std::string_view &listen_key)
-    : handler_(handler), stream_id_(stream_id),
-      name_(roq::format("{}:{}"_fmt, stream_id_, CONNECTION)), connection_(
-                                                                   *this,
-                                                                   context,
-                                                                   core::URI(Flags::ws_uri()),
-                                                                   create_query(listen_key),
-                                                                   Flags::ws_ping_freq(),
-                                                                   Flags::decode_buffer_size(),
-                                                                   Flags::encode_buffer_size(),
-                                                                   []() { return std::string(); }),
+    : handler_(handler), stream_id_(stream_id), name_(roq::format("{}:{}"_fmt, stream_id_, NAME)),
+      connection_(
+          *this,
+          context,
+          core::URI(Flags::ws_uri()),
+          create_query(listen_key),
+          Flags::ws_ping_freq(),
+          Flags::decode_buffer_size(),
+          Flags::encode_buffer_size(),
+          []() { return std::string(); }),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"_sv),
@@ -132,13 +136,16 @@ void DropCopy::operator()(const core::web::Socket::Text &text) {
 void DropCopy::operator()(GatewayStatus status) {
   if (update(status_, status)) {
     server::TraceInfo trace_info;
-    OrderManagerStatus order_manager_status{
+    StreamUpdate stream_update{
         .stream_id = stream_id_,
+        .type = StreamType::WEB_SOCKET,
+        .supports = SUPPORTS.get(),
         .account = security_.get_account(),
+        .priority = Priority::PRIMARY,
         .status = status_,
     };
-    LOG(INFO)("order_manager_status={}"_fmt, order_manager_status);
-    server::create_trace_and_dispatch(trace_info, order_manager_status, handler_);
+    LOG(INFO)("stream_update={}"_fmt, stream_update);
+    server::create_trace_and_dispatch(trace_info, stream_update, handler_);
   }
 }
 
