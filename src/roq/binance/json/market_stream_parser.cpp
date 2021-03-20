@@ -34,10 +34,12 @@ void MarketStreamParser::dispatch(
       auto field = Field(key);
       switch (field) {
         case Field::UNDEFINED:
-          LOG(FATAL)("Unexpected"_sv);
+          log::fatal("Unexpected"_sv);
           break;
         case Field::UNKNOWN:
-          DLOG(FATAL)(R"(Unknown key="{}")"_fmt, key);
+#if !defined(NDEBUG)
+          log::fatal(R"(Unknown key="{}")"_fmt, key);
+#endif
           // XXX CALLBACK ?????????????
           break;
         case Field::ERROR:
@@ -61,8 +63,8 @@ void MarketStreamParser::dispatch(
           // <symbol>@<stream>[@<freq>]
           auto full_name = std::get<std::string_view>(value);
           auto idx0 = full_name.find('@');  // <symbol>@<stream>
-          LOG_IF(FATAL, idx0 == full_name.npos)
-          (R"(Unexpected: name="")"_fmt, full_name);
+          if (ROQ_UNLIKELY(idx0 == full_name.npos))
+            log::fatal(R"(Unexpected: name="")"_fmt, full_name);
           symbol = std::string_view(full_name.begin(), idx0);
           // note! convert to uppercase
           std::transform(
@@ -79,7 +81,9 @@ void MarketStreamParser::dispatch(
             case Stream::UNDEFINED:
               break;  // wait
             case Stream::UNKNOWN:
-              DLOG(FATAL)("Unexpected (unknown stream)"_sv);
+#if !defined(NDEBUG)
+              log::fatal("Unexpected (unknown stream)"_sv);
+#endif
               return;
             case Stream::AGG_TRADE: {
               AggTrade agg_trade(value);
@@ -128,8 +132,8 @@ void MarketStreamParser::dispatch(
   }
   if (dispatched)
     return;
-  LOG(WARNING)(R"(message="{}")"_fmt, message);
-  LOG(FATAL)("Unexpected"_sv);
+  log::warn(R"(message="{}")"_fmt, message);
+  log::fatal("Unexpected"_sv);
 }
 
 }  // namespace json

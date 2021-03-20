@@ -143,7 +143,7 @@ void DropCopy::operator()(GatewayStatus status) {
         .priority = Priority::PRIMARY,
         .status = status_,
     };
-    LOG(INFO)("stream_update={}"_fmt, stream_update);
+    log::info("stream_update={}"_fmt, stream_update);
     server::create_trace_and_dispatch(trace_info, stream_update, handler_);
   }
 }
@@ -171,8 +171,8 @@ void DropCopy::parse(const std::string_view &message) {
       core::json::Buffer buffer(decode_buffer_);
       json::UserStreamParser::dispatch(*this, message, buffer, trace_info);
     } catch (std::exception &e) {
-      LOG(WARNING)(R"(message="{}")"_fmt, message);
-      LOG(FATAL)(R"(ERROR what="{}")"_fmt, e.what());
+      log::warn(R"(message="{}")"_fmt, message);
+      log::fatal(R"(ERROR what="{}")"_fmt, e.what());
     }
   });
 }
@@ -180,7 +180,7 @@ void DropCopy::parse(const std::string_view &message) {
 void DropCopy::operator()(
     const json::OutboundAccountInfo &outbound_account_info, const server::TraceInfo &trace_info) {
   profile_.outbound_account_info([&]() {
-    VLOG(3)(R"(outbound_account_info={})"_fmt, outbound_account_info);
+    log::trace_3(R"(outbound_account_info={})"_fmt, outbound_account_info);
     for (auto &item : outbound_account_info.balances) {
       FundsUpdate funds_update{
           .stream_id = stream_id_,
@@ -199,7 +199,7 @@ void DropCopy::operator()(
     const json::OutboundAccountPosition &outbound_account_position,
     const server::TraceInfo &trace_info) {
   profile_.outbound_account_position([&]() {
-    VLOG(3)(R"(outbound_account_position={})"_fmt, outbound_account_position);
+    log::trace_3(R"(outbound_account_position={})"_fmt, outbound_account_position);
     for (auto &item : outbound_account_position.balances) {
       FundsUpdate funds_update{
           .stream_id = stream_id_,
@@ -216,7 +216,7 @@ void DropCopy::operator()(
 
 void DropCopy::operator()(const json::BalanceUpdate &balance_update, const server::TraceInfo &) {
   profile_.balance_update([&]() {
-    VLOG(3)(R"(balance_update={})"_fmt, balance_update);
+    log::trace_3(R"(balance_update={})"_fmt, balance_update);
     // note! contains delta (changes) -- we're not going to use here
   });
 }
@@ -224,7 +224,7 @@ void DropCopy::operator()(const json::BalanceUpdate &balance_update, const serve
 void DropCopy::operator()(
     const json::ExecutionReport &execution_report, const server::TraceInfo &trace_info) {
   profile_.execution_report([&]() {
-    VLOG(3)(R"(execution_report={})"_fmt, execution_report);
+    log::trace_3(R"(execution_report={})"_fmt, execution_report);
     auto side = json::map(execution_report.side);
     auto status = json::map(execution_report.current_order_status);
     server::OMS_Lookup order_lookup{
@@ -247,8 +247,8 @@ void DropCopy::operator()(
           // XXX IMPLEMENT
         });
     if (!found) {
-      LOG(WARNING)("*** EXTERNAL ORDER ***"_sv);
-      LOG(WARNING)("execution_report={}"_fmt, execution_report);
+      log::warn("*** EXTERNAL ORDER ***"_sv);
+      log::warn("execution_report={}"_fmt, execution_report);
     }
   });
 }

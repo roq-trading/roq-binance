@@ -63,12 +63,12 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
       security_(create_security(config)), shared_(dispatcher),
       order_entry_(create_order_entry(*this, context_, stream_id_, security_, shared_)),
       drop_copy_(create_drop_copy(security_)) {
-  LOG_IF(FATAL, Flags::rest_cancel_on_disconnect())
-  ("Exchange does *NOT* support cancel on disconnect"_sv);
+  if (ROQ_UNLIKELY(Flags::rest_cancel_on_disconnect()))
+    log::fatal("Exchange does *NOT* support cancel on disconnect"_sv);
 }
 
 void Gateway::operator()(const Event<Start> &event) {
-  LOG(INFO)("Starting the gateway..."_sv);
+  log::info("Starting the gateway..."_sv);
   for (auto &[_, order_entry] : order_entry_)
     (*order_entry)(event);
   for (auto &[_, drop_copy] : drop_copy_)
@@ -79,7 +79,7 @@ void Gateway::operator()(const Event<Start> &event) {
 }
 
 void Gateway::operator()(const Event<Stop> &event) {
-  LOG(INFO)("Stopping the gateway..."_sv);
+  log::info("Stopping the gateway..."_sv);
   for (auto &iter : market_data_)
     (*iter)(event);
   for (auto &[_, drop_copy] : drop_copy_)
@@ -144,9 +144,9 @@ void Gateway::operator()(const OrderEntry::ListenKeyUpdate &listen_key_update) {
   assert(!account.empty());
   auto iter = drop_copy_.find(account);
   if (iter == drop_copy_.end()) {
-    LOG(FATAL)(R"(Unexpected: account="{}")"_fmt, account);
+    log::fatal(R"(Unexpected: account="{}")"_fmt, account);
   } else if (!static_cast<bool>((*iter).second)) {
-    LOG(INFO)(R"(Create drop-copy (user-stream) for account="{}")"_fmt, account);
+    log::info(R"(Create drop-copy (user-stream) for account="{}")"_fmt, account);
     auto drop_copy = std::make_unique<DropCopy>(
         *this, context_, ++stream_id_, *security_[account], shared_, listen_key_update.listen_key);
     MessageInfo message_info;  // XXX something sensible
@@ -166,7 +166,7 @@ void Gateway::operator()(OrderEntry::SymbolsUpdate &symbols_update) {
   for (;;) {
     if (symbols.empty())
       break;
-    LOG(INFO)(R"(Create market-data (user-stream))"_sv);
+    log::info(R"(Create market-data (user-stream))"_sv);
     auto market_data = std::make_unique<MarketData>(*this, context_, ++stream_id_, shared_);
     (*market_data).update_subscriptions(symbols);
     MessageInfo message_info;  // XXX something sensible

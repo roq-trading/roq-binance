@@ -27,8 +27,8 @@ void UserStreamParser::dispatch(
       return;
     break;
   }
-  LOG(WARNING)(R"(message="{}")"_fmt, message);
-  LOG(FATAL)("Unexpected"_sv);
+  log::warn(R"(message="{}")"_fmt, message);
+  log::fatal("Unexpected"_sv);
 }
 
 bool UserStreamParser::try_dispatch(
@@ -45,7 +45,7 @@ bool UserStreamParser::try_dispatch(
     case EventType::_24HR_MINI_TICKER:
     case EventType::BOOK_TICKER:
     case EventType::DEPTH_UPDATE:
-      LOG(FATAL)("Unexpected"_sv);
+      log::fatal("Unexpected"_sv);
       break;
     case EventType::OUTBOUND_ACCOUNT_INFO: {
       auto outbound_account_info = core::json::Parser::create<OutboundAccountInfo>(message, buffer);

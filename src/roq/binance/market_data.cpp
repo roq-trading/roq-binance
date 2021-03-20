@@ -177,7 +177,7 @@ void MarketData::operator()(GatewayStatus status) {
         .priority = Priority::PRIMARY,
         .status = status_,
     };
-    LOG(INFO)("stream_update={}"_fmt, stream_update);
+    log::info("stream_update={}"_fmt, stream_update);
     server::create_trace_and_dispatch(trace_info, stream_update, handler_);
   }
 }
@@ -294,23 +294,23 @@ void MarketData::parse(const std::string_view &message) {
       core::json::Buffer buffer(decode_buffer_);
       json::MarketStreamParser::dispatch(*this, message, buffer, trace_info);
     } catch (std::exception &e) {
-      LOG(WARNING)(R"(message="{}")"_fmt, message);
-      LOG(FATAL)(R"(ERROR what="{}")"_fmt, e.what());
+      log::warn(R"(message="{}")"_fmt, message);
+      log::fatal(R"(ERROR what="{}")"_fmt, e.what());
     }
   });
 }
 
 void MarketData::operator()(int32_t id, const json::Error &error) {
-  profile_.error([&]() { LOG(WARNING)(R"(id={}, error={})"_fmt, id, error); });
+  profile_.error([&]() { log::warn(R"(id={}, error={})"_fmt, id, error); });
 }
 
 void MarketData::operator()(int32_t id, const json::Result &result) {
-  profile_.result([&]() { LOG(INFO)(R"(id={}, result={})"_fmt, id, result); });
+  profile_.result([&]() { log::info(R"(id={}, result={})"_fmt, id, result); });
 }
 
 void MarketData::operator()(const json::AggTrade &agg_trade, const server::TraceInfo &trace_info) {
   profile_.agg_trade([&]() {
-    VLOG(3)(R"(agg_trade={})"_fmt, agg_trade);
+    log::trace_3(R"(agg_trade={})"_fmt, agg_trade);
     auto side = agg_trade.buyer_is_maker ? Side::BUY : Side::SELL;
     Trade trade{
         .side = side,
@@ -333,7 +333,7 @@ void MarketData::operator()(const json::AggTrade &agg_trade, const server::Trace
 
 void MarketData::operator()(const json::Trade &trade, const server::TraceInfo &trace_info) {
   profile_.trade([&]() {
-    VLOG(3)(R"(trade={})"_fmt, trade);
+    log::trace_3(R"(trade={})"_fmt, trade);
     auto side = trade.buyer_is_maker ? Side::BUY : Side::SELL;
     Trade trade_{
         .side = side,
@@ -357,7 +357,7 @@ void MarketData::operator()(const json::Trade &trade, const server::TraceInfo &t
 void MarketData::operator()(
     const json::MiniTicker &mini_ticker, const server::TraceInfo &trace_info) {
   profile_.mini_ticker([&]() {
-    VLOG(3)(R"(mini_ticker={})"_fmt, mini_ticker);
+    log::trace_3(R"(mini_ticker={})"_fmt, mini_ticker);
     Statistics statistics[] = {
         {.type = StatisticsType::HIGHEST_TRADED_PRICE, .value = mini_ticker.high_price},
         {.type = StatisticsType::LOWEST_TRADED_PRICE, .value = mini_ticker.low_price},
@@ -379,7 +379,7 @@ void MarketData::operator()(
 void MarketData::operator()(
     const json::BookTicker &book_ticker, const server::TraceInfo &trace_info) {
   profile_.book_ticker([&]() {
-    VLOG(3)(R"(book_ticker={})"_fmt, book_ticker);
+    log::trace_3(R"(book_ticker={})"_fmt, book_ticker);
     TopOfBook top_of_book{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
@@ -400,7 +400,7 @@ void MarketData::operator()(
 void MarketData::operator()(
     const std::string_view &symbol, const json::Depth &depth, const server::TraceInfo &trace_info) {
   profile_.depth([&]() {
-    VLOG(3)(R"(symbol="{}", depth={})"_fmt, symbol, depth);
+    log::trace_3(R"(symbol="{}", depth={})"_fmt, symbol, depth);
     core::back_emplacer bids(shared_.bids), asks(shared_.asks);
     for (auto &item : depth.bids)
       bids.emplace_back([&item](auto &result) { emplace(result, item); });
@@ -426,7 +426,7 @@ void MarketData::operator()(
     const json::DepthUpdate &depth_update,
     const server::TraceInfo &) {
   profile_.depth_update([&]() {
-    VLOG(3)(R"(symbol="{}", depth_update={})"_fmt, symbol, depth_update);
+    log::trace_3(R"(symbol="{}", depth_update={})"_fmt, symbol, depth_update);
     // do nothing
     // XXX why?
   });
