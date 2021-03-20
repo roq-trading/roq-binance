@@ -27,7 +27,7 @@ void MarketStreamParser::dispatch(
   std::string symbol;  // allocating because we need uppercase
   auto stream = Stream::UNDEFINED;
   bool dispatched = false;
-  for (int i = 0; i < 2 && dispatched == false; ++i) {
+  for (int i = 0; i < 2 && !dispatched; ++i) {
     core::json::Parser parser(message);
     auto root = parser.root();
     for (auto [key, value] : std::get<core::json::object_t>(root)) {
@@ -108,14 +108,14 @@ void MarketStreamParser::dispatch(
             case Stream::DEPTH5:
             case Stream::DEPTH10:
             case Stream::DEPTH20: {
-              assert(symbol.empty() == false);
+              assert(!symbol.empty());
               Depth depth(value, buffer);
               dispatched = true;
               handler(symbol, depth, trace_info);
               break;
             }
             case Stream::DEPTH: {
-              assert(symbol.empty() == false);
+              assert(!symbol.empty());
               DepthUpdate depth_update(value, buffer);
               dispatched = true;
               handler(symbol, depth_update, trace_info);

@@ -246,7 +246,7 @@ void DropCopy::operator()(
         [&]([[maybe_unused]] const auto &order, [[maybe_unused]] auto &result) {
           // XXX IMPLEMENT
         });
-    if (found == false) {
+    if (!found) {
       LOG(WARNING)("*** EXTERNAL ORDER ***"_sv);
       LOG(WARNING)("execution_report={}"_fmt, execution_report);
     }
