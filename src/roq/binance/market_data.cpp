@@ -301,16 +301,16 @@ void MarketData::parse(const std::string_view &message) {
 }
 
 void MarketData::operator()(int32_t id, const json::Error &error) {
-  profile_.error([&]() { log::warn(R"(id={}, error={})"_fmt, id, error); });
+  profile_.error([&]() { log::warn("id={}, error={}"_fmt, id, error); });
 }
 
 void MarketData::operator()(int32_t id, const json::Result &result) {
-  profile_.result([&]() { log::info(R"(id={}, result={})"_fmt, id, result); });
+  profile_.result([&]() { log::info("id={}, result={}"_fmt, id, result); });
 }
 
 void MarketData::operator()(const json::AggTrade &agg_trade, const server::TraceInfo &trace_info) {
   profile_.agg_trade([&]() {
-    log::trace_3(R"(agg_trade={})"_fmt, agg_trade);
+    log::trace_3("agg_trade={}"_fmt, agg_trade);
     auto side = agg_trade.buyer_is_maker ? Side::BUY : Side::SELL;
     Trade trade{
         .side = side,
@@ -333,7 +333,7 @@ void MarketData::operator()(const json::AggTrade &agg_trade, const server::Trace
 
 void MarketData::operator()(const json::Trade &trade, const server::TraceInfo &trace_info) {
   profile_.trade([&]() {
-    log::trace_3(R"(trade={})"_fmt, trade);
+    log::trace_3("trade={}"_fmt, trade);
     auto side = trade.buyer_is_maker ? Side::BUY : Side::SELL;
     Trade trade_{
         .side = side,
@@ -357,7 +357,7 @@ void MarketData::operator()(const json::Trade &trade, const server::TraceInfo &t
 void MarketData::operator()(
     const json::MiniTicker &mini_ticker, const server::TraceInfo &trace_info) {
   profile_.mini_ticker([&]() {
-    log::trace_3(R"(mini_ticker={})"_fmt, mini_ticker);
+    log::trace_3("mini_ticker={}"_fmt, mini_ticker);
     Statistics statistics[] = {
         {.type = StatisticsType::HIGHEST_TRADED_PRICE, .value = mini_ticker.high_price},
         {.type = StatisticsType::LOWEST_TRADED_PRICE, .value = mini_ticker.low_price},
@@ -379,7 +379,7 @@ void MarketData::operator()(
 void MarketData::operator()(
     const json::BookTicker &book_ticker, const server::TraceInfo &trace_info) {
   profile_.book_ticker([&]() {
-    log::trace_3(R"(book_ticker={})"_fmt, book_ticker);
+    log::trace_3("book_ticker={}"_fmt, book_ticker);
     TopOfBook top_of_book{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),

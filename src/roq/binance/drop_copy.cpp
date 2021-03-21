@@ -180,7 +180,7 @@ void DropCopy::parse(const std::string_view &message) {
 void DropCopy::operator()(
     const json::OutboundAccountInfo &outbound_account_info, const server::TraceInfo &trace_info) {
   profile_.outbound_account_info([&]() {
-    log::trace_3(R"(outbound_account_info={})"_fmt, outbound_account_info);
+    log::trace_3("outbound_account_info={}"_fmt, outbound_account_info);
     for (auto &item : outbound_account_info.balances) {
       FundsUpdate funds_update{
           .stream_id = stream_id_,
@@ -199,7 +199,7 @@ void DropCopy::operator()(
     const json::OutboundAccountPosition &outbound_account_position,
     const server::TraceInfo &trace_info) {
   profile_.outbound_account_position([&]() {
-    log::trace_3(R"(outbound_account_position={})"_fmt, outbound_account_position);
+    log::trace_3("outbound_account_position={}"_fmt, outbound_account_position);
     for (auto &item : outbound_account_position.balances) {
       FundsUpdate funds_update{
           .stream_id = stream_id_,
@@ -216,7 +216,7 @@ void DropCopy::operator()(
 
 void DropCopy::operator()(const json::BalanceUpdate &balance_update, const server::TraceInfo &) {
   profile_.balance_update([&]() {
-    log::trace_3(R"(balance_update={})"_fmt, balance_update);
+    log::trace_3("balance_update={}"_fmt, balance_update);
     // note! contains delta (changes) -- we're not going to use here
   });
 }
@@ -224,7 +224,7 @@ void DropCopy::operator()(const json::BalanceUpdate &balance_update, const serve
 void DropCopy::operator()(
     const json::ExecutionReport &execution_report, const server::TraceInfo &trace_info) {
   profile_.execution_report([&]() {
-    log::trace_3(R"(execution_report={})"_fmt, execution_report);
+    log::trace_3("execution_report={}"_fmt, execution_report);
     auto side = json::map(execution_report.side);
     auto status = json::map(execution_report.current_order_status);
     server::OMS_Lookup order_lookup{

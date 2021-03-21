@@ -166,7 +166,7 @@ void Gateway::operator()(OrderEntry::SymbolsUpdate &symbols_update) {
   for (;;) {
     if (symbols.empty())
       break;
-    log::info(R"(Create market-data (user-stream))"_sv);
+    log::info("Create market-data (user-stream)"_sv);
     auto market_data = std::make_unique<MarketData>(*this, context_, ++stream_id_, shared_);
     (*market_data).update_subscriptions(symbols);
     MessageInfo message_info;  // XXX something sensible

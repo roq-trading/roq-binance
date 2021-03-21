@@ -64,7 +64,7 @@ void MarketStreamParser::dispatch(
           auto full_name = std::get<std::string_view>(value);
           auto idx0 = full_name.find('@');  // <symbol>@<stream>
           if (ROQ_UNLIKELY(idx0 == full_name.npos))
-            log::fatal(R"(Unexpected: name="")"_fmt, full_name);
+            log::fatal(R"(Unexpected: name="{}")"_fmt, full_name);
           symbol = std::string_view(full_name.begin(), idx0);
           // note! convert to uppercase
           std::transform(
