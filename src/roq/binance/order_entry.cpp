@@ -4,8 +4,8 @@
 
 #include <utility>
 
-#include "roq/mask.h"
-#include "roq/update.h"
+#include "roq/utils/mask.h"
+#include "roq/utils/update.h"
 
 #include "roq/core/metrics/factory.h"
 
@@ -20,7 +20,7 @@ namespace binance {
 
 namespace {
 static const auto NAME = "om"_sv;
-static const auto SUPPORTS = Mask{
+static const auto SUPPORTS = utils::Mask{
     SupportType::REFERENCE_DATA,
     SupportType::MARKET_STATUS,
     SupportType::CREATE_ORDER,
@@ -173,7 +173,7 @@ void OrderEntry::operator()(const core::web::Client::Latency &latency) {
 }
 
 void OrderEntry::operator()(GatewayStatus status) {
-  if (update(status_, status)) {
+  if (utils::update(status_, status)) {
     server::TraceInfo trace_info;
     StreamUpdate stream_update{
         .stream_id = stream_id_,
@@ -497,7 +497,7 @@ void OrderEntry::operator()(const json::CancelOrder &) {
 void OrderEntry::operator()(const json::ListenKey &listen_key) {
   server::TraceInfo trace_info;  // note! not correct (*after* message parsing)
   bool initial = listen_key_.empty();
-  if (update(listen_key_, listen_key.listen_key)) {
+  if (utils::update(listen_key_, listen_key.listen_key)) {
     if (initial) {
       log::info(R"(Listen key has been acquired (value="{}"))"_fmt, listen_key_);
       ListenKeyUpdate listen_key_update{
