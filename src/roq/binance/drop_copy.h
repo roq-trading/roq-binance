@@ -80,7 +80,7 @@ class DropCopy final : public core::web::Socket::Handler, public json::UserStrea
   // web socket
   core::web::Socket connection_;
   // buffers
-  core::utils::Buffer decode_buffer_;
+  core::Buffer decode_buffer_;
   // metrics
   struct {
     core::metrics::Counter disconnect;

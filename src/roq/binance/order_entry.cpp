@@ -29,6 +29,9 @@ static const auto SUPPORTS = utils::Mask{
     SupportType::FUNDS,
 };
 
+static const auto KEEP_ALIVE = true;
+static const auto ALLOW_PIPELINING = true;
+
 static const auto ACCEPT_ALL = "*/*"_sv;
 static const auto ACCEPT_JSON = "application/json"_sv;
 static const auto CONTENT_TYPE_JSON = "application/json"_sv;
@@ -50,16 +53,16 @@ OrderEntry::OrderEntry(
       connection_(
           *this,
           context,
+          Flags::decode_buffer_size(),
+          Flags::encode_buffer_size(),
           core::URI(Flags::rest_uri()),
           ROQ_PACKAGE_NAME,
-          true,  // keep alive
-          Flags::rest_request_queue_depth(),
+          KEEP_ALIVE,
+          ALLOW_PIPELINING,
           Flags::rest_request_timeout(),
           Flags::rest_rate_limit_interval(),
           Flags::rest_rate_limit_max_requests(),
           Flags::rest_ping_freq(),
-          Flags::decode_buffer_size(),
-          Flags::encode_buffer_size(),
           Flags::rest_ping_path()),
       decode_buffer_(Flags::decode_buffer_size()),
       counter_{
@@ -200,6 +203,7 @@ void OrderEntry::get(std::function<void(const core::Promise<json::ExchangeInfo> 
       {},  // content_type
       {},  // headers
       {},  // body
+      {},  // QoS
       [this, callback{std::move(callback)}](auto &response) {
         profile_.exchange_info([&]() {
           try {
@@ -235,6 +239,7 @@ void OrderEntry::get(std::function<void(const core::Promise<json::Account> &)> &
       {},  // content_type
       headers,
       {},  // body
+      {},  // QoS
       [this, callback{std::move(callback)}](auto &response) {
         profile_.account([&]() {
           try {
@@ -266,6 +271,7 @@ void OrderEntry::get(std::function<void(const core::Promise<json::ListenKey> &)>
       {},  // content_type
       headers,
       {},  // body
+      {},  // QoS
       [this, callback{std::move(callback)}](auto &response) {
         profile_.listen_key([&]() {
           try {
@@ -419,6 +425,7 @@ void OrderEntry::create_order(
       CONTENT_TYPE_JSON,
       headers,
       {},  // body
+      core::web::QualityOfService::IMMEDIATE,
       [this, callback{std::move(callback)}](auto &response) {
         profile_.new_order([&]() {
           try {
@@ -469,6 +476,7 @@ void OrderEntry::cancel_order(
       CONTENT_TYPE_JSON,
       headers,
       {},  // body
+      core::web::QualityOfService::IMMEDIATE,
       [this, callback{std::move(callback)}](auto &response) {
         profile_.cancel_order([&]() {
           try {

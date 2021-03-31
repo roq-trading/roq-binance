@@ -99,7 +99,7 @@ class MarketData final : public core::web::Socket::Handler,
   // web socket
   core::web::Socket connection_;
   // buffers
-  core::utils::Buffer decode_buffer_;
+  core::Buffer decode_buffer_;
   // session
   uint64_t request_id_ = {};
   // metrics
