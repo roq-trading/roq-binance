@@ -61,7 +61,7 @@ class DropCopy final : public core::web::Socket::Handler, public json::UserStrea
   void operator()(const core::web::Socket::Text &) override;
 
  private:
-  void operator()(GatewayStatus);
+  void operator()(ConnectionStatus);
 
   uint32_t download(DropCopyState);
 
@@ -99,7 +99,7 @@ class DropCopy final : public core::web::Socket::Handler, public json::UserStrea
   // state
   // state
   bool ready_ = false;
-  GatewayStatus status_ = {};
+  ConnectionStatus status_ = {};
   server::Download<DropCopyState> download_;
 };
 

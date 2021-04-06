@@ -140,12 +140,12 @@ void MarketData::operator()(const core::web::Socket::Connected &) {
 void MarketData::operator()(const core::web::Socket::Disconnected &) {
   ++counter_.disconnect;
   ready_ = false;
-  (*this)(GatewayStatus::DISCONNECTED);
+  (*this)(ConnectionStatus::DISCONNECTED);
   download_.reset();
 }
 
 void MarketData::operator()(const core::web::Socket::Ready &) {
-  (*this)(GatewayStatus::DOWNLOADING);
+  (*this)(ConnectionStatus::DOWNLOADING);
   download_.begin();
 }
 
@@ -166,7 +166,7 @@ void MarketData::operator()(const core::web::Socket::Text &text) {
   parse(text.payload);
 }
 
-void MarketData::operator()(GatewayStatus status) {
+void MarketData::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     server::TraceInfo trace_info;
     StreamUpdate stream_update{
@@ -191,7 +191,7 @@ uint32_t MarketData::download(MarketDataState state) {
       subscribe(symbols_);
       return {};
     case MarketDataState::DONE:
-      (*this)(GatewayStatus::READY);
+      (*this)(ConnectionStatus::READY);
       assert(!ready_);
       ready_ = true;
       return {};

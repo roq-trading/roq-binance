@@ -61,7 +61,7 @@ class MarketData final : public core::web::Socket::Handler,
   void operator()(const core::web::Socket::Text &) override;
 
  private:
-  void operator()(GatewayStatus);
+  void operator()(ConnectionStatus);
 
   uint32_t download(MarketDataState);
 
@@ -118,7 +118,7 @@ class MarketData final : public core::web::Socket::Handler,
   std::vector<std::string> symbols_;
   // state
   bool ready_ = false;
-  GatewayStatus status_ = {};
+  ConnectionStatus status_ = {};
   server::Download<MarketDataState> download_;
 };
 

@@ -106,12 +106,12 @@ void DropCopy::operator()(const core::web::Socket::Connected &) {
 void DropCopy::operator()(const core::web::Socket::Disconnected &) {
   ++counter_.disconnect;
   ready_ = false;
-  (*this)(GatewayStatus::DISCONNECTED);
+  (*this)(ConnectionStatus::DISCONNECTED);
   download_.reset();
 }
 
 void DropCopy::operator()(const core::web::Socket::Ready &) {
-  (*this)(GatewayStatus::DOWNLOADING);
+  (*this)(ConnectionStatus::DOWNLOADING);
   download_.begin();
 }
 
@@ -132,7 +132,7 @@ void DropCopy::operator()(const core::web::Socket::Text &text) {
   parse(text.payload);
 }
 
-void DropCopy::operator()(GatewayStatus status) {
+void DropCopy::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     server::TraceInfo trace_info;
     StreamUpdate stream_update{
@@ -154,7 +154,7 @@ uint32_t DropCopy::download(DropCopyState state) {
       assert(false);
       break;
     case DropCopyState::DONE:
-      (*this)(GatewayStatus::READY);
+      (*this)(ConnectionStatus::READY);
       assert(!ready_);
       ready_ = true;
       // subscribe(symbols_);

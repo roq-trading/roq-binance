@@ -152,7 +152,7 @@ void OrderEntry::operator()(const core::web::Client::Connected &) {
   if (download_.downloading()) {
     download_.bump();
   } else {
-    (*this)(GatewayStatus::DOWNLOADING);
+    (*this)(ConnectionStatus::DOWNLOADING);
     download_.begin();
   }
 }
@@ -160,7 +160,7 @@ void OrderEntry::operator()(const core::web::Client::Connected &) {
 void OrderEntry::operator()(const core::web::Client::Disconnected &) {
   ++counter_.disconnect;
   ready_ = false;
-  (*this)(GatewayStatus::DISCONNECTED);
+  (*this)(ConnectionStatus::DISCONNECTED);
   if (!download_.downloading())
     download_.reset();
 }
@@ -175,7 +175,7 @@ void OrderEntry::operator()(const core::web::Client::Latency &latency) {
   latency_.ping.update(latency.sample);
 }
 
-void OrderEntry::operator()(GatewayStatus status) {
+void OrderEntry::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     server::TraceInfo trace_info;
     StreamUpdate stream_update{
@@ -304,7 +304,7 @@ uint32_t OrderEntry::download(OrderEntryState state) {
       download_exchange_info();
       return 1u;
     case OrderEntryState::DONE:
-      (*this)(GatewayStatus::READY);
+      (*this)(ConnectionStatus::READY);
       assert(!ready_);
       ready_ = true;
       return {};
