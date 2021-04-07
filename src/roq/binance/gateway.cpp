@@ -106,7 +106,7 @@ void Gateway::operator()(const Event<Connected> &) {
 void Gateway::operator()(const Event<Disconnected> &) {
 }
 
-void Gateway::operator()(const server::Trace<StreamUpdate> &event) {
+void Gateway::operator()(const server::Trace<StreamStatus> &event) {
   dispatcher_(event);
 }
 
