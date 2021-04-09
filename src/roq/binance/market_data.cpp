@@ -10,6 +10,8 @@
 #include "roq/core/back_emplacer.h"
 #include "roq/core/charconv.h"
 
+#include "roq/core/tools/exception.h"
+
 #include "roq/core/string_utils/string_builder.h"
 
 #include "roq/core/metrics/factory.h"
@@ -293,9 +295,9 @@ void MarketData::parse(const std::string_view &message) {
       server::TraceInfo trace_info;
       core::json::Buffer buffer(decode_buffer_);
       json::MarketStreamParser::dispatch(*this, message, buffer, trace_info);
-    } catch (std::exception &e) {
+    } catch (...) {
       log::warn(R"(message="{}")"_fmt, message);
-      log::fatal(R"(ERROR what="{}")"_fmt, e.what());
+      core::tools::UnhandledException::terminate();
     }
   });
 }

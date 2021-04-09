@@ -170,9 +170,9 @@ void DropCopy::parse(const std::string_view &message) {
       server::TraceInfo trace_info;
       core::json::Buffer buffer(decode_buffer_);
       json::UserStreamParser::dispatch(*this, message, buffer, trace_info);
-    } catch (std::exception &e) {
+    } catch (...) {
       log::warn(R"(message="{}")"_fmt, message);
-      log::fatal(R"(ERROR what="{}")"_fmt, e.what());
+      core::tools::UnhandledException::terminate();
     }
   });
 }
