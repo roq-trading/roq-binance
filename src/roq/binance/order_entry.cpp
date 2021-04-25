@@ -7,6 +7,8 @@
 #include "roq/utils/mask.h"
 #include "roq/utils/update.h"
 
+#include "roq/core/charconv.h"
+
 #include "roq/core/metrics/factory.h"
 
 #include "roq/binance/flags.h"
@@ -35,6 +37,8 @@ static const auto ALLOW_PIPELINING = true;
 static const auto ACCEPT_ALL = "*/*"_sv;
 static const auto ACCEPT_JSON = "application/json"_sv;
 static const auto CONTENT_TYPE_JSON = "application/json"_sv;
+
+static const auto X_MBX_USED_WEIGHT = "x-mbx-used-weight-1m"_sv;
 
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(const std::string_view &group, const std::string_view &function)
@@ -168,6 +172,17 @@ void OrderEntry::operator()(const core::web::Client::Disconnected &) {
   (*this)(ConnectionStatus::DISCONNECTED);
   if (!download_.downloading())
     download_.reset();
+}
+
+void OrderEntry::operator()(const core::web::Client::Header &header) {
+  if (utils::case_insensitive_compare(header.name, X_MBX_USED_WEIGHT) != 0)
+    return;
+  try {
+    auto value = core::from_chars<uint32_t>(header.value);
+    connection_.update_rate_limit_usage(value);
+  } catch (std::exception &) {
+    // XXX maybe warn?
+  }
 }
 
 void OrderEntry::operator()(const core::web::Client::Latency &latency) {

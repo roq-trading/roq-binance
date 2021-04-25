@@ -82,6 +82,7 @@ class OrderEntry final : public core::web::Client::Handler {
  protected:
   void operator()(const core::web::Client::Connected &);
   void operator()(const core::web::Client::Disconnected &);
+  void operator()(const core::web::Client::Header &);
   void operator()(const core::web::Client::Latency &);
 
   void operator()(ConnectionStatus);
