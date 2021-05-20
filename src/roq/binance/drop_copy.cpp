@@ -227,6 +227,9 @@ void DropCopy::operator()(
     log::trace_3("execution_report={}"_fmt, execution_report);
     auto side = json::map(execution_report.side);
     auto status = json::map(execution_report.current_order_status);
+    auto order_type = json::map(execution_report.order_type);
+    auto time_in_force = json::map(execution_report.time_in_force);
+    auto last_liquidity = execution_report.is_trade_maker ? Liquidity::ADDED : Liquidity::REMOVED;
     OrderUpdate order_update{
         .stream_id = stream_id_,
         .account = security_.get_account(),
@@ -246,6 +249,15 @@ void DropCopy::operator()(
         .external_account = {},
         .external_order_id = execution_report.client_order_id,
         .routing_id = {},
+        .order_type = order_type,
+        .time_in_force = time_in_force,
+        .execution_instruction = {},
+        .stop_price = execution_report.stop_price,
+        .max_show_quantity = NaN,
+        .average_traded_price = NaN,
+        .last_traded_price = execution_report.last_executed_price,
+        .last_traded_quantity = execution_report.last_executed_quantity,
+        .last_liquidity = last_liquidity,
     };
     auto found = shared_.find_order(
         stream_id_,
