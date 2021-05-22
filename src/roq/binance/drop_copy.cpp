@@ -229,7 +229,7 @@ void DropCopy::operator()(
     auto status = json::map(execution_report.current_order_status);
     auto order_type = json::map(execution_report.order_type);
     auto time_in_force = json::map(execution_report.time_in_force);
-    auto last_liquidity = execution_report.is_trade_maker ? Liquidity::ADDED : Liquidity::REMOVED;
+    auto last_liquidity = execution_report.is_trade_maker ? Liquidity::MAKER : Liquidity::TAKER;
     OrderUpdate order_update{
         .stream_id = stream_id_,
         .account = security_.get_account(),
