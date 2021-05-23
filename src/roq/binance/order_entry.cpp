@@ -154,7 +154,8 @@ uint16_t OrderEntry::operator()(
 
 uint16_t OrderEntry::operator()(
     const Event<CancelAllOrders> &, [[maybe_unused]] const std::string_view &request_id) {
-  log::fatal("NOT IMPLEMENTED"_sv);
+  log::warn("*** CANCEL ALL ORDERS *NOT* IMPLEMENTED ***"_sv);
+  return stream_id_;
 }
 
 void OrderEntry::operator()(const core::web::Client::Connected &) {
