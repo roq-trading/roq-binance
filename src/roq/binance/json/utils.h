@@ -98,36 +98,40 @@ inline roq::OrderStatus map(json::OrderStatus side) {
       return roq::OrderStatus::WORKING;
     case json::OrderStatus::PARTIALLY_FILLED:
       return roq::OrderStatus::WORKING;
+    case json::OrderStatus::EXPIRED:
+      return roq::OrderStatus::EXPIRED;
     case json::OrderStatus::CANCELED:
       return roq::OrderStatus::CANCELED;
-    case json::OrderStatus::PENDING_CANCEL:
-      return roq::OrderStatus::PENDING;
     case json::OrderStatus::REJECTED:
       return roq::OrderStatus::REJECTED;
-    case json::OrderStatus::EXPIRED:
+    case json::OrderStatus::PENDING_CANCEL:  // XXX HANS what do do?
       break;
   }
   return roq::OrderStatus::UNDEFINED;
 }
 
-inline json::OrderStatus map(roq::OrderStatus side) {
-  switch (side) {
+inline json::OrderStatus map(roq::OrderStatus value) {
+  switch (value) {
     case roq::OrderStatus::UNDEFINED:
       break;
     case roq::OrderStatus::SENT:
       break;
-    case roq::OrderStatus::REJECTED:
-      return json::OrderStatus::REJECTED;
     case roq::OrderStatus::ACCEPTED:
       break;
-    case roq::OrderStatus::PENDING:
+    case roq::OrderStatus::SUSPENDED:
       break;
     case roq::OrderStatus::WORKING:
       return json::OrderStatus::NEW;
+    case roq::OrderStatus::STOPPED:
+      break;
     case roq::OrderStatus::COMPLETED:
-      break;  // XXX NO COMPLETED ???
+      break;  // XXX HANS no enum for COMPLETED ???
+    case roq::OrderStatus::EXPIRED:
+      break;
     case roq::OrderStatus::CANCELED:
       return json::OrderStatus::CANCELED;
+    case roq::OrderStatus::REJECTED:
+      return json::OrderStatus::REJECTED;
   }
   return json::OrderStatus::UNDEFINED;
 }
@@ -238,14 +242,32 @@ inline json::TimeInForce map(roq::TimeInForce time_in_force) {
   switch (time_in_force) {
     case roq::TimeInForce::UNDEFINED:
       break;
-    case roq::TimeInForce::FOK:
-      return json::TimeInForce::FOK;
-    case roq::TimeInForce::IOC:
-      return json::TimeInForce::IOC;
     case roq::TimeInForce::GFD:
       break;
     case roq::TimeInForce::GTC:
       return json::TimeInForce::GTC;
+    case roq::TimeInForce::OPG:
+      break;
+    case roq::TimeInForce::IOC:
+      return json::TimeInForce::IOC;
+    case roq::TimeInForce::FOK:
+      return json::TimeInForce::FOK;
+    case roq::TimeInForce::GTX:
+      break;
+    case roq::TimeInForce::GTD:
+      break;
+    case roq::TimeInForce::AT_THE_CLOSE:
+      break;
+    case roq::TimeInForce::GOOD_THROUGH_CROSSING:
+      break;
+    case roq::TimeInForce::AT_CROSSING:
+      break;
+    case roq::TimeInForce::GOOD_FOR_TIME:
+      break;
+    case roq::TimeInForce::GFA:
+      break;
+    case roq::TimeInForce::GFM:
+      break;
   }
   return json::TimeInForce::UNDEFINED;
 }
