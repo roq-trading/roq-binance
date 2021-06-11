@@ -247,8 +247,7 @@ void DropCopy::operator()(
         .create_time_utc = {},
         .update_time_utc = execution_report.transaction_time,
         .external_account = {},
-        .external_order_id = execution_report.client_order_id,
-        .routing_id = {},
+        .external_order_id = execution_report.client_order_id,  // XXX should user order_id
         .status = status,
         .price = execution_report.price,
         .stop_price = execution_report.stop_price,
@@ -258,12 +257,15 @@ void DropCopy::operator()(
         .last_traded_price = execution_report.last_executed_price,
         .last_traded_quantity = execution_report.last_executed_quantity,
         .last_liquidity = last_liquidity,
+        .routing_id = {},
+        .max_request_version = {},
+        .max_response_version = {},
+        .max_accepted_version = {},
     };
     auto found = shared_.find_order(
         stream_id_,
         trace_info,
         order_update,
-        execution_report.original_client_order_id,
         execution_report.client_order_id,
         [&]([[maybe_unused]] const auto &order, [[maybe_unused]] auto result) {
           // XXX IMPLEMENT
