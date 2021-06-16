@@ -238,7 +238,6 @@ void DropCopy::operator()(
         .symbol = execution_report.symbol,
         .side = side,
         .position_effect = {},
-        .quantity = NaN,
         .max_show_quantity = NaN,
         .order_type = order_type,
         .time_in_force = time_in_force,
@@ -249,6 +248,7 @@ void DropCopy::operator()(
         .external_account = {},
         .external_order_id = execution_report.client_order_id,  // XXX should user order_id
         .status = status,
+        .quantity = NaN,
         .price = execution_report.price,
         .stop_price = execution_report.stop_price,
         .remaining_quantity = NaN,
