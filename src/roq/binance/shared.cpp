@@ -2,8 +2,6 @@
 
 #include "roq/binance/shared.h"
 
-#include <magic_enum.hpp>
-
 #include "roq/binance/flags.h"
 
 namespace roq {
