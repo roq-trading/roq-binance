@@ -63,7 +63,7 @@ class OrderEntry final : public core::web::Client::Handler {
   OrderEntry(OrderEntry &&) = delete;
   OrderEntry(const OrderEntry &) = delete;
 
-  bool ready() const;
+  bool ready() const { return status_ == ConnectionStatus::READY; }
 
   void operator()(const Event<Start> &);
   void operator()(const Event<Stop> &);

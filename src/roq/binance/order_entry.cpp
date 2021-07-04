@@ -82,10 +82,6 @@ OrderEntry::OrderEntry(
       download_(Flags::rest_request_timeout(), [this](auto state) { return download(state); }) {
 }
 
-bool OrderEntry::ready() const {
-  return connection_.ready();
-}
-
 void OrderEntry::operator()(const Event<Start> &) {
   connection_.start();
 }
@@ -400,6 +396,8 @@ void OrderEntry::create_order(
     const CreateOrder &create_order,
     const std::string_view &cl_ord_id,
     std::function<void(const core::Promise<json::NewOrder> &)> &&callback) {
+  if (!ready())
+    throw server::OMS_ErrorException(Error::GATEWAY_NOT_READY);
   auto timestamp = core::get_realtime_clock();
   auto side = json::map(create_order.side).as_raw_text();
   auto type = json::map(create_order.order_type).as_raw_text();
@@ -464,11 +462,13 @@ void OrderEntry::create_order(
 }
 
 void OrderEntry::cancel_order(
-    [[maybe_unused]] const CancelOrder &cancel_order,
+    const CancelOrder &,
     const server::Order &order,
     const std::string_view &request_id,
     [[maybe_unused]] const std::string_view &previous_request_id,
     std::function<void(const core::Promise<json::CancelOrder> &)> &&callback) {
+  if (!ready())
+    throw server::OMS_ErrorException(Error::GATEWAY_NOT_READY, order);
   auto timestamp = core::get_realtime_clock();
   // XXX use encode buffer
   auto body = roq::format(
