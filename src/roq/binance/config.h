@@ -33,6 +33,7 @@ class Config final : public server::Config, public server::ConfigReader::Handler
   void operator()(server::Symbols &&) override;
   void operator()(server::Account &&) override;
   void operator()(server::User &&) override;
+  void operator()(server::RateLimit &&) override;
   void operator()(const std::string_view &key, toml::node &) override;
 
  public:
@@ -40,6 +41,7 @@ class Config final : public server::Config, public server::ConfigReader::Handler
   server::Symbols symbols;
   absl::flat_hash_map<std::string, server::Account> accounts;
   std::string master_account_;
+  absl::flat_hash_map<std::string, server::RateLimit> rate_limits;
 };
 
 /*
@@ -65,13 +67,15 @@ struct fmt::formatter<roq::binance::Config> : public roq::formatter {
         ctx.out(),
         R"({{)"
         R"(symbols={}, )"
-        R"(users=[{}], )"
         R"(accounts=[{}], )"
-        R"(master_account="{}")"
+        R"(master_account="{}", )"
+        R"(users=[{}], )"
+        R"(rate_limits=[{}])"
         R"(}})"_sv,
         value.symbols,
-        roq::join(value.users, ", "_sv),
         roq::join(value.accounts, ", "_sv),
-        value.master_account_);
+        value.master_account_,
+        roq::join(value.users, ", "_sv),
+        roq::join(value.rate_limits, ", "_sv));
   }
 };
