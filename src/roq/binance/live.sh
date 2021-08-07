@@ -17,8 +17,6 @@ URI="binance.com"
 REST_URI="https://api.$URI"
 WS_URI="wss://stream.$URI:9443/stream"
 
-echo "$WS_URI"
-
 $PREFIX ./roq-binance \
 	--name "$NAME" \
 	--config_file "$CONFIG_FILE" \
