@@ -230,10 +230,8 @@ void DropCopy::operator()(
     auto order_type = json::map(execution_report.order_type);
     auto time_in_force = json::map(execution_report.time_in_force);
     auto last_liquidity = execution_report.is_trade_maker ? Liquidity::MAKER : Liquidity::TAKER;
-    OrderUpdate order_update{
-        .stream_id = stream_id_,
+    oms::OrderUpdate order_update{
         .account = security_.get_account(),
-        .order_id = {},
         .exchange = Flags::exchange(),
         .symbol = execution_report.symbol,
         .side = side,
@@ -257,10 +255,6 @@ void DropCopy::operator()(
         .last_traded_quantity = execution_report.last_executed_quantity,
         .last_traded_price = execution_report.last_executed_price,
         .last_liquidity = last_liquidity,
-        .routing_id = {},
-        .max_request_version = {},
-        .max_response_version = {},
-        .max_accepted_version = {},
     };
     if (shared_.update_order(
             execution_report.client_order_id,
