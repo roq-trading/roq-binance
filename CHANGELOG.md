@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Changed
+
+* Use `string_buffer` + `std::back_inserter` instead of `string_builder` (#53)
+
 ## 0.7.6 &ndash; 2021-09-02
 
 ### Changed
