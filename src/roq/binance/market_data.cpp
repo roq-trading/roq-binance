@@ -323,7 +323,7 @@ void MarketData::operator()(const json::AggTrade &agg_trade, const server::Trace
         .trade_id = {},
     };
     core::charconv::to_string(std::back_inserter(trade.trade_id), agg_trade.agg_trade_id);
-    TradeSummary trade_summary{
+    const TradeSummary trade_summary{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
         .symbol = agg_trade.symbol,
@@ -345,7 +345,7 @@ void MarketData::operator()(const json::Trade &trade, const server::TraceInfo &t
         .trade_id = {},
     };
     core::charconv::to_string(std::back_inserter(trade_.trade_id), trade.trade_id);
-    TradeSummary trade_summary{
+    const TradeSummary trade_summary{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
         .symbol = trade.symbol,
@@ -366,7 +366,7 @@ void MarketData::operator()(
         {.type = StatisticsType::OPEN_PRICE, .value = mini_ticker.open_price},
         {.type = StatisticsType::CLOSE_PRICE, .value = mini_ticker.close_price},
     };
-    StatisticsUpdate statistics_update{
+    const StatisticsUpdate statistics_update{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
         .symbol = mini_ticker.symbol,
@@ -382,7 +382,7 @@ void MarketData::operator()(
     const json::BookTicker &book_ticker, const server::TraceInfo &trace_info) {
   profile_.book_ticker([&]() {
     log::info<3>("book_ticker={}"_sv, book_ticker);
-    TopOfBook top_of_book{
+    const TopOfBook top_of_book{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
         .symbol = book_ticker.symbol,
@@ -409,7 +409,7 @@ void MarketData::operator()(
     for (auto &item : depth.asks)
       asks.emplace_back([&item](auto &result) { emplace(result, item); });
     if (!(bids.empty() && asks.empty())) {
-      MarketByPriceUpdate market_by_price_update{
+      const MarketByPriceUpdate market_by_price_update{
           .stream_id = stream_id_,
           .exchange = Flags::exchange(),
           .symbol = symbol,
@@ -418,7 +418,11 @@ void MarketData::operator()(
           .snapshot = true,
           .exchange_time_utc = {},
       };
-      create_trace_and_dispatch(trace_info, market_by_price_update, handler_, true);
+      try {
+        create_trace_and_dispatch(trace_info, market_by_price_update, handler_, true);
+      } catch (market::BadState &) {
+        log::fatal("*** RESUBSCRIBE REQUIRED HERE ***"_sv);
+      }
     }
   });
 }
