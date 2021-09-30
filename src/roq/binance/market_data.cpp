@@ -419,7 +419,7 @@ void MarketData::operator()(
           .exchange_time_utc = {},
       };
       try {
-        create_trace_and_dispatch(trace_info, market_by_price_update, handler_, true);
+        create_trace_and_dispatch(trace_info, market_by_price_update, handler_, true, true);
       } catch (market::BadState &) {
         log::fatal("*** RESUBSCRIBE REQUIRED HERE ***"_sv);
       }
