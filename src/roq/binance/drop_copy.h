@@ -97,7 +97,6 @@ class DropCopy final : public core::web::Socket::Handler, public json::UserStrea
   // cache
   Shared &shared_;
   // state
-  // state
   bool ready_ = false;
   ConnectionStatus status_ = {};
   server::Download<DropCopyState> download_;

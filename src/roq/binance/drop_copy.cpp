@@ -40,7 +40,8 @@ DropCopy::DropCopy(
     Security &security,
     Shared &shared,
     const std::string_view &listen_key)
-    : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"_sv, stream_id_, NAME)),
+    : handler_(handler), stream_id_(stream_id),
+      name_(fmt::format("{}:{}:{}"_sv, stream_id_, NAME, security.get_account())),
       connection_(
           *this,
           context,

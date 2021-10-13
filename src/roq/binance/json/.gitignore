@@ -40,6 +40,10 @@ mini_ticker.h
 mini_ticker.cpp
 new_order.h
 new_order.cpp
+open_orders.h
+open_orders.cpp
+order.h
+order.cpp
 order_status.h
 order_status.cpp
 order_type.h

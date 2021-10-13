@@ -2,13 +2,8 @@
 
 #pragma once
 
-#include <absl/container/flat_hash_set.h>
-
 #include <string>
 #include <string_view>
-#include <vector>
-
-#include "roq/core/promise.h"
 
 #include "roq/core/buffer.h"
 
@@ -29,9 +24,9 @@
 
 #include "roq/binance/json/account.h"
 #include "roq/binance/json/cancel_order.h"
-#include "roq/binance/json/exchange_info.h"
 #include "roq/binance/json/listen_key.h"
 #include "roq/binance/json/new_order.h"
+#include "roq/binance/json/open_orders.h"
 
 namespace roq {
 namespace binance {
@@ -43,10 +38,6 @@ class OrderEntry final : public core::web::Client::Handler {
     std::string_view listen_key;
   };
 
-  struct SymbolsUpdate final {
-    std::vector<std::string> &symbols;
-  };
-
   struct Handler {
     virtual void operator()(const server::Trace<StreamStatus> &) = 0;
     virtual void operator()(const server::Trace<ExternalLatency> &) = 0;
@@ -55,7 +46,6 @@ class OrderEntry final : public core::web::Client::Handler {
     virtual void operator()(const server::Trace<FundsUpdate> &, bool is_last) = 0;
     // cross-communication
     virtual void operator()(const ListenKeyUpdate &) = 0;
-    virtual void operator()(SymbolsUpdate &) = 0;
   };
 
   OrderEntry(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &);
@@ -88,40 +78,37 @@ class OrderEntry final : public core::web::Client::Handler {
  protected:
   void operator()(const core::web::Client::Connected &);
   void operator()(const core::web::Client::Disconnected &);
-  void operator()(const core::web::Client::Header &);
   void operator()(const core::web::Client::Latency &);
 
   void operator()(ConnectionStatus);
 
-  template <typename T>
-  void get(std::function<void(const core::Promise<T> &)> &&);
-
   uint32_t download(OrderEntryState state);
 
-  void download_listen_key();
-  void download_account();
-  void download_exchange_info();
+  void get_listen_key();
+  void get_listen_key_ack(const core::web::Response &);
+  void operator()(const server::Trace<json::ListenKey> &);
+
+  void get_account();
+  void get_account_ack(const core::web::Response &);
+  void operator()(const server::Trace<json::Account> &);
+
+  void get_open_orders();
+  void get_open_orders_ack(const core::web::Response &);
+  void operator()(const server::Trace<json::OpenOrders> &);
 
   void refresh_listen_key();
 
-  void create_order(
-      const CreateOrder &,
-      const std::string_view &cl_ord_id,
-      std::function<void(const core::Promise<json::NewOrder> &)> &&);
+  void new_order(const CreateOrder &, const std::string_view &cl_ord_id);
+  void new_order_ack(const core::web::Response &);
+  void operator()(const server::Trace<json::NewOrder> &);
 
   void cancel_order(
       const CancelOrder &,
       const oms::Order &,
       const std::string_view &request_id,
-      const std::string_view &previous_request_id,
-      std::function<void(const core::Promise<json::CancelOrder> &)> &&);
-
-  void operator()(const json::NewOrder &);
-  void operator()(const json::CancelOrder &);
-
-  void operator()(const json::ListenKey &);
-  void operator()(const json::Account &);
-  void operator()(const json::ExchangeInfo &);
+      const std::string_view &previous_request_id);
+  void cancel_order_ack(const core::web::Response &);
+  void operator()(const server::Trace<json::CancelOrder> &);
 
  private:
   Handler &handler_;
@@ -137,7 +124,13 @@ class OrderEntry final : public core::web::Client::Handler {
     core::metrics::Counter disconnect;
   } counter_;
   struct {
-    core::metrics::Profile exchange_info, account, listen_key, depth, new_order, cancel_order;
+    core::metrics::Profile  //
+        listen_key,
+        listen_key_ack,                //
+        account, account_ack,          //
+        open_orders, open_orders_ack,  //
+        new_order, new_order_ack,      //
+        cancel_order, cancel_order_ack;
   } profile_;
   struct {
     core::metrics::Latency ping;
@@ -146,7 +139,6 @@ class OrderEntry final : public core::web::Client::Handler {
   Security &security_;
   // cache
   Shared &shared_;
-  absl::flat_hash_set<std::string> all_symbols_;
   std::string listen_key_;
   // state
   bool ready_ = false;

@@ -26,6 +26,8 @@ set(AUTOGEN_SCHEMAS
     listen_key.json
     mini_ticker.json
     new_order.json
+    open_orders.json
+    order.json
     order_status.json
     order_type.json
     outbound_account_info.json

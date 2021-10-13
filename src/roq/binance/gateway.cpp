@@ -58,6 +58,7 @@ static auto create_drop_copy(T &security) {
 
 Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
     : dispatcher_(dispatcher), security_(create_security(config)), shared_(dispatcher),
+      rest_(*this, context_, ++stream_id_, shared_),
       order_entry_(create_order_entry(*this, context_, stream_id_, security_, shared_)),
       drop_copy_(create_drop_copy(security_)) {
   if (ROQ_UNLIKELY(Flags::rest_cancel_on_disconnect()))
@@ -66,6 +67,7 @@ Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
 
 void Gateway::operator()(const Event<Start> &event) {
   log::info("Starting the gateway..."_sv);
+  rest_(event);
   for (auto &[_, order_entry] : order_entry_)
     (*order_entry)(event);
   for (auto &[_, drop_copy] : drop_copy_)
@@ -84,9 +86,11 @@ void Gateway::operator()(const Event<Stop> &event) {
       (*drop_copy)(event);
   for (auto &[_, order_entry] : order_entry_)
     (*order_entry)(event);
+  rest_(event);
 }
 
 void Gateway::operator()(const Event<Timer> &event) {
+  rest_(event);
   for (auto &[_, order_entry] : order_entry_)
     (*order_entry)(event);
   for (auto &[_, drop_copy] : drop_copy_)
@@ -150,24 +154,7 @@ void Gateway::operator()(const server::Trace<FundsUpdate> &event, bool is_last) 
   dispatcher_(event, is_last);
 }
 
-void Gateway::operator()(const OrderEntry::ListenKeyUpdate &listen_key_update) {
-  auto &account = listen_key_update.account;
-  assert(!account.empty());
-  auto iter = drop_copy_.find(account);
-  if (iter == drop_copy_.end()) {
-    log::fatal(R"(Unexpected: account="{}")"_sv, account);
-  } else if (!static_cast<bool>((*iter).second)) {
-    log::info(R"(Create drop-copy (user-stream) for account="{}")"_sv, account);
-    auto drop_copy = std::make_unique<DropCopy>(
-        *this, context_, ++stream_id_, *security_[account], shared_, listen_key_update.listen_key);
-    MessageInfo message_info;  // XXX something sensible
-    Start start;
-    create_event_and_dispatch(*drop_copy, message_info, start);
-    (*iter).second = std::move(drop_copy);
-  }
-}
-
-void Gateway::operator()(OrderEntry::SymbolsUpdate &symbols_update) {
+void Gateway::operator()(Rest::SymbolsUpdate &symbols_update) {
   auto &symbols = symbols_update.symbols;
   for (auto &iter : market_data_) {
     if (symbols.empty())
@@ -184,6 +171,23 @@ void Gateway::operator()(OrderEntry::SymbolsUpdate &symbols_update) {
     Start start;
     create_event_and_dispatch(*market_data, message_info, start);
     market_data_.emplace_back(std::move(market_data));
+  }
+}
+
+void Gateway::operator()(const OrderEntry::ListenKeyUpdate &listen_key_update) {
+  auto &account = listen_key_update.account;
+  assert(!account.empty());
+  auto iter = drop_copy_.find(account);
+  if (iter == drop_copy_.end()) {
+    log::fatal(R"(Unexpected: account="{}")"_sv, account);
+  } else if (!static_cast<bool>((*iter).second)) {
+    log::info(R"(Create drop-copy (user-stream) for account="{}")"_sv, account);
+    auto drop_copy = std::make_unique<DropCopy>(
+        *this, context_, ++stream_id_, *security_[account], shared_, listen_key_update.listen_key);
+    MessageInfo message_info;  // XXX something sensible
+    Start start;
+    create_event_and_dispatch(*drop_copy, message_info, start);
+    (*iter).second = std::move(drop_copy);
   }
 }
 

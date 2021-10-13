@@ -9,6 +9,8 @@
 
 #include "roq/literals.h"
 
+#include "roq/core/clock.h"
+
 #include "roq/core/binascii/hex.h"
 
 #include "roq/core/crypto/hmac.h"
@@ -19,7 +21,18 @@ namespace roq {
 namespace binance {
 namespace tools {
 
-Hasher::Hasher(const std::string_view &secret) : hmac_(secret) {
+Hasher::Hasher(const std::string_view &key, const std::string_view &secret)
+    : key_(key), hmac_(secret) {
+}
+
+std::string Hasher::create_query() {
+  auto now = core::get_realtime_clock();
+  auto [timestamp, signature] = create_signature(now);
+  return fmt::format("?{}&signature={}"_sv, timestamp, signature);
+}
+
+std::string Hasher::create_headers() const {
+  return fmt::format("X-MBX-APIKEY: {}\r\n"_sv, key_);
 }
 
 std::pair<std::string, std::string> Hasher::create_signature(std::chrono::nanoseconds now) {
