@@ -246,10 +246,11 @@ void OrderEntry::get_listen_key_ack(const core::web::Response &response) {
       auto listen_key = core::json::Parser::create<json::ListenKey>(body);
       server::Trace event(trace_info, listen_key);
       (*this)(event);
-      download_.check(state);
+      download_.check_relaxed(state);
     } catch (core::NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"_sv, typeid(e).name(), e.what());
-      download_.retry(state);
+      if (download_.downloading())
+        download_.retry(state);
     }
   });
 }
