@@ -90,10 +90,8 @@ class Rest final : public core::web::Client::Handler {
   // cache
   Shared &shared_;
   absl::flat_hash_set<std::string> all_symbols_;
-  std::string listen_key_;
   // state
   bool ready_ = false;
-  std::chrono::nanoseconds listen_key_refresh_ = {};
   ConnectionStatus status_ = {};
   server::Download<RestState> download_;
 };

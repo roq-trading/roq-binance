@@ -29,8 +29,6 @@ static const auto SUPPORTS = utils::Mask{
 
 static const auto ALLOW_PIPELINING = true;
 
-static const auto X_MBX_USED_WEIGHT = "x-mbx-used-weight-1m"_sv;
-
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(const std::string_view &group, const std::string_view &function)
       : core::metrics::Factory(server::Flags::name(), group, function) {}
