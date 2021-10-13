@@ -419,16 +419,17 @@ void OrderEntry::refresh_listen_key() {
 
 // new-order
 
-void OrderEntry::new_order(const CreateOrder &create_order, const std::string_view &cl_ord_id) {
+void OrderEntry::new_order(const CreateOrder &create_order, const std::string_view &request_id) {
   profile_.new_order([&]() {
     if (!ready())
       throw oms::NotReadyException();
     auto method = core::http::Method::POST;
     auto path = "/api/v3/order"_sv;
-    auto timestamp = core::get_realtime_clock();
     auto side = json::map(create_order.side).as_raw_text();
     auto type = json::map(create_order.order_type).as_raw_text();
     auto time_in_force = json::map(create_order.time_in_force).as_raw_text();
+    std::chrono::milliseconds recv_window = utils::safe_cast(Flags::rest_order_recv_window());
+    std::chrono::milliseconds timestamp = utils::safe_cast(core::get_realtime_clock());
     auto body = fmt::format(
         R"({{)"
         R"("symbol":"{}",)"
@@ -436,11 +437,9 @@ void OrderEntry::new_order(const CreateOrder &create_order, const std::string_vi
         R"("type":"{}",)"
         R"("timeInForce":"{}",)"
         R"("quantity":{},)"
-        R"("quoteOrderQty":{},)"  // XXX ???
         R"("price":{},)"
         R"("newClientOrderId":"{}")"
-        R"("stopPrice":{},)"   // XXX ???
-        R"("icebergQty":{},)"  // XXX ???
+        R"("stopPrice":{},)"
         R"("recvWindow":{},)"
         R"("timestamp":{})"
         R"(}})"_sv,
@@ -449,13 +448,10 @@ void OrderEntry::new_order(const CreateOrder &create_order, const std::string_vi
         type,
         time_in_force,
         create_order.quantity,
-        0.0,
         create_order.price,
-        cl_ord_id,
-        0.0,
-        0.0,
-        std::chrono::duration_cast<std::chrono::milliseconds>(Flags::rest_order_recv_window())
-            .count(),
+        request_id,
+        create_order.stop_price,
+        recv_window.count(),
         timestamp.count());
     log::debug(R"(body="{}")"_sv, body);
     auto headers = security_.create_headers();
@@ -470,7 +466,7 @@ void OrderEntry::new_order(const CreateOrder &create_order, const std::string_vi
         .quality_of_service = core::web::QualityOfService::IMMEDIATE,
         .rate_limit_weight = 1,
     };
-    connection_(cl_ord_id, request, [this]([[maybe_unused]] auto &request_id, auto &response) {
+    connection_(request_id, request, [this]([[maybe_unused]] auto &request_id, auto &response) {
       new_order_ack(response);
     });
   });
@@ -509,6 +505,7 @@ void OrderEntry::cancel_order(
       throw oms::NotReadyException();
     auto method = core::http::Method::DELETE;
     auto path = "/api/v3/order"_sv;
+    std::chrono::milliseconds recv_window = utils::safe_cast(Flags::rest_order_recv_window());
     auto timestamp = core::get_realtime_clock();
     auto body = fmt::format(
         R"({{)"
@@ -519,10 +516,9 @@ void OrderEntry::cancel_order(
         R"("timestamp":{})"
         R"(}})"_sv,
         order.symbol,
-        order.external_order_id,
+        previous_request_id,
         request_id,
-        std::chrono::duration_cast<std::chrono::milliseconds>(Flags::rest_order_recv_window())
-            .count(),
+        recv_window.count(),
         timestamp.count());
     log::debug(R"(body="{}")"_sv, body);
     auto headers = security_.create_headers();

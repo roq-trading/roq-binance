@@ -98,7 +98,7 @@ class OrderEntry final : public core::web::Client::Handler {
 
   void refresh_listen_key();
 
-  void new_order(const CreateOrder &, const std::string_view &cl_ord_id);
+  void new_order(const CreateOrder &, const std::string_view &request_id);
   void new_order_ack(const core::web::Response &);
   void operator()(const server::Trace<json::NewOrder> &);
 
