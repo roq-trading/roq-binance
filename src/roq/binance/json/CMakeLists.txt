@@ -1,6 +1,6 @@
 set(TARGET_NAME "${PROJECT_NAME}-json")
 
-set(SOURCES market_stream_parser.cpp user_stream_parser.cpp)
+set(SOURCES market_stream_parser.cpp user_stream_parser.cpp utils.cpp)
 
 include(RoqAutogen)
 
@@ -42,7 +42,8 @@ set(AUTOGEN_SCHEMAS
     symbol_status.json
     ticker.json
     time_in_force.json
-    trade.json)
+    trade.json
+    user_stream.json)
 
 roq_autogen(
   OUTPUT

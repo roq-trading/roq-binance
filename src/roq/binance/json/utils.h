@@ -54,14 +54,16 @@ inline roq::OrderStatus map(json::OrderStatus side) {
       return roq::OrderStatus::WORKING;
     case json::OrderStatus::PARTIALLY_FILLED:
       return roq::OrderStatus::WORKING;
-    case json::OrderStatus::EXPIRED:
-      return roq::OrderStatus::EXPIRED;
+    case json::OrderStatus::FILLED:
+      return roq::OrderStatus::COMPLETED;
     case json::OrderStatus::CANCELED:
       return roq::OrderStatus::CANCELED;
-    case json::OrderStatus::REJECTED:
-      return roq::OrderStatus::REJECTED;
     case json::OrderStatus::PENDING_CANCEL:  // XXX HANS what do do?
       break;
+    case json::OrderStatus::REJECTED:
+      return roq::OrderStatus::REJECTED;
+    case json::OrderStatus::EXPIRED:
+      return roq::OrderStatus::EXPIRED;
   }
   return roq::OrderStatus::UNDEFINED;
 }
@@ -229,6 +231,8 @@ inline json::TimeInForce map(roq::TimeInForce time_in_force) {
   }
   return json::TimeInForce::UNDEFINED;
 }
+
+extern roq::Error guess_error(int32_t code);
 
 }  // namespace json
 }  // namespace binance

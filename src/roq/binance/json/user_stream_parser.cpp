@@ -6,6 +6,8 @@
 
 #include "roq/core/json/parser.h"
 
+#include "roq/binance/json/user_stream.h"
+
 using namespace roq::literals;
 
 namespace roq {
@@ -17,13 +19,17 @@ void UserStreamParser::dispatch(
     const std::string_view &message,
     core::json::Buffer &buffer,
     const server::TraceInfo &trace_info) {
-  core::json::Parser parser(message);
+  // XXX HANS this is bad... 3 levels of parsing
+  // XXX HANS buffer will not be used for first iteration
+  auto user_stream = core::json::Parser::create<UserStream>(message, buffer);
+  auto &data = user_stream.data;
+  core::json::Parser parser(data);
   auto root = parser.root();
   for (auto [key, value] : std::get<core::json::object_t>(root)) {
     if (key.compare("e"_sv) != 0)
       continue;
     EventType event_type(value);
-    if (try_dispatch(handler, message, buffer, event_type, trace_info))
+    if (try_dispatch(handler, data, buffer, event_type, trace_info))
       return;
     break;
   }

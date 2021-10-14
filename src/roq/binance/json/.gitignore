@@ -74,3 +74,5 @@ time_in_force.h
 time_in_force.cpp
 trade.h
 trade.cpp
+user_stream.h
+user_stream.cpp

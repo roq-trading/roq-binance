@@ -14,6 +14,7 @@
 
 #include "roq/binance/flags.h"
 
+#include "roq/binance/json/error.h"
 #include "roq/binance/json/utils.h"
 
 using namespace roq::literals;
@@ -257,18 +258,18 @@ void OrderEntry::get_listen_key_ack(const core::web::Response &response) {
 
 void OrderEntry::operator()(const server::Trace<json::ListenKey> &event) {
   auto &[trace_info, listen_key] = event;
-  log::info<1>("listen_key={}"_sv, listen_key);
+  log::info<2>("listen_key={}"_sv, listen_key);
   bool initial = listen_key_.empty();
   if (utils::update(listen_key_, listen_key.listen_key)) {
     if (initial) {
-      log::info(R"(Listen key has been acquired (value="{}"))"_sv, listen_key_);
+      log::info<1>(R"(Listen key has been acquired (value="{}"))"_sv, listen_key_);
       ListenKeyUpdate listen_key_update{
           .account = security_.get_account(),
           .listen_key = listen_key.listen_key,
       };
       create_trace_and_dispatch(trace_info, listen_key_update, handler_);
     } else {
-      log::info("Listen key has been refreshed!"_sv);
+      log::info<1>("Listen key has been refreshed!"_sv);
     }
   }
   auto now = core::get_system_clock();
@@ -321,7 +322,7 @@ void OrderEntry::get_account_ack(const core::web::Response &response) {
 
 void OrderEntry::operator()(const server::Trace<json::Account> &event) {
   auto &[trace_info, account] = event;
-  log::info<1>("account={}"_sv, account);
+  log::info<2>("account={}"_sv, account);
   for (auto &item : account.balances) {
     FundsUpdate funds_update{
         .stream_id = stream_id_,
@@ -389,7 +390,7 @@ void OrderEntry::get_open_orders_ack(const core::web::Response &response) {
 
 void OrderEntry::operator()(const server::Trace<json::OpenOrders> &event) {
   auto &[trace_info, open_orders] = event;
-  log::info<1>("open_orders={}"_sv, open_orders);
+  log::info<2>("open_orders={}"_sv, open_orders);
   /*
   for (auto &item : account.balances) {
     FundsUpdate funds_update{
@@ -413,7 +414,7 @@ void OrderEntry::refresh_listen_key() {
   auto now = core::get_system_clock();
   if (listen_key_refresh_ == listen_key_refresh_.zero() || now < listen_key_refresh_)
     return;
-  log::info("Refreshing listen key..."_sv);
+  log::info<1>("Refreshing listen key..."_sv);
   listen_key_refresh_ = now + Flags::rest_listen_key_refresh();
   get_listen_key();
 }
@@ -455,16 +456,15 @@ void OrderEntry::new_order(
           recv_window.count());
     } else {
       body = fmt::format(
-          R"({{)"
-          R"("symbol":"{}",)"
-          R"("side":"{}",)"
-          R"("type":"{}",)"
-          R"("timeInForce":"{}",)"
-          R"("quantity":{:.{}f},)"
-          R"("price":{:.{}f},)"
-          R"("newClientOrderId":"{}",)"
-          R"("stopPrice":{:.{}f},)"
-          R"("recvWindow":{})"
+          R"(symbol={}&)"
+          R"(side={}&)"
+          R"(type={}&)"
+          R"(timeInForce={}&)"
+          R"(quantity={:.{}f}&)"
+          R"(price={:.{}f}&)"
+          R"(newClientOrderId={}&)"
+          R"(stopPrice={:.{}f}&)"
+          R"(recvWindow={})"
           R"(}})"_sv,
           create_order.symbol,
           side,
@@ -509,17 +509,47 @@ void OrderEntry::new_order_ack(
   server::TraceInfo trace_info;
   profile_.new_order_ack([&]() {
     try {
-      // status=BAD_REQUEST, body="{"code":-1102,"msg":"Mandatory parameter 'symbol' was not sent,
-      // was empty/null, or malformed."}"
       log::debug("user_id={}, order_id={}, version={}"_sv, user_id, order_id, version);
       auto status = response.raw_status();
       auto body = response.body();
       log::debug(R"(status={}, body="{}")"_sv, status, body);
-      response.expect(core::http::Status::OK);
-      core::json::Buffer buffer(decode_buffer_);
-      auto new_order = core::json::Parser::create<json::NewOrder>(body, buffer);
-      server::Trace event(trace_info, new_order);
-      (*this)(event, user_id, order_id, version);
+      auto category = core::http::to_category(status);
+      switch (category) {
+        case core::http::Category::SUCCESS: {  // 2xx
+          core::json::Buffer buffer(decode_buffer_);
+          auto new_order = core::json::Parser::create<json::NewOrder>(body, buffer);
+          server::Trace event(trace_info, new_order);
+          (*this)(event, user_id, order_id, version);
+          break;
+        }
+        case core::http::Category::CLIENT_ERROR: {  // 4xx
+          auto error = core::json::Parser::create<json::Error>(body);
+          oms::Response response{
+              .type = RequestType::CREATE_ORDER,
+              .origin = Origin::EXCHANGE,
+              .status = RequestStatus::REJECTED,
+              .error = json::guess_error(error.code),
+              .text = error.msg,
+              .version = version,
+              .request_id = {},
+              .quantity = NaN,
+              .price = NaN,
+          };
+          if (shared_.update_order(
+                  user_id,
+                  order_id,
+                  stream_id_,
+                  trace_info,
+                  response,
+                  []([[maybe_unused]] auto &order) {})) {
+          } else {
+            log::warn("Did not find order: user_id={}, order_id={}"_sv, user_id, order_id);
+          }
+          break;
+        }
+        default:
+          response.expect(core::http::Status::OK);  // throws
+      }
     } catch (core::NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"_sv, typeid(e).name(), e.what());
       oms::Response response{
@@ -667,10 +697,42 @@ void OrderEntry::cancel_order_ack(
       auto status = response.raw_status();
       auto body = response.body();
       log::debug(R"(status={}, body="{}")"_sv, status, body);
-      response.expect(core::http::Status::OK);
-      auto cancel_order = core::json::Parser::create<json::CancelOrder>(body);
-      server::Trace event(trace_info, cancel_order);
-      (*this)(event, user_id, order_id, version);
+      auto category = core::http::to_category(status);
+      switch (category) {
+        case core::http::Category::SUCCESS: {  // 2xx
+          auto cancel_order = core::json::Parser::create<json::CancelOrder>(body);
+          server::Trace event(trace_info, cancel_order);
+          (*this)(event, user_id, order_id, version);
+          break;
+        }
+        case core::http::Category::CLIENT_ERROR: {  // 4xx
+          auto error = core::json::Parser::create<json::Error>(body);
+          oms::Response response{
+              .type = RequestType::CANCEL_ORDER,
+              .origin = Origin::EXCHANGE,
+              .status = RequestStatus::REJECTED,
+              .error = json::guess_error(error.code),
+              .text = error.msg,
+              .version = version,
+              .request_id = {},
+              .quantity = NaN,
+              .price = NaN,
+          };
+          if (shared_.update_order(
+                  user_id,
+                  order_id,
+                  stream_id_,
+                  trace_info,
+                  response,
+                  []([[maybe_unused]] auto &order) {})) {
+          } else {
+            log::warn("Did not find order: user_id={}, order_id={}"_sv, user_id, order_id);
+          }
+          break;
+        }
+        default:
+          response.expect(core::http::Status::OK);  // throws
+      }
     } catch (core::NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"_sv, typeid(e).name(), e.what());
       oms::Response response{

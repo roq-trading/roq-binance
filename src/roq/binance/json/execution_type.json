@@ -2,6 +2,11 @@
 "name": "ExecutionType",
 "type": "enum",
 "values": [
-	{ "name": "NEW" }
+	{ "name": "NEW" },
+	{ "name": "CANCELED" },
+	{ "name": "REPLACED" },
+	{ "name": "REJECTED" },
+	{ "name": "TRADE" },
+	{ "name": "EXPIRED" }
 ]
 }

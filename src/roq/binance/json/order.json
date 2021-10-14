@@ -1,6 +1,6 @@
 {
 "name": "Order",
-"type": "array_item",
+"type": "item",
 "values": [
 	{ "name": "symbol", "type": "std::string_view" },
 	{ "name": "orderId", "type": "int64_t" },
@@ -10,10 +10,16 @@
 	{ "name": "price", "type": "double" },
 	{ "name": "origQty", "type": "double" },
 	{ "name": "executedQty", "type": "double" },
-	{ "name": "cumulativeQuoteQty", "type": "double" },
+	{ "name": "cummulativeQuoteQty", "type": "double" },
 	{ "name": "status", "type": "OrderStatus" },
 	{ "name": "timeInForce", "type": "TimeInForce" },
 	{ "name": "type", "type": "OrderType" },
-	{ "name": "side", "type": "Side" }
+	{ "name": "side", "type": "Side" },
+	{ "name": "stopPrice", "type": "double" },
+	{ "name": "icebergQty", "type": "double" },
+	{ "name": "time", "type": "std::chrono::milliseconds" },
+	{ "name": "updateTime", "type": "std::chrono::milliseconds" },
+	{ "name": "isWorking", "type": "bool" },
+	{ "name": "origQuoteOrderQty", "type": "double" }
 ]
 }

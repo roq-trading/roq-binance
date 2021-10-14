@@ -184,7 +184,7 @@ void DropCopy::parse(const std::string_view &message) {
 void DropCopy::operator()(
     const json::OutboundAccountInfo &outbound_account_info, const server::TraceInfo &trace_info) {
   profile_.outbound_account_info([&]() {
-    log::info<3>("outbound_account_info={}"_sv, outbound_account_info);
+    log::info<2>("outbound_account_info={}"_sv, outbound_account_info);
     for (auto &item : outbound_account_info.balances) {
       FundsUpdate funds_update{
           .stream_id = stream_id_,
@@ -203,7 +203,7 @@ void DropCopy::operator()(
     const json::OutboundAccountPosition &outbound_account_position,
     const server::TraceInfo &trace_info) {
   profile_.outbound_account_position([&]() {
-    log::info<3>("outbound_account_position={}"_sv, outbound_account_position);
+    log::info<2>("outbound_account_position={}"_sv, outbound_account_position);
     for (auto &item : outbound_account_position.balances) {
       FundsUpdate funds_update{
           .stream_id = stream_id_,
@@ -220,7 +220,7 @@ void DropCopy::operator()(
 
 void DropCopy::operator()(const json::BalanceUpdate &balance_update, const server::TraceInfo &) {
   profile_.balance_update([&]() {
-    log::info<3>("balance_update={}"_sv, balance_update);
+    log::info<2>("balance_update={}"_sv, balance_update);
     // note! contains delta (changes) -- we're not going to use here
   });
 }
@@ -228,7 +228,7 @@ void DropCopy::operator()(const json::BalanceUpdate &balance_update, const serve
 void DropCopy::operator()(
     const json::ExecutionReport &execution_report, const server::TraceInfo &trace_info) {
   profile_.execution_report([&]() {
-    log::info<3>("execution_report={}"_sv, execution_report);
+    log::info<2>("execution_report={}"_sv, execution_report);
     auto side = json::map(execution_report.side);
     auto status = json::map(execution_report.current_order_status);
     auto order_type = json::map(execution_report.order_type);
@@ -267,8 +267,8 @@ void DropCopy::operator()(
             order_update,
             []([[maybe_unused]] auto &order) {})) {
     } else {
-      log::warn("*** EXTERNAL ORDER ***"_sv);
-      log::warn("execution_report={}"_sv, execution_report);
+      log::warn<1>("*** EXTERNAL ORDER ***"_sv);
+      log::warn<2>("execution_report={}"_sv, execution_report);
     }
   });
 }

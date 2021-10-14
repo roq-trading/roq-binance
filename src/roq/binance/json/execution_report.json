@@ -2,8 +2,8 @@
 "name": "ExecutionReport",
 "type": "item",
 "values": [
-	{ "raw": "e", "name": "event_type", "type": "std::string_view" },
-	{ "raw": "E", "name": "event_time", "type": "std::string_view" },
+	{ "raw": "e", "name": "event_type", "type": "EventType" },
+	{ "raw": "E", "name": "event_time", "type": "std::chrono::milliseconds" },
 	{ "raw": "s", "name": "symbol", "type": "std::string_view" },
 	{ "raw": "c", "name": "client_order_id", "type": "std::string_view" },
 	{ "raw": "S", "name": "side", "type": "Side" },
