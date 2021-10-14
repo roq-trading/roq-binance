@@ -116,8 +116,8 @@ void OrderEntry::operator()(metrics::Writer &writer) {
 }
 
 uint16_t OrderEntry::operator()(
-    const Event<CreateOrder> &event, const oms::Order &, const std::string_view &request_id) {
-  new_order(event.value, request_id);
+    const Event<CreateOrder> &event, const oms::Order &order, const std::string_view &request_id) {
+  new_order(event, order, request_id);
   return stream_id_;
 }
 
@@ -134,7 +134,7 @@ uint16_t OrderEntry::operator()(
     const oms::Order &order,
     const std::string_view &request_id,
     const std::string_view &previous_request_id) {
-  cancel_order(event.value, order, request_id, previous_request_id);
+  cancel_order(event, order, request_id, previous_request_id);
   return stream_id_;
 }
 
@@ -420,46 +420,72 @@ void OrderEntry::refresh_listen_key() {
 
 // new-order
 
-void OrderEntry::new_order(const CreateOrder &create_order, const std::string_view &request_id) {
+void OrderEntry::new_order(
+    const Event<CreateOrder> &event, const oms::Order &order, const std::string_view &request_id) {
   profile_.new_order([&]() {
     if (!ready())
       throw oms::NotReadyException();
+    auto &[message_info, create_order] = event;
     auto method = core::http::Method::POST;
     auto path = "/api/v3/order"_sv;
     auto side = json::map(create_order.side).as_raw_text();
     auto type = json::map(create_order.order_type).as_raw_text();
     auto time_in_force = json::map(create_order.time_in_force).as_raw_text();
     std::chrono::milliseconds recv_window = utils::safe_cast(Flags::rest_order_recv_window());
-    std::chrono::milliseconds timestamp = utils::safe_cast(core::get_realtime_clock());
-    auto body = fmt::format(
-        R"({{)"
-        R"("symbol":"{}",)"
-        R"("side":"{}",)"
-        R"("type":"{}",)"
-        R"("timeInForce":"{}",)"
-        R"("quantity":{},)"
-        R"("price":{},)"
-        R"("newClientOrderId":"{}")"
-        R"("stopPrice":{},)"
-        R"("recvWindow":{},)"
-        R"("timestamp":{})"
-        R"(}})"_sv,
-        create_order.symbol,
-        side,
-        type,
-        time_in_force,
-        create_order.quantity,
-        create_order.price,
-        request_id,
-        create_order.stop_price,
-        recv_window.count(),
-        timestamp.count());
+    std::string body;
+    if (std::isnan(create_order.stop_price)) {
+      body = fmt::format(
+          R"(symbol={}&)"
+          R"(side={}&)"
+          R"(type={}&)"
+          R"(timeInForce={}&)"
+          R"(quantity={:.{}f}&)"
+          R"(price={:.{}f}&)"
+          R"(newClientOrderId={}&)"
+          R"(recvWindow={})"_sv,
+          create_order.symbol,
+          side,
+          type,
+          time_in_force,
+          create_order.quantity,
+          order.quantity_decimal_digits,
+          create_order.price,
+          order.price_decimal_digits,
+          request_id,
+          recv_window.count());
+    } else {
+      body = fmt::format(
+          R"({{)"
+          R"("symbol":"{}",)"
+          R"("side":"{}",)"
+          R"("type":"{}",)"
+          R"("timeInForce":"{}",)"
+          R"("quantity":{:.{}f},)"
+          R"("price":{:.{}f},)"
+          R"("newClientOrderId":"{}",)"
+          R"("stopPrice":{:.{}f},)"
+          R"("recvWindow":{})"
+          R"(}})"_sv,
+          create_order.symbol,
+          side,
+          type,
+          time_in_force,
+          create_order.quantity,
+          order.quantity_decimal_digits,
+          create_order.price,
+          order.price_decimal_digits,
+          request_id,
+          create_order.stop_price,
+          order.price_decimal_digits,
+          recv_window.count());
+    }
     log::debug(R"(body="{}")"_sv, body);
+    auto query = security_.create_query(body);
     auto headers = security_.create_headers();
     core::web::Request request{
         .method = method,
         .path = path,
-        .query = {},
+        .query = query,
         .accept = core::http::Accept::JSON,
         .content_type = core::http::ContentType::JSON,
         .headers = headers,
@@ -467,66 +493,152 @@ void OrderEntry::new_order(const CreateOrder &create_order, const std::string_vi
         .quality_of_service = core::web::QualityOfService::IMMEDIATE,
         .rate_limit_weight = 1,
     };
-    connection_(request_id, request, [this]([[maybe_unused]] auto &request_id, auto &response) {
-      new_order_ack(response);
-    });
+    connection_(
+        request_id,
+        request,
+        [this, user_id = message_info.source, order_id = create_order.order_id](
+            [[maybe_unused]] auto &request_id, auto &response) {
+          uint32_t version = 1;
+          new_order_ack(response, user_id, order_id, version);
+        });
   });
 }
 
-void OrderEntry::new_order_ack(const core::web::Response &response) {
+void OrderEntry::new_order_ack(
+    const core::web::Response &response, uint8_t user_id, uint32_t order_id, uint32_t version) {
+  server::TraceInfo trace_info;
   profile_.new_order_ack([&]() {
-    server::TraceInfo trace_info;
     try {
-      response.expect(core::http::Status::OK);
+      // status=BAD_REQUEST, body="{"code":-1102,"msg":"Mandatory parameter 'symbol' was not sent,
+      // was empty/null, or malformed."}"
+      log::debug("user_id={}, order_id={}, version={}"_sv, user_id, order_id, version);
+      auto status = response.raw_status();
       auto body = response.body();
+      log::debug(R"(status={}, body="{}")"_sv, status, body);
+      response.expect(core::http::Status::OK);
       core::json::Buffer buffer(decode_buffer_);
       auto new_order = core::json::Parser::create<json::NewOrder>(body, buffer);
       server::Trace event(trace_info, new_order);
-      (*this)(event);
+      (*this)(event, user_id, order_id, version);
     } catch (core::NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"_sv, typeid(e).name(), e.what());
-      // XXX HANS ???
+      oms::Response response{
+          .type = RequestType::CREATE_ORDER,
+          .origin = Origin::GATEWAY,
+          .status = e.request_status(),
+          .error = e.error(),
+          .text = e.what(),
+          .version = version,
+          .request_id = {},
+          .quantity = NaN,
+          .price = NaN,
+      };
+      if (shared_.update_order(
+              user_id,
+              order_id,
+              stream_id_,
+              trace_info,
+              response,
+              []([[maybe_unused]] auto &order) {})) {
+      } else {
+        log::warn("Did not find order: user_id={}, order_id={}"_sv, user_id, order_id);
+      }
     }
   });
 }
 
-void OrderEntry::operator()(const server::Trace<json::NewOrder> &) {
-  throw NotImplementedException();
+void OrderEntry::operator()(
+    const server::Trace<json::NewOrder> &event,
+    uint8_t user_id,
+    uint32_t order_id,
+    uint32_t version) {
+  auto &[trace_info, new_order] = event;
+  auto side = json::map(new_order.side);
+  auto order_type = json::map(new_order.type);
+  auto time_in_force = json::map(new_order.time_in_force);
+  auto order_status = json::map(new_order.status);
+  std::string_view external_order_id;  // XXX HANS new_order.order_id is int64_t
+  // XXX HANS fills???
+  oms::Response response{
+      .type = RequestType::CREATE_ORDER,
+      .origin = Origin::EXCHANGE,
+      .status = RequestStatus::ACCEPTED,
+      .error = {},
+      .text = {},
+      .version = version,
+      .request_id = {},
+      .quantity = NaN,
+      .price = NaN,
+  };
+  oms::OrderUpdate order_update{
+      .account = security_.get_account(),
+      .exchange = Flags::exchange(),
+      .symbol = new_order.symbol,
+      .side = side,
+      .position_effect = {},
+      .max_show_quantity = NaN,
+      .order_type = order_type,
+      .time_in_force = time_in_force,
+      .execution_instruction = {},
+      .order_template = {},
+      .create_time_utc = {},
+      .update_time_utc = utils::safe_cast(new_order.transact_time),
+      .external_account = {},
+      .external_order_id = external_order_id,
+      .status = order_status,
+      .quantity = new_order.orig_qty,
+      .price = new_order.price,
+      .stop_price = NaN,
+      .remaining_quantity = NaN,
+      .traded_quantity = new_order.executed_qty,
+      .average_traded_price = NaN,
+      .last_traded_quantity = NaN,
+      .last_traded_price = NaN,
+      .last_liquidity = {},
+  };
+  if (shared_.update_order(
+          user_id,
+          order_id,
+          stream_id_,
+          trace_info,
+          response,
+          order_update,
+          []([[maybe_unused]] auto &order) {})) {
+  } else {
+    log::warn("Did not find order: user_id={}, order_id={}"_sv, user_id, order_id);
+  }
 }
 
 // cancel-order
 
 void OrderEntry::cancel_order(
-    const CancelOrder &,
+    const Event<CancelOrder> &event,
     const oms::Order &order,
     const std::string_view &request_id,
     [[maybe_unused]] const std::string_view &previous_request_id) {
   profile_.cancel_order([&]() {
     if (!ready())
       throw oms::NotReadyException();
+    auto &[message_info, cancel_order] = event;
     auto method = core::http::Method::DELETE;
     auto path = "/api/v3/order"_sv;
     std::chrono::milliseconds recv_window = utils::safe_cast(Flags::rest_order_recv_window());
-    auto timestamp = core::get_realtime_clock();
     auto body = fmt::format(
-        R"({{)"
-        R"("symbol":"{}",)"
-        R"("origClientOrderId":"{}")"
-        R"("newClientOrderId":"{}")"
-        R"("recvWindow":{},)"
-        R"("timestamp":{})"
-        R"(}})"_sv,
+        R"(symbol={}&)"
+        R"(origClientOrderId={}&)"
+        R"(newClientOrderId={}&)"
+        R"(recvWindow={})"_sv,
         order.symbol,
         previous_request_id,
         request_id,
-        recv_window.count(),
-        timestamp.count());
+        recv_window.count());
     log::debug(R"(body="{}")"_sv, body);
+    auto query = security_.create_query(body);
     auto headers = security_.create_headers();
     core::web::Request request{
         .method = method,
         .path = path,
-        .query = {},
+        .query = query,
         .accept = core::http::Accept::JSON,
         .content_type = core::http::ContentType::JSON,
         .headers = headers,
@@ -534,30 +646,121 @@ void OrderEntry::cancel_order(
         .quality_of_service = core::web::QualityOfService::IMMEDIATE,
         .rate_limit_weight = 1,
     };
-    connection_(request_id, request, [this]([[maybe_unused]] auto &request_id, auto &response) {
-      cancel_order_ack(response);
-    });
+    connection_(
+        request_id,
+        request,
+        [this,
+         user_id = message_info.source,
+         order_id = cancel_order.order_id,
+         version = cancel_order.version]([[maybe_unused]] auto &request_id, auto &response) {
+          cancel_order_ack(response, user_id, order_id, version);
+        });
   });
 }
 
-void OrderEntry::cancel_order_ack(const core::web::Response &response) {
+void OrderEntry::cancel_order_ack(
+    const core::web::Response &response, uint8_t user_id, uint32_t order_id, uint32_t version) {
+  server::TraceInfo trace_info;
   profile_.cancel_order_ack([&]() {
-    server::TraceInfo trace_info;
     try {
-      response.expect(core::http::Status::OK);
+      log::debug("user_id={}, order_id={}, version={}"_sv, user_id, order_id, version);
+      auto status = response.raw_status();
       auto body = response.body();
+      log::debug(R"(status={}, body="{}")"_sv, status, body);
+      response.expect(core::http::Status::OK);
       auto cancel_order = core::json::Parser::create<json::CancelOrder>(body);
       server::Trace event(trace_info, cancel_order);
-      (*this)(event);
+      (*this)(event, user_id, order_id, version);
     } catch (core::NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"_sv, typeid(e).name(), e.what());
-      // XXX HANS ???
+      oms::Response response{
+          .type = RequestType::CANCEL_ORDER,
+          .origin = Origin::GATEWAY,
+          .status = e.request_status(),
+          .error = e.error(),
+          .text = e.what(),
+          .version = version,
+          .request_id = {},
+          .quantity = NaN,
+          .price = NaN,
+      };
+      if (shared_.update_order(
+              user_id,
+              order_id,
+              stream_id_,
+              trace_info,
+              response,
+              []([[maybe_unused]] auto &order) {})) {
+      } else {
+        log::warn(
+            "Did not find order: user_id={}, order_id={}, version={}"_sv,
+            user_id,
+            order_id,
+            version);
+      }
     }
   });
 }
 
-void OrderEntry::operator()(const server::Trace<json::CancelOrder> &) {
-  throw NotImplementedException();
+void OrderEntry::operator()(
+    const server::Trace<json::CancelOrder> &event,
+    uint8_t user_id,
+    uint32_t order_id,
+    uint32_t version) {
+  auto &[trace_info, cancel_order] = event;
+  auto side = json::map(cancel_order.side);
+  auto order_type = json::map(cancel_order.type);
+  auto time_in_force = json::map(cancel_order.time_in_force);
+  auto order_status = json::map(cancel_order.status);
+  std::string_view external_order_id;  // XXX HANS new_order.order_id is int64_t
+  oms::Response response{
+      .type = RequestType::CANCEL_ORDER,
+      .origin = Origin::EXCHANGE,
+      .status = RequestStatus::ACCEPTED,
+      .error = {},
+      .text = {},
+      .version = version,
+      .request_id = {},
+      .quantity = NaN,
+      .price = NaN,
+  };
+  oms::OrderUpdate order_update{
+      .account = security_.get_account(),
+      .exchange = Flags::exchange(),
+      .symbol = cancel_order.symbol,
+      .side = side,
+      .position_effect = {},
+      .max_show_quantity = NaN,
+      .order_type = order_type,
+      .time_in_force = time_in_force,
+      .execution_instruction = {},
+      .order_template = {},
+      .create_time_utc = {},
+      .update_time_utc = {},
+      .external_account = {},
+      .external_order_id = external_order_id,
+      .status = order_status,
+      .quantity = cancel_order.orig_qty,
+      .price = cancel_order.price,
+      .stop_price = NaN,
+      .remaining_quantity = NaN,
+      .traded_quantity = cancel_order.executed_qty,
+      .average_traded_price = NaN,
+      .last_traded_quantity = NaN,
+      .last_traded_price = NaN,
+      .last_liquidity = {},
+  };
+  if (shared_.update_order(
+          user_id,
+          order_id,
+          stream_id_,
+          trace_info,
+          response,
+          order_update,
+          []([[maybe_unused]] auto &order) {})) {
+  } else {
+    log::warn("Did not find order: user_id={}, order_id={}"_sv, user_id, order_id);
+  }
 }
 
 }  // namespace binance

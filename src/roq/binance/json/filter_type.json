@@ -9,6 +9,7 @@
 	{ "name": "ICEBERG_PARTS" },
 	{ "name": "MARKET_LOT_SIZE" },
 	{ "name": "MAX_NUM_ORDERS" },
+	{ "name": "MAX_NUM_ALGO_ORDERS" },
 	{ "name": "MAX_NUM_ICEBERG_ORDERS" },
 	{ "name": "MAX_POSITION" },
 	{ "name": "EXCHANGE_MAX_NUM_ORDERS" },

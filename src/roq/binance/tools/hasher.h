@@ -20,15 +20,14 @@ class Hasher final {
   Hasher(Hasher &&) = delete;
   Hasher(const Hasher &) = delete;
 
-  std::string create_query();
-  std::string create_headers() const;
+  std::string create_query(const std::string_view &body);
 
- protected:
-  std::pair<std::string, std::string> create_signature(std::chrono::nanoseconds now);
+  std::string_view create_headers() const { return headers_; }
 
  private:
   const std::string key_;
   core::crypto::HMAC_SHA256 hmac_;
+  const std::string headers_;
 };
 
 }  // namespace tools

@@ -77,6 +77,7 @@ class Rest final : public core::web::Client::Handler {
   core::web::Client connection_;
   // buffers
   core::Buffer decode_buffer_;
+  core::Buffer decode_buffer_2_;
   // metrics
   struct {
     core::metrics::Counter disconnect;

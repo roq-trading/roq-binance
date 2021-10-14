@@ -17,7 +17,7 @@
 	{ "name": "quoteOrderQtyMarketAllowed", "type": "bool" },
 	{ "name": "isSpotTradingAllowed", "type": "bool" },
 	{ "name": "isMarginTradingAllowed", "type": "bool" },
-	{ "name": "filters" },
+	{ "name": "filters", "type": "std::string_view" },
 	{ "name": "permissions" }
 ]
 }

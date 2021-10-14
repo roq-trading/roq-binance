@@ -9,6 +9,8 @@
 
 #include "roq/literals.h"
 
+#include "roq/utils/safe_cast.h"
+
 #include "roq/core/clock.h"
 
 #include "roq/core/binascii/hex.h"
@@ -22,29 +24,21 @@ namespace binance {
 namespace tools {
 
 Hasher::Hasher(const std::string_view &key, const std::string_view &secret)
-    : key_(key), hmac_(secret) {
+    : key_(key), hmac_(secret), headers_(fmt::format("X-MBX-APIKEY: {}\r\n"_sv, key_)) {
 }
 
-std::string Hasher::create_query() {
-  auto now = core::get_realtime_clock();
-  auto [timestamp, signature] = create_signature(now);
-  return fmt::format("?{}&signature={}"_sv, timestamp, signature);
-}
-
-std::string Hasher::create_headers() const {
-  return fmt::format("X-MBX-APIKEY: {}\r\n"_sv, key_);
-}
-
-std::pair<std::string, std::string> Hasher::create_signature(std::chrono::nanoseconds now) {
-  auto timestamp = fmt::format(
-      "timestamp={}"_sv, std::chrono::duration_cast<std::chrono::milliseconds>(now).count());
+std::string Hasher::create_query(const std::string_view &body) {
+  std::chrono::milliseconds now = utils::safe_cast(core::get_realtime_clock());
+  auto timestamp = fmt::format("timestamp={}"_sv, now.count());
   hmac_.clear();
   hmac_.update(timestamp);
+  if (!std::empty(body))
+    hmac_.update(body);
   std::array<char, 32> buffer;
   auto length = hmac_.digest(buffer);
   assert(length == buffer.size());
   auto signature = core::binascii::Hex::encode(buffer);
-  return std::make_pair(timestamp, signature);
+  return fmt::format("?{}&signature={}"_sv, timestamp, signature);
 }
 
 }  // namespace tools

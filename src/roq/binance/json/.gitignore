@@ -22,6 +22,8 @@ error.h
 error.cpp
 event_type.h
 event_type.cpp
+exchange_filter.h
+exchange_filter.cpp
 exchange_info.h
 exchange_info.cpp
 execution_report.h
@@ -32,6 +34,10 @@ field.h
 field.cpp
 fill.h
 fill.cpp
+filter.h
+filter.cpp
+filters.h
+filters.cpp
 filter_type.h
 filter_type.cpp
 listen_key.h

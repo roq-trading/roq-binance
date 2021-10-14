@@ -13,6 +13,7 @@
 
 #include "roq/binance/flags.h"
 
+#include "roq/binance/json/filters.h"
 #include "roq/binance/json/utils.h"
 
 using namespace roq::literals;
@@ -51,7 +52,7 @@ Rest::Rest(Handler &handler, core::io::Context &context, uint16_t stream_id, Sha
           Flags::rest_rate_limit_max_requests(),
           Flags::rest_ping_freq(),
           Flags::rest_ping_path()),
-      decode_buffer_(Flags::decode_buffer_size()),
+      decode_buffer_(Flags::decode_buffer_size()), decode_buffer_2_(Flags::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"_sv),
       },
@@ -203,6 +204,46 @@ void Rest::operator()(const server::Trace<json::ExchangeInfo> &event) {
       log::info<1>(R"(Drop symbol="{}")"_sv, item.symbol);
       continue;
     }
+    // fall-back values
+    auto tick_size = std::pow(10.0, -static_cast<double>(item.quote_precision));
+    auto min_trade_vol = std::pow(10.0, -static_cast<double>(item.base_asset_precision));
+    // parse filters and update
+    core::json::Buffer buffer(decode_buffer_2_);
+    auto filters = core::json::Parser::create<json::Filters>(item.filters, buffer);
+    for (auto &filter : filters.data) {
+      switch (filter.filter_type) {
+        case json::FilterType::UNDEFINED:
+          break;
+        case json::FilterType::UNKNOWN:
+          break;
+        case json::FilterType::PRICE_FILTER:
+          tick_size = filter.tick_size;
+          break;
+        case json::FilterType::PERCENT_PRICE:
+          break;
+        case json::FilterType::LOT_SIZE:
+          min_trade_vol = filter.step_size;
+          break;
+        case json::FilterType::MIN_NOTIONAL:
+          break;
+        case json::FilterType::ICEBERG_PARTS:
+          break;
+        case json::FilterType::MARKET_LOT_SIZE:
+          break;
+        case json::FilterType::MAX_NUM_ORDERS:
+          break;
+        case json::FilterType::MAX_NUM_ALGO_ORDERS:
+          break;
+        case json::FilterType::MAX_NUM_ICEBERG_ORDERS:
+          break;
+        case json::FilterType::MAX_POSITION:
+          break;
+        case json::FilterType::EXCHANGE_MAX_NUM_ORDERS:
+          break;
+        case json::FilterType::EXCHANGE_MAX_NUM_ALGO_ORDERS:
+          break;
+      }
+    }
     // note! convert to lowercase
     std::string symbol(item.symbol);
     std::transform(
@@ -210,8 +251,6 @@ void Rest::operator()(const server::Trace<json::ExchangeInfo> &event) {
     if (all_symbols_.emplace(symbol).second)  // only include new
       symbols.emplace_back(symbol);
     ++counter;
-    auto tick_size = std::pow(10.0, -static_cast<double>(item.quote_precision));
-    auto min_trade_vol = std::pow(10.0, -static_cast<double>(item.base_asset_precision));
     ReferenceData reference_data{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),

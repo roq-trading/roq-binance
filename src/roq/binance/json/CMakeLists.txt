@@ -17,11 +17,14 @@ set(AUTOGEN_SCHEMAS
     depth_update.json
     error.json
     event_type.json
+    exchange_filter.json
     exchange_info.json
     execution_report.json
     execution_type.json
     field.json
     fill.json
+    filter.json
+    filters.json
     filter_type.json
     listen_key.json
     mini_ticker.json

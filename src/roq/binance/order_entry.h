@@ -98,17 +98,25 @@ class OrderEntry final : public core::web::Client::Handler {
 
   void refresh_listen_key();
 
-  void new_order(const CreateOrder &, const std::string_view &request_id);
-  void new_order_ack(const core::web::Response &);
-  void operator()(const server::Trace<json::NewOrder> &);
+  void new_order(
+      const Event<CreateOrder> &, const oms::Order &order, const std::string_view &request_id);
+  void new_order_ack(
+      const core::web::Response &, uint8_t user_id, uint32_t order_id, uint32_t version);
+  void operator()(
+      const server::Trace<json::NewOrder> &, uint8_t user_id, uint32_t order_id, uint32_t version);
 
   void cancel_order(
-      const CancelOrder &,
+      const Event<CancelOrder> &,
       const oms::Order &,
       const std::string_view &request_id,
       const std::string_view &previous_request_id);
-  void cancel_order_ack(const core::web::Response &);
-  void operator()(const server::Trace<json::CancelOrder> &);
+  void cancel_order_ack(
+      const core::web::Response &, uint8_t user_id, uint32_t order_id, uint32_t version);
+  void operator()(
+      const server::Trace<json::CancelOrder> &,
+      uint8_t user_id,
+      uint32_t order_id,
+      uint32_t version);
 
  private:
   Handler &handler_;
@@ -124,12 +132,10 @@ class OrderEntry final : public core::web::Client::Handler {
     core::metrics::Counter disconnect;
   } counter_;
   struct {
-    core::metrics::Profile  //
-        listen_key,
-        listen_key_ack,                //
-        account, account_ack,          //
-        open_orders, open_orders_ack,  //
-        new_order, new_order_ack,      //
+    core::metrics::Profile listen_key, listen_key_ack,  //
+        account, account_ack,                           //
+        open_orders, open_orders_ack,                   //
+        new_order, new_order_ack,                       //
         cancel_order, cancel_order_ack;
   } profile_;
   struct {
