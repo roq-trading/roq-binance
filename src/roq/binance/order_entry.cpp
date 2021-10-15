@@ -391,19 +391,43 @@ void OrderEntry::get_open_orders_ack(const core::web::Response &response) {
 void OrderEntry::operator()(const server::Trace<json::OpenOrders> &event) {
   auto &[trace_info, open_orders] = event;
   log::info<2>("open_orders={}"_sv, open_orders);
-  /*
-  for (auto &item : account.balances) {
-    FundsUpdate funds_update{
-        .stream_id = stream_id_,
+  for (auto &order : open_orders.data) {
+    log::debug("order={}"_sv, order);
+    if (order.client_order_id.empty())  // XXX HANS maybe we need a utility function to validate?
+      continue;
+    auto side = json::map(order.side);
+    auto order_type = json::map(order.type);
+    auto time_in_force = json::map(order.time_in_force);
+    auto external_order_id = fmt::format("{}"_sv, order.order_id);  // XXX HANS
+    auto order_status = json::map(order.status);
+    oms::OrderUpdate order_update{
         .account = security_.get_account(),
-        .currency = item.asset,
-        .balance = item.free,
-        .hold = item.locked,
+        .exchange = Flags::exchange(),
+        .symbol = order.symbol,
+        .side = side,
+        .position_effect = {},
+        .max_show_quantity = NaN,
+        .order_type = order_type,
+        .time_in_force = time_in_force,
+        .execution_instruction = {},
+        .order_template = {},
+        .create_time_utc = order.time,
+        .update_time_utc = order.update_time,
         .external_account = {},
+        .external_order_id = external_order_id,
+        .status = order_status,
+        .quantity = order.orig_qty,
+        .price = order.price,
+        .stop_price = order.stop_price,
+        .remaining_quantity = NaN,
+        .traded_quantity = order.executed_qty,
+        .average_traded_price = {},
+        .last_traded_quantity = {},
+        .last_traded_price = {},
+        .last_liquidity = {},
     };
-    create_trace_and_dispatch(trace_info, funds_update, handler_, true);
+    shared_.create_order(order.client_order_id, stream_id_, trace_info, order_update);
   }
-  */
 }
 
 // ...
@@ -498,16 +522,21 @@ void OrderEntry::new_order(
         request,
         [this, user_id = message_info.source, order_id = create_order.order_id](
             [[maybe_unused]] auto &request_id, auto &response) {
-          uint32_t version = 1;
-          new_order_ack(response, user_id, order_id, version);
+          const uint32_t version = 1;
+          server::TraceInfo trace_info;
+          server::Trace event(trace_info, response);
+          new_order_ack(event, user_id, order_id, version);
         });
   });
 }
 
 void OrderEntry::new_order_ack(
-    const core::web::Response &response, uint8_t user_id, uint32_t order_id, uint32_t version) {
-  server::TraceInfo trace_info;
+    const server::Trace<core::web::Response> &event,
+    uint8_t user_id,
+    uint32_t order_id,
+    uint32_t version) {
   profile_.new_order_ack([&]() {
+    auto &[trace_info, response] = event;
     try {
       log::debug("user_id={}, order_id={}, version={}"_sv, user_id, order_id, version);
       auto status = response.raw_status();
@@ -587,7 +616,7 @@ void OrderEntry::operator()(
   auto order_type = json::map(new_order.type);
   auto time_in_force = json::map(new_order.time_in_force);
   auto order_status = json::map(new_order.status);
-  std::string_view external_order_id;  // XXX HANS new_order.order_id is int64_t
+  auto external_order_id = fmt::format("{}"_sv, new_order.order_id);  // XXX HANS
   // XXX HANS fills???
   oms::Response response{
       .type = RequestType::CREATE_ORDER,
@@ -683,15 +712,20 @@ void OrderEntry::cancel_order(
          user_id = message_info.source,
          order_id = cancel_order.order_id,
          version = cancel_order.version]([[maybe_unused]] auto &request_id, auto &response) {
-          cancel_order_ack(response, user_id, order_id, version);
+          server::TraceInfo trace_info;
+          server::Trace event(trace_info, response);
+          cancel_order_ack(event, user_id, order_id, version);
         });
   });
 }
 
 void OrderEntry::cancel_order_ack(
-    const core::web::Response &response, uint8_t user_id, uint32_t order_id, uint32_t version) {
-  server::TraceInfo trace_info;
+    const server::Trace<core::web::Response> &event,
+    uint8_t user_id,
+    uint32_t order_id,
+    uint32_t version) {
   profile_.cancel_order_ack([&]() {
+    auto &[trace_info, response] = event;
     try {
       log::debug("user_id={}, order_id={}, version={}"_sv, user_id, order_id, version);
       auto status = response.raw_status();
@@ -773,8 +807,8 @@ void OrderEntry::operator()(
   auto side = json::map(cancel_order.side);
   auto order_type = json::map(cancel_order.type);
   auto time_in_force = json::map(cancel_order.time_in_force);
+  auto external_order_id = fmt::format("{}"_sv, cancel_order.order_id);  // XXX HANS
   auto order_status = json::map(cancel_order.status);
-  std::string_view external_order_id;  // XXX HANS new_order.order_id is int64_t
   oms::Response response{
       .type = RequestType::CANCEL_ORDER,
       .origin = Origin::EXCHANGE,
