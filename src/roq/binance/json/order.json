@@ -20,6 +20,7 @@
 	{ "name": "time", "type": "std::chrono::milliseconds" },
 	{ "name": "updateTime", "type": "std::chrono::milliseconds" },
 	{ "name": "isWorking", "type": "bool" },
-	{ "name": "origQuoteOrderQty", "type": "double" }
+	{ "name": "origQuoteOrderQty", "type": "double" },
+	{ "name": "origClientOrderId", "type": "std::string_view" }
 ]
 }

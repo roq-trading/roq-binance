@@ -106,8 +106,28 @@ void Gateway::operator()(const Event<Connected> &) {
 
 void Gateway::operator()(const Event<Disconnected> &event) {
   const auto &[message_info, disconnected] = event;
-  if (disconnected.order_cancel_policy) {
-    log::warn("*** CANCEL-ON-DISCONNECT *NOT* SUPPORTED ***"_sv);
+  log::warn(
+      R"(Disconnected: source="{}", order_cancel_policy={})"_sv,
+      message_info.source_name,
+      disconnected.order_cancel_policy);
+  switch (disconnected.order_cancel_policy) {
+    case OrderCancelPolicy::UNDEFINED:
+      break;
+    case OrderCancelPolicy::MANAGED_ORDERS:
+      log::warn("*** CANCEL MANAGED ORDERS NOT IMPLEMENTED ***"_sv);
+      break;
+    case OrderCancelPolicy::BY_ACCOUNT:
+      log::warn("*** CANCEL ALL ACCOUNT ORDERS ***"_sv);
+      for (auto &[account, order_entry] : order_entry_) {
+        if (dispatcher_.can_user_trade_account(account, message_info.source)) {
+          log::warn(R"(- account="{}")"_sv, account);
+          CancelAllOrders cancel_all_orders{
+              .account = account,
+          };
+          Event event(message_info, cancel_all_orders);
+          (*order_entry)(event, {});
+        }
+      }
   }
 }
 

@@ -1,6 +1,6 @@
 {
 "name": "BalancesItem",
-"type": "array_item",
+"type": "item",
 "values": [
 	{ "raw": "a", "name": "asset", "type": "std::string_view" },
 	{ "raw": "f", "name": "free_amount", "type": "double" },

@@ -919,6 +919,7 @@ void OrderEntry::cancel_all_open_orders_ack(const server::Trace<core::web::Respo
           auto error = core::json::Parser::create<json::Error>(body);
           log::warn("error={}"_sv, error);
           // XXX HANS ???
+          // not outstanding orders: {code=-2011, msg="Unknown order sent."}
           break;
         }
         default:
@@ -970,7 +971,12 @@ void OrderEntry::operator()(const server::Trace<json::CancelAllOpenOrders> &even
         .last_traded_price = {},
         .last_liquidity = {},
     };
-    shared_.create_order(order.client_order_id, stream_id_, trace_info, order_update);
+    shared_.update_order(
+        order.client_order_id,
+        stream_id_,
+        trace_info,
+        order_update,
+        []([[maybe_unused]] auto &order) {});
   }
 }
 

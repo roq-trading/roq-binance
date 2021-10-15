@@ -173,6 +173,7 @@ void DropCopy::parse(const std::string_view &message) {
     try {
       server::TraceInfo trace_info;
       core::json::Buffer buffer(decode_buffer_);
+      log::debug(R"(HERE message="{}")"_sv, message);
       json::UserStreamParser::dispatch(*this, message, buffer, trace_info);
     } catch (...) {
       log::warn(R"(message="{}")"_sv, message);
@@ -230,9 +231,10 @@ void DropCopy::operator()(
   profile_.execution_report([&]() {
     log::info<2>("execution_report={}"_sv, execution_report);
     auto side = json::map(execution_report.side);
-    auto status = json::map(execution_report.current_order_status);
     auto order_type = json::map(execution_report.order_type);
     auto time_in_force = json::map(execution_report.time_in_force);
+    auto external_order_id = fmt::format("{}"_sv, execution_report.order_id);
+    auto status = json::map(execution_report.current_order_status);
     auto last_liquidity = execution_report.is_trade_maker ? Liquidity::MAKER : Liquidity::TAKER;
     oms::OrderUpdate order_update{
         .account = security_.get_account(),
@@ -248,7 +250,7 @@ void DropCopy::operator()(
         .create_time_utc = {},
         .update_time_utc = execution_report.transaction_time,
         .external_account = {},
-        .external_order_id = execution_report.client_order_id,  // XXX should user order_id
+        .external_order_id = external_order_id,
         .status = status,
         .quantity = NaN,
         .price = execution_report.price,

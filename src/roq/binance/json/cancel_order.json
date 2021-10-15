@@ -10,7 +10,7 @@
 	{ "name": "price", "type": "double" },
 	{ "name": "origQty", "type": "double" },
 	{ "name": "executedQty", "type": "double" },
-	{ "name": "cumulativeQuoteQty", "type": "double" },
+	{ "name": "cummulativeQuoteQty", "type": "double" },
 	{ "name": "status", "type": "OrderStatus" },
 	{ "name": "timeInForce", "type": "TimeInForce" },
 	{ "name": "type", "type": "OrderType" },
