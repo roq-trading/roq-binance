@@ -76,6 +76,8 @@ OrderEntry::OrderEntry(
           .new_order_ack = create_metrics(name_, "new_order_ack"_sv),
           .cancel_order = create_metrics(name_, "cancel_order"_sv),
           .cancel_order_ack = create_metrics(name_, "cancel_order_ack"_sv),
+          .cancel_all_open_orders = create_metrics(name_, "cancel_all_open_orders"_sv),
+          .cancel_all_open_orders_ack = create_metrics(name_, "cancel_all_open_orders_ack"_sv),
       },
       latency_{
           .ping = create_metrics(name_, "ping"_sv),
@@ -112,6 +114,8 @@ void OrderEntry::operator()(metrics::Writer &writer) {
       .write(profile_.new_order_ack, metrics::PROFILE)
       .write(profile_.cancel_order, metrics::PROFILE)
       .write(profile_.cancel_order_ack, metrics::PROFILE)
+      .write(profile_.cancel_all_open_orders, metrics::PROFILE)
+      .write(profile_.cancel_all_open_orders_ack, metrics::PROFILE)
       // latency
       .write(latency_.ping, metrics::LATENCY);
 }
@@ -140,8 +144,8 @@ uint16_t OrderEntry::operator()(
 }
 
 uint16_t OrderEntry::operator()(
-    const Event<CancelAllOrders> &, [[maybe_unused]] const std::string_view &request_id) {
-  log::warn("*** CANCEL ALL ORDERS *NOT* SUPPORTED ***"_sv);
+    const Event<CancelAllOrders> &event, const std::string_view &request_id) {
+  cancel_all_open_orders(event, request_id);
   return stream_id_;
 }
 
@@ -395,6 +399,7 @@ void OrderEntry::operator()(const server::Trace<json::OpenOrders> &event) {
     log::debug("order={}"_sv, order);
     if (order.client_order_id.empty())  // XXX HANS maybe we need a utility function to validate?
       continue;
+    open_orders_symbols_.emplace(order.symbol);  // XXX HANS experimental
     auto side = json::map(order.side);
     auto order_type = json::map(order.type);
     auto time_in_force = json::map(order.time_in_force);
@@ -451,6 +456,7 @@ void OrderEntry::new_order(
     if (!ready())
       throw oms::NotReadyException();
     auto &[message_info, create_order] = event;
+    open_orders_symbols_.emplace(create_order.symbol);  // XXX HANS experimental
     auto method = core::http::Method::POST;
     auto path = "/api/v3/order"_sv;
     auto side = json::map(create_order.side).as_raw_text();
@@ -511,7 +517,7 @@ void OrderEntry::new_order(
         .path = path,
         .query = query,
         .accept = core::http::Accept::JSON,
-        .content_type = core::http::ContentType::JSON,
+        .content_type = core::http::ContentType::FORM,
         .headers = headers,
         .body = body,
         .quality_of_service = core::web::QualityOfService::IMMEDIATE,
@@ -699,7 +705,7 @@ void OrderEntry::cancel_order(
         .path = path,
         .query = query,
         .accept = core::http::Accept::JSON,
-        .content_type = core::http::ContentType::JSON,
+        .content_type = core::http::ContentType::FORM,
         .headers = headers,
         .body = body,
         .quality_of_service = core::web::QualityOfService::IMMEDIATE,
@@ -856,6 +862,115 @@ void OrderEntry::operator()(
           []([[maybe_unused]] auto &order) {})) {
   } else {
     log::warn("Did not find order: user_id={}, order_id={}"_sv, user_id, order_id);
+  }
+}
+
+void OrderEntry::cancel_all_open_orders(
+    const Event<CancelAllOrders> &, [[maybe_unused]] const std::string_view &request_id) {
+  profile_.cancel_all_open_orders([&]() {
+    for (auto &symbol : open_orders_symbols_) {
+      auto method = core::http::Method::DELETE;
+      auto path = "/api/v3/openOrders"_sv;
+      std::chrono::milliseconds recv_window = utils::safe_cast(Flags::rest_order_recv_window());
+      auto body = fmt::format(
+          R"(symbol={}&)"
+          R"(recvWindow={})"_sv,
+          symbol,
+          recv_window.count());
+      log::debug(R"(body="{}")"_sv, body);
+      auto query = security_.create_query(body);
+      auto headers = security_.create_headers();
+      core::web::Request request{
+          .method = method,
+          .path = path,
+          .query = query,
+          .accept = core::http::Accept::JSON,
+          .content_type = core::http::ContentType::FORM,
+          .headers = headers,
+          .body = body,
+          .quality_of_service = core::web::QualityOfService::IMMEDIATE,
+          .rate_limit_weight = 1,
+      };
+      connection_(request_id, request, [this]([[maybe_unused]] auto &request_id, auto &response) {
+        server::TraceInfo trace_info;
+        server::Trace event(trace_info, response);
+        cancel_all_open_orders_ack(event);
+      });
+    }
+  });
+}
+
+void OrderEntry::cancel_all_open_orders_ack(const server::Trace<core::web::Response> &event) {
+  profile_.cancel_all_open_orders_ack([&]() {
+    auto &[trace_info, response] = event;
+    try {
+      auto status = response.raw_status();
+      auto body = response.body();
+      auto category = core::http::to_category(status);
+      switch (category) {
+        case core::http::Category::SUCCESS: {  // 2xx
+          core::json::Buffer buffer(decode_buffer_);
+          auto cancel_order = core::json::Parser::create<json::CancelAllOpenOrders>(body, buffer);
+          server::Trace event(trace_info, cancel_order);
+          (*this)(event);
+          break;
+        }
+        case core::http::Category::CLIENT_ERROR: {  // 4xx
+          auto error = core::json::Parser::create<json::Error>(body);
+          log::warn("error={}"_sv, error);
+          // XXX HANS ???
+          break;
+        }
+        default:
+          response.expect(core::http::Status::OK);  // throws
+      }
+    } catch (core::NetworkError &e) {
+      log::warn(R"(Exception type={}, what="{}")"_sv, typeid(e).name(), e.what());
+      // XXX HANS ???
+    }
+  });
+}
+
+void OrderEntry::operator()(const server::Trace<json::CancelAllOpenOrders> &event) {
+  auto &[trace_info, cancel_all_open_orders] = event;
+  log::debug("cancel_all_open_orders={}"_sv, cancel_all_open_orders);
+  for (auto &order : cancel_all_open_orders.data) {
+    log::debug("order={}"_sv, order);
+    if (order.client_order_id.empty())  // XXX HANS maybe we need a utility function to validate?
+      continue;
+    // open_orders_symbols_.emplace(order.symbol);  // XXX HANS experimental
+    auto side = json::map(order.side);
+    auto order_type = json::map(order.type);
+    auto time_in_force = json::map(order.time_in_force);
+    auto external_order_id = fmt::format("{}"_sv, order.order_id);  // XXX HANS
+    auto order_status = json::map(order.status);
+    oms::OrderUpdate order_update{
+        .account = security_.get_account(),
+        .exchange = Flags::exchange(),
+        .symbol = order.symbol,
+        .side = side,
+        .position_effect = {},
+        .max_show_quantity = NaN,
+        .order_type = order_type,
+        .time_in_force = time_in_force,
+        .execution_instruction = {},
+        .order_template = {},
+        .create_time_utc = order.time,
+        .update_time_utc = order.update_time,
+        .external_account = {},
+        .external_order_id = external_order_id,
+        .status = order_status,
+        .quantity = order.orig_qty,
+        .price = order.price,
+        .stop_price = order.stop_price,
+        .remaining_quantity = NaN,
+        .traded_quantity = order.executed_qty,
+        .average_traded_price = {},
+        .last_traded_quantity = {},
+        .last_traded_price = {},
+        .last_liquidity = {},
+    };
+    shared_.create_order(order.client_order_id, stream_id_, trace_info, order_update);
   }
 }
 

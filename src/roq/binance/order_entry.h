@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <absl/container/flat_hash_set.h>
+
 #include <string>
 #include <string_view>
 
@@ -23,6 +25,7 @@
 #include "roq/binance/shared.h"
 
 #include "roq/binance/json/account.h"
+#include "roq/binance/json/cancel_all_open_orders.h"
 #include "roq/binance/json/cancel_order.h"
 #include "roq/binance/json/listen_key.h"
 #include "roq/binance/json/new_order.h"
@@ -124,6 +127,10 @@ class OrderEntry final : public core::web::Client::Handler {
       uint32_t order_id,
       uint32_t version);
 
+  void cancel_all_open_orders(const Event<CancelAllOrders> &, const std::string_view &request_id);
+  void cancel_all_open_orders_ack(const server::Trace<core::web::Response> &);
+  void operator()(const server::Trace<json::CancelAllOpenOrders> &);
+
  private:
   Handler &handler_;
   // config
@@ -142,7 +149,8 @@ class OrderEntry final : public core::web::Client::Handler {
         account, account_ack,                           //
         open_orders, open_orders_ack,                   //
         new_order, new_order_ack,                       //
-        cancel_order, cancel_order_ack;
+        cancel_order, cancel_order_ack,                 //
+        cancel_all_open_orders, cancel_all_open_orders_ack;
   } profile_;
   struct {
     core::metrics::Latency ping;
@@ -157,6 +165,8 @@ class OrderEntry final : public core::web::Client::Handler {
   std::chrono::nanoseconds listen_key_refresh_ = {};
   ConnectionStatus status_ = {};
   server::Download<OrderEntryState> download_;
+  // experimental
+  absl::flat_hash_set<std::string> open_orders_symbols_;
 };
 
 }  // namespace binance

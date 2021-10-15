@@ -11,6 +11,7 @@ set(AUTOGEN_SCHEMAS
     balance_update.json
     balances_item.json
     book_ticker.json
+    cancel_all_open_orders.json
     cancel_order.json
     depth.json
     depth_item.json

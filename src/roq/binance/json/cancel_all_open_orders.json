@@ -1,0 +1,7 @@
+{
+"name": "CancelAllOpenOrders",
+"type": "array",
+"values": [
+	{ "name": "data", "type": "roq::span<Order>" }
+]
+}
