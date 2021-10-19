@@ -193,16 +193,10 @@ TEST(json_execution_report, stream) {
   core::json::Buffer buffer(buffer_);
   server::TraceInfo trace_info;
   struct MyHandler final : public json::UserStreamParser::Handler {
-    void operator()(const json::OutboundAccountInfo &, const server::TraceInfo &) override {
-      FAIL();
-    }
-    void operator()(const json::OutboundAccountPosition &, const server::TraceInfo &) override {
-      FAIL();
-    }
-    void operator()(const json::BalanceUpdate &, const server::TraceInfo &) override { FAIL(); }
-    void operator()(const json::ExecutionReport &, const server::TraceInfo &) override {
-      found_ = true;
-    }
+    void operator()(const server::Trace<json::OutboundAccountInfo> &) override { FAIL(); }
+    void operator()(const server::Trace<json::OutboundAccountPosition> &) override { FAIL(); }
+    void operator()(const server::Trace<json::BalanceUpdate> &) override { FAIL(); }
+    void operator()(const server::Trace<json::ExecutionReport> &) override { found_ = true; }
 
     operator bool() const { return found_; }
 
