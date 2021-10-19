@@ -487,8 +487,8 @@ void MarketData::operator()(const server::Trace<json::DepthUpdate> &event) {
               collector.apply(market_by_price, sequence, false);
             });
           },
-          [&]() {  // request
-            log::debug(R"(REQUEST symbol="{}")"_sv, symbol);
+          [&](auto retries) {  // request
+            log::debug(R"(REQUEST symbol="{}" (retries={}))"_sv, symbol, retries);
             auto now = trace_info.source_receive_time;
             request_queue_.emplace_back(now + Flags::ws_mbp_request_delay(), symbol);
           });

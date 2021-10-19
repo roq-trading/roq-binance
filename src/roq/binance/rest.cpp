@@ -388,8 +388,8 @@ void Rest::operator()(const server::Trace<json::Depth> &event, const std::string
           collector.apply(market_by_price, sequence, false);
         });
       },
-      [&]() {  // request
-        log::debug(R"(REQUEST symbol="{}")"_sv, symbol);
+      [&](auto retries) {  // request
+        log::debug(R"(REQUEST symbol="{}" (retries={}))"_sv, symbol, retries);
         get_depth(symbol);
       });
 }
