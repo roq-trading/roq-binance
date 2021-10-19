@@ -56,8 +56,6 @@ class Rest final : public core::web::Client::Handler {
 
   void operator()(metrics::Writer &);
 
-  void get_depth(const std::string_view &symbol);
-
  protected:
   void operator()(const core::web::Client::Connected &);
   void operator()(const core::web::Client::Disconnected &);
@@ -71,8 +69,11 @@ class Rest final : public core::web::Client::Handler {
   void get_exchange_info_ack(const server::Trace<core::web::Response> &);
   void operator()(const server::Trace<json::ExchangeInfo> &);
 
+  void get_depth(const std::string_view &symbol);
   void get_depth_ack(const server::Trace<core::web::Response> &, const std::string_view &symbol);
   void operator()(const server::Trace<json::Depth> &, const std::string_view &symbol);
+
+  void check_request_queue(std::chrono::nanoseconds now);
 
  private:
   Handler &handler_;

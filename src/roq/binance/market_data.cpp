@@ -98,10 +98,8 @@ void MarketData::operator()(const Event<Stop> &) {
 void MarketData::operator()(const Event<Timer> &event) {
   auto now = event.value.now;
   connection_.refresh(now);
-  if (connection_.ready()) {
+  if (connection_.ready())
     check_subscribe_queue(now);
-    check_request_queue(now);
-  }
 }
 
 void MarketData::operator()(metrics::Writer &writer) {
@@ -493,7 +491,7 @@ void MarketData::operator()(const server::Trace<json::DepthUpdate> &event) {
               log::fatal("Unexpected"_sv);
             }
             auto now = trace_info.source_receive_time;
-            request_queue_.emplace_back(now + Flags::ws_mbp_request_delay(), symbol);
+            shared_.request_queue.emplace_back(now + Flags::ws_mbp_request_delay(), symbol);
           });
     } catch (market::BadState &) {
       log::warn("*** RESUBSCRIBE REQUIRED HERE ***"_sv);
@@ -511,26 +509,6 @@ void MarketData::check_subscribe_queue(std::chrono::nanoseconds now) {
           log::debug(R"(Subscribe: "{}")"_sv, message);
           connection_.send_text(message);
           subscribe_queue_.pop_front();
-        })) {
-    } else {
-      return;
-    }
-  }
-}
-
-void MarketData::check_request_queue(std::chrono::nanoseconds now) {
-  while (!request_queue_.empty()) {
-    auto &tmp = request_queue_.front();
-    if (now < tmp.first)
-      break;
-    if (shared_.can_request(now, [&]() {
-          auto &symbol = tmp.second;
-          log::debug(R"(Requesting order book snapshot symbol="{}")"_sv, symbol);
-          const GetDepth request{
-              .symbol = symbol,
-          };
-          handler_(request);
-          request_queue_.pop_front();
         })) {
     } else {
       return;

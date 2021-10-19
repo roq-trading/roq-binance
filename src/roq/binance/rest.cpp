@@ -90,7 +90,10 @@ void Rest::operator()(const Event<Stop> &) {
 }
 
 void Rest::operator()(const Event<Timer> &event) {
-  connection_.refresh(event.value.now);
+  auto now = event.value.now;
+  connection_.refresh(now);
+  if (ready())
+    check_request_queue(now);
 }
 
 void Rest::operator()(metrics::Writer &writer) {
@@ -393,8 +396,28 @@ void Rest::operator()(const server::Trace<json::Depth> &event, const std::string
         if (retries > Flags::ws_mbp_request_max_retries()) {
           log::fatal("Unexpected"_sv);
         }
-        get_depth(symbol);
+        auto now = trace_info.source_receive_time;
+        shared_.request_queue.emplace_back(now + Flags::ws_mbp_request_delay(), symbol);
       });
+}
+
+// queue
+
+void Rest::check_request_queue(std::chrono::nanoseconds now) {
+  while (!shared_.request_queue.empty()) {
+    auto &tmp = shared_.request_queue.front();
+    if (now < tmp.first)
+      break;
+    if (shared_.can_request(now, [&]() {
+          auto &symbol = tmp.second;
+          log::debug(R"(Requesting order book snapshot symbol="{}")"_sv, symbol);
+          get_depth(symbol);
+          shared_.request_queue.pop_front();
+        })) {
+    } else {
+      return;
+    }
+  }
 }
 
 }  // namespace binance

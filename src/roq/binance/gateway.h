@@ -70,8 +70,6 @@ class Gateway final : public server::Handler,
 
   void operator()(Rest::SymbolsUpdate &) override;
 
-  void operator()(const MarketData::GetDepth &) override;
-
   void operator()(const OrderEntry::ListenKeyUpdate &) override;
 
   // utilities

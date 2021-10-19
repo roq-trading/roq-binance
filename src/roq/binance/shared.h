@@ -5,6 +5,7 @@
 #include <absl/container/flat_hash_map.h>
 
 #include <chrono>
+#include <deque>
 #include <string>
 #include <utility>
 
@@ -54,6 +55,8 @@ struct Shared final {
   core::page_aligned_vector<MBPUpdate> bids, asks, final_bids, final_asks;
 
   absl::flat_hash_map<std::string, core::market::MBP_Sequencer> mbp_collector;
+
+  std::deque<std::pair<std::chrono::nanoseconds, std::string> > request_queue;
 
  private:
   server::Dispatcher &dispatcher_;
