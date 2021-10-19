@@ -217,7 +217,7 @@ void MarketData::subscribe(const roq::span<std::string> &symbols) {
   }
   subscribe_mini_ticker(symbols);
   subscribe_book_ticker(symbols);
-  subscribe_depth(symbols);
+  subscribe_diff_depth(symbols);
 }
 
 void MarketData::subscribe_agg_trade(const roq::span<std::string> &symbols) {
@@ -284,7 +284,7 @@ void MarketData::subscribe_book_ticker(const roq::span<std::string> &symbols) {
   subscribe_queue_.emplace_back(now, message);
 }
 
-void MarketData::subscribe_depth(const roq::span<std::string> &symbols) {
+void MarketData::subscribe_diff_depth(const roq::span<std::string> &symbols) {
   assert(!symbols.empty());
   std::chrono::milliseconds frequency = utils::safe_cast(Flags::ws_subscribe_depth_freq());
   auto stream = fmt::format(R"(@depth@{}ms)"_sv, frequency.count());
@@ -317,12 +317,18 @@ void MarketData::parse(const std::string_view &message) {
   });
 }
 
-void MarketData::operator()(int32_t id, const json::Error &error) {
-  profile_.error([&]() { log::warn("id={}, error={}"_sv, id, error); });
+void MarketData::operator()(const server::Trace<json::Error> &event, int32_t id) {
+  profile_.error([&]() {
+    auto &[trace_info, error] = event;
+    log::warn("error={}, id={}"_sv, error, id);
+  });
 }
 
-void MarketData::operator()(int32_t id, const json::Result &result) {
-  profile_.result([&]() { log::info("id={}, result={}"_sv, id, result); });
+void MarketData::operator()(const server::Trace<json::Result> &event, int32_t id) {
+  profile_.result([&]() {
+    auto &[trace_info, result] = event;
+    log::info("error={}, id={}"_sv, result, id);
+  });
 }
 
 void MarketData::operator()(const server::Trace<json::AggTrade> &event) {

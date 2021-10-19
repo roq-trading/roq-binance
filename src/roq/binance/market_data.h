@@ -82,13 +82,13 @@ class MarketData final : public core::web::Socket::Handler,
   void subscribe_trade(const roq::span<std::string> &symbols);
   void subscribe_mini_ticker(const roq::span<std::string> &symbols);
   void subscribe_book_ticker(const roq::span<std::string> &symbols);
-  void subscribe_depth(const roq::span<std::string> &symbols);
+  void subscribe_diff_depth(const roq::span<std::string> &symbols);
 
   void parse(const std::string_view &message);
 
   // response
-  void operator()(int32_t, const json::Error &) override;
-  void operator()(int32_t, const json::Result &) override;
+  void operator()(const server::Trace<json::Error> &, int32_t id) override;
+  void operator()(const server::Trace<json::Result> &, int32_t id) override;
 
   // update
   void operator()(const server::Trace<json::AggTrade> &) override;

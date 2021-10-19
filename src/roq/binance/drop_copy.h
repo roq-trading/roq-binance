@@ -67,10 +67,10 @@ class DropCopy final : public core::web::Socket::Handler, public json::UserStrea
 
   void parse(const std::string_view &message);
 
-  void operator()(const json::OutboundAccountInfo &, const server::TraceInfo &) override;
-  void operator()(const json::OutboundAccountPosition &, const server::TraceInfo &) override;
-  void operator()(const json::BalanceUpdate &, const server::TraceInfo &) override;
-  void operator()(const json::ExecutionReport &, const server::TraceInfo &) override;
+  void operator()(const server::Trace<json::OutboundAccountInfo> &) override;
+  void operator()(const server::Trace<json::OutboundAccountPosition> &) override;
+  void operator()(const server::Trace<json::BalanceUpdate> &) override;
+  void operator()(const server::Trace<json::ExecutionReport> &) override;
 
  private:
   Handler &handler_;

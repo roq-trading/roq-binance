@@ -182,9 +182,9 @@ void DropCopy::parse(const std::string_view &message) {
   });
 }
 
-void DropCopy::operator()(
-    const json::OutboundAccountInfo &outbound_account_info, const server::TraceInfo &trace_info) {
+void DropCopy::operator()(const server::Trace<json::OutboundAccountInfo> &event) {
   profile_.outbound_account_info([&]() {
+    auto &[trace_info, outbound_account_info] = event;
     log::info<2>("outbound_account_info={}"_sv, outbound_account_info);
     for (auto &item : outbound_account_info.balances) {
       FundsUpdate funds_update{
@@ -200,10 +200,9 @@ void DropCopy::operator()(
   });
 }
 
-void DropCopy::operator()(
-    const json::OutboundAccountPosition &outbound_account_position,
-    const server::TraceInfo &trace_info) {
+void DropCopy::operator()(const server::Trace<json::OutboundAccountPosition> &event) {
   profile_.outbound_account_position([&]() {
+    auto &[trace_info, outbound_account_position] = event;
     log::info<2>("outbound_account_position={}"_sv, outbound_account_position);
     for (auto &item : outbound_account_position.balances) {
       FundsUpdate funds_update{
@@ -219,16 +218,17 @@ void DropCopy::operator()(
   });
 }
 
-void DropCopy::operator()(const json::BalanceUpdate &balance_update, const server::TraceInfo &) {
+void DropCopy::operator()(const server::Trace<json::BalanceUpdate> &event) {
   profile_.balance_update([&]() {
+    auto &[trace_info, balance_update] = event;
     log::info<2>("balance_update={}"_sv, balance_update);
     // note! contains delta (changes) -- we're not going to use here
   });
 }
 
-void DropCopy::operator()(
-    const json::ExecutionReport &execution_report, const server::TraceInfo &trace_info) {
+void DropCopy::operator()(const server::Trace<json::ExecutionReport> &event) {
   profile_.execution_report([&]() {
+    auto &[trace_info, execution_report] = event;
     log::info<2>("execution_report={}"_sv, execution_report);
     auto side = json::map(execution_report.side);
     auto order_type = json::map(execution_report.order_type);

@@ -236,14 +236,16 @@ void OrderEntry::get_listen_key() {
     };
     connection_(
         "listen_key"_sv, request, [this]([[maybe_unused]] auto &request_id, auto &response) {
-          get_listen_key_ack(response);
+          server::TraceInfo trace_info;
+          server::Trace event(trace_info, response);
+          get_listen_key_ack(event);
         });
   });
 }
 
-void OrderEntry::get_listen_key_ack(const core::web::Response &response) {
+void OrderEntry::get_listen_key_ack(const server::Trace<core::web::Response> &event) {
   profile_.listen_key_ack([&]() {
-    server::TraceInfo trace_info;
+    auto &[trace_info, response] = event;
     auto state = OrderEntryState::LISTEN_KEY;
     try {
       response.expect(core::http::Status::OK);
@@ -300,14 +302,16 @@ void OrderEntry::get_account() {
         .rate_limit_weight = 1,
     };
     connection_("account"_sv, request, [this]([[maybe_unused]] auto &request_id, auto &response) {
-      get_account_ack(response);
+      server::TraceInfo trace_info;
+      server::Trace event(trace_info, response);
+      get_account_ack(event);
     });
   });
 }
 
-void OrderEntry::get_account_ack(const core::web::Response &response) {
+void OrderEntry::get_account_ack(const server::Trace<core::web::Response> &event) {
   profile_.account_ack([&]() {
-    server::TraceInfo trace_info;
+    auto &[trace_info, response] = event;
     auto state = OrderEntryState::ACCOUNT;
     try {
       response.expect(core::http::Status::OK);
@@ -368,14 +372,16 @@ void OrderEntry::get_open_orders() {
     };
     connection_(
         "open_orders"_sv, request, [this]([[maybe_unused]] auto &request_id, auto &response) {
-          get_open_orders_ack(response);
+          server::TraceInfo trace_info;
+          server::Trace event(trace_info, response);
+          get_open_orders_ack(event);
         });
   });
 }
 
-void OrderEntry::get_open_orders_ack(const core::web::Response &response) {
+void OrderEntry::get_open_orders_ack(const server::Trace<core::web::Response> &event) {
   profile_.open_orders_ack([&]() {
-    server::TraceInfo trace_info;
+    auto &[trace_info, response] = event;
     auto state = OrderEntryState::OPEN_ORDERS;
     try {
       response.expect(core::http::Status::OK);

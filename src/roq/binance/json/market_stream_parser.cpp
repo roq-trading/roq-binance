@@ -45,15 +45,17 @@ void MarketStreamParser::dispatch(
         case Field::ERROR:
           if (id >= 0) {
             Error error(value);
+            server::Trace event(trace_info, error);
             dispatched = true;
-            handler(id, error);
+            handler(event, id);
           }
           break;
         case Field::RESULT:
           if (id >= 0) {
             Result result(value, buffer);
+            server::Trace event(trace_info, result);
             dispatched = true;
-            handler(id, result);
+            handler(event, id);
           }
           break;
         case Field::ID:

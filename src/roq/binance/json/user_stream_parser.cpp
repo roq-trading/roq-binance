@@ -55,23 +55,27 @@ bool UserStreamParser::try_dispatch(
       break;
     case EventType::OUTBOUND_ACCOUNT_INFO: {
       auto outbound_account_info = core::json::Parser::create<OutboundAccountInfo>(message, buffer);
-      handler(outbound_account_info, trace_info);
+      server::Trace event(trace_info, outbound_account_info);
+      handler(event);
       break;
     }
     case EventType::OUTBOUND_ACCOUNT_POSITION: {
       auto outbound_account_position =
           core::json::Parser::create<OutboundAccountPosition>(message, buffer);
-      handler(outbound_account_position, trace_info);
+      server::Trace event(trace_info, outbound_account_position);
+      handler(event);
       break;
     }
     case EventType::BALANCE_UPDATE: {
       auto balance_update = core::json::Parser::create<BalanceUpdate>(message);
-      handler(balance_update, trace_info);
+      server::Trace event(trace_info, balance_update);
+      handler(event);
       break;
     }
     case EventType::EXECUTION_REPORT: {
       auto execution_report = core::json::Parser::create<ExecutionReport>(message);
-      handler(execution_report, trace_info);
+      server::Trace event(trace_info, execution_report);
+      handler(event);
       break;
     }
     case EventType::LIST_STATUS:
