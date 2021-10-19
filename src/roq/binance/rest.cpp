@@ -390,6 +390,9 @@ void Rest::operator()(const server::Trace<json::Depth> &event, const std::string
       },
       [&](auto retries) {  // request
         log::debug(R"(REQUEST symbol="{}" (retries={}))"_sv, symbol, retries);
+        if (retries > Flags::ws_mbp_request_max_retries()) {
+          log::fatal("Unexpected"_sv);
+        }
         get_depth(symbol);
       });
 }

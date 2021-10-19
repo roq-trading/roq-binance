@@ -489,6 +489,9 @@ void MarketData::operator()(const server::Trace<json::DepthUpdate> &event) {
           },
           [&](auto retries) {  // request
             log::debug(R"(REQUEST symbol="{}" (retries={}))"_sv, symbol, retries);
+            if (retries > Flags::ws_mbp_request_max_retries()) {
+              log::fatal("Unexpected"_sv);
+            }
             auto now = trace_info.source_receive_time;
             request_queue_.emplace_back(now + Flags::ws_mbp_request_delay(), symbol);
           });
