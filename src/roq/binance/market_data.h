@@ -2,8 +2,12 @@
 
 #pragma once
 
+#include <absl/container/flat_hash_map.h>
+
+#include <deque>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "roq/core/metrics/counter.h"
@@ -28,6 +32,10 @@ namespace binance {
 class MarketData final : public core::web::Socket::Handler,
                          public json::MarketStreamParser::Handler {
  public:
+  struct GetDepth final {
+    std::string_view symbol;
+  };
+
   struct Handler {
     virtual void operator()(const server::Trace<StreamStatus> &) = 0;
     virtual void operator()(const server::Trace<ExternalLatency> &) = 0;
@@ -36,6 +44,8 @@ class MarketData final : public core::web::Socket::Handler,
         const server::Trace<MarketByPriceUpdate> &, bool is_last, bool refresh) = 0;
     virtual void operator()(const server::Trace<TradeSummary> &, bool is_last) = 0;
     virtual void operator()(const server::Trace<StatisticsUpdate> &, bool is_last) = 0;
+    // cross-communication
+    virtual void operator()(const GetDepth &) = 0;
   };
 
   MarketData(Handler &, core::io::Context &, uint32_t stream_id, Shared &);
@@ -81,16 +91,15 @@ class MarketData final : public core::web::Socket::Handler,
   void operator()(int32_t, const json::Result &) override;
 
   // update
-  void operator()(const json::AggTrade &, const server::TraceInfo &) override;
-  void operator()(const json::Trade &, const server::TraceInfo &) override;
-  void operator()(const json::MiniTicker &, const server::TraceInfo &) override;
-  void operator()(const json::BookTicker &, const server::TraceInfo &) override;
-  void operator()(
-      const std::string_view &symbol, const json::Depth &depth, const server::TraceInfo &) override;
-  void operator()(
-      const std::string_view &symbol,
-      const json::DepthUpdate &,
-      const server::TraceInfo &) override;
+  void operator()(const server::Trace<json::AggTrade> &) override;
+  void operator()(const server::Trace<json::Trade> &) override;
+  void operator()(const server::Trace<json::MiniTicker> &) override;
+  void operator()(const server::Trace<json::BookTicker> &) override;
+  void operator()(const server::Trace<json::Depth> &, const std::string_view &symbol) override;
+  void operator()(const server::Trace<json::DepthUpdate> &) override;
+
+  void check_subscribe_queue(std::chrono::nanoseconds now);
+  void check_request_queue(std::chrono::nanoseconds now);
 
  private:
   Handler &handler_;
@@ -121,6 +130,9 @@ class MarketData final : public core::web::Socket::Handler,
   bool ready_ = false;
   ConnectionStatus status_ = {};
   server::Download<MarketDataState> download_;
+  // experimental
+  std::deque<std::pair<std::chrono::nanoseconds, std::string> > subscribe_queue_;
+  std::deque<std::pair<std::chrono::nanoseconds, std::string> > request_queue_;
 };
 
 }  // namespace binance

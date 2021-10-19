@@ -1,4 +1,4 @@
-#symbols = ".*"
+# symbols = ".*"
 symbols = "LTCBTC"
 
 [accounts]

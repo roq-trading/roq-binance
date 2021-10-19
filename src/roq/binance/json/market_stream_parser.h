@@ -31,19 +31,15 @@ struct MarketStreamParser final {
 
     // update
 
-    virtual void operator()(const AggTrade &, const server::TraceInfo &) = 0;
-    virtual void operator()(const Trade &, const server::TraceInfo &) = 0;
+    virtual void operator()(const server::Trace<AggTrade> &) = 0;
+    virtual void operator()(const server::Trace<Trade> &) = 0;
 
-    virtual void operator()(const MiniTicker &, const server::TraceInfo &) = 0;
-    virtual void operator()(const BookTicker &, const server::TraceInfo &) = 0;
+    virtual void operator()(const server::Trace<MiniTicker> &) = 0;
+    virtual void operator()(const server::Trace<BookTicker> &) = 0;
 
-    virtual void operator()(
-        const std::string_view &symbol, const Depth &depth, const server::TraceInfo &) = 0;
+    virtual void operator()(const server::Trace<Depth> &, const std::string_view &symbol) = 0;
 
-    virtual void operator()(
-        const std::string_view &symbol,
-        const DepthUpdate &depth_update,
-        const server::TraceInfo &) = 0;
+    virtual void operator()(const server::Trace<DepthUpdate> &) = 0;
   };
 
   static void dispatch(

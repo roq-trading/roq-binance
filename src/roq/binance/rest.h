@@ -22,6 +22,7 @@
 #include "roq/binance/rest_state.h"
 #include "roq/binance/shared.h"
 
+#include "roq/binance/json/depth.h"
 #include "roq/binance/json/exchange_info.h"
 
 namespace roq {
@@ -55,6 +56,8 @@ class Rest final : public core::web::Client::Handler {
 
   void operator()(metrics::Writer &);
 
+  void get_depth(const std::string_view &symbol);
+
  protected:
   void operator()(const core::web::Client::Connected &);
   void operator()(const core::web::Client::Disconnected &);
@@ -65,8 +68,11 @@ class Rest final : public core::web::Client::Handler {
   uint32_t download(RestState state);
 
   void get_exchange_info();
-  void get_exchange_info_ack(const core::web::Response &);
+  void get_exchange_info_ack(const server::Trace<core::web::Response> &);
   void operator()(const server::Trace<json::ExchangeInfo> &);
+
+  void get_depth_ack(const server::Trace<core::web::Response> &, const std::string_view &symbol);
+  void operator()(const server::Trace<json::Depth> &, const std::string_view &symbol);
 
  private:
   Handler &handler_;
@@ -83,7 +89,7 @@ class Rest final : public core::web::Client::Handler {
     core::metrics::Counter disconnect;
   } counter_;
   struct {
-    core::metrics::Profile exchange_info, exchange_info_ack;
+    core::metrics::Profile exchange_info, exchange_info_ack, depth, depth_ack;
   } profile_;
   struct {
     core::metrics::Latency ping;

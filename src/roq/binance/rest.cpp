@@ -7,6 +7,7 @@
 #include "roq/utils/mask.h"
 #include "roq/utils/update.h"
 
+#include "roq/core/back_emplacer.h"
 #include "roq/core/charconv.h"
 
 #include "roq/core/metrics/factory.h"
@@ -34,6 +35,17 @@ struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(const std::string_view &group, const std::string_view &function)
       : core::metrics::Factory(server::Flags::name(), group, function) {}
 };
+
+template <typename T>
+void emplace(MBPUpdate &result, const T &value) {
+  new (&result) MBPUpdate{
+      .price = value.price,
+      .quantity = value.qty,
+      .implied_quantity = NaN,
+      .price_level = {},
+      .number_of_orders = {},
+  };
+}
 }  // namespace
 
 Rest::Rest(Handler &handler, core::io::Context &context, uint16_t stream_id, Shared &shared)
@@ -59,6 +71,8 @@ Rest::Rest(Handler &handler, core::io::Context &context, uint16_t stream_id, Sha
       profile_{
           .exchange_info = create_metrics(name_, "exchange_info"_sv),
           .exchange_info_ack = create_metrics(name_, "exchange_info_ack"_sv),
+          .depth = create_metrics(name_, "depth"_sv),
+          .depth_ack = create_metrics(name_, "depth_ack"_sv),
       },
       latency_{
           .ping = create_metrics(name_, "ping"_sv),
@@ -86,6 +100,8 @@ void Rest::operator()(metrics::Writer &writer) {
       // profile
       .write(profile_.exchange_info, metrics::PROFILE)
       .write(profile_.exchange_info_ack, metrics::PROFILE)
+      .write(profile_.depth, metrics::PROFILE)
+      .write(profile_.depth_ack, metrics::PROFILE)
       // latency
       .write(latency_.ping, metrics::LATENCY);
 }
@@ -161,7 +177,7 @@ void Rest::get_exchange_info() {
         .method = method,
         .path = path,
         .query = {},
-        .accept = {},
+        .accept = core::http::Accept::JSON,
         .content_type = {},
         .headers = {},
         .body = {},
@@ -170,14 +186,16 @@ void Rest::get_exchange_info() {
     };
     connection_(
         "exchange_info"_sv, request, [this]([[maybe_unused]] auto &request_id, auto &response) {
-          get_exchange_info_ack(response);
+          server::TraceInfo trace_info;
+          server::Trace event(trace_info, response);
+          get_exchange_info_ack(event);
         });
   });
 }
 
-void Rest::get_exchange_info_ack(const core::web::Response &response) {
+void Rest::get_exchange_info_ack(const server::Trace<core::web::Response> &event) {
   profile_.exchange_info_ack([&]() {
-    server::TraceInfo trace_info;
+    auto &[trace_info, response] = event;
     auto state = RestState::EXCHANGE_INFO;
     try {
       response.expect(core::http::Status::OK);
@@ -290,6 +308,90 @@ void Rest::operator()(const server::Trace<json::ExchangeInfo> &event) {
     };
     handler_(symbols_update);
   }
+}
+
+// depth
+
+void Rest::get_depth(const std::string_view &symbol) {
+  profile_.depth([&]() {
+    auto method = core::http::Method::GET;
+    auto path = "/api/v3/depth"_sv;
+    auto query = fmt::format("?symbol={}&limit={}"_sv, symbol, Flags::ws_subscribe_depth_levels());
+    core::web::Request request{
+        .method = method,
+        .path = path,
+        .query = query,
+        .accept = core::http::Accept::JSON,
+        .content_type = {},
+        .headers = {},
+        .body = {},
+        .quality_of_service = {},
+        .rate_limit_weight = 1,
+    };
+    connection_(
+        "depth"_sv,
+        request,
+        [this, symbol = std::string{symbol}]([[maybe_unused]] auto &request_id, auto &response) {
+          server::TraceInfo trace_info;
+          server::Trace event(trace_info, response);
+          get_depth_ack(event, symbol);
+        });
+  });
+}
+
+void Rest::get_depth_ack(
+    const server::Trace<core::web::Response> &event, const std::string_view &symbol) {
+  profile_.depth_ack([&]() {
+    auto &[trace_info, response] = event;
+    try {
+      response.expect(core::http::Status::OK);
+      auto body = response.body();
+      core::json::Buffer buffer(decode_buffer_);
+      auto depth = core::json::Parser::create<json::Depth>(body, buffer);
+      server::Trace event(trace_info, depth);
+      (*this)(event, symbol);
+    } catch (core::NetworkError &e) {
+      log::warn(R"(Exception type={}, what="{}")"_sv, typeid(e).name(), e.what());
+    }
+  });
+}
+
+void Rest::operator()(const server::Trace<json::Depth> &event, const std::string_view &symbol) {
+  // auto &[trace_info, depth] = event;
+  auto &trace_info = event.trace_info;
+  auto &depth = event.value;
+  auto sequence = depth.last_update_id;
+  // log::debug(R"(SNAPSHOT symbol="{}", sequence={})"_sv, symbol, sequence);
+  auto &collector = shared_.mbp_collector[symbol];
+  core::back_emplacer bids(shared_.bids), asks(shared_.asks);
+  for (auto &item : depth.bids)
+    bids.emplace_back([&item](auto &result) { emplace(result, item); });
+  for (auto &item : depth.asks)
+    asks.emplace_back([&item](auto &result) { emplace(result, item); });
+  collector(
+      bids,
+      asks,
+      sequence,
+      [&](auto &bids, auto &asks, auto sequence) {  // snapshot
+        // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"_sv, symbol, sequence);
+        MarketByPriceUpdate market_by_price_update{
+            .stream_id = stream_id_,
+            .exchange = Flags::exchange(),
+            .symbol = symbol,
+            .bids = bids,
+            .asks = asks,
+            .update_type = UpdateType::SNAPSHOT,
+            .exchange_time_utc = {},
+        };
+        server::Trace event_2(trace_info, market_by_price_update);
+        shared_(event_2, true, [&](auto &market_by_price) {
+          collector.apply(market_by_price, sequence, false);
+        });
+      },
+      [&]() {  // request
+        log::debug(R"(REQUEST symbol="{}")"_sv, symbol);
+        get_depth(symbol);
+      });
 }
 
 }  // namespace binance

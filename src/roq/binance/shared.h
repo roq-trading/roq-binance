@@ -2,12 +2,20 @@
 
 #pragma once
 
+#include <absl/container/flat_hash_map.h>
+
+#include <chrono>
+#include <string>
 #include <utility>
 
 #include "roq/api.h"
 #include "roq/server.h"
 
 #include "roq/core/memory.h"
+
+#include "roq/core/limit/rate_limiter.h"
+
+#include "roq/core/market/mbp_sequencer.h"
 
 namespace roq {
 namespace binance {
@@ -32,11 +40,25 @@ struct Shared final {
     return dispatcher_.create_order(std::forward<Args>(args)...);
   }
 
+  template <typename... Args>
+  auto operator()(Args &&...args) {
+    return dispatcher_(std::forward<Args>(args)...);
+  }
+
+  template <typename F>
+  bool can_request(std::chrono::nanoseconds now, F callback) {
+    return rate_limiter_.can_request(now, callback);
+  }
+
  public:
   core::page_aligned_vector<MBPUpdate> bids, asks, final_bids, final_asks;
 
+  absl::flat_hash_map<std::string, core::market::MBP_Sequencer> mbp_collector;
+
  private:
   server::Dispatcher &dispatcher_;
+
+  core::limit::RateLimiter rate_limiter_;
 };
 
 }  // namespace binance

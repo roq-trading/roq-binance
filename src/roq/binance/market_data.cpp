@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include "roq/utils/mask.h"
+#include "roq/utils/safe_cast.h"
 #include "roq/utils/update.h"
 
 #include "roq/core/back_emplacer.h"
@@ -95,7 +96,12 @@ void MarketData::operator()(const Event<Stop> &) {
 }
 
 void MarketData::operator()(const Event<Timer> &event) {
-  connection_.refresh(event.value.now);
+  auto now = event.value.now;
+  connection_.refresh(now);
+  if (connection_.ready()) {
+    check_subscribe_queue(now);
+    check_request_queue(now);
+  }
 }
 
 void MarketData::operator()(metrics::Writer &writer) {
@@ -217,6 +223,7 @@ void MarketData::subscribe(const roq::span<std::string> &symbols) {
 void MarketData::subscribe_agg_trade(const roq::span<std::string> &symbols) {
   assert(!symbols.empty());
   auto id = ++request_id_;
+  auto now = core::get_system_clock();
   auto message = fmt::format(
       R"({{)"
       R"("method":"SUBSCRIBE",)"
@@ -225,12 +232,14 @@ void MarketData::subscribe_agg_trade(const roq::span<std::string> &symbols) {
       R"(}})"_sv,
       fmt::join(symbols, R"(@aggTrade",")"_sv),
       id);
-  connection_.send_text(message);
+  log::debug("message={}"_sv, message);
+  subscribe_queue_.emplace_back(now, message);
 }
 
 void MarketData::subscribe_trade(const roq::span<std::string> &symbols) {
   assert(!symbols.empty());
   auto id = ++request_id_;
+  auto now = core::get_system_clock();
   auto message = fmt::format(
       R"({{)"
       R"("method":"SUBSCRIBE",)"
@@ -239,12 +248,14 @@ void MarketData::subscribe_trade(const roq::span<std::string> &symbols) {
       R"(}})"_sv,
       fmt::join(symbols, R"(@trade",")"_sv),
       id);
-  connection_.send_text(message);
+  log::debug("message={}"_sv, message);
+  subscribe_queue_.emplace_back(now, message);
 }
 
 void MarketData::subscribe_mini_ticker(const roq::span<std::string> &symbols) {
   assert(!symbols.empty());
   auto id = ++request_id_;
+  auto now = core::get_system_clock();
   auto message = fmt::format(
       R"({{)"
       R"("method":"SUBSCRIBE",)"
@@ -253,12 +264,14 @@ void MarketData::subscribe_mini_ticker(const roq::span<std::string> &symbols) {
       R"(}})"_sv,
       fmt::join(symbols, R"(@miniTicker",")"_sv),
       id);
-  connection_.send_text(message);
+  log::debug("message={}"_sv, message);
+  subscribe_queue_.emplace_back(now, message);
 }
 
 void MarketData::subscribe_book_ticker(const roq::span<std::string> &symbols) {
   assert(!symbols.empty());
   auto id = ++request_id_;
+  auto now = core::get_system_clock();
   auto message = fmt::format(
       R"({{)"
       R"("method":"SUBSCRIBE",)"
@@ -267,17 +280,16 @@ void MarketData::subscribe_book_ticker(const roq::span<std::string> &symbols) {
       R"(}})"_sv,
       fmt::join(symbols, R"(@bookTicker",")"_sv),
       id);
-  connection_.send_text(message);
+  log::debug("message={}"_sv, message);
+  subscribe_queue_.emplace_back(now, message);
 }
 
 void MarketData::subscribe_depth(const roq::span<std::string> &symbols) {
   assert(!symbols.empty());
-  auto stream = fmt::format(
-      R"(@depth{}@{}ms)"_sv,
-      Flags::ws_subscribe_depth_levels(),
-      std::chrono::duration_cast<std::chrono::milliseconds>(Flags::ws_subscribe_depth_freq())
-          .count());
+  std::chrono::milliseconds frequency = utils::safe_cast(Flags::ws_subscribe_depth_freq());
+  auto stream = fmt::format(R"(@depth@{}ms)"_sv, frequency.count());
   auto id = ++request_id_;
+  auto now = core::get_system_clock();
   auto separator = fmt::format(R"({}",")"_sv, stream);
   auto message = fmt::format(
       R"({{)"
@@ -288,7 +300,8 @@ void MarketData::subscribe_depth(const roq::span<std::string> &symbols) {
       fmt::join(symbols, separator),
       stream,
       id);
-  connection_.send_text(message);
+  log::debug("message={}"_sv, message);
+  subscribe_queue_.emplace_back(now, message);
 }
 
 void MarketData::parse(const std::string_view &message) {
@@ -312,8 +325,9 @@ void MarketData::operator()(int32_t id, const json::Result &result) {
   profile_.result([&]() { log::info("id={}, result={}"_sv, id, result); });
 }
 
-void MarketData::operator()(const json::AggTrade &agg_trade, const server::TraceInfo &trace_info) {
+void MarketData::operator()(const server::Trace<json::AggTrade> &event) {
   profile_.agg_trade([&]() {
+    auto &[trace_info, agg_trade] = event;
     log::info<3>("agg_trade={}"_sv, agg_trade);
     auto side = agg_trade.buyer_is_maker ? Side::BUY : Side::SELL;
     Trade trade{
@@ -334,8 +348,9 @@ void MarketData::operator()(const json::AggTrade &agg_trade, const server::Trace
   });
 }
 
-void MarketData::operator()(const json::Trade &trade, const server::TraceInfo &trace_info) {
+void MarketData::operator()(const server::Trace<json::Trade> &event) {
   profile_.trade([&]() {
+    auto &[trace_info, trade] = event;
     log::info<3>("trade={}"_sv, trade);
     auto side = trade.buyer_is_maker ? Side::BUY : Side::SELL;
     Trade trade_{
@@ -356,9 +371,9 @@ void MarketData::operator()(const json::Trade &trade, const server::TraceInfo &t
   });
 }
 
-void MarketData::operator()(
-    const json::MiniTicker &mini_ticker, const server::TraceInfo &trace_info) {
+void MarketData::operator()(const server::Trace<json::MiniTicker> &event) {
   profile_.mini_ticker([&]() {
+    auto &[trace_info, mini_ticker] = event;
     log::info<3>("mini_ticker={}"_sv, mini_ticker);
     Statistics statistics[] = {
         {.type = StatisticsType::HIGHEST_TRADED_PRICE, .value = mini_ticker.high_price},
@@ -378,9 +393,9 @@ void MarketData::operator()(
   });
 }
 
-void MarketData::operator()(
-    const json::BookTicker &book_ticker, const server::TraceInfo &trace_info) {
+void MarketData::operator()(const server::Trace<json::BookTicker> &event) {
   profile_.book_ticker([&]() {
+    auto &[trace_info, book_ticker] = event;
     log::info<3>("book_ticker={}"_sv, book_ticker);
     const TopOfBook top_of_book{
         .stream_id = stream_id_,
@@ -400,42 +415,118 @@ void MarketData::operator()(
 }
 
 void MarketData::operator()(
-    const std::string_view &symbol, const json::Depth &depth, const server::TraceInfo &trace_info) {
-  profile_.depth([&]() {
-    log::info<3>(R"(symbol="{}", depth={})"_sv, symbol, depth);
+    const server::Trace<json::Depth> &, [[maybe_unused]] const std::string_view &symbol) {
+  log::fatal("Unexpected"_sv);
+}
+
+void MarketData::operator()(const server::Trace<json::DepthUpdate> &event) {
+  profile_.depth_update([&]() {
+    // auto &[trace_info, depth_update] = event;
+    auto &trace_info = event.trace_info;
+    auto &depth_update = event.value;
+    log::info<3>(R"(depth_update={})"_sv, depth_update);
+    auto symbol = depth_update.symbol;
+    auto first_sequence = depth_update.first_update_id;
+    auto last_sequence = depth_update.final_update_id;
+    auto previous_sequence = first_sequence - 1;
+    /*
+    log::debug(
+        R"(UPDATE symbol="{}" sequence={{{}, {}}}, previous={})"_sv,
+        symbol,
+        first_sequence,
+        last_sequence,
+        previous_sequence);
+    */
+    auto &collector = shared_.mbp_collector[symbol];
     core::back_emplacer bids(shared_.bids), asks(shared_.asks);
-    for (auto &item : depth.bids)
+    for (auto &item : depth_update.bids)
       bids.emplace_back([&item](auto &result) { emplace(result, item); });
-    for (auto &item : depth.asks)
+    for (auto &item : depth_update.asks)
       asks.emplace_back([&item](auto &result) { emplace(result, item); });
-    if (!(bids.empty() && asks.empty())) {
-      const MarketByPriceUpdate market_by_price_update{
-          .stream_id = stream_id_,
-          .exchange = Flags::exchange(),
-          .symbol = symbol,
-          .bids = bids,
-          .asks = asks,
-          .update_type = UpdateType::SNAPSHOT,
-          .exchange_time_utc = {},
-      };
-      try {
-        create_trace_and_dispatch(trace_info, market_by_price_update, handler_, true, true);
-      } catch (market::BadState &) {
-        log::fatal("*** RESUBSCRIBE REQUIRED HERE ***"_sv);
-      }
+    auto exchange_time_utc = depth_update.event_time;
+    try {
+      collector(
+          bids,
+          asks,
+          first_sequence,
+          last_sequence,
+          previous_sequence,
+          [&](auto &bids, auto &asks) {  // update
+            // log::debug(R"(PUBLISH UPDATE symbol="{}")"_sv, symbol);
+            MarketByPriceUpdate market_by_price_update{
+                .stream_id = stream_id_,
+                .exchange = Flags::exchange(),
+                .symbol = symbol,
+                .bids = bids,
+                .asks = asks,
+                .update_type = UpdateType::INCREMENTAL,
+                .exchange_time_utc = exchange_time_utc,
+            };
+            server::create_trace_and_dispatch(
+                event.trace_info, market_by_price_update, handler_, true, false);
+          },
+          [&](auto &bids, auto &asks, auto sequence) {  // snapshot
+            // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"_sv, symbol, sequence);
+            MarketByPriceUpdate market_by_price_update{
+                .stream_id = stream_id_,
+                .exchange = Flags::exchange(),
+                .symbol = symbol,
+                .bids = bids,
+                .asks = asks,
+                .update_type = UpdateType::SNAPSHOT,
+                .exchange_time_utc = exchange_time_utc,
+            };
+            server::Trace event_2(trace_info, market_by_price_update);
+            shared_(event_2, true, [&](auto &market_by_price) {
+              collector.apply(market_by_price, sequence, false);
+            });
+          },
+          [&]() {  // request
+            log::debug(R"(REQUEST symbol="{}")"_sv, symbol);
+            auto now = trace_info.source_receive_time;
+            request_queue_.emplace_back(now + Flags::ws_mbp_request_delay(), symbol);
+          });
+    } catch (market::BadState &) {
+      log::warn("*** RESUBSCRIBE REQUIRED HERE ***"_sv);
     }
   });
 }
 
-void MarketData::operator()(
-    const std::string_view &symbol,
-    const json::DepthUpdate &depth_update,
-    const server::TraceInfo &) {
-  profile_.depth_update([&]() {
-    log::info<3>(R"(symbol="{}", depth_update={})"_sv, symbol, depth_update);
-    // do nothing
-    // XXX why?
-  });
+void MarketData::check_subscribe_queue(std::chrono::nanoseconds now) {
+  while (!subscribe_queue_.empty()) {
+    auto &tmp = subscribe_queue_.front();
+    if (now < tmp.first)
+      break;
+    if (shared_.can_request(now, [&]() {
+          auto &message = tmp.second;
+          log::debug(R"(Subscribe: "{}")"_sv, message);
+          connection_.send_text(message);
+          subscribe_queue_.pop_front();
+        })) {
+    } else {
+      return;
+    }
+  }
+}
+
+void MarketData::check_request_queue(std::chrono::nanoseconds now) {
+  while (!request_queue_.empty()) {
+    auto &tmp = request_queue_.front();
+    if (now < tmp.first)
+      break;
+    if (shared_.can_request(now, [&]() {
+          auto &symbol = tmp.second;
+          log::debug(R"(Requesting order book snapshot symbol="{}")"_sv, symbol);
+          const GetDepth request{
+              .symbol = symbol,
+          };
+          handler_(request);
+          request_queue_.pop_front();
+        })) {
+    } else {
+      return;
+    }
+  }
 }
 
 }  // namespace binance

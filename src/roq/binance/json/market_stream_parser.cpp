@@ -88,25 +88,29 @@ void MarketStreamParser::dispatch(
             case Stream::AGG_TRADE: {
               AggTrade agg_trade(value);
               dispatched = true;
-              handler(agg_trade, trace_info);
+              server::Trace event(trace_info, agg_trade);
+              handler(event);
               break;
             }
             case Stream::TRADE: {
               Trade trade(value);
               dispatched = true;
-              handler(trade, trace_info);
+              server::Trace event(trace_info, trade);
+              handler(event);
               break;
             }
             case Stream::MINI_TICKER: {
               MiniTicker mini_ticker(value);
               dispatched = true;
-              handler(mini_ticker, trace_info);
+              server::Trace event(trace_info, mini_ticker);
+              handler(event);
               break;
             }
             case Stream::BOOK_TICKER: {
               BookTicker book_ticker(value);
               dispatched = true;
-              handler(book_ticker, trace_info);
+              server::Trace event(trace_info, book_ticker);
+              handler(event);
               break;
             }
             case Stream::DEPTH5:
@@ -115,14 +119,16 @@ void MarketStreamParser::dispatch(
               assert(!symbol.empty());
               Depth depth(value, buffer);
               dispatched = true;
-              handler(symbol, depth, trace_info);
+              server::Trace event(trace_info, depth);
+              handler(event, symbol);
               break;
             }
             case Stream::DEPTH: {
               assert(!symbol.empty());
               DepthUpdate depth_update(value, buffer);
               dispatched = true;
-              handler(symbol, depth_update, trace_info);
+              server::Trace event(trace_info, depth_update);
+              handler(event);
               break;
             }
           }

@@ -10,7 +10,8 @@ namespace binance {
 Shared::Shared(server::Dispatcher &dispatcher)
     : bids(server::Flags::cache_mbp_max_depth()), asks(server::Flags::cache_mbp_max_depth()),
       final_bids(server::Flags::cache_mbp_max_depth()),
-      final_asks(server::Flags::cache_mbp_max_depth()), dispatcher_(dispatcher) {
+      final_asks(server::Flags::cache_mbp_max_depth()), dispatcher_(dispatcher),
+      rate_limiter_(Flags::request_limit(), Flags::request_limit_interval()) {
 }
 
 }  // namespace binance

@@ -194,6 +194,10 @@ void Gateway::operator()(Rest::SymbolsUpdate &symbols_update) {
   }
 }
 
+void Gateway::operator()(const MarketData::GetDepth &get_depth) {
+  rest_.get_depth(get_depth.symbol);
+}
+
 void Gateway::operator()(const OrderEntry::ListenKeyUpdate &listen_key_update) {
   auto &account = listen_key_update.account;
   assert(!account.empty());
