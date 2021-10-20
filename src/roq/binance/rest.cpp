@@ -228,6 +228,8 @@ void Rest::operator()(const server::Trace<json::ExchangeInfo> &event) {
     // fall-back values
     auto tick_size = std::pow(10.0, -static_cast<double>(item.quote_precision));
     auto min_trade_vol = std::pow(10.0, -static_cast<double>(item.base_asset_precision));
+    auto max_trade_vol = NaN;
+    auto trade_vol_step_size = min_trade_vol;
     // parse filters and update
     core::json::Buffer buffer(decode_buffer_2_);
     auto filters = core::json::Parser::create<json::Filters>(item.filters, buffer);
@@ -243,7 +245,9 @@ void Rest::operator()(const server::Trace<json::ExchangeInfo> &event) {
         case json::FilterType::PERCENT_PRICE:
           break;
         case json::FilterType::LOT_SIZE:
-          min_trade_vol = filter.step_size;
+          min_trade_vol = filter.min_qty;
+          max_trade_vol = filter.max_qty;
+          trade_vol_step_size = filter.step_size;
           break;
         case json::FilterType::MIN_NOTIONAL:
           break;
@@ -284,6 +288,8 @@ void Rest::operator()(const server::Trace<json::ExchangeInfo> &event) {
         .tick_size = tick_size,
         .multiplier = NaN,
         .min_trade_vol = min_trade_vol,
+        .max_trade_vol = max_trade_vol,
+        .trade_vol_step_size = trade_vol_step_size,
         .option_type = {},
         .strike_currency = {},
         .strike_price = NaN,
