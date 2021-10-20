@@ -433,14 +433,6 @@ void MarketData::operator()(const server::Trace<json::DepthUpdate> &event) {
     auto first_sequence = depth_update.first_update_id;
     auto last_sequence = depth_update.final_update_id;
     auto previous_sequence = first_sequence - 1;
-    /*
-    log::debug(
-        R"(UPDATE symbol="{}" sequence={{{}, {}}}, previous={})"_sv,
-        symbol,
-        first_sequence,
-        last_sequence,
-        previous_sequence);
-    */
     auto &collector = shared_.mbp_collector[symbol];
     core::back_emplacer bids(shared_.bids), asks(shared_.asks);
     for (auto &item : depth_update.bids)
@@ -467,10 +459,10 @@ void MarketData::operator()(const server::Trace<json::DepthUpdate> &event) {
                 .exchange_time_utc = exchange_time_utc,
             };
             server::create_trace_and_dispatch(
-                event.trace_info, market_by_price_update, handler_, true, false);
+                trace_info, market_by_price_update, handler_, true, false);
           },
           [&](auto &bids, auto &asks, auto sequence) {  // snapshot
-            // log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"_sv, symbol, sequence);
+            log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"_sv, symbol, sequence);
             MarketByPriceUpdate market_by_price_update{
                 .stream_id = stream_id_,
                 .exchange = Flags::exchange(),
@@ -480,8 +472,8 @@ void MarketData::operator()(const server::Trace<json::DepthUpdate> &event) {
                 .update_type = UpdateType::SNAPSHOT,
                 .exchange_time_utc = exchange_time_utc,
             };
-            server::Trace event_2(trace_info, market_by_price_update);
-            shared_(event_2, true, [&](auto &market_by_price) {
+            server::Trace event(trace_info, market_by_price_update);
+            shared_(event, true, [&](auto &market_by_price) {
               collector.apply(market_by_price, sequence, false);
             });
           },
@@ -494,7 +486,11 @@ void MarketData::operator()(const server::Trace<json::DepthUpdate> &event) {
             shared_.request_queue.emplace_back(now + Flags::ws_mbp_request_delay(), symbol);
           });
     } catch (market::BadState &) {
-      log::warn("*** RESUBSCRIBE REQUIRED HERE ***"_sv);
+      log::warn(R"(RESUBSCRIBE symbol="{}")"_sv, symbol);
+      // XXX HANS publish stale
+      collector.clear();
+      auto now = trace_info.source_receive_time;
+      shared_.request_queue.emplace_back(now + Flags::ws_mbp_request_delay(), symbol);
     }
   });
 }
