@@ -22,8 +22,8 @@
 	{ "raw": "q", "name": "total_traded_quote_asset_volume", "type": "double" },
 	{ "raw": "O", "name": "statistics_open_time", "type": "std::chrono::milliseconds" },
 	{ "raw": "C", "name": "statistics_close_time", "type": "std::chrono::milliseconds" },
-	{ "raw": "F", "name": "first_trade_id", "type": "uint64_t" },
-	{ "raw": "L", "name": "last_trade_id", "type": "uint64_t" },
+	{ "raw": "F", "name": "first_trade_id", "type": "int64_t" },
+	{ "raw": "L", "name": "last_trade_id", "type": "int64_t" },
 	{ "raw": "n", "name": "total_number_of_trades", "type": "uint32_t" }
 ]
 }
