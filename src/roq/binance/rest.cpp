@@ -225,6 +225,7 @@ void Rest::operator()(const server::Trace<json::ExchangeInfo> &event) {
       log::info<1>(R"(Drop symbol="{}")"_sv, item.symbol);
       continue;
     }
+    log::debug("item={}"_sv, item);
     // fall-back values
     auto tick_size = std::pow(10.0, -static_cast<double>(item.quote_precision));
     auto min_trade_vol = std::pow(10.0, -static_cast<double>(item.base_asset_precision));
