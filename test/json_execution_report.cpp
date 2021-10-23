@@ -193,10 +193,188 @@ TEST(json_execution_report, stream) {
   core::json::Buffer buffer(buffer_);
   server::TraceInfo trace_info;
   struct MyHandler final : public json::UserStreamParser::Handler {
-    void operator()(const server::Trace<json::OutboundAccountInfo> &) override { FAIL(); }
     void operator()(const server::Trace<json::OutboundAccountPosition> &) override { FAIL(); }
     void operator()(const server::Trace<json::BalanceUpdate> &) override { FAIL(); }
     void operator()(const server::Trace<json::ExecutionReport> &) override { found_ = true; }
+    void operator()(const server::Trace<json::ListStatus> &) override { FAIL(); }
+
+    operator bool() const { return found_; }
+
+   private:
+    bool found_ = false;
+  } handler;
+  json::UserStreamParser::dispatch(handler, message, buffer, trace_info);
+  EXPECT_TRUE(static_cast<bool>(handler));
+}
+
+TEST(json_execution_report, stream_maker_new) {
+  auto message = R"({)"
+                 R"("stream":"x4PghblTRhWAXEO9E0wrDhwIZ0kRXDp3I32Vg9B60nxqGNjiG1lknGi1omdX",)"
+                 R"("data":{)"
+                 R"("e":"executionReport",)"
+                 R"("E":1634906177360,)"
+                 R"("s":"LTCUSDT",)"
+                 R"("c":"SwAC6wMAAQAA8foJ1iQX",)"
+                 R"("S":"BUY",)"
+                 R"("o":"LIMIT",)"
+                 R"("f":"GTC",)"
+                 R"("q":"0.10000000",)"
+                 R"("p":"198.30000000",)"
+                 R"("P":"0.00000000",)"
+                 R"("F":"0.00000000",)"
+                 R"("g":-1,)"
+                 R"("C":"",)"
+                 R"("x":"NEW",)"
+                 R"("X":"NEW",)"
+                 R"("r":"NONE",)"
+                 R"("i":2426862755,)"
+                 R"("l":"0.00000000",)"
+                 R"("z":"0.00000000",)"
+                 R"("L":"0.00000000",)"
+                 R"("n":"0",)"
+                 R"("N":null,)"
+                 R"("T":1634906177360,)"
+                 R"("t":-1,)"
+                 R"("I":5048624959,)"
+                 R"("w":true,)"
+                 R"("m":false,)"
+                 R"("M":false,)"
+                 R"("O":1634906177360,)"
+                 R"("Z":"0.00000000",)"
+                 R"("Y":"0.00000000",)"
+                 R"("Q":"0.00000000")"
+                 R"(})"
+                 R"(})";
+  core::Buffer buffer_(65536);
+  core::json::Buffer buffer(buffer_);
+  server::TraceInfo trace_info;
+  struct MyHandler final : public json::UserStreamParser::Handler {
+    void operator()(const server::Trace<json::OutboundAccountPosition> &) override { FAIL(); }
+    void operator()(const server::Trace<json::BalanceUpdate> &) override { FAIL(); }
+    void operator()(const server::Trace<json::ExecutionReport> &event) override {
+      found_ = true;
+      auto &[_, obj] = event;
+      EXPECT_EQ(obj.event_type, json::EventType::EXECUTION_REPORT);
+      EXPECT_EQ(obj.event_time, 1634906177360ms);
+      EXPECT_EQ(obj.symbol, "LTCUSDT"_sv);
+      EXPECT_EQ(obj.client_order_id, "SwAC6wMAAQAA8foJ1iQX"_sv);
+      EXPECT_EQ(obj.side, json::Side::BUY);
+      EXPECT_EQ(obj.order_type, json::OrderType::LIMIT);
+      EXPECT_EQ(obj.time_in_force, json::TimeInForce::GTC);
+      EXPECT_DOUBLE_EQ(obj.quantity, 0.1);
+      EXPECT_DOUBLE_EQ(obj.price, 198.3);
+      EXPECT_DOUBLE_EQ(obj.stop_price, 0.0);
+      EXPECT_DOUBLE_EQ(obj.iceberg_quantity, 0.0);
+      EXPECT_EQ(obj.order_list_id, -1);
+      EXPECT_EQ(obj.original_client_order_id, ""_sv);
+      EXPECT_EQ(obj.current_execution_type, json::ExecutionType::NEW);
+      EXPECT_EQ(obj.current_order_status, json::OrderStatus::NEW);
+      EXPECT_EQ(obj.order_reject_reason, "NONE"_sv);
+      EXPECT_EQ(obj.order_id, 2426862755);
+      EXPECT_DOUBLE_EQ(obj.last_executed_quantity, 0.0);
+      EXPECT_DOUBLE_EQ(obj.cumulative_filled_quantity, 0.0);
+      EXPECT_DOUBLE_EQ(obj.last_executed_price, 0.0);
+      EXPECT_DOUBLE_EQ(obj.commission_amount, 0.0);
+      EXPECT_EQ(obj.commission_asset, ""_sv);
+      EXPECT_EQ(obj.transaction_time, 1634906177360ms);
+      EXPECT_EQ(obj.trade_id, -1);
+      EXPECT_EQ(obj.order_on_book, true);
+      EXPECT_EQ(obj.is_trade_maker, false);
+      EXPECT_EQ(obj.order_creation_time, 1634906177360ms);
+      EXPECT_DOUBLE_EQ(obj.cumulative_quote_asset_transacted_quantity, 0.0);
+      EXPECT_DOUBLE_EQ(obj.last_quote_asset_transacted_quantity, 0.0);
+      EXPECT_DOUBLE_EQ(obj.quote_order_qty, 0.0);
+    }
+    void operator()(const server::Trace<json::ListStatus> &) override { FAIL(); }
+
+    operator bool() const { return found_; }
+
+   private:
+    bool found_ = false;
+  } handler;
+  json::UserStreamParser::dispatch(handler, message, buffer, trace_info);
+  EXPECT_TRUE(static_cast<bool>(handler));
+}
+
+TEST(json_execution_report, stream_maker_filled) {
+  auto message = R"({)"
+                 R"("stream":"x4PghblTRhWAXEO9E0wrDhwIZ0kRXDp3I32Vg9B60nxqGNjiG1lknGi1omdX",)"
+                 R"("data":{)"
+                 R"("e":"executionReport",)"
+                 R"("E":1634906229934,)"
+                 R"("s":"LTCUSDT",)"
+                 R"("c":"SwAC6wMAAQAA8foJ1iQX",)"
+                 R"("S":"BUY",)"
+                 R"("o":"LIMIT",)"
+                 R"("f":"GTC",)"
+                 R"("q":"0.10000000",)"
+                 R"("p":"198.30000000",)"
+                 R"("P":"0.00000000",)"
+                 R"("F":"0.00000000",)"
+                 R"("g":-1,)"
+                 R"("C":"",)"
+                 R"("x":"TRADE",)"
+                 R"("X":"FILLED",)"
+                 R"("r":"NONE",)"
+                 R"("i":2426862755,)"
+                 R"("l":"0.10000000",)"
+                 R"("z":"0.10000000",)"
+                 R"("L":"198.30000000",)"
+                 R"("n":"0.00003019",)"
+                 R"("N":"BNB",)"
+                 R"("T":1634906229933,)"
+                 R"("t":207081035,)"
+                 R"("I":5048627145,)"
+                 R"("w":false,)"
+                 R"("m":true,)"
+                 R"("M":true,)"
+                 R"("O":1634906177360,)"
+                 R"("Z":"19.83000000",)"
+                 R"("Y":"19.83000000",)"
+                 R"("Q":"0.00000000")"
+                 R"(})"
+                 R"(})";
+  core::Buffer buffer_(65536);
+  core::json::Buffer buffer(buffer_);
+  server::TraceInfo trace_info;
+  struct MyHandler final : public json::UserStreamParser::Handler {
+    void operator()(const server::Trace<json::OutboundAccountPosition> &) override { FAIL(); }
+    void operator()(const server::Trace<json::BalanceUpdate> &) override { FAIL(); }
+    void operator()(const server::Trace<json::ExecutionReport> &event) override {
+      found_ = true;
+      auto &[_, obj] = event;
+      EXPECT_EQ(obj.event_type, json::EventType::EXECUTION_REPORT);
+      EXPECT_EQ(obj.event_time, 1634906229934ms);
+      EXPECT_EQ(obj.symbol, "LTCUSDT"_sv);
+      EXPECT_EQ(obj.client_order_id, "SwAC6wMAAQAA8foJ1iQX"_sv);
+      EXPECT_EQ(obj.side, json::Side::BUY);
+      EXPECT_EQ(obj.order_type, json::OrderType::LIMIT);
+      EXPECT_EQ(obj.time_in_force, json::TimeInForce::GTC);
+      EXPECT_DOUBLE_EQ(obj.quantity, 0.1);
+      EXPECT_DOUBLE_EQ(obj.price, 198.3);
+      EXPECT_DOUBLE_EQ(obj.stop_price, 0.0);
+      EXPECT_DOUBLE_EQ(obj.iceberg_quantity, 0.0);
+      EXPECT_EQ(obj.order_list_id, -1);
+      EXPECT_EQ(obj.original_client_order_id, ""_sv);
+      EXPECT_EQ(obj.current_execution_type, json::ExecutionType::TRADE);
+      EXPECT_EQ(obj.current_order_status, json::OrderStatus::FILLED);
+      EXPECT_EQ(obj.order_reject_reason, "NONE"_sv);
+      EXPECT_EQ(obj.order_id, 2426862755);
+      EXPECT_DOUBLE_EQ(obj.last_executed_quantity, 0.1);
+      EXPECT_DOUBLE_EQ(obj.cumulative_filled_quantity, 0.1);
+      EXPECT_DOUBLE_EQ(obj.last_executed_price, 198.3);
+      EXPECT_DOUBLE_EQ(obj.commission_amount, 0.00003019);
+      EXPECT_EQ(obj.commission_asset, "BNB"_sv);
+      EXPECT_EQ(obj.transaction_time, 1634906229933ms);
+      EXPECT_EQ(obj.trade_id, 207081035);
+      EXPECT_EQ(obj.order_on_book, false);
+      EXPECT_EQ(obj.is_trade_maker, true);
+      EXPECT_EQ(obj.order_creation_time, 1634906177360ms);
+      EXPECT_DOUBLE_EQ(obj.cumulative_quote_asset_transacted_quantity, 19.83);
+      EXPECT_DOUBLE_EQ(obj.last_quote_asset_transacted_quantity, 19.83);
+      EXPECT_DOUBLE_EQ(obj.quote_order_qty, 0.0);
+    }
+    void operator()(const server::Trace<json::ListStatus> &) override { FAIL(); }
 
     operator bool() const { return found_; }
 

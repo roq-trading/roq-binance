@@ -46,6 +46,7 @@ class OrderEntry final : public core::web::Client::Handler {
     virtual void operator()(const server::Trace<ExternalLatency> &) = 0;
     virtual void operator()(const server::Trace<ReferenceData> &, bool is_last) = 0;
     virtual void operator()(const server::Trace<MarketStatus> &, bool is_last) = 0;
+    virtual void operator()(const server::Trace<TradeUpdate> &, bool is_last, uint8_t user_id) = 0;
     virtual void operator()(const server::Trace<FundsUpdate> &, bool is_last) = 0;
     // cross-communication
     virtual void operator()(const ListenKeyUpdate &) = 0;

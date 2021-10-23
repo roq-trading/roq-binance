@@ -1,5 +1,5 @@
 # symbols = ".*"
-symbols = "LTCBTC"
+symbols = [ "LTCBTC", "LTCUSDT", "BTCUSDT" ]
 # symbols = [ ".*BTC.*", ".*ETH.*" ]
 
 [accounts]

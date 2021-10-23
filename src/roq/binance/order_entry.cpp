@@ -8,6 +8,7 @@
 #include "roq/utils/safe_cast.h"
 #include "roq/utils/update.h"
 
+#include "roq/core/back_emplacer.h"
 #include "roq/core/charconv.h"
 
 #include "roq/core/metrics/factory.h"
@@ -28,6 +29,8 @@ static const auto SUPPORTS = utils::Mask{
     SupportType::CREATE_ORDER,
     SupportType::CANCEL_ORDER,
     SupportType::ORDER_ACK,
+    SupportType::ORDER,
+    SupportType::TRADE,
     SupportType::FUNDS,
 };
 
@@ -332,6 +335,7 @@ void OrderEntry::operator()(const server::Trace<json::Account> &event) {
   auto &[trace_info, account] = event;
   log::info<2>("account={}"_sv, account);
   for (auto &item : account.balances) {
+    log::debug("item={}"_sv, item);
     FundsUpdate funds_update{
         .stream_id = stream_id_,
         .account = security_.get_account(),
@@ -623,13 +627,27 @@ void OrderEntry::operator()(
     uint8_t user_id,
     uint32_t order_id,
     uint32_t version) {
-  auto &[trace_info, new_order] = event;
+  // auto &[trace_info, new_order] = event;
+  auto &trace_info = event.trace_info;
+  auto &new_order = event.value;
   auto side = json::map(new_order.side);
   auto order_type = json::map(new_order.type);
   auto time_in_force = json::map(new_order.time_in_force);
-  auto order_status = json::map(new_order.status);
   auto external_order_id = fmt::format("{}"_sv, new_order.order_id);  // XXX HANS
-  // XXX HANS fills???
+  auto order_status = json::map(new_order.status);
+  auto remaining_quantity = new_order.orig_qty - new_order.executed_qty;
+  auto average_traded_price = utils::compare(new_order.executed_qty, 0.0) == 0
+                                  ? NaN
+                                  : (new_order.cummulative_quote_qty / new_order.executed_qty);
+  auto last_traded_quantity = NaN;  // note! could also use new_order.executed_qty
+  auto last_traded_price = NaN;     // note! could also use average_traded_price
+  double tmp = 0.0;
+  for (auto &item : new_order.fills) {
+    last_traded_quantity += item.qty;
+    tmp += item.price * item.qty;
+  }
+  if (utils::compare(last_traded_quantity, 0.0) > 0)
+    last_traded_price = tmp / last_traded_quantity;
   oms::Response response{
       .type = RequestType::CREATE_ORDER,
       .origin = Origin::EXCHANGE,
@@ -660,11 +678,11 @@ void OrderEntry::operator()(
       .quantity = new_order.orig_qty,
       .price = new_order.price,
       .stop_price = NaN,
-      .remaining_quantity = NaN,
+      .remaining_quantity = remaining_quantity,
       .traded_quantity = new_order.executed_qty,
-      .average_traded_price = NaN,
-      .last_traded_quantity = NaN,
-      .last_traded_price = NaN,
+      .average_traded_price = average_traded_price,
+      .last_traded_quantity = last_traded_quantity,
+      .last_traded_price = last_traded_price,
       .last_liquidity = {},
   };
   if (shared_.update_order(
@@ -674,7 +692,9 @@ void OrderEntry::operator()(
           trace_info,
           response,
           order_update,
-          []([[maybe_unused]] auto &order) {})) {
+          [&]([[maybe_unused]] auto &order) {
+            // note! fills will be reported by drop copy
+          })) {
   } else {
     log::warn("Did not find order: user_id={}, order_id={}"_sv, user_id, order_id);
   }

@@ -27,6 +27,8 @@ set(AUTOGEN_SCHEMAS
     filter.json
     filters.json
     filter_type.json
+    list_status.json
+    list_status_item.json
     listen_key.json
     mini_ticker.json
     new_order.json
@@ -34,7 +36,6 @@ set(AUTOGEN_SCHEMAS
     order.json
     order_status.json
     order_type.json
-    outbound_account_info.json
     outbound_account_position.json
     result.json
     side.json

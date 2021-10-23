@@ -1,0 +1,9 @@
+{
+"name": "ListStatusItem",
+"type": "item",
+"values": [
+	{ "raw": "s", "name": "symbol", "type": "std::string_view" },
+	{ "raw": "i", "name": "order_id", "type": "int64_t" },
+	{ "raw": "c", "name": "client_order_id", "type": "std::string_view" }
+]
+}

@@ -12,7 +12,7 @@
 
 #include "roq/binance/json/balance_update.h"
 #include "roq/binance/json/execution_report.h"
-#include "roq/binance/json/outbound_account_info.h"
+#include "roq/binance/json/list_status.h"
 #include "roq/binance/json/outbound_account_position.h"
 
 namespace roq {
@@ -21,10 +21,10 @@ namespace json {
 
 struct UserStreamParser final {
   struct Handler {
-    virtual void operator()(const server::Trace<OutboundAccountInfo> &) = 0;
     virtual void operator()(const server::Trace<OutboundAccountPosition> &) = 0;
     virtual void operator()(const server::Trace<BalanceUpdate> &) = 0;
     virtual void operator()(const server::Trace<ExecutionReport> &) = 0;
+    virtual void operator()(const server::Trace<ListStatus> &) = 0;
   };
 
   static void dispatch(

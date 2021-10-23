@@ -53,12 +53,6 @@ bool UserStreamParser::try_dispatch(
     case EventType::DEPTH_UPDATE:
       log::fatal("Unexpected"_sv);
       break;
-    case EventType::OUTBOUND_ACCOUNT_INFO: {
-      auto outbound_account_info = core::json::Parser::create<OutboundAccountInfo>(message, buffer);
-      server::Trace event(trace_info, outbound_account_info);
-      handler(event);
-      break;
-    }
     case EventType::OUTBOUND_ACCOUNT_POSITION: {
       auto outbound_account_position =
           core::json::Parser::create<OutboundAccountPosition>(message, buffer);
@@ -78,8 +72,12 @@ bool UserStreamParser::try_dispatch(
       handler(event);
       break;
     }
-    case EventType::LIST_STATUS:
-      return false;  // XXX implement this
+    case EventType::LIST_STATUS: {
+      auto list_status = core::json::Parser::create<ListStatus>(message, buffer);
+      server::Trace event(trace_info, list_status);
+      handler(event);
+      break;
+    }
     default:
       return false;
   }

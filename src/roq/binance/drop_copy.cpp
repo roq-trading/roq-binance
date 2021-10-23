@@ -3,6 +3,7 @@
 #include "roq/binance/drop_copy.h"
 
 #include "roq/utils/mask.h"
+#include "roq/utils/safe_cast.h"
 #include "roq/utils/update.h"
 
 #include "roq/core/metrics/factory.h"
@@ -21,7 +22,7 @@ static const auto NAME = "ex"_sv;
 static const auto SUPPORTS = utils::Mask{
     SupportType::ORDER_ACK,
     SupportType::ORDER,
-    SupportType::TRADE,  // XXX HANS ???
+    SupportType::TRADE,
     SupportType::FUNDS,
 };
 
@@ -60,10 +61,10 @@ DropCopy::DropCopy(
       },
       profile_{
           .parse = create_metrics(name_, "parse"_sv),
-          .outbound_account_info = create_metrics(name_, "outbound_account_info"_sv),
           .outbound_account_position = create_metrics(name_, "outbound_account_position"_sv),
           .balance_update = create_metrics(name_, "balance_update"_sv),
           .execution_report = create_metrics(name_, "execution_report"_sv),
+          .list_status = create_metrics(name_, "list_status"_sv),
       },
       latency_{
           .ping = create_metrics(name_, "ping"_sv),
@@ -95,10 +96,10 @@ void DropCopy::operator()(metrics::Writer &writer) {
       .write(counter_.disconnect, metrics::COUNTER)
       // profile
       .write(profile_.parse, metrics::PROFILE)
-      .write(profile_.outbound_account_info, metrics::PROFILE)
       .write(profile_.outbound_account_position, metrics::PROFILE)
       .write(profile_.balance_update, metrics::PROFILE)
       .write(profile_.execution_report, metrics::PROFILE)
+      .write(profile_.list_status, metrics::PROFILE)
       // latency
       .write(latency_.ping, metrics::LATENCY)
       .write(latency_.heartbeat, metrics::LATENCY);
@@ -182,24 +183,6 @@ void DropCopy::parse(const std::string_view &message) {
   });
 }
 
-void DropCopy::operator()(const server::Trace<json::OutboundAccountInfo> &event) {
-  profile_.outbound_account_info([&]() {
-    auto &[trace_info, outbound_account_info] = event;
-    log::info<2>("outbound_account_info={}"_sv, outbound_account_info);
-    for (auto &item : outbound_account_info.balances) {
-      FundsUpdate funds_update{
-          .stream_id = stream_id_,
-          .account = security_.get_account(),
-          .currency = item.asset,
-          .balance = item.free_amount,
-          .hold = item.locked_amount,
-          .external_account = {},
-      };
-      create_trace_and_dispatch(trace_info, funds_update, handler_, true);
-    }
-  });
-}
-
 void DropCopy::operator()(const server::Trace<json::OutboundAccountPosition> &event) {
   profile_.outbound_account_position([&]() {
     auto &[trace_info, outbound_account_position] = event;
@@ -228,13 +211,20 @@ void DropCopy::operator()(const server::Trace<json::BalanceUpdate> &event) {
 
 void DropCopy::operator()(const server::Trace<json::ExecutionReport> &event) {
   profile_.execution_report([&]() {
-    auto &[trace_info, execution_report] = event;
+    // auto &[trace_info, execution_report] = event;
+    auto &trace_info = event.trace_info;
+    auto &execution_report = event.value;
     log::info<2>("execution_report={}"_sv, execution_report);
     auto side = json::map(execution_report.side);
     auto order_type = json::map(execution_report.order_type);
     auto time_in_force = json::map(execution_report.time_in_force);
     auto external_order_id = fmt::format("{}"_sv, execution_report.order_id);
     auto status = json::map(execution_report.current_order_status);
+    auto average_traded_price =
+        utils::compare(execution_report.cumulative_filled_quantity, 0.0) == 0
+            ? NaN
+            : (execution_report.cumulative_quote_asset_transacted_quantity /
+               execution_report.cumulative_filled_quantity);
     auto last_liquidity = execution_report.is_trade_maker ? Liquidity::MAKER : Liquidity::TAKER;
     oms::OrderUpdate order_update{
         .account = security_.get_account(),
@@ -257,7 +247,7 @@ void DropCopy::operator()(const server::Trace<json::ExecutionReport> &event) {
         .stop_price = execution_report.stop_price,
         .remaining_quantity = NaN,
         .traded_quantity = execution_report.cumulative_filled_quantity,
-        .average_traded_price = NaN,
+        .average_traded_price = average_traded_price,
         .last_traded_quantity = execution_report.last_executed_quantity,
         .last_traded_price = execution_report.last_executed_price,
         .last_liquidity = last_liquidity,
@@ -267,11 +257,45 @@ void DropCopy::operator()(const server::Trace<json::ExecutionReport> &event) {
             stream_id_,
             trace_info,
             order_update,
-            []([[maybe_unused]] auto &order) {})) {
+            [&](auto &order) {
+              if (execution_report.current_execution_type == json::ExecutionType::TRADE) {
+                auto external_trade_id =
+                    fmt::format("{}"_sv, execution_report.trade_id);  // XXX HANS
+                Fill fill{
+                    .external_trade_id = {},
+                    .quantity = execution_report.last_executed_quantity,
+                    .price = execution_report.last_executed_price,
+                };
+                TradeUpdate trade_update{
+                    .stream_id = stream_id_,
+                    .account = order.account,
+                    .order_id = order.order_id,
+                    .exchange = order.exchange,
+                    .symbol = order.symbol,
+                    .side = order.side,
+                    .position_effect = order.position_effect,
+                    .create_time_utc = utils::safe_cast(execution_report.transaction_time),
+                    .update_time_utc = utils::safe_cast(execution_report.transaction_time),
+                    .external_account = order.external_account,
+                    .external_order_id = order.external_order_id,
+                    .fills = {&fill, 1},
+                    .routing_id = order.routing_id,
+                };
+                server::create_trace_and_dispatch(
+                    trace_info, trade_update, handler_, true, order.user_id);
+              }
+            })) {
     } else {
       log::warn<1>("*** EXTERNAL ORDER ***"_sv);
       log::warn<2>("execution_report={}"_sv, execution_report);
     }
+  });
+}
+
+void DropCopy::operator()(const server::Trace<json::ListStatus> &event) {
+  profile_.list_status([&]() {
+    auto &[trace_info, list_status] = event;
+    log::info<2>("list_status={}"_sv, list_status);
   });
 }
 

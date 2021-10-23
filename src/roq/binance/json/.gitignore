@@ -42,6 +42,10 @@ filters.h
 filters.cpp
 filter_type.h
 filter_type.cpp
+list_status.h
+list_status.cpp
+list_status_item.h
+list_status_item.cpp
 listen_key.h
 listen_key.cpp
 mini_ticker.h
@@ -56,8 +60,6 @@ order_status.h
 order_status.cpp
 order_type.h
 order_type.cpp
-outbound_account_info.h
-outbound_account_info.cpp
 outbound_account_position.h
 outbound_account_position.cpp
 result.h

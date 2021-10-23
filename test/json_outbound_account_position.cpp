@@ -80,12 +80,133 @@ TEST(json_outbound_account_position, stream) {
   core::json::Buffer buffer(buffer_);
   server::TraceInfo trace_info;
   struct MyHandler final : public json::UserStreamParser::Handler {
-    void operator()(const server::Trace<json::OutboundAccountInfo> &) override { FAIL(); }
     void operator()(const server::Trace<json::OutboundAccountPosition> &) override {
       found_ = true;
     }
     void operator()(const server::Trace<json::BalanceUpdate> &) override { FAIL(); }
     void operator()(const server::Trace<json::ExecutionReport> &) override { FAIL(); }
+    void operator()(const server::Trace<json::ListStatus> &) override { FAIL(); }
+
+    operator bool() const { return found_; }
+
+   private:
+    bool found_ = false;
+  } handler;
+  json::UserStreamParser::dispatch(handler, message, buffer, trace_info);
+  EXPECT_TRUE(static_cast<bool>(handler));
+}
+
+TEST(json_outbound_account_position, stream_maker_new) {
+  auto message = R"({)"
+                 R"("stream":"x4PghblTRhWAXEO9E0wrDhwIZ0kRXDp3I32Vg9B60nxqGNjiG1lknGi1omdX",)"
+                 R"("data":{"e":"outboundAccountPosition",)"
+                 R"("E":1634906177360,)"
+                 R"("u":1634906177360,)"
+                 R"("B":[{)"
+                 R"("a":"LTC",)"
+                 R"("f":"0.00000000",)"
+                 R"("l":"0.00000000")"
+                 R"(},{)"
+                 R"("a":"BNB",)"
+                 R"("f":"0.00041226",)"
+                 R"("l":"0.00000000")"
+                 R"(},{)"
+                 R"("a":"USDT",)"
+                 R"("f":"1.31364261",)"
+                 R"("l":"19.83000000")"
+                 R"(})"
+                 R"(])"
+                 R"(})"
+                 R"(})";
+  core::Buffer buffer_(65536);
+  core::json::Buffer buffer(buffer_);
+  server::TraceInfo trace_info;
+  struct MyHandler final : public json::UserStreamParser::Handler {
+    void operator()(const server::Trace<json::OutboundAccountPosition> &event) override {
+      found_ = true;
+      auto &[_, obj] = event;
+      EXPECT_EQ(obj.event_type, json::EventType::OUTBOUND_ACCOUNT_POSITION);
+      EXPECT_EQ(obj.event_time, 1634906177360ms);
+      EXPECT_EQ(obj.time_of_last_account_update, 1634906177360ms);
+      auto &balances = obj.balances;
+      ASSERT_EQ(std::size(balances), 3);
+      auto &b0 = balances[0];
+      EXPECT_EQ(b0.asset, "LTC"_sv);
+      EXPECT_DOUBLE_EQ(b0.free_amount, 0.0);
+      EXPECT_DOUBLE_EQ(b0.locked_amount, 0.0);
+      auto &b1 = balances[1];
+      EXPECT_EQ(b1.asset, "BNB"_sv);
+      EXPECT_DOUBLE_EQ(b1.free_amount, 0.00041226);
+      EXPECT_DOUBLE_EQ(b1.locked_amount, 0.0);
+      auto &b2 = balances[2];
+      EXPECT_EQ(b2.asset, "USDT"_sv);
+      EXPECT_DOUBLE_EQ(b2.free_amount, 1.31364261);
+      EXPECT_DOUBLE_EQ(b2.locked_amount, 19.83);
+    }
+    void operator()(const server::Trace<json::BalanceUpdate> &) override { FAIL(); }
+    void operator()(const server::Trace<json::ExecutionReport> &) override { FAIL(); }
+    void operator()(const server::Trace<json::ListStatus> &) override { FAIL(); }
+
+    operator bool() const { return found_; }
+
+   private:
+    bool found_ = false;
+  } handler;
+  json::UserStreamParser::dispatch(handler, message, buffer, trace_info);
+  EXPECT_TRUE(static_cast<bool>(handler));
+}
+
+TEST(json_outbound_account_position, stream_maker_filled) {
+  auto message = R"({)"
+                 R"("stream":"x4PghblTRhWAXEO9E0wrDhwIZ0kRXDp3I32Vg9B60nxqGNjiG1lknGi1omdX",)"
+                 R"("data":{)"
+                 R"("e":"outboundAccountPosition",)"
+                 R"("E":1634906229934,)"
+                 R"("u":1634906229933,)"
+                 R"("B":[{)"
+                 R"("a":"LTC",)"
+                 R"("f":"0.10000000",)"
+                 R"("l":"0.00000000")"
+                 R"(},{)"
+                 R"("a":"BNB",)"
+                 R"("f":"0.00038207",)"
+                 R"("l":"0.00000000")"
+                 R"(},{)"
+                 R"("a":"USDT",)"
+                 R"("f":"1.31364261",)"
+                 R"("l":"0.00000000")"
+                 R"(})"
+                 R"(])"
+                 R"(})"
+                 R"(})";
+  core::Buffer buffer_(65536);
+  core::json::Buffer buffer(buffer_);
+  server::TraceInfo trace_info;
+  struct MyHandler final : public json::UserStreamParser::Handler {
+    void operator()(const server::Trace<json::OutboundAccountPosition> &event) override {
+      found_ = true;
+      auto &[_, obj] = event;
+      EXPECT_EQ(obj.event_type, json::EventType::OUTBOUND_ACCOUNT_POSITION);
+      EXPECT_EQ(obj.event_time, 1634906229934ms);
+      EXPECT_EQ(obj.time_of_last_account_update, 1634906229933ms);
+      auto &balances = obj.balances;
+      ASSERT_EQ(std::size(balances), 3);
+      auto &b0 = balances[0];
+      EXPECT_EQ(b0.asset, "LTC"_sv);
+      EXPECT_DOUBLE_EQ(b0.free_amount, 0.1);
+      EXPECT_DOUBLE_EQ(b0.locked_amount, 0.0);
+      auto &b1 = balances[1];
+      EXPECT_EQ(b1.asset, "BNB"_sv);
+      EXPECT_DOUBLE_EQ(b1.free_amount, 0.00038207);
+      EXPECT_DOUBLE_EQ(b1.locked_amount, 0.0);
+      auto &b2 = balances[2];
+      EXPECT_EQ(b2.asset, "USDT"_sv);
+      EXPECT_DOUBLE_EQ(b2.free_amount, 1.31364261);
+      EXPECT_DOUBLE_EQ(b2.locked_amount, 0.0);
+    }
+    void operator()(const server::Trace<json::BalanceUpdate> &) override { FAIL(); }
+    void operator()(const server::Trace<json::ExecutionReport> &) override { FAIL(); }
+    void operator()(const server::Trace<json::ListStatus> &) override { FAIL(); }
 
     operator bool() const { return found_; }
 
