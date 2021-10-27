@@ -89,15 +89,15 @@ class OrderEntry final : public core::web::Client::Handler {
   uint32_t download(OrderEntryState state);
 
   void get_listen_key();
-  void get_listen_key_ack(const server::Trace<core::web::Response> &);
+  void get_listen_key_ack(const server::Trace<core::web::Response> &, uint32_t sequence);
   void operator()(const server::Trace<json::ListenKey> &);
 
   void get_account();
-  void get_account_ack(const server::Trace<core::web::Response> &);
+  void get_account_ack(const server::Trace<core::web::Response> &, uint32_t sequence);
   void operator()(const server::Trace<json::Account> &);
 
   void get_open_orders();
-  void get_open_orders_ack(const server::Trace<core::web::Response> &);
+  void get_open_orders_ack(const server::Trace<core::web::Response> &, uint32_t sequence);
   void operator()(const server::Trace<json::OpenOrders> &);
 
   void refresh_listen_key();

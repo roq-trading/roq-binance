@@ -66,7 +66,7 @@ class Rest final : public core::web::Client::Handler {
   uint32_t download(RestState state);
 
   void get_exchange_info();
-  void get_exchange_info_ack(const server::Trace<core::web::Response> &);
+  void get_exchange_info_ack(const server::Trace<core::web::Response> &, uint32_t sequence);
   void operator()(const server::Trace<json::ExchangeInfo> &);
 
   void get_depth(const std::string_view &symbol);

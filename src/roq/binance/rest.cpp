@@ -187,20 +187,26 @@ void Rest::get_exchange_info() {
         .quality_of_service = {},
         .rate_limit_weight = 1,
     };
+    auto sequence = download_.sequence();
     connection_(
-        "exchange_info"_sv, request, [this]([[maybe_unused]] auto &request_id, auto &response) {
+        "exchange_info"_sv,
+        request,
+        [this, sequence]([[maybe_unused]] auto &request_id, auto &response) {
           server::TraceInfo trace_info;
           server::Trace event(trace_info, response);
-          get_exchange_info_ack(event);
+          get_exchange_info_ack(event, sequence);
         });
   });
 }
 
-void Rest::get_exchange_info_ack(const server::Trace<core::web::Response> &event) {
+void Rest::get_exchange_info_ack(
+    const server::Trace<core::web::Response> &event, uint32_t sequence) {
+  auto state = RestState::EXCHANGE_INFO;
   profile_.exchange_info_ack([&]() {
     auto &[trace_info, response] = event;
-    auto state = RestState::EXCHANGE_INFO;
     try {
+      if (download_.skip(sequence, state))
+        return;
       response.expect(core::http::Status::OK);
       auto body = response.body();
       core::json::Buffer buffer(decode_buffer_);
