@@ -201,14 +201,17 @@ void Rest::get_exchange_info() {
 
 void Rest::get_exchange_info_ack(
     const server::Trace<core::web::Response> &event, uint32_t sequence) {
-  auto state = RestState::EXCHANGE_INFO;
   profile_.exchange_info_ack([&]() {
     auto &[trace_info, response] = event;
+    auto state = RestState::EXCHANGE_INFO;
     try {
-      if (download_.skip(sequence, state))
+      auto [status, category, body] = response.result();
+      log::debug(R"(status={}, category={}, body="{}")"_sv, status, category, body);
+      if (download_.skip(sequence, state)) {
+        log::info("Download state={} has already been processed"_sv, state);
         return;
+      }
       response.expect(core::http::Status::OK);
-      auto body = response.body();
       core::json::Buffer buffer(decode_buffer_);
       auto exchange_info = core::json::Parser::create<json::ExchangeInfo>(body, buffer);
       server::Trace event(trace_info, exchange_info);
@@ -223,10 +226,11 @@ void Rest::get_exchange_info_ack(
 
 void Rest::operator()(const server::Trace<json::ExchangeInfo> &event) {
   auto &[trace_info, exchange_info] = event;
+  log::info<2>("exchange_info={}"_sv, exchange_info);
   std::vector<std::string> symbols;
   size_t counter = {};
   for (const auto &item : exchange_info.symbols) {
-    log::info<1>("item={}"_sv, item);
+    log::info<2>("item={}"_sv, item);
     if (shared_.discard_symbol(item.symbol)) {
       log::info<1>(R"(Drop symbol="{}")"_sv, item.symbol);
       continue;
@@ -360,14 +364,16 @@ void Rest::get_depth_ack(
   profile_.depth_ack([&]() {
     auto &[trace_info, response] = event;
     try {
+      auto [status, category, body] = response.result();
+      log::debug(R"(status={}, category={}, body="{}")"_sv, status, category, body);
       response.expect(core::http::Status::OK);
-      auto body = response.body();
       core::json::Buffer buffer(decode_buffer_);
       auto depth = core::json::Parser::create<json::Depth>(body, buffer);
       server::Trace event(trace_info, depth);
       (*this)(event, symbol);
     } catch (core::NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"_sv, typeid(e).name(), e.what());
+      // XXX HANS ???
     }
   });
 }
@@ -376,6 +382,7 @@ void Rest::operator()(const server::Trace<json::Depth> &event, const std::string
   // auto &[trace_info, depth] = event;
   auto &trace_info = event.trace_info;
   auto &depth = event.value;
+  log::info<4>(R"(depth={}, symbol="{}")"_sv, depth, symbol);
   auto sequence = depth.last_update_id;
   auto &collector = shared_.mbp_collector[symbol];
   core::back_emplacer bids(shared_.bids), asks(shared_.asks);
