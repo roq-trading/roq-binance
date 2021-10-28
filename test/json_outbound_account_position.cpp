@@ -78,7 +78,7 @@ TEST(json_outbound_account_position, stream) {
                  R"(})";
   core::Buffer buffer_(65536);
   core::json::Buffer buffer(buffer_);
-  server::TraceInfo trace_info;
+  auto trace_info = server::create_trace_info();
   struct MyHandler final : public json::UserStreamParser::Handler {
     void operator()(const server::Trace<json::OutboundAccountPosition> &) override {
       found_ = true;
@@ -120,7 +120,7 @@ TEST(json_outbound_account_position, stream_maker_new) {
                  R"(})";
   core::Buffer buffer_(65536);
   core::json::Buffer buffer(buffer_);
-  server::TraceInfo trace_info;
+  auto trace_info = server::create_trace_info();
   struct MyHandler final : public json::UserStreamParser::Handler {
     void operator()(const server::Trace<json::OutboundAccountPosition> &event) override {
       found_ = true;
@@ -181,7 +181,7 @@ TEST(json_outbound_account_position, stream_maker_filled) {
                  R"(})";
   core::Buffer buffer_(65536);
   core::json::Buffer buffer(buffer_);
-  server::TraceInfo trace_info;
+  auto trace_info = server::create_trace_info();
   struct MyHandler final : public json::UserStreamParser::Handler {
     void operator()(const server::Trace<json::OutboundAccountPosition> &event) override {
       found_ = true;
