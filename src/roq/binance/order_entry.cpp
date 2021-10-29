@@ -250,17 +250,13 @@ void OrderEntry::get_listen_key() {
 }
 
 void OrderEntry::get_listen_key_ack(
-    const server::Trace<core::web::Response> &event, uint32_t sequence) {
+    const server::Trace<core::web::Response> &event, [[maybe_unused]] uint32_t sequence) {
   profile_.listen_key_ack([&]() {
     auto &[trace_info, response] = event;
     auto state = OrderEntryState::LISTEN_KEY;
     try {
       auto [status, category, body] = response.result();
       log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
-      if (download_.skip(sequence, state)) {
-        log::info("Download state={} has already been processed"sv, state);
-        return;
-      }
       response.expect(core::http::Status::OK);
       auto listen_key = core::json::Parser::create<json::ListenKey>(body);
       server::Trace event(trace_info, listen_key);
