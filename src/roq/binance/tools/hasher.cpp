@@ -7,8 +7,6 @@
 #include <array>
 #include <cassert>
 
-#include "roq/literals.h"
-
 #include "roq/utils/safe_cast.h"
 
 #include "roq/core/clock.h"
@@ -17,19 +15,19 @@
 
 #include "roq/core/crypto/hmac.h"
 
-using namespace roq::literals;
+using namespace std::literals;
 
 namespace roq {
 namespace binance {
 namespace tools {
 
 Hasher::Hasher(const std::string_view &key, const std::string_view &secret)
-    : key_(key), hmac_(secret), headers_(fmt::format("X-MBX-APIKEY: {}\r\n"_sv, key_)) {
+    : key_(key), hmac_(secret), headers_(fmt::format("X-MBX-APIKEY: {}\r\n"sv, key_)) {
 }
 
 std::string Hasher::create_query(const std::string_view &body) {
   std::chrono::milliseconds now = utils::safe_cast(core::get_realtime_clock());
-  auto timestamp = fmt::format("timestamp={}"_sv, now.count());
+  auto timestamp = fmt::format("timestamp={}"sv, now.count());
   hmac_.clear();
   hmac_.update(timestamp);
   if (!std::empty(body))
@@ -38,7 +36,7 @@ std::string Hasher::create_query(const std::string_view &body) {
   auto length = hmac_.digest(buffer);
   assert(length == buffer.size());
   auto signature = core::binascii::Hex::encode(buffer);
-  return fmt::format("?{}&signature={}"_sv, timestamp, signature);
+  return fmt::format("?{}&signature={}"sv, timestamp, signature);
 }
 
 }  // namespace tools

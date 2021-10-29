@@ -9,6 +9,7 @@
 using namespace roq;
 using namespace roq::binance;
 
+using namespace std::literals;
 using namespace std::chrono_literals;
 
 TEST(json_new_order, simple) {
@@ -31,10 +32,10 @@ TEST(json_new_order, simple) {
   core::Buffer buffer_(65536);
   core::json::Buffer buffer(buffer_);
   auto obj = core::json::Parser::create<json::NewOrder>(message, buffer);
-  EXPECT_EQ(obj.symbol, "LTCBTC"_sv);
+  EXPECT_EQ(obj.symbol, "LTCBTC"sv);
   EXPECT_EQ(obj.order_id, 778507063);
   EXPECT_EQ(obj.order_list_id, -1);
-  EXPECT_EQ(obj.client_order_id, "qQAC6gMAAQAAS-jxw4MW"_sv);
+  EXPECT_EQ(obj.client_order_id, "qQAC6gMAAQAAS-jxw4MW"sv);
   EXPECT_EQ(obj.transact_time, 1634214384058ms);
   EXPECT_DOUBLE_EQ(obj.price, 0.003041);
   EXPECT_DOUBLE_EQ(obj.orig_qty, 0.1);
@@ -66,10 +67,10 @@ TEST(json_new_order, simple_maker) {
   core::Buffer buffer_(65536);
   core::json::Buffer buffer(buffer_);
   auto obj = core::json::Parser::create<json::NewOrder>(message, buffer);
-  EXPECT_EQ(obj.symbol, "LTCUSDT"_sv);
+  EXPECT_EQ(obj.symbol, "LTCUSDT"sv);
   EXPECT_EQ(obj.order_id, 2426862755);
   EXPECT_EQ(obj.order_list_id, -1);
-  EXPECT_EQ(obj.client_order_id, "SwAC6wMAAQAA8foJ1iQX"_sv);
+  EXPECT_EQ(obj.client_order_id, "SwAC6wMAAQAA8foJ1iQX"sv);
   EXPECT_EQ(obj.transact_time, 1634906177360ms);
   EXPECT_DOUBLE_EQ(obj.price, 198.3);
   EXPECT_DOUBLE_EQ(obj.orig_qty, 0.1);
@@ -109,10 +110,10 @@ TEST(json_new_order, simple_taker) {
   core::Buffer buffer_(65536);
   core::json::Buffer buffer(buffer_);
   auto obj = core::json::Parser::create<json::NewOrder>(message, buffer);
-  EXPECT_EQ(obj.symbol, "LTCUSDT"_sv);
+  EXPECT_EQ(obj.symbol, "LTCUSDT"sv);
   EXPECT_EQ(obj.order_id, 2426923399);
   EXPECT_EQ(obj.order_list_id, -1);
-  EXPECT_EQ(obj.client_order_id, "bQAC6QMAAQAAaNElbSUX"_sv);
+  EXPECT_EQ(obj.client_order_id, "bQAC6QMAAQAAaNElbSUX"sv);
   EXPECT_EQ(obj.transact_time, 1634908712538ms);
   EXPECT_DOUBLE_EQ(obj.price, 198.5);
   EXPECT_DOUBLE_EQ(obj.orig_qty, 0.1);
@@ -127,6 +128,6 @@ TEST(json_new_order, simple_taker) {
   EXPECT_DOUBLE_EQ(f0.price, 198.5);
   EXPECT_DOUBLE_EQ(f0.qty, 0.1);
   EXPECT_DOUBLE_EQ(f0.commission, 0.0000303);
-  EXPECT_EQ(f0.commission_asset, "BNB"_sv);
+  EXPECT_EQ(f0.commission_asset, "BNB"sv);
   EXPECT_EQ(f0.trade_id, 207085107);
 }

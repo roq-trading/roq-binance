@@ -9,6 +9,7 @@
 using namespace roq;
 using namespace roq::binance;
 
+using namespace std::literals;
 using namespace std::chrono_literals;
 
 TEST(json_exchange_info, simple) {
@@ -103,18 +104,18 @@ TEST(json_exchange_info, simple) {
   core::Buffer buffer_(65536);
   core::json::Buffer buffer(buffer_);
   auto obj = core::json::Parser::create<json::ExchangeInfo>(message, buffer);
-  EXPECT_EQ(obj.timezone, "UTC"_sv);
+  EXPECT_EQ(obj.timezone, "UTC"sv);
   EXPECT_EQ(obj.server_time, 1634180185607ms);
   // not parsed: rate_limits
   // not parsed: exchange_filters
   auto &symbols = obj.symbols;
   ASSERT_EQ(std::size(obj.symbols), 2);
   auto &s0 = symbols[0];
-  EXPECT_EQ(s0.symbol, "ETHBTC"_sv);
+  EXPECT_EQ(s0.symbol, "ETHBTC"sv);
   EXPECT_EQ(s0.status, json::SymbolStatus::TRADING);
-  EXPECT_EQ(s0.base_asset, "ETH"_sv);
+  EXPECT_EQ(s0.base_asset, "ETH"sv);
   EXPECT_EQ(s0.base_asset_precision, 8);
-  EXPECT_EQ(s0.quote_asset, "BTC"_sv);
+  EXPECT_EQ(s0.quote_asset, "BTC"sv);
   EXPECT_EQ(s0.quote_precision, 8);
   EXPECT_EQ(s0.quote_asset_precision, 8);
   EXPECT_EQ(s0.base_commission_precision, 8);
@@ -128,11 +129,11 @@ TEST(json_exchange_info, simple) {
   // not parsed: filters
   // not parsed: permissions
   auto &s1 = symbols[1];
-  EXPECT_EQ(s1.symbol, "LTCBTC"_sv);
+  EXPECT_EQ(s1.symbol, "LTCBTC"sv);
   EXPECT_EQ(s1.status, json::SymbolStatus::TRADING);
-  EXPECT_EQ(s1.base_asset, "LTC"_sv);
+  EXPECT_EQ(s1.base_asset, "LTC"sv);
   EXPECT_EQ(s1.base_asset_precision, 8);
-  EXPECT_EQ(s1.quote_asset, "BTC"_sv);
+  EXPECT_EQ(s1.quote_asset, "BTC"sv);
   EXPECT_EQ(s1.quote_precision, 8);
   EXPECT_EQ(s1.quote_asset_precision, 8);
   EXPECT_EQ(s1.base_commission_precision, 8);

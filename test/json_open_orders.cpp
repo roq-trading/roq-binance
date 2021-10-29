@@ -9,6 +9,7 @@
 using namespace roq;
 using namespace roq::binance;
 
+using namespace std::literals;
 using namespace std::chrono_literals;
 
 TEST(json_open_orders, simple_empty) {
@@ -47,10 +48,10 @@ TEST(json_open_orders, simple) {
   auto &data = obj.data;
   ASSERT_EQ(std::size(data), 1);
   auto &d0 = data[0];
-  EXPECT_EQ(d0.symbol, "LTCBTC"_sv);
+  EXPECT_EQ(d0.symbol, "LTCBTC"sv);
   EXPECT_EQ(d0.order_id, 778507063);
   EXPECT_EQ(d0.order_list_id, -1);
-  EXPECT_EQ(d0.client_order_id, "qQAC6gMAAQAAS-jxw4MW"_sv);
+  EXPECT_EQ(d0.client_order_id, "qQAC6gMAAQAAS-jxw4MW"sv);
   EXPECT_DOUBLE_EQ(d0.price, 0.003041);
   EXPECT_DOUBLE_EQ(d0.orig_qty, 0.1);
   EXPECT_DOUBLE_EQ(d0.executed_qty, 0.0);

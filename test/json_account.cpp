@@ -9,6 +9,7 @@
 using namespace roq;
 using namespace roq::binance;
 
+using namespace std::literals;
 using namespace std::chrono_literals;
 
 TEST(json_account, simple) {
@@ -45,15 +46,15 @@ TEST(json_account, simple) {
   EXPECT_EQ(obj.can_withdraw, true);
   EXPECT_EQ(obj.can_deposit, true);
   EXPECT_EQ(obj.update_time, 1620467758218ms);
-  EXPECT_EQ(obj.account_type, "MARGIN"_sv);
+  EXPECT_EQ(obj.account_type, "MARGIN"sv);
   auto &balances = obj.balances;
   ASSERT_EQ(std::size(balances), 2);
   auto &b0 = balances[0];
-  EXPECT_EQ(b0.asset, "BTC"_sv);
+  EXPECT_EQ(b0.asset, "BTC"sv);
   EXPECT_DOUBLE_EQ(b0.free, 0.0);
   EXPECT_DOUBLE_EQ(b0.locked, 0.0);
   auto &b1 = balances[1];
-  EXPECT_EQ(b1.asset, "LTC"_sv);
+  EXPECT_EQ(b1.asset, "LTC"sv);
   EXPECT_DOUBLE_EQ(b1.free, 0.0);
   EXPECT_DOUBLE_EQ(b1.locked, 0.0);
 }

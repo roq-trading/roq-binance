@@ -9,6 +9,7 @@
 using namespace roq;
 using namespace roq::binance;
 
+using namespace std::literals;
 using namespace std::chrono_literals;
 
 TEST(json_outbound_account_position, simple) {
@@ -40,15 +41,15 @@ TEST(json_outbound_account_position, simple) {
   auto &balances = obj.balances;
   ASSERT_EQ(std::size(balances), 3);
   auto &b0 = balances[0];
-  EXPECT_EQ(b0.asset, "BTC"_sv);
+  EXPECT_EQ(b0.asset, "BTC"sv);
   EXPECT_DOUBLE_EQ(b0.free_amount, 0.00004275);
   EXPECT_DOUBLE_EQ(b0.locked_amount, 0.00029725);
   auto &b1 = balances[1];
-  EXPECT_EQ(b1.asset, "LTC"_sv);
+  EXPECT_EQ(b1.asset, "LTC"sv);
   EXPECT_DOUBLE_EQ(b1.free_amount, 0.0);
   EXPECT_DOUBLE_EQ(b1.locked_amount, 0.0);
   auto &b2 = balances[2];
-  EXPECT_EQ(b2.asset, "BNB"_sv);
+  EXPECT_EQ(b2.asset, "BNB"sv);
   EXPECT_DOUBLE_EQ(b2.free_amount, 0.00041226);
   EXPECT_DOUBLE_EQ(b2.locked_amount, 0.0);
 }
@@ -131,15 +132,15 @@ TEST(json_outbound_account_position, stream_maker_new) {
       auto &balances = obj.balances;
       ASSERT_EQ(std::size(balances), 3);
       auto &b0 = balances[0];
-      EXPECT_EQ(b0.asset, "LTC"_sv);
+      EXPECT_EQ(b0.asset, "LTC"sv);
       EXPECT_DOUBLE_EQ(b0.free_amount, 0.0);
       EXPECT_DOUBLE_EQ(b0.locked_amount, 0.0);
       auto &b1 = balances[1];
-      EXPECT_EQ(b1.asset, "BNB"_sv);
+      EXPECT_EQ(b1.asset, "BNB"sv);
       EXPECT_DOUBLE_EQ(b1.free_amount, 0.00041226);
       EXPECT_DOUBLE_EQ(b1.locked_amount, 0.0);
       auto &b2 = balances[2];
-      EXPECT_EQ(b2.asset, "USDT"_sv);
+      EXPECT_EQ(b2.asset, "USDT"sv);
       EXPECT_DOUBLE_EQ(b2.free_amount, 1.31364261);
       EXPECT_DOUBLE_EQ(b2.locked_amount, 19.83);
     }
@@ -192,15 +193,15 @@ TEST(json_outbound_account_position, stream_maker_filled) {
       auto &balances = obj.balances;
       ASSERT_EQ(std::size(balances), 3);
       auto &b0 = balances[0];
-      EXPECT_EQ(b0.asset, "LTC"_sv);
+      EXPECT_EQ(b0.asset, "LTC"sv);
       EXPECT_DOUBLE_EQ(b0.free_amount, 0.1);
       EXPECT_DOUBLE_EQ(b0.locked_amount, 0.0);
       auto &b1 = balances[1];
-      EXPECT_EQ(b1.asset, "BNB"_sv);
+      EXPECT_EQ(b1.asset, "BNB"sv);
       EXPECT_DOUBLE_EQ(b1.free_amount, 0.00038207);
       EXPECT_DOUBLE_EQ(b1.locked_amount, 0.0);
       auto &b2 = balances[2];
-      EXPECT_EQ(b2.asset, "USDT"_sv);
+      EXPECT_EQ(b2.asset, "USDT"sv);
       EXPECT_DOUBLE_EQ(b2.free_amount, 1.31364261);
       EXPECT_DOUBLE_EQ(b2.locked_amount, 0.0);
     }

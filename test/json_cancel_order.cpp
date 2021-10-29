@@ -9,6 +9,7 @@
 using namespace roq;
 using namespace roq::binance;
 
+using namespace std::literals;
 using namespace std::chrono_literals;
 
 TEST(json_cancel_order, simple) {
@@ -30,11 +31,11 @@ TEST(json_cancel_order, simple) {
   core::Buffer buffer_(65536);
   core::json::Buffer buffer(buffer_);
   auto obj = core::json::Parser::create<json::CancelOrder>(message, buffer);
-  EXPECT_EQ(obj.symbol, "LTCBTC"_sv);
-  EXPECT_EQ(obj.orig_client_order_id, "OgAC6QMAAQAACt7PDZQW"_sv);
+  EXPECT_EQ(obj.symbol, "LTCBTC"sv);
+  EXPECT_EQ(obj.orig_client_order_id, "OgAC6QMAAQAACt7PDZQW"sv);
   EXPECT_EQ(obj.order_id, 779219002);
   EXPECT_EQ(obj.order_list_id, -1);
-  EXPECT_EQ(obj.client_order_id, "PQAC6QMAAgAAfWABDpQW"_sv);
+  EXPECT_EQ(obj.client_order_id, "PQAC6QMAAgAAfWABDpQW"sv);
   EXPECT_DOUBLE_EQ(obj.price, 0.002982);
   EXPECT_DOUBLE_EQ(obj.orig_qty, 0.05);
   EXPECT_DOUBLE_EQ(obj.executed_qty, 0.0);

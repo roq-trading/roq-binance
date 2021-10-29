@@ -9,6 +9,7 @@
 using namespace roq;
 using namespace roq::binance;
 
+using namespace std::literals;
 using namespace std::chrono_literals;
 
 TEST(json_cancel_all_open_orders, simple_empty) {
@@ -42,11 +43,11 @@ TEST(json_cancel_all_open_orders, simple_1) {
   auto &data = obj.data;
   ASSERT_EQ(std::size(data), 1);
   auto &d0 = data[0];
-  EXPECT_EQ(d0.symbol, "LTCBTC"_sv);
-  EXPECT_EQ(d0.orig_client_order_id, "QAAC6gMAAQAARzE1LJQW"_sv);
+  EXPECT_EQ(d0.symbol, "LTCBTC"sv);
+  EXPECT_EQ(d0.orig_client_order_id, "QAAC6gMAAQAARzE1LJQW"sv);
   EXPECT_EQ(d0.order_id, 779222768);
   EXPECT_EQ(d0.order_list_id, -1);
-  EXPECT_EQ(d0.client_order_id, "ya8dFipP337pVE3ogU1JFU"_sv);
+  EXPECT_EQ(d0.client_order_id, "ya8dFipP337pVE3ogU1JFU"sv);
   EXPECT_DOUBLE_EQ(d0.price, 0.002978);
   EXPECT_DOUBLE_EQ(d0.orig_qty, 0.05);
   EXPECT_DOUBLE_EQ(d0.executed_qty, 0.0);
@@ -94,11 +95,11 @@ TEST(json_cancel_all_open_orders, simple_2) {
   auto &data = obj.data;
   ASSERT_EQ(std::size(data), 2);
   auto &d0 = data[0];
-  EXPECT_EQ(d0.symbol, "LTCBTC"_sv);
-  EXPECT_EQ(d0.orig_client_order_id, "RAAC6wMAAQAATcQ10ZMW"_sv);
+  EXPECT_EQ(d0.symbol, "LTCBTC"sv);
+  EXPECT_EQ(d0.orig_client_order_id, "RAAC6wMAAQAATcQ10ZMW"sv);
   EXPECT_EQ(d0.order_id, 779213492);
   EXPECT_EQ(d0.order_list_id, -1);
-  EXPECT_EQ(d0.client_order_id, "xsyFwe7R4szBwr2N8UNBii"_sv);
+  EXPECT_EQ(d0.client_order_id, "xsyFwe7R4szBwr2N8UNBii"sv);
   EXPECT_DOUBLE_EQ(d0.price, 0.002984);
   EXPECT_DOUBLE_EQ(d0.orig_qty, 0.05);
   EXPECT_DOUBLE_EQ(d0.executed_qty, 0.0);
@@ -108,11 +109,11 @@ TEST(json_cancel_all_open_orders, simple_2) {
   EXPECT_EQ(d0.type, json::OrderType::LIMIT);
   EXPECT_EQ(d0.side, json::Side::BUY);
   auto &d1 = data[1];
-  EXPECT_EQ(d1.symbol, "LTCBTC"_sv);
-  EXPECT_EQ(d1.orig_client_order_id, "XgAC7AMAAQAAWZxp3JMW"_sv);
+  EXPECT_EQ(d1.symbol, "LTCBTC"sv);
+  EXPECT_EQ(d1.orig_client_order_id, "XgAC7AMAAQAAWZxp3JMW"sv);
   EXPECT_EQ(d1.order_id, 779214518);
   EXPECT_EQ(d1.order_list_id, -1);
-  EXPECT_EQ(d1.client_order_id, "xsyFwe7R4szBwr2N8UNBii"_sv);
+  EXPECT_EQ(d1.client_order_id, "xsyFwe7R4szBwr2N8UNBii"sv);
   EXPECT_DOUBLE_EQ(d1.price, 0.002986);
   EXPECT_DOUBLE_EQ(d1.orig_qty, 0.05);
   EXPECT_DOUBLE_EQ(d1.executed_qty, 0.0);

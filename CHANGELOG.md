@@ -11,6 +11,7 @@ All notable changes will be documented in this file.
 
 ### Changed
 
+* Remove custom literals (#110)
 * Interface to support binary data from web::socket
 * ReferenceData currencies should follow FX conventions (#99)
 * Replace `snapshot` (bool) with `update_type` (UpdateType) (#97)

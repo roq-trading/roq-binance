@@ -8,7 +8,7 @@
 
 #include "roq/binance/flags.h"
 
-using namespace roq::literals;
+using namespace std::literals;
 
 namespace roq {
 namespace binance {
@@ -24,7 +24,7 @@ std::string Config::get_master_account() const {
 std::string Config::get_api_key(const std::string_view &account) const {
   auto iter = accounts.find(account);
   if (iter == accounts.end()) {
-    log::fatal(R"(Unknown account="{}")"_sv, account);
+    log::fatal(R"(Unknown account="{}")"sv, account);
   }
   return (*iter).second.login;
 }
@@ -32,7 +32,7 @@ std::string Config::get_api_key(const std::string_view &account) const {
 std::string Config::get_secret(const std::string_view &account) const {
   auto iter = accounts.find(account);
   if (iter == accounts.end()) {
-    log::fatal(R"(Unknown account="{}")"_sv, account);
+    log::fatal(R"(Unknown account="{}")"sv, account);
   }
   return (*iter).second.secret;
 }
@@ -90,7 +90,7 @@ void Config::operator()(server::RateLimit &&rate_limit) {
 }
 
 void Config::operator()(const std::string_view &key, toml::node &) {
-  log::warn(R"(Unexpected: key="{}")"_sv, key);
+  log::warn(R"(Unexpected: key="{}")"sv, key);
 }
 
 }  // namespace binance
