@@ -416,7 +416,7 @@ void Rest::operator()(const server::Trace<json::Depth> &event, const std::string
           auto now = trace_info.source_receive_time;
           shared_.request_queue.emplace_back(now + Flags::ws_mbp_request_delay(), symbol);
         });
-  } catch (market::BadState &) {
+  } catch (BadState &) {
     log::warn(R"(RESUBSCRIBE symbol="{}")"sv, symbol);
     // XXX HANS publish stale
     collector.clear();
