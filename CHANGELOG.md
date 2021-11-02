@@ -4,6 +4,8 @@ All notable changes will be documented in this file.
 
 ## Head
 
+## 0.7.8 &ndash; 2021-11-02
+
 ### Added
 
 * Add exchange sequence number to `MarketByPrice` and `MarketByOrder` (#101)
