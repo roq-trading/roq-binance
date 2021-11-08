@@ -402,6 +402,8 @@ void Rest::operator()(const server::Trace<json::Depth> &event, const std::string
               .update_type = UpdateType::SNAPSHOT,
               .exchange_time_utc = {},
               .exchange_sequence = collector.last_sequence(),
+              .price_decimals = {},
+              .quantity_decimals = {},
           };
           server::Trace event(trace_info, market_by_price_update);
           shared_(event, true, [&](auto &market_by_price) {
