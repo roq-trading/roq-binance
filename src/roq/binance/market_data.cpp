@@ -464,6 +464,7 @@ void MarketData::operator()(const server::Trace<json::DepthUpdate> &event) {
                 .exchange_sequence = last_sequence,
                 .price_decimals = {},
                 .quantity_decimals = {},
+                .checksum = {},
             };
             server::create_trace_and_dispatch(
                 handler_, trace_info, market_by_price_update, true, false);
@@ -481,6 +482,7 @@ void MarketData::operator()(const server::Trace<json::DepthUpdate> &event) {
                 .exchange_sequence = collector.last_sequence(),
                 .price_decimals = {},
                 .quantity_decimals = {},
+                .checksum = {},
             };
             server::Trace event(trace_info, market_by_price_update);
             shared_(event, true, [&](auto &market_by_price) {
