@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "roq/utils/mask.h"
+#include "roq/utils/number.h"
 #include "roq/utils/safe_cast.h"
 #include "roq/utils/update.h"
 
@@ -496,18 +497,16 @@ void OrderEntry::new_order(
           R"(side={}&)"
           R"(type={}&)"
           R"(timeInForce={}&)"
-          R"(quantity={:.{}f}&)"
-          R"(price={:.{}f}&)"
+          R"(quantity={}&)"
+          R"(price={}&)"
           R"(newClientOrderId={}&)"
           R"(recvWindow={})"sv,
           create_order.symbol,
           side,
           type,
           time_in_force,
-          create_order.quantity,
-          order.quantity_decimal_digits,
-          create_order.price,
-          order.price_decimal_digits,
+          utils::Number{create_order.quantity, order.quantity_decimals},
+          utils::Number{create_order.price, order.price_decimals},
           request_id,
           recv_window.count());
     } else {
@@ -516,23 +515,20 @@ void OrderEntry::new_order(
           R"(side={}&)"
           R"(type={}&)"
           R"(timeInForce={}&)"
-          R"(quantity={:.{}f}&)"
-          R"(price={:.{}f}&)"
+          R"(quantity={}&)"
+          R"(price={}&)"
           R"(newClientOrderId={}&)"
-          R"(stopPrice={:.{}f}&)"
+          R"(stopPrice={}&)"
           R"(recvWindow={})"
           R"(}})"sv,
           create_order.symbol,
           side,
           type,
           time_in_force,
-          create_order.quantity,
-          order.quantity_decimal_digits,
-          create_order.price,
-          order.price_decimal_digits,
+          utils::Number{create_order.quantity, order.quantity_decimals},
+          utils::Number{create_order.price, order.price_decimals},
           request_id,
-          create_order.stop_price,
-          order.price_decimal_digits,
+          utils::Number{create_order.stop_price, order.price_decimals},
           recv_window.count());
     }
     log::debug(R"(body="{}")"sv, body);
