@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include "roq/binance/order_entry.h"
 
@@ -271,7 +271,7 @@ void OrderEntry::get_listen_key_ack(
 void OrderEntry::operator()(const server::Trace<json::ListenKey> &event) {
   auto &[trace_info, listen_key] = event;
   log::info<2>("listen_key={}"sv, listen_key);
-  bool initial = listen_key_.empty();
+  bool initial = std::empty(listen_key_);
   if (utils::update(listen_key_, listen_key.listen_key)) {
     if (initial) {
       log::info<1>(R"(Listen key has been acquired (value="{}"))"sv, listen_key_);
@@ -424,7 +424,8 @@ void OrderEntry::operator()(const server::Trace<json::OpenOrders> &event) {
   auto &[trace_info, open_orders] = event;
   for (auto &order : open_orders.data) {
     log::info<2>("order={}"sv, order);
-    if (order.client_order_id.empty())  // XXX HANS maybe we need a utility function to validate?
+    if (std::empty(
+            order.client_order_id))  // XXX HANS maybe we need a utility function to validate?
       continue;
     open_orders_symbols_.emplace(order.symbol);  // XXX HANS experimental
     auto side = json::map(order.side);
@@ -973,7 +974,8 @@ void OrderEntry::operator()(const server::Trace<json::CancelAllOpenOrders> &even
   log::info<2>("cancel_all_open_orders={}"sv, cancel_all_open_orders);
   for (auto &order : cancel_all_open_orders.data) {
     log::debug("order={}"sv, order);
-    if (order.client_order_id.empty())  // XXX HANS maybe we need a utility function to validate?
+    if (std::empty(
+            order.client_order_id))  // XXX HANS maybe we need a utility function to validate?
       continue;
     // open_orders_symbols_.emplace(order.symbol);  // XXX HANS experimental
     auto side = json::map(order.side);

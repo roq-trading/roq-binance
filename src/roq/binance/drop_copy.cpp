@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2021, Hans Erik Thrane */
+/* Copyright (c) 2017-2022, Hans Erik Thrane */
 
 #include "roq/binance/drop_copy.h"
 
@@ -27,7 +27,7 @@ static const auto SUPPORTS = utils::Mask{
 };
 
 static auto create_query(const std::string_view &listen_key) {
-  assert(!listen_key.empty());
+  assert(!std::empty(listen_key));
   return fmt::format("?streams={}"sv, listen_key);
 }
 
