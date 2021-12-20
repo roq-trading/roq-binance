@@ -128,6 +128,7 @@ void MarketData::operator()(const core::web::ClientSocket::Connected &) {
 void MarketData::operator()(const core::web::ClientSocket::Disconnected &) {
   ++counter_.disconnect;
   (*this)(ConnectionStatus::DISCONNECTED);
+  subscribe_queue_.clear();
 }
 
 void MarketData::operator()(const core::web::ClientSocket::Ready &) {
@@ -173,98 +174,36 @@ void MarketData::operator()(ConnectionStatus status) {
 }
 
 void MarketData::subscribe(const roq::span<std::string const> &symbols) {
+  if (std::empty(symbols))
+    return;
   if (Flags::ws_subscribe_trade_details()) {
-    subscribe_trade(symbols);
+    subscribe(symbols, "trade"sv);
   } else {
-    subscribe_agg_trade(symbols);
+    subscribe(symbols, "aggTrade"sv);
   }
-  subscribe_mini_ticker(symbols);
-  subscribe_book_ticker(symbols);
-  subscribe_diff_depth(symbols);
-}
-
-void MarketData::subscribe_agg_trade(const roq::span<std::string const> &symbols) {
-  assert(!std::empty(symbols));
-  auto id = ++request_id_;
-  auto now = core::get_system_clock();
-  auto message = fmt::format(
-      R"({{)"
-      R"("method":"SUBSCRIBE",)"
-      R"("params":["{}@aggTrade"],)"
-      R"("id":{})"
-      R"(}})"sv,
-      fmt::join(symbols, R"(@aggTrade",")"sv),
-      id);
-  log::debug("message={}"sv, message);
-  subscribe_queue_.emplace_back(now, message);
-}
-
-void MarketData::subscribe_trade(const roq::span<std::string const> &symbols) {
-  assert(!std::empty(symbols));
-  auto id = ++request_id_;
-  auto now = core::get_system_clock();
-  auto message = fmt::format(
-      R"({{)"
-      R"("method":"SUBSCRIBE",)"
-      R"("params":["{}@trade"],)"
-      R"("id":{})"
-      R"(}})"sv,
-      fmt::join(symbols, R"(@trade",")"sv),
-      id);
-  log::debug("message={}"sv, message);
-  subscribe_queue_.emplace_back(now, message);
-}
-
-void MarketData::subscribe_mini_ticker(const roq::span<std::string const> &symbols) {
-  assert(!std::empty(symbols));
-  auto id = ++request_id_;
-  auto now = core::get_system_clock();
-  auto message = fmt::format(
-      R"({{)"
-      R"("method":"SUBSCRIBE",)"
-      R"("params":["{}@miniTicker"],)"
-      R"("id":{})"
-      R"(}})"sv,
-      fmt::join(symbols, R"(@miniTicker",")"sv),
-      id);
-  log::debug("message={}"sv, message);
-  subscribe_queue_.emplace_back(now, message);
-}
-
-void MarketData::subscribe_book_ticker(const roq::span<std::string const> &symbols) {
-  assert(!std::empty(symbols));
-  auto id = ++request_id_;
-  auto now = core::get_system_clock();
-  auto message = fmt::format(
-      R"({{)"
-      R"("method":"SUBSCRIBE",)"
-      R"("params":["{}@bookTicker"],)"
-      R"("id":{})"
-      R"(}})"sv,
-      fmt::join(symbols, R"(@bookTicker",")"sv),
-      id);
-  log::debug("message={}"sv, message);
-  subscribe_queue_.emplace_back(now, message);
-}
-
-void MarketData::subscribe_diff_depth(const roq::span<std::string const> &symbols) {
-  assert(!std::empty(symbols));
+  subscribe(symbols, "miniTicker"sv);
+  subscribe(symbols, "bookTicker"sv);
   std::chrono::milliseconds frequency = utils::safe_cast(Flags::ws_subscribe_depth_freq());
-  auto stream = fmt::format(R"(@depth@{}ms)"sv, frequency.count());
+  auto depth = fmt::format(R"(depth@{}ms)"sv, frequency.count());
+  subscribe(symbols, depth);
+}
+
+void MarketData::subscribe(
+    const roq::span<std::string const> &symbols, const std::string_view &channel) {
+  assert(!std::empty(symbols));
   auto id = ++request_id_;
-  auto now = core::get_system_clock();
-  auto separator = fmt::format(R"({}",")"sv, stream);
+  auto separator = fmt::format(R"(@{}",")"sv, channel);
   auto message = fmt::format(
       R"({{)"
       R"("method":"SUBSCRIBE",)"
-      R"("params":["{}{}"],)"
+      R"("params":["{}@{}"],)"
       R"("id":{})"
       R"(}})"sv,
       fmt::join(symbols, separator),
-      stream,
+      channel,
       id);
   log::debug("message={}"sv, message);
-  subscribe_queue_.emplace_back(now, message);
+  subscribe_queue_.emplace_back(message);
 }
 
 void MarketData::parse(const std::string_view &message) {
@@ -452,37 +391,29 @@ void MarketData::operator()(const server::Trace<json::DepthUpdate> &event) {
           },
           [&](auto retries) {  // request
             log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
-            if (retries > Flags::ws_mbp_request_max_retries()) {
-              log::fatal("Unexpected"sv);
+            if (Flags::ws_mbp_request_max_retries() &&
+                Flags::ws_mbp_request_max_retries() < retries) {
+              log::fatal(R"(Unexpected: symbol="{}", retries={})"sv, symbol, retries);
             }
-            auto now = trace_info.source_receive_time;
-            shared_.request_queue.emplace_back(now + Flags::ws_mbp_request_delay(), symbol);
+            shared_.depth_request_queue.emplace_back(symbol);
           });
     } catch (BadState &) {
       log::warn(R"(RESUBSCRIBE symbol="{}")"sv, symbol);
       // XXX HANS publish stale
       collector.clear();
-      auto now = trace_info.source_receive_time;
-      shared_.request_queue.emplace_back(now + Flags::ws_mbp_request_delay(), symbol);
+      shared_.depth_request_queue.emplace_back(symbol);
     }
   });
 }
 
 void MarketData::check_subscribe_queue(std::chrono::nanoseconds now) {
-  while (!std::empty(subscribe_queue_)) {
-    auto &tmp = subscribe_queue_.front();
-    if (now < tmp.first)
-      break;
-    if (shared_.can_request(now, [&]() {
-          auto &message = tmp.second;
-          log::debug(R"(Subscribe: "{}")"sv, message);
-          connection_.send_text(message);
-          subscribe_queue_.pop_front();
-        })) {
-    } else {
-      return;
-    }
-  }
+  subscribe_queue_.dispatch(
+      [&](auto now) { return shared_.rate_limiter.can_request(now); },
+      [&](auto &message) {
+        log::debug(R"(Subscribe: "{}")"sv, message);
+        connection_.send_text(message);
+      },
+      now);
 }
 
 }  // namespace binance

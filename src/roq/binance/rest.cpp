@@ -415,38 +415,30 @@ void Rest::operator()(const server::Trace<json::Depth> &event, const std::string
         },
         [&](auto retries) {  // request
           log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
-          if (retries > Flags::ws_mbp_request_max_retries()) {
-            log::fatal("Unexpected"sv);
+          if (Flags::ws_mbp_request_max_retries() &&
+              Flags::ws_mbp_request_max_retries() < retries) {
+            log::fatal(R"(Unexpected: symbol="{}", retries={})"sv, symbol, retries);
           }
-          auto now = trace_info.source_receive_time;
-          shared_.request_queue.emplace_back(now + Flags::ws_mbp_request_delay(), symbol);
+          shared_.depth_request_queue.emplace_back(symbol);
         });
   } catch (BadState &) {
     log::warn(R"(RESUBSCRIBE symbol="{}")"sv, symbol);
     // XXX HANS publish stale
     collector.clear();
-    auto now = trace_info.source_receive_time;
-    shared_.request_queue.emplace_back(now + Flags::ws_mbp_request_delay(), symbol);
+    shared_.depth_request_queue.emplace_back(symbol);
   }
 }
 
 // queue
 
 void Rest::check_request_queue(std::chrono::nanoseconds now) {
-  while (!std::empty(shared_.request_queue)) {
-    auto &tmp = shared_.request_queue.front();
-    if (now < tmp.first)
-      break;
-    if (shared_.can_request(now, [&]() {
-          auto &symbol = tmp.second;
-          log::debug(R"(Requesting order book snapshot symbol="{}")"sv, symbol);
-          get_depth(symbol);
-          shared_.request_queue.pop_front();
-        })) {
-    } else {
-      return;
-    }
-  }
+  shared_.depth_request_queue.dispatch(
+      [&](auto now) { return shared_.rate_limiter.can_request(now); },
+      [&](auto &symbol) {
+        log::debug(R"(Requesting order book snapshot symbol="{}")"sv, symbol);
+        get_depth(symbol);
+      },
+      now);
 }
 
 }  // namespace binance

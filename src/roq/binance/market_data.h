@@ -4,11 +4,12 @@
 
 #include <absl/container/flat_hash_map.h>
 
-#include <deque>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
+
+#include "roq/core/timer_queue.h"
 
 #include "roq/core/metrics/counter.h"
 #include "roq/core/metrics/latency.h"
@@ -70,11 +71,7 @@ class MarketData final : public core::web::ClientSocket::Handler,
 
   void subscribe(const roq::span<std::string const> &symbols);
 
-  void subscribe_agg_trade(const roq::span<std::string const> &symbols);
-  void subscribe_trade(const roq::span<std::string const> &symbols);
-  void subscribe_mini_ticker(const roq::span<std::string const> &symbols);
-  void subscribe_book_ticker(const roq::span<std::string const> &symbols);
-  void subscribe_diff_depth(const roq::span<std::string const> &symbols);
+  void subscribe(const roq::span<std::string const> &symbols, const std::string_view &channel);
 
   void parse(const std::string_view &message);
 
@@ -120,7 +117,7 @@ class MarketData final : public core::web::ClientSocket::Handler,
   // state
   ConnectionStatus status_ = {};
   // queue
-  std::deque<std::pair<std::chrono::nanoseconds, std::string> > subscribe_queue_;
+  core::TimerQueue subscribe_queue_;
 };
 
 }  // namespace binance

@@ -113,7 +113,7 @@
     {
       "name": "ws_mbp_request_max_retries",
       "type": "uint32_t",
-      "default": 3,
+      "default": 0,
       "description": "request max retries"
     },
     {
