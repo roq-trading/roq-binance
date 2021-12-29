@@ -294,6 +294,7 @@ void Rest::operator()(const server::Trace<json::ExchangeInfo> &event) {
         .security_type = {},
         .base_currency = item.base_asset,
         .quote_currency = item.quote_asset,
+        .margin_currency = {},
         .commission_currency = {},
         .tick_size = tick_size,
         .multiplier = NaN,
