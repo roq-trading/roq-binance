@@ -5,7 +5,7 @@
 	{ "name": "timezone", "type": "std::string_view" },
 	{ "name": "serverTime", "type": "std::chrono::milliseconds" },
 	{ "name": "rateLimits" },
-	{ "name": "exchangeFilters", "type": "roq::span<ExchangeFilter>" },
-	{ "name": "symbols", "type": "roq::span<Symbol>" }
+	{ "name": "exchangeFilters", "type": "std::span<ExchangeFilter>" },
+	{ "name": "symbols", "type": "std::span<Symbol>" }
 ]
 }

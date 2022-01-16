@@ -15,6 +15,6 @@
 	{ "name": "timeInForce", "type": "TimeInForce" },
 	{ "name": "type", "type": "OrderType" },
 	{ "name": "side", "type": "Side" },
-	{ "name": "fills", "type": "roq::span<Fill>" }
+	{ "name": "fills", "type": "std::span<Fill>" }
 ]
 }

@@ -7,7 +7,7 @@
 	{ "raw": "s", "name": "symbol", "type": "std::string_view" },
 	{ "raw": "U", "name": "first_update_id", "type": "int64_t" },
 	{ "raw": "u", "name": "final_update_id", "type": "int64_t" },
-	{ "raw": "b", "name": "bids", "type": "roq::span<DepthItem>" },
-	{ "raw": "a", "name": "asks", "type": "roq::span<DepthItem>" }
+	{ "raw": "b", "name": "bids", "type": "std::span<DepthItem>" },
+	{ "raw": "a", "name": "asks", "type": "std::span<DepthItem>" }
 ]
 }

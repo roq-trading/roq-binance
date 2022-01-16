@@ -12,6 +12,6 @@
 	{ "raw": "r", "name": "list_reject_reasson", "type": "std::string_view" },
 	{ "raw": "C", "name": "list_client_order_id", "type": "std::string_view" },
 	{ "raw": "T", "name": "transaction_time", "type": "std::chrono::milliseconds" },
-	{ "raw": "O", "name": "objects", "type": "roq::span<ListStatusItem>" }
+	{ "raw": "O", "name": "objects", "type": "std::span<ListStatusItem>" }
 ]
 }

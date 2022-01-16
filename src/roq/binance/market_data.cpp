@@ -173,7 +173,7 @@ void MarketData::operator()(ConnectionStatus status) {
   }
 }
 
-void MarketData::subscribe(const roq::span<std::string const> &symbols) {
+void MarketData::subscribe(const std::span<std::string const> &symbols) {
   if (std::empty(symbols))
     return;
   if (Flags::ws_subscribe_trade_details()) {
@@ -189,7 +189,7 @@ void MarketData::subscribe(const roq::span<std::string const> &symbols) {
 }
 
 void MarketData::subscribe(
-    const roq::span<std::string const> &symbols, const std::string_view &channel) {
+    const std::span<std::string const> &symbols, const std::string_view &channel) {
   assert(!std::empty(symbols));
   auto id = ++request_id_;
   auto separator = fmt::format(R"(@{}",")"sv, channel);

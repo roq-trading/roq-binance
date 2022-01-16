@@ -2,6 +2,6 @@
 "name": "Result",
 "type": "array",
 "values": [
-	{ "name": "data", "type": "roq::span<std::string_view>" }
+	{ "name": "data", "type": "std::span<std::string_view>" }
 ]
 }
