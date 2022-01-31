@@ -24,13 +24,13 @@ namespace roq {
 namespace binance {
 
 namespace {
-static const auto NAME = "rest"sv;
-static const auto SUPPORTS = utils::Mask{
+const auto NAME = "rest"sv;
+const auto SUPPORTS = utils::Mask{
     SupportType::REFERENCE_DATA,
     SupportType::MARKET_STATUS,
 };
 
-static const auto ALLOW_PIPELINING = true;
+const auto ALLOW_PIPELINING = true;
 
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(const std::string_view &group, const std::string_view &function)

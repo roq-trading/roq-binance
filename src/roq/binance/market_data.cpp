@@ -23,8 +23,8 @@ namespace roq {
 namespace binance {
 
 namespace {
-static const auto NAME = "md"sv;
-static const auto SUPPORTS = utils::Mask{
+const auto NAME = "md"sv;
+const auto SUPPORTS = utils::Mask{
     SupportType::TOP_OF_BOOK,
     SupportType::MARKET_BY_PRICE,
     SupportType::TRADE_SUMMARY,
