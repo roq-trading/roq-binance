@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Fixed
+
+* Invalid client order id's when using `routing_id` (#183)
+
 ## 0.8.2 &ndash; 2022-02-18
 
 ## 0.8.1 &ndash; 2022-01-16
