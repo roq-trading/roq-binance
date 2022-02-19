@@ -383,17 +383,17 @@ void Rest::get_depth_ack(
 }
 
 void Rest::operator()(const server::Trace<json::Depth> &event, const std::string_view &symbol) {
-  // auto &[trace_info, depth] = event;
+  // auto &[trace_info, depth] = event; // XXX clang13
   auto &trace_info = event.trace_info;
   auto &depth = event.value;
   log::info<4>(R"(depth={}, symbol="{}")"sv, depth, symbol);
   auto sequence = depth.last_update_id;
-  auto &collector = shared_.mbp_collector[symbol];
   core::back_emplacer bids(shared_.bids), asks(shared_.asks);
   for (auto &item : depth.bids)
     bids.emplace_back([&item](auto &result) { emplace(result, item); });
   for (auto &item : depth.asks)
     asks.emplace_back([&item](auto &result) { emplace(result, item); });
+  auto &collector = shared_.mbp_collector[symbol];
   try {
     collector(
         bids,

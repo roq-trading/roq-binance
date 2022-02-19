@@ -26,7 +26,7 @@ Hasher::Hasher(const std::string_view &key, const std::string_view &secret)
 }
 
 std::string Hasher::create_query(const std::string_view &body) {
-  std::chrono::milliseconds now = utils::safe_cast(core::get_realtime_clock());
+  auto now = core::clock::GetRealTime<std::chrono::milliseconds>();
   auto timestamp = fmt::format("timestamp={}"sv, now.count());
   hmac_.clear();
   hmac_.update(timestamp);

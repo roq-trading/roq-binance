@@ -188,7 +188,8 @@ void MarketData::subscribe(const std::span<std::string const> &symbols) {
   }
   subscribe(symbols, "miniTicker"sv);
   subscribe(symbols, "bookTicker"sv);
-  std::chrono::milliseconds frequency = utils::safe_cast(Flags::ws_subscribe_depth_freq());
+  auto frequency =
+      std::chrono::duration_cast<std::chrono::milliseconds>(Flags::ws_subscribe_depth_freq());
   auto depth = fmt::format(R"(depth@{}ms)"sv, frequency.count());
   subscribe(symbols, depth);
 }
@@ -289,10 +290,22 @@ void MarketData::operator()(const server::Trace<json::MiniTicker> &event) {
     auto &[trace_info, mini_ticker] = event;
     log::info<3>("mini_ticker={}"sv, mini_ticker);
     Statistics statistics[] = {
-        {.type = StatisticsType::HIGHEST_TRADED_PRICE, .value = mini_ticker.high_price},
-        {.type = StatisticsType::LOWEST_TRADED_PRICE, .value = mini_ticker.low_price},
-        {.type = StatisticsType::OPEN_PRICE, .value = mini_ticker.open_price},
-        {.type = StatisticsType::CLOSE_PRICE, .value = mini_ticker.close_price},
+        {
+            .type = StatisticsType::HIGHEST_TRADED_PRICE,
+            .value = mini_ticker.high_price,
+        },
+        {
+            .type = StatisticsType::LOWEST_TRADED_PRICE,
+            .value = mini_ticker.low_price,
+        },
+        {
+            .type = StatisticsType::OPEN_PRICE,
+            .value = mini_ticker.open_price,
+        },
+        {
+            .type = StatisticsType::CLOSE_PRICE,
+            .value = mini_ticker.close_price,
+        },
     };
     const StatisticsUpdate statistics_update{
         .stream_id = stream_id_,
@@ -334,7 +347,7 @@ void MarketData::operator()(
 
 void MarketData::operator()(const server::Trace<json::DepthUpdate> &event) {
   profile_.depth_update([&]() {
-    // auto &[trace_info, depth_update] = event;
+    // auto &[trace_info, depth_update] = event;  // XXX clang13
     auto &trace_info = event.trace_info;
     auto &depth_update = event.value;
     log::info<3>(R"(depth_update={})"sv, depth_update);
@@ -348,7 +361,6 @@ void MarketData::operator()(const server::Trace<json::DepthUpdate> &event) {
       bids.emplace_back([&item](auto &result) { emplace(result, item); });
     for (auto &item : depth_update.asks)
       asks.emplace_back([&item](auto &result) { emplace(result, item); });
-    auto exchange_time_utc = depth_update.event_time;
     try {
       collector(
           bids,
@@ -365,7 +377,7 @@ void MarketData::operator()(const server::Trace<json::DepthUpdate> &event) {
                 .bids = bids,
                 .asks = asks,
                 .update_type = UpdateType::INCREMENTAL,
-                .exchange_time_utc = exchange_time_utc,
+                .exchange_time_utc = depth_update.event_time,
                 .exchange_sequence = last_sequence,
                 .price_decimals = {},
                 .quantity_decimals = {},
@@ -383,7 +395,7 @@ void MarketData::operator()(const server::Trace<json::DepthUpdate> &event) {
                 .bids = bids,
                 .asks = asks,
                 .update_type = UpdateType::SNAPSHOT,
-                .exchange_time_utc = exchange_time_utc,
+                .exchange_time_utc = depth_update.event_time,
                 .exchange_sequence = collector.last_sequence(),
                 .price_decimals = {},
                 .quantity_decimals = {},

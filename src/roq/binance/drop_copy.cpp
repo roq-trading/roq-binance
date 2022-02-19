@@ -217,7 +217,7 @@ void DropCopy::operator()(const server::Trace<json::BalanceUpdate> &event) {
 
 void DropCopy::operator()(const server::Trace<json::ExecutionReport> &event) {
   profile_.execution_report([&]() {
-    // auto &[trace_info, execution_report] = event;
+    // auto &[trace_info, execution_report] = event;  // XXX clang13
     auto &trace_info = event.trace_info;
     auto &execution_report = event.value;
     log::info<2>("execution_report={}"sv, execution_report);
@@ -265,8 +265,7 @@ void DropCopy::operator()(const server::Trace<json::ExecutionReport> &event) {
             order_update,
             [&](auto &order) {
               if (execution_report.current_execution_type == json::ExecutionType::TRADE) {
-                auto external_trade_id =
-                    fmt::format("{}"sv, execution_report.trade_id);  // XXX HANS
+                auto external_trade_id = fmt::format("{}"sv, execution_report.trade_id);
                 Fill fill{
                     .external_trade_id = {},
                     .quantity = execution_report.last_executed_quantity,

@@ -288,7 +288,7 @@ void OrderEntry::operator()(const server::Trace<json::ListenKey> &event) {
       log::info<1>("Listen key has been refreshed!"sv);
     }
   }
-  auto now = core::get_system_clock();
+  auto now = core::clock::GetSystem();
   listen_key_refresh_ = now + Flags::rest_listen_key_refresh();
 }
 
@@ -370,7 +370,7 @@ void OrderEntry::get_open_orders() {
     auto path = "/api/v3/openOrders"sv;
     auto query = security_.create_query();
     auto headers = security_.create_headers();
-    std::chrono::milliseconds timestamp = utils::safe_cast(core::get_realtime_clock());
+    auto timestamp = core::clock::GetRealTime<std::chrono::milliseconds>();
     auto body = fmt::format(
         R"({{)"
         R"("timestamp":{})"
@@ -428,14 +428,13 @@ void OrderEntry::operator()(const server::Trace<json::OpenOrders> &event) {
   auto &[trace_info, open_orders] = event;
   for (auto &order : open_orders.data) {
     log::info<2>("order={}"sv, order);
-    if (std::empty(
-            order.client_order_id))  // XXX HANS maybe we need a utility function to validate?
+    if (std::empty(order.client_order_id))
       continue;
-    open_orders_symbols_.emplace(order.symbol);  // XXX HANS experimental
+    open_orders_symbols_.emplace(order.symbol);
     auto side = json::map(order.side);
     auto order_type = json::map(order.type);
     auto time_in_force = json::map(order.time_in_force);
-    auto external_order_id = fmt::format("{}"sv, order.order_id);  // XXX HANS
+    auto external_order_id = fmt::format("{}"sv, order.order_id);
     auto order_status = json::map(order.status);
     oms::OrderUpdate order_update{
         .account = security_.get_account(),
@@ -472,7 +471,7 @@ void OrderEntry::operator()(const server::Trace<json::OpenOrders> &event) {
 void OrderEntry::refresh_listen_key() {
   if (!ready_)
     return;
-  auto now = core::get_system_clock();
+  auto now = core::clock::GetSystem();
   if (listen_key_refresh_ == listen_key_refresh_.zero() || now < listen_key_refresh_)
     return;
   log::info<1>("Refreshing listen key..."sv);
@@ -488,13 +487,14 @@ void OrderEntry::new_order(
     if (!ready())
       throw oms::NotReady("not ready"sv);
     auto &[message_info, create_order] = event;
-    open_orders_symbols_.emplace(create_order.symbol);  // XXX HANS experimental
+    open_orders_symbols_.emplace(create_order.symbol);
     auto method = core::http::Method::POST;
     auto path = "/api/v3/order"sv;
     auto side = json::map(create_order.side).as_raw_text();
     auto type = json::map(create_order.order_type).as_raw_text();
     auto time_in_force = json::map(create_order.time_in_force).as_raw_text();
-    std::chrono::milliseconds recv_window = utils::safe_cast(Flags::rest_order_recv_window());
+    auto recv_window =
+        std::chrono::duration_cast<std::chrono::milliseconds>(Flags::rest_order_recv_window());
     std::string body;
     if (std::isnan(create_order.stop_price)) {
       body = fmt::format(
@@ -647,7 +647,7 @@ void OrderEntry::operator()(
   auto side = json::map(new_order.side);
   auto order_type = json::map(new_order.type);
   auto time_in_force = json::map(new_order.time_in_force);
-  auto external_order_id = fmt::format("{}"sv, new_order.order_id);  // XXX HANS
+  auto external_order_id = fmt::format("{}"sv, new_order.order_id);
   auto order_status = json::map(new_order.status);
   auto remaining_quantity = new_order.orig_qty - new_order.executed_qty;
   auto average_traded_price = utils::compare(new_order.executed_qty, 0.0) == 0
@@ -727,7 +727,8 @@ void OrderEntry::cancel_order(
     auto &[message_info, cancel_order] = event;
     auto method = core::http::Method::DELETE;
     auto path = "/api/v3/order"sv;
-    std::chrono::milliseconds recv_window = utils::safe_cast(Flags::rest_order_recv_window());
+    auto recv_window =
+        std::chrono::duration_cast<std::chrono::milliseconds>(Flags::rest_order_recv_window());
     auto body = fmt::format(
         R"(symbol={}&)"
         R"(origClientOrderId={}&)"
@@ -784,11 +785,12 @@ void OrderEntry::cancel_order_ack(
         }
         case core::http::Category::CLIENT_ERROR: {  // 4xx
           auto error = core::json::Parser::create<json::Error>(body);
+          auto error_2 = json::guess_error(error.code);
           oms::Response response{
               .type = RequestType::CANCEL_ORDER,
               .origin = Origin::EXCHANGE,
               .status = RequestStatus::REJECTED,
-              .error = json::guess_error(error.code),
+              .error = error_2,
               .text = error.msg,
               .version = version,
               .request_id = {},
@@ -856,7 +858,7 @@ void OrderEntry::operator()(
   auto side = json::map(cancel_order.side);
   auto order_type = json::map(cancel_order.type);
   auto time_in_force = json::map(cancel_order.time_in_force);
-  auto external_order_id = fmt::format("{}"sv, cancel_order.order_id);  // XXX HANS
+  auto external_order_id = fmt::format("{}"sv, cancel_order.order_id);
   auto order_status = json::map(cancel_order.status);
   oms::Response response{
       .type = RequestType::CANCEL_ORDER,
@@ -914,7 +916,8 @@ void OrderEntry::cancel_all_open_orders(
     for (auto &symbol : open_orders_symbols_) {
       auto method = core::http::Method::DELETE;
       auto path = "/api/v3/openOrders"sv;
-      std::chrono::milliseconds recv_window = utils::safe_cast(Flags::rest_order_recv_window());
+      auto recv_window =
+          std::chrono::duration_cast<std::chrono::milliseconds>(Flags::rest_order_recv_window());
       auto body = fmt::format(
           R"(symbol={}&)"
           R"(recvWindow={})"sv,
@@ -978,14 +981,12 @@ void OrderEntry::operator()(const server::Trace<json::CancelAllOpenOrders> &even
   log::info<2>("cancel_all_open_orders={}"sv, cancel_all_open_orders);
   for (auto &order : cancel_all_open_orders.data) {
     log::debug("order={}"sv, order);
-    if (std::empty(
-            order.client_order_id))  // XXX HANS maybe we need a utility function to validate?
+    if (std::empty(order.client_order_id))
       continue;
-    // open_orders_symbols_.emplace(order.symbol);  // XXX HANS experimental
     auto side = json::map(order.side);
     auto order_type = json::map(order.type);
     auto time_in_force = json::map(order.time_in_force);
-    auto external_order_id = fmt::format("{}"sv, order.order_id);  // XXX HANS
+    auto external_order_id = fmt::format("{}"sv, order.order_id);
     auto order_status = json::map(order.status);
     oms::OrderUpdate order_update{
         .account = security_.get_account(),
