@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "roq/core/download.h"
 #include "roq/core/timer_queue.h"
 
 #include "roq/core/metrics/counter.h"
@@ -19,7 +20,6 @@
 
 #include "roq/core/web/client_socket.h"
 
-#include "roq/download.h"
 #include "roq/server.h"
 
 #include "roq/binance/shared.h"
