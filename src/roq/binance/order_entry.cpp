@@ -461,8 +461,17 @@ void OrderEntry::operator()(const server::Trace<json::OpenOrders> &event) {
         .last_traded_quantity = {},
         .last_traded_price = {},
         .last_liquidity = {},
+        .update_type = UpdateType::SNAPSHOT,  // XXX HANS ORDERS
     };
-    shared_.create_order(order.client_order_id, stream_id_, trace_info, order_update);
+    if (shared_.update_order(
+            order.client_order_id,
+            stream_id_,
+            trace_info,
+            order_update,
+            [&]([[maybe_unused]] auto &order) {})) {
+    } else {
+      log::warn("*** EXTERNAL ORDER ***"sv);
+    }
   }
 }
 
@@ -698,6 +707,7 @@ void OrderEntry::operator()(
       .last_traded_quantity = last_traded_quantity,
       .last_traded_price = last_traded_price,
       .last_liquidity = {},
+      .update_type = {},
   };
   if (shared_.update_order(
           user_id,
@@ -896,6 +906,7 @@ void OrderEntry::operator()(
       .last_traded_quantity = NaN,
       .last_traded_price = NaN,
       .last_liquidity = {},
+      .update_type = {},
   };
   if (shared_.update_order(
           user_id,
@@ -1013,6 +1024,7 @@ void OrderEntry::operator()(const server::Trace<json::CancelAllOpenOrders> &even
         .last_traded_quantity = {},
         .last_traded_price = {},
         .last_liquidity = {},
+        .update_type = {},
     };
     shared_.update_order(
         order.client_order_id,
