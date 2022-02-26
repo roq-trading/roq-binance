@@ -89,6 +89,8 @@ void DropCopy::operator()(const Event<Stop> &) {
 
 void DropCopy::operator()(const Event<Timer> &event) {
   connection_.refresh(event.value.now);
+  check_response_account();
+  check_response_orders();
 }
 
 void DropCopy::operator()(metrics::Writer &writer) {
@@ -164,6 +166,12 @@ uint32_t DropCopy::download(DropCopyState state) {
     case DropCopyState::UNDEFINED:
       assert(false);
       break;
+    case DropCopyState::ACCOUNT:
+      request_account();
+      return 1;
+    case DropCopyState::ORDERS:
+      request_orders();
+      return 1;
     case DropCopyState::DONE:
       (*this)(ConnectionStatus::READY);
       assert(!ready_);
@@ -257,7 +265,7 @@ void DropCopy::operator()(const server::Trace<json::ExecutionReport> &event) {
         .last_traded_quantity = execution_report.last_executed_quantity,
         .last_traded_price = execution_report.last_executed_price,
         .last_liquidity = last_liquidity,
-        .update_type = {},
+        .update_type = UpdateType::INCREMENTAL,
     };
     if (shared_.update_order(
             execution_report.client_order_id,
@@ -303,6 +311,38 @@ void DropCopy::operator()(const server::Trace<json::ListStatus> &event) {
     auto &[trace_info, list_status] = event;
     log::info<2>("list_status={}"sv, list_status);
   });
+}
+
+void DropCopy::request_account() {
+  log::info("Requesting account download..."sv);
+  auto &request_response = shared_.request_response[security_.get_account()];
+  request_response.request_account = core::clock::GetSystem();
+}
+
+void DropCopy::check_response_account() {
+  if (download_.state() != DropCopyState::ACCOUNT)
+    return;
+  auto &request_response = shared_.request_response[security_.get_account()];
+  if (request_response.request_account < request_response.respond_account) {
+    log::info("Account download has completed!"sv);
+    download_.check(DropCopyState::ACCOUNT);
+  }
+}
+
+void DropCopy::request_orders() {
+  log::info("Requesting order download..."sv);
+  auto &request_response = shared_.request_response[security_.get_account()];
+  request_response.request_orders = core::clock::GetSystem();
+}
+
+void DropCopy::check_response_orders() {
+  if (download_.state() != DropCopyState::ORDERS)
+    return;
+  auto &request_response = shared_.request_response[security_.get_account()];
+  if (request_response.request_orders < request_response.respond_orders) {
+    log::info("Order download has completed!"sv);
+    download_.check(DropCopyState::ORDERS);
+  }
 }
 
 }  // namespace binance

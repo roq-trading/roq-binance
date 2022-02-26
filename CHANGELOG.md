@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Changed
+
+* Download orders (#39)
+
 ### Fixed
 
 * Invalid client order id's when using `routing_id` (#183)

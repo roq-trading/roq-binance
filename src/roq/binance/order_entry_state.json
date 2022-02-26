@@ -3,8 +3,6 @@
 "type": "enum",
 "values": [
 	{ "name": "listen_key" },
-	{ "name": "account" },
-	{ "name": "open_orders" },
 	{ "name": "done" }
 ]
 }

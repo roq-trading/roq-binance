@@ -30,7 +30,6 @@ const auto SUPPORTS = utils::Mask{
     SupportType::CREATE_ORDER,
     SupportType::CANCEL_ORDER,
     SupportType::ORDER_ACK,
-    SupportType::ORDER,
     SupportType::TRADE,
     SupportType::FUNDS,
 };
@@ -102,6 +101,19 @@ void OrderEntry::operator()(const Event<Stop> &) {
 void OrderEntry::operator()(const Event<Timer> &event) {
   connection_.refresh(event.value.now);
   refresh_listen_key();
+  if (ready() && !downloading()) {
+    auto &request_response = shared_.request_response[security_.get_account()];
+    if (!downloading() && request_response.respond_account < request_response.request_account) {
+      log::info("Download account..."sv);
+      get_account();
+      download_account_ = true;
+    }
+    if (!downloading() && request_response.respond_orders < request_response.request_orders) {
+      log::info("Download orders..."sv);
+      get_open_orders();
+      download_orders_ = true;
+    }
+  }
 }
 
 void OrderEntry::operator()(metrics::Writer &writer) {
@@ -169,6 +181,8 @@ void OrderEntry::operator()(const core::web::Client::Disconnected &) {
   (*this)(ConnectionStatus::DISCONNECTED);
   if (!download_.downloading())
     download_.reset();
+  download_account_ = false;
+  download_orders_ = false;
 }
 
 void OrderEntry::operator()(const core::web::Client::Latency &latency) {
@@ -205,12 +219,6 @@ uint32_t OrderEntry::download(OrderEntryState state) {
       break;
     case OrderEntryState::LISTEN_KEY:
       get_listen_key();
-      return 1;
-    case OrderEntryState::ACCOUNT:
-      get_account();
-      return 1;
-    case OrderEntryState::OPEN_ORDERS:
-      get_open_orders();
       return 1;
     case OrderEntryState::DONE:
       (*this)(ConnectionStatus::READY);
@@ -310,37 +318,31 @@ void OrderEntry::get_account() {
         .body = {},
         .quality_of_service = {},
     };
-    auto sequence = download_.sequence();
-    connection_(
-        "account"sv, request, [this, sequence]([[maybe_unused]] auto &request_id, auto &response) {
-          auto trace_info = server::create_trace_info();
-          server::Trace event(trace_info, response);
-          get_account_ack(event, sequence);
-        });
+    connection_("account"sv, request, [this]([[maybe_unused]] auto &request_id, auto &response) {
+      auto trace_info = server::create_trace_info();
+      server::Trace event(trace_info, response);
+      get_account_ack(event);
+    });
   });
 }
 
-void OrderEntry::get_account_ack(
-    const server::Trace<core::web::Response> &event, uint32_t sequence) {
+void OrderEntry::get_account_ack(const server::Trace<core::web::Response> &event) {
   profile_.account_ack([&]() {
     auto &[trace_info, response] = event;
-    auto state = OrderEntryState::ACCOUNT;
     try {
       auto [status, category, body] = response.result();
       log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
-      if (download_.skip(sequence, state)) {
-        log::info("Download state={} has already been processed"sv, state);
-        return;
-      }
       response.expect(core::http::Status::OK);
       core::json::Buffer buffer(decode_buffer_);
       auto account = core::json::Parser::create<json::Account>(body, buffer);
       server::Trace event(trace_info, account);
       (*this)(event);
-      download_.check(state);
+      download_account_ = false;
+      log::debug("HERE"sv);
+      auto &request_response = shared_.request_response[security_.get_account()];
+      request_response.respond_account = core::clock::GetSystem();
     } catch (core::NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
-      download_.retry(state);
     }
   });
 }
@@ -349,7 +351,7 @@ void OrderEntry::operator()(const server::Trace<json::Account> &event) {
   auto &[trace_info, account] = event;
   log::info<2>("account={}"sv, account);
   for (auto &item : account.balances) {
-    log::debug("item={}"sv, item);
+    // log::debug("item={}"sv, item);
     FundsUpdate funds_update{
         .stream_id = stream_id_,
         .account = security_.get_account(),
@@ -387,39 +389,31 @@ void OrderEntry::get_open_orders() {
         .body = {},
         .quality_of_service = {},
     };
-    auto sequence = download_.sequence();
     connection_(
-        "open_orders"sv,
-        request,
-        [this, sequence]([[maybe_unused]] auto &request_id, auto &response) {
+        "open_orders"sv, request, [this]([[maybe_unused]] auto &request_id, auto &response) {
           auto trace_info = server::create_trace_info();
           server::Trace event(trace_info, response);
-          get_open_orders_ack(event, sequence);
+          get_open_orders_ack(event);
         });
   });
 }
 
-void OrderEntry::get_open_orders_ack(
-    const server::Trace<core::web::Response> &event, uint32_t sequence) {
+void OrderEntry::get_open_orders_ack(const server::Trace<core::web::Response> &event) {
   profile_.open_orders_ack([&]() {
     auto &[trace_info, response] = event;
-    auto state = OrderEntryState::OPEN_ORDERS;
     try {
       auto [status, category, body] = response.result();
-      log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
-      if (download_.skip(sequence, state)) {
-        log::info("Download state={} has already been processed"sv, state);
-        return;
-      }
+      // log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
       response.expect(core::http::Status::OK);
       core::json::Buffer buffer(decode_buffer_);
       auto open_orders = core::json::Parser::create<json::OpenOrders>(body, buffer);
       server::Trace event(trace_info, open_orders);
       (*this)(event);
-      download_.check(state);
+      download_orders_ = false;
+      auto &request_response = shared_.request_response[security_.get_account()];
+      request_response.respond_orders = core::clock::GetSystem();
     } catch (core::NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
-      download_.retry(state);
     }
   });
 }
@@ -461,7 +455,7 @@ void OrderEntry::operator()(const server::Trace<json::OpenOrders> &event) {
         .last_traded_quantity = {},
         .last_traded_price = {},
         .last_liquidity = {},
-        .update_type = UpdateType::SNAPSHOT,  // XXX HANS ORDERS
+        .update_type = UpdateType::SNAPSHOT,
     };
     if (shared_.update_order(
             order.client_order_id,
@@ -707,7 +701,7 @@ void OrderEntry::operator()(
       .last_traded_quantity = last_traded_quantity,
       .last_traded_price = last_traded_price,
       .last_liquidity = {},
-      .update_type = {},
+      .update_type = UpdateType::INCREMENTAL,
   };
   if (shared_.update_order(
           user_id,
@@ -906,7 +900,7 @@ void OrderEntry::operator()(
       .last_traded_quantity = NaN,
       .last_traded_price = NaN,
       .last_liquidity = {},
-      .update_type = {},
+      .update_type = UpdateType::INCREMENTAL,
   };
   if (shared_.update_order(
           user_id,
@@ -1024,7 +1018,7 @@ void OrderEntry::operator()(const server::Trace<json::CancelAllOpenOrders> &even
         .last_traded_quantity = {},
         .last_traded_price = {},
         .last_liquidity = {},
-        .update_type = {},
+        .update_type = UpdateType::INCREMENTAL,
     };
     shared_.update_order(
         order.client_order_id,

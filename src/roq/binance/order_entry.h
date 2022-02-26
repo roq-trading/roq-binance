@@ -58,6 +58,7 @@ class OrderEntry final : public core::web::Client::Handler {
   OrderEntry(const OrderEntry &) = delete;
 
   bool ready() const { return status_ == ConnectionStatus::READY; }
+  bool downloading() const { return download_account_ || download_orders_; }
 
   void operator()(const Event<Start> &);
   void operator()(const Event<Stop> &);
@@ -93,11 +94,11 @@ class OrderEntry final : public core::web::Client::Handler {
   void operator()(const server::Trace<json::ListenKey> &);
 
   void get_account();
-  void get_account_ack(const server::Trace<core::web::Response> &, uint32_t sequence);
+  void get_account_ack(const server::Trace<core::web::Response> &);
   void operator()(const server::Trace<json::Account> &);
 
   void get_open_orders();
-  void get_open_orders_ack(const server::Trace<core::web::Response> &, uint32_t sequence);
+  void get_open_orders_ack(const server::Trace<core::web::Response> &);
   void operator()(const server::Trace<json::OpenOrders> &);
 
   void refresh_listen_key();
@@ -168,6 +169,8 @@ class OrderEntry final : public core::web::Client::Handler {
   core::Download<OrderEntryState> download_;
   // experimental
   absl::flat_hash_set<std::string> open_orders_symbols_;
+  bool download_account_ = false;
+  bool download_orders_ = false;
 };
 
 }  // namespace binance
