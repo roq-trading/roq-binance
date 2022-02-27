@@ -30,27 +30,34 @@ auto create_security(const Config &config) {
   return result;
 }
 
-template <typename T>
+auto create_request(const Config &config) {
+  absl::flat_hash_map<std::string, Request> result;
+  for (auto &[_, iter] : config.accounts)
+    result.try_emplace(iter.name, Request{});
+  return result;
+}
+
 auto create_order_entry(
     Gateway &gateway,
     core::io::Context &context,
     uint16_t &stream_id,
-    T &security,
-    Shared &shared) {
+    auto &security_by_account,
+    Shared &shared,
+    auto &request_by_account) {
   absl::flat_hash_map<std::string, std::unique_ptr<OrderEntry>> result;
-  for (auto &iter : security) {
+  for (auto &[account, security] : security_by_account) {
+    auto &request = request_by_account[account];
     result.try_emplace(
-        iter.first,
-        std::make_unique<OrderEntry>(gateway, context, ++stream_id, *iter.second, shared));
+        account,
+        std::make_unique<OrderEntry>(gateway, context, ++stream_id, *security, shared, request));
   }
   return result;
 }
 
-template <typename T>
-auto create_drop_copy(T &security) {
+auto create_drop_copy(auto &security_by_account) {
   absl::flat_hash_map<std::string, std::unique_ptr<DropCopy>> result;
-  for (auto &iter : security) {
-    result.try_emplace(iter.first, nullptr);
+  for (auto &[account, security] : security_by_account) {
+    result.try_emplace(account, nullptr);
   }
   return result;
 }
@@ -58,8 +65,8 @@ auto create_drop_copy(T &security) {
 
 Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
     : dispatcher_(dispatcher), security_(create_security(config)), shared_(dispatcher),
-      rest_(*this, context_, ++stream_id_, shared_),
-      order_entry_(create_order_entry(*this, context_, stream_id_, security_, shared_)),
+      request_(create_request(config)), rest_(*this, context_, ++stream_id_, shared_),
+      order_entry_(create_order_entry(*this, context_, stream_id_, security_, shared_, request_)),
       drop_copy_(create_drop_copy(security_)) {
   if (Flags::rest_cancel_on_disconnect()) [[unlikely]]
     log::fatal("Exchange does *NOT* support cancel on disconnect"sv);
@@ -207,7 +214,13 @@ void Gateway::operator()(const OrderEntry::ListenKeyUpdate &listen_key_update) {
   } else if (!static_cast<bool>((*iter).second)) {
     log::info(R"(Create drop-copy (user-stream) for account="{}")"sv, account);
     auto drop_copy = std::make_unique<DropCopy>(
-        *this, context_, ++stream_id_, *security_[account], shared_, listen_key_update.listen_key);
+        *this,
+        context_,
+        ++stream_id_,
+        *security_[account],
+        shared_,
+        request_[account],
+        listen_key_update.listen_key);
     MessageInfo message_info;
     Start start;
     create_event_and_dispatch(*drop_copy, message_info, start);

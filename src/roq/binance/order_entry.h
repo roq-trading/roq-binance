@@ -21,6 +21,7 @@
 #include "roq/server.h"
 
 #include "roq/binance/order_entry_state.h"
+#include "roq/binance/request.h"
 #include "roq/binance/security.h"
 #include "roq/binance/shared.h"
 
@@ -52,7 +53,7 @@ class OrderEntry final : public core::web::Client::Handler {
     virtual void operator()(const ListenKeyUpdate &) = 0;
   };
 
-  OrderEntry(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &);
+  OrderEntry(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &, Request &);
 
   OrderEntry(OrderEntry &&) = delete;
   OrderEntry(const OrderEntry &) = delete;
@@ -159,8 +160,9 @@ class OrderEntry final : public core::web::Client::Handler {
   } latency_;
   // security
   Security &security_;
-  // cache
+  // shared
   Shared &shared_;
+  Request &request_;
   std::string listen_key_;
   // state
   bool ready_ = false;
