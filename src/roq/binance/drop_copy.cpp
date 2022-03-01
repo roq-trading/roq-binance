@@ -33,10 +33,11 @@ struct create_metrics final : public core::metrics::Factory {
 
 auto create_connection(auto &handler, auto &context, const auto &listen_key) {
   assert(!std::empty(listen_key));
+  auto uri = Flags::ws_uri();
   auto query = fmt::format("?streams={}"sv, listen_key);
   core::web::ClientSocket::Config config{
       .validate_certificate = server::Flags::tls_validate_certificate(),
-      .uri = core::URI(Flags::ws_uri()),
+      .uris = {&uri, 1},
       .query = query,
       .ping_frequency = Flags::ws_ping_freq(),
       .read_buffer_size = Flags::decode_buffer_size(),

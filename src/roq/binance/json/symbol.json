@@ -18,6 +18,7 @@
 	{ "name": "isSpotTradingAllowed", "type": "bool" },
 	{ "name": "isMarginTradingAllowed", "type": "bool" },
 	{ "name": "filters", "type": "std::string_view" },
-	{ "name": "permissions" }
+	{ "name": "permissions" },
+	{ "name": "allowTrailingStop", "type": "bool" }
 ]
 }
