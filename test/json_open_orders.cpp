@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/core/json/parser.h"
 
@@ -12,15 +12,17 @@ using namespace roq::binance;
 using namespace std::literals;
 using namespace std::chrono_literals;
 
-TEST(json_open_orders, simple_empty) {
+using namespace Catch::literals;
+
+TEST_CASE("json_open_orders_simple_empty", "json_open_orders") {
   auto message = R"([])";
   core::Buffer buffer_(8192);
   core::json::Buffer buffer(buffer_);
   auto obj = core::json::Parser::create<json::OpenOrders>(message, buffer);
-  ASSERT_EQ(std::size(obj.data), 0);
+  REQUIRE(std::size(obj.data) == 0);
 }
 
-TEST(json_open_orders, simple) {
+TEST_CASE("json_open_orders_simple", "json_open_orders") {
   auto message = R"([{)"
                  R"("symbol":"LTCBTC",)"
                  R"("orderId":778507063,)"
@@ -46,24 +48,24 @@ TEST(json_open_orders, simple) {
   core::json::Buffer buffer(buffer_);
   auto obj = core::json::Parser::create<json::OpenOrders>(message, buffer);
   auto &data = obj.data;
-  ASSERT_EQ(std::size(data), 1);
+  REQUIRE(std::size(data) == 1);
   auto &d0 = data[0];
-  EXPECT_EQ(d0.symbol, "LTCBTC"sv);
-  EXPECT_EQ(d0.order_id, 778507063);
-  EXPECT_EQ(d0.order_list_id, -1);
-  EXPECT_EQ(d0.client_order_id, "qQAC6gMAAQAAS-jxw4MW"sv);
-  EXPECT_DOUBLE_EQ(d0.price, 0.003041);
-  EXPECT_DOUBLE_EQ(d0.orig_qty, 0.1);
-  EXPECT_DOUBLE_EQ(d0.executed_qty, 0.0);
-  EXPECT_DOUBLE_EQ(d0.cummulative_quote_qty, 0.0);
-  EXPECT_EQ(d0.status, json::OrderStatus::NEW);
-  EXPECT_EQ(d0.time_in_force, json::TimeInForce::GTC);
-  EXPECT_EQ(d0.type, json::OrderType::LIMIT);
-  EXPECT_EQ(d0.side, json::Side::BUY);
-  EXPECT_DOUBLE_EQ(d0.stop_price, 0.0);
-  EXPECT_DOUBLE_EQ(d0.iceberg_qty, 0.0);
-  EXPECT_EQ(d0.time, 1634214384058ms);
-  EXPECT_EQ(d0.update_time, 1634214384058ms);
-  EXPECT_TRUE(d0.is_working);
-  EXPECT_DOUBLE_EQ(d0.orig_quote_order_qty, 0.0);
+  CHECK(d0.symbol == "LTCBTC"sv);
+  CHECK(d0.order_id == 778507063);
+  CHECK(d0.order_list_id == -1);
+  CHECK(d0.client_order_id == "qQAC6gMAAQAAS-jxw4MW"sv);
+  CHECK(d0.price == 0.003041_a);
+  CHECK(d0.orig_qty == 0.1_a);
+  CHECK(d0.executed_qty == 0.0_a);
+  CHECK(d0.cummulative_quote_qty == 0.0_a);
+  CHECK(d0.status == json::OrderStatus::NEW);
+  CHECK(d0.time_in_force == json::TimeInForce::GTC);
+  CHECK(d0.type == json::OrderType::LIMIT);
+  CHECK(d0.side == json::Side::BUY);
+  CHECK(d0.stop_price == 0.0_a);
+  CHECK(d0.iceberg_qty == 0.0_a);
+  CHECK(d0.time == 1634214384058ms);
+  CHECK(d0.update_time == 1634214384058ms);
+  CHECK(d0.is_working == true);
+  CHECK(d0.orig_quote_order_qty == 0.0_a);
 }

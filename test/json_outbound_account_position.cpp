@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/core/json/parser.h"
 
@@ -12,7 +12,9 @@ using namespace roq::binance;
 using namespace std::literals;
 using namespace std::chrono_literals;
 
-TEST(json_outbound_account_position, simple) {
+using namespace Catch::literals;
+
+TEST_CASE("json_outbound_account_position_simple", "json_outbound_account_position") {
   auto message = R"({)"
                  R"("e":"outboundAccountPosition",)"
                  R"("E":1634285425303,)"
@@ -35,26 +37,26 @@ TEST(json_outbound_account_position, simple) {
   core::Buffer buffer_(65536);
   core::json::Buffer buffer(buffer_);
   auto obj = core::json::Parser::create<json::OutboundAccountPosition>(message, buffer);
-  EXPECT_EQ(obj.event_type, json::EventType::OUTBOUND_ACCOUNT_POSITION);
-  EXPECT_EQ(obj.event_time, 1634285425303ms);
-  EXPECT_EQ(obj.time_of_last_account_update, 1634285425302ms);
+  CHECK(obj.event_type == json::EventType::OUTBOUND_ACCOUNT_POSITION);
+  CHECK(obj.event_time == 1634285425303ms);
+  CHECK(obj.time_of_last_account_update == 1634285425302ms);
   auto &balances = obj.balances;
-  ASSERT_EQ(std::size(balances), 3);
+  REQUIRE(std::size(balances) == 3);
   auto &b0 = balances[0];
-  EXPECT_EQ(b0.asset, "BTC"sv);
-  EXPECT_DOUBLE_EQ(b0.free_amount, 0.00004275);
-  EXPECT_DOUBLE_EQ(b0.locked_amount, 0.00029725);
+  CHECK(b0.asset == "BTC"sv);
+  CHECK(b0.free_amount == 0.00004275_a);
+  CHECK(b0.locked_amount == 0.00029725_a);
   auto &b1 = balances[1];
-  EXPECT_EQ(b1.asset, "LTC"sv);
-  EXPECT_DOUBLE_EQ(b1.free_amount, 0.0);
-  EXPECT_DOUBLE_EQ(b1.locked_amount, 0.0);
+  CHECK(b1.asset == "LTC"sv);
+  CHECK(b1.free_amount == 0.0_a);
+  CHECK(b1.locked_amount == 0.0_a);
   auto &b2 = balances[2];
-  EXPECT_EQ(b2.asset, "BNB"sv);
-  EXPECT_DOUBLE_EQ(b2.free_amount, 0.00041226);
-  EXPECT_DOUBLE_EQ(b2.locked_amount, 0.0);
+  CHECK(b2.asset == "BNB"sv);
+  CHECK(b2.free_amount == 0.00041226_a);
+  CHECK(b2.locked_amount == 0.0_a);
 }
 
-TEST(json_outbound_account_position, stream) {
+TEST_CASE("json_outbound_account_position_stream", "json_outbound_account_position") {
   auto message = R"({)"
                  R"("stream":"sj9ht0LN4uqn6kILaJpcsmZ5q2bjVInmmJPl8PdStouqzwHiwHgbwEaBm1ai",)"
                  R"("data":{)"
@@ -94,10 +96,10 @@ TEST(json_outbound_account_position, stream) {
     bool found_ = false;
   } handler;
   json::UserStreamParser::dispatch(handler, message, buffer, trace_info);
-  EXPECT_TRUE(static_cast<bool>(handler));
+  CHECK(static_cast<bool>(handler) == true);
 }
 
-TEST(json_outbound_account_position, stream_maker_new) {
+TEST_CASE("json_outbound_account_position_stream_maker_new", "json_outbound_account_position") {
   auto message = R"({)"
                  R"("stream":"x4PghblTRhWAXEO9E0wrDhwIZ0kRXDp3I32Vg9B60nxqGNjiG1lknGi1omdX",)"
                  R"("data":{"e":"outboundAccountPosition",)"
@@ -126,23 +128,23 @@ TEST(json_outbound_account_position, stream_maker_new) {
     void operator()(const server::Trace<json::OutboundAccountPosition> &event) override {
       found_ = true;
       auto &[_, obj] = event;
-      EXPECT_EQ(obj.event_type, json::EventType::OUTBOUND_ACCOUNT_POSITION);
-      EXPECT_EQ(obj.event_time, 1634906177360ms);
-      EXPECT_EQ(obj.time_of_last_account_update, 1634906177360ms);
+      CHECK(obj.event_type == json::EventType::OUTBOUND_ACCOUNT_POSITION);
+      CHECK(obj.event_time == 1634906177360ms);
+      CHECK(obj.time_of_last_account_update == 1634906177360ms);
       auto &balances = obj.balances;
-      ASSERT_EQ(std::size(balances), 3);
+      REQUIRE(std::size(balances) == 3);
       auto &b0 = balances[0];
-      EXPECT_EQ(b0.asset, "LTC"sv);
-      EXPECT_DOUBLE_EQ(b0.free_amount, 0.0);
-      EXPECT_DOUBLE_EQ(b0.locked_amount, 0.0);
+      CHECK(b0.asset == "LTC"sv);
+      CHECK(b0.free_amount == 0.0_a);
+      CHECK(b0.locked_amount == 0.0_a);
       auto &b1 = balances[1];
-      EXPECT_EQ(b1.asset, "BNB"sv);
-      EXPECT_DOUBLE_EQ(b1.free_amount, 0.00041226);
-      EXPECT_DOUBLE_EQ(b1.locked_amount, 0.0);
+      CHECK(b1.asset == "BNB"sv);
+      CHECK(b1.free_amount == 0.00041226_a);
+      CHECK(b1.locked_amount == 0.0_a);
       auto &b2 = balances[2];
-      EXPECT_EQ(b2.asset, "USDT"sv);
-      EXPECT_DOUBLE_EQ(b2.free_amount, 1.31364261);
-      EXPECT_DOUBLE_EQ(b2.locked_amount, 19.83);
+      CHECK(b2.asset == "USDT"sv);
+      CHECK(b2.free_amount == 1.31364261_a);
+      CHECK(b2.locked_amount == 19.83_a);
     }
     void operator()(const server::Trace<json::BalanceUpdate> &) override { FAIL(); }
     void operator()(const server::Trace<json::ExecutionReport> &) override { FAIL(); }
@@ -154,10 +156,10 @@ TEST(json_outbound_account_position, stream_maker_new) {
     bool found_ = false;
   } handler;
   json::UserStreamParser::dispatch(handler, message, buffer, trace_info);
-  EXPECT_TRUE(static_cast<bool>(handler));
+  CHECK(static_cast<bool>(handler) == true);
 }
 
-TEST(json_outbound_account_position, stream_maker_filled) {
+TEST_CASE("json_outbound_account_position_stream_maker_filled", "json_outbound_account_position") {
   auto message = R"({)"
                  R"("stream":"x4PghblTRhWAXEO9E0wrDhwIZ0kRXDp3I32Vg9B60nxqGNjiG1lknGi1omdX",)"
                  R"("data":{)"
@@ -187,23 +189,23 @@ TEST(json_outbound_account_position, stream_maker_filled) {
     void operator()(const server::Trace<json::OutboundAccountPosition> &event) override {
       found_ = true;
       auto &[_, obj] = event;
-      EXPECT_EQ(obj.event_type, json::EventType::OUTBOUND_ACCOUNT_POSITION);
-      EXPECT_EQ(obj.event_time, 1634906229934ms);
-      EXPECT_EQ(obj.time_of_last_account_update, 1634906229933ms);
+      CHECK(obj.event_type == json::EventType::OUTBOUND_ACCOUNT_POSITION);
+      CHECK(obj.event_time == 1634906229934ms);
+      CHECK(obj.time_of_last_account_update == 1634906229933ms);
       auto &balances = obj.balances;
-      ASSERT_EQ(std::size(balances), 3);
+      REQUIRE(std::size(balances) == 3);
       auto &b0 = balances[0];
-      EXPECT_EQ(b0.asset, "LTC"sv);
-      EXPECT_DOUBLE_EQ(b0.free_amount, 0.1);
-      EXPECT_DOUBLE_EQ(b0.locked_amount, 0.0);
+      CHECK(b0.asset == "LTC"sv);
+      CHECK(b0.free_amount == 0.1_a);
+      CHECK(b0.locked_amount == 0.0_a);
       auto &b1 = balances[1];
-      EXPECT_EQ(b1.asset, "BNB"sv);
-      EXPECT_DOUBLE_EQ(b1.free_amount, 0.00038207);
-      EXPECT_DOUBLE_EQ(b1.locked_amount, 0.0);
+      CHECK(b1.asset == "BNB"sv);
+      CHECK(b1.free_amount == 0.00038207_a);
+      CHECK(b1.locked_amount == 0.0_a);
       auto &b2 = balances[2];
-      EXPECT_EQ(b2.asset, "USDT"sv);
-      EXPECT_DOUBLE_EQ(b2.free_amount, 1.31364261);
-      EXPECT_DOUBLE_EQ(b2.locked_amount, 0.0);
+      CHECK(b2.asset == "USDT"sv);
+      CHECK(b2.free_amount == 1.31364261_a);
+      CHECK(b2.locked_amount == 0.0_a);
     }
     void operator()(const server::Trace<json::BalanceUpdate> &) override { FAIL(); }
     void operator()(const server::Trace<json::ExecutionReport> &) override { FAIL(); }
@@ -215,5 +217,5 @@ TEST(json_outbound_account_position, stream_maker_filled) {
     bool found_ = false;
   } handler;
   json::UserStreamParser::dispatch(handler, message, buffer, trace_info);
-  EXPECT_TRUE(static_cast<bool>(handler));
+  CHECK(static_cast<bool>(handler) == true);
 }

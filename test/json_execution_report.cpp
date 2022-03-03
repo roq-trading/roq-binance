@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/core/json/parser.h"
 
@@ -12,7 +12,9 @@ using namespace roq::binance;
 using namespace std::literals;
 using namespace std::chrono_literals;
 
-TEST(json_execution_report, simple) {
+using namespace Catch::literals;
+
+TEST_CASE("json_execution_report_simple", "json_execution_report") {
   auto message = R"({)"
                  R"("e":"executionReport",)"
                  R"("E":1634211568285,)"
@@ -50,39 +52,39 @@ TEST(json_execution_report, simple) {
   core::Buffer buffer_(65536);
   core::json::Buffer buffer(buffer_);
   auto obj = core::json::Parser::create<json::ExecutionReport>(message, buffer);
-  EXPECT_EQ(obj.event_type, json::EventType::EXECUTION_REPORT);
-  EXPECT_EQ(obj.event_time, 1634211568285ms);
-  EXPECT_EQ(obj.symbol, "BTCBUSD"sv);
-  EXPECT_EQ(obj.client_order_id, "web_5440a9bd3e684127861fbc54783f70c4"sv);
-  EXPECT_EQ(obj.side, json::Side::BUY);
-  EXPECT_EQ(obj.order_type, json::OrderType::LIMIT);
-  EXPECT_EQ(obj.time_in_force, json::TimeInForce::GTC);
-  EXPECT_DOUBLE_EQ(obj.quantity, 0.00034);
-  EXPECT_DOUBLE_EQ(obj.price, 57883.65);
-  EXPECT_DOUBLE_EQ(obj.stop_price, 0.0);
-  EXPECT_DOUBLE_EQ(obj.iceberg_quantity, 0.0);
-  EXPECT_EQ(obj.order_list_id, -1);
-  EXPECT_EQ(obj.original_client_order_id, ""sv);
-  EXPECT_EQ(obj.current_execution_type, json::ExecutionType::NEW);
-  EXPECT_EQ(obj.current_order_status, json::OrderStatus::NEW);
-  EXPECT_EQ(obj.order_reject_reason, "NONE"sv);
-  EXPECT_EQ(obj.order_id, 3511418495);
-  EXPECT_DOUBLE_EQ(obj.last_executed_quantity, 0.0);
-  EXPECT_DOUBLE_EQ(obj.cumulative_filled_quantity, 0.0);
-  EXPECT_DOUBLE_EQ(obj.last_executed_price, 0.0);
-  EXPECT_DOUBLE_EQ(obj.commission_amount, 0.0);
-  EXPECT_EQ(obj.commission_asset, ""sv);
-  EXPECT_EQ(obj.transaction_time, 1634211568285ms);
-  EXPECT_EQ(obj.trade_id, -1);
-  EXPECT_EQ(obj.order_on_book, true);
-  EXPECT_EQ(obj.is_trade_maker, false);
-  EXPECT_EQ(obj.order_creation_time, 1634211568285ms);
-  EXPECT_DOUBLE_EQ(obj.cumulative_quote_asset_transacted_quantity, 0.0);
-  EXPECT_DOUBLE_EQ(obj.last_quote_asset_transacted_quantity, 0.0);
-  EXPECT_DOUBLE_EQ(obj.quote_order_qty, 0.0);
+  CHECK(obj.event_type == json::EventType::EXECUTION_REPORT);
+  CHECK(obj.event_time == 1634211568285ms);
+  CHECK(obj.symbol == "BTCBUSD"sv);
+  CHECK(obj.client_order_id == "web_5440a9bd3e684127861fbc54783f70c4"sv);
+  CHECK(obj.side == json::Side::BUY);
+  CHECK(obj.order_type == json::OrderType::LIMIT);
+  CHECK(obj.time_in_force == json::TimeInForce::GTC);
+  CHECK(obj.quantity == 0.00034_a);
+  CHECK(obj.price == 57883.65_a);
+  CHECK(obj.stop_price == 0.0_a);
+  CHECK(obj.iceberg_quantity == 0.0_a);
+  CHECK(obj.order_list_id == -1);
+  CHECK(obj.original_client_order_id == ""sv);
+  CHECK(obj.current_execution_type == json::ExecutionType::NEW);
+  CHECK(obj.current_order_status == json::OrderStatus::NEW);
+  CHECK(obj.order_reject_reason == "NONE"sv);
+  CHECK(obj.order_id == 3511418495);
+  CHECK(obj.last_executed_quantity == 0.0_a);
+  CHECK(obj.cumulative_filled_quantity == 0.0_a);
+  CHECK(obj.last_executed_price == 0.0_a);
+  CHECK(obj.commission_amount == 0.0_a);
+  CHECK(obj.commission_asset == ""sv);
+  CHECK(obj.transaction_time == 1634211568285ms);
+  CHECK(obj.trade_id == -1);
+  CHECK(obj.order_on_book == true);
+  CHECK(obj.is_trade_maker == false);
+  CHECK(obj.order_creation_time == 1634211568285ms);
+  CHECK(obj.cumulative_quote_asset_transacted_quantity == 0.0_a);
+  CHECK(obj.last_quote_asset_transacted_quantity == 0.0_a);
+  CHECK(obj.quote_order_qty == 0.0_a);
 }
 
-TEST(json_execution_report, canceled) {
+TEST_CASE("json_execution_report_canceled", "json_execution_report") {
   auto message = R"({)"
                  R"("e":"executionReport",)"
                  R"("E":1634215338588,)"
@@ -120,39 +122,39 @@ TEST(json_execution_report, canceled) {
   core::Buffer buffer_(65536);
   core::json::Buffer buffer(buffer_);
   auto obj = core::json::Parser::create<json::ExecutionReport>(message, buffer);
-  EXPECT_EQ(obj.event_type, json::EventType::EXECUTION_REPORT);
-  EXPECT_EQ(obj.event_time, 1634215338588ms);
-  EXPECT_EQ(obj.symbol, "LTCBTC"sv);
-  EXPECT_EQ(obj.client_order_id, "web_24d4e429eb4f44d0ad03ab240c909ac2"sv);
-  EXPECT_EQ(obj.side, json::Side::BUY);
-  EXPECT_EQ(obj.order_type, json::OrderType::LIMIT);
-  EXPECT_EQ(obj.time_in_force, json::TimeInForce::GTC);
-  EXPECT_DOUBLE_EQ(obj.quantity, 0.1);
-  EXPECT_DOUBLE_EQ(obj.price, 0.003041);
-  EXPECT_DOUBLE_EQ(obj.stop_price, 0.0);
-  EXPECT_DOUBLE_EQ(obj.iceberg_quantity, 0.0);
-  EXPECT_EQ(obj.order_list_id, -1);
-  EXPECT_EQ(obj.original_client_order_id, "qQAC6gMAAQAAS-jxw4MW"sv);
-  EXPECT_EQ(obj.current_execution_type, json::ExecutionType::CANCELED);
-  EXPECT_EQ(obj.current_order_status, json::OrderStatus::CANCELED);
-  EXPECT_EQ(obj.order_reject_reason, "NONE"sv);
-  EXPECT_EQ(obj.order_id, 778507063);
-  EXPECT_DOUBLE_EQ(obj.last_executed_quantity, 0.0);
-  EXPECT_DOUBLE_EQ(obj.cumulative_filled_quantity, 0.0);
-  EXPECT_DOUBLE_EQ(obj.last_executed_price, 0.0);
-  EXPECT_DOUBLE_EQ(obj.commission_amount, 0.0);
-  EXPECT_EQ(obj.commission_asset, ""sv);
-  EXPECT_EQ(obj.transaction_time, 1634215338587ms);
-  EXPECT_EQ(obj.trade_id, -1);
-  EXPECT_EQ(obj.order_on_book, false);
-  EXPECT_EQ(obj.is_trade_maker, false);
-  EXPECT_EQ(obj.order_creation_time, 1634214384058ms);
-  EXPECT_DOUBLE_EQ(obj.cumulative_quote_asset_transacted_quantity, 0.0);
-  EXPECT_DOUBLE_EQ(obj.last_quote_asset_transacted_quantity, 0.0);
-  EXPECT_DOUBLE_EQ(obj.quote_order_qty, 0.0);
+  CHECK(obj.event_type == json::EventType::EXECUTION_REPORT);
+  CHECK(obj.event_time == 1634215338588ms);
+  CHECK(obj.symbol == "LTCBTC"sv);
+  CHECK(obj.client_order_id == "web_24d4e429eb4f44d0ad03ab240c909ac2"sv);
+  CHECK(obj.side == json::Side::BUY);
+  CHECK(obj.order_type == json::OrderType::LIMIT);
+  CHECK(obj.time_in_force == json::TimeInForce::GTC);
+  CHECK(obj.quantity == 0.1_a);
+  CHECK(obj.price == 0.003041_a);
+  CHECK(obj.stop_price == 0.0_a);
+  CHECK(obj.iceberg_quantity == 0.0_a);
+  CHECK(obj.order_list_id == -1);
+  CHECK(obj.original_client_order_id == "qQAC6gMAAQAAS-jxw4MW"sv);
+  CHECK(obj.current_execution_type == json::ExecutionType::CANCELED);
+  CHECK(obj.current_order_status == json::OrderStatus::CANCELED);
+  CHECK(obj.order_reject_reason == "NONE"sv);
+  CHECK(obj.order_id == 778507063);
+  CHECK(obj.last_executed_quantity == 0.0_a);
+  CHECK(obj.cumulative_filled_quantity == 0.0_a);
+  CHECK(obj.last_executed_price == 0.0_a);
+  CHECK(obj.commission_amount == 0.0_a);
+  CHECK(obj.commission_asset == ""sv);
+  CHECK(obj.transaction_time == 1634215338587ms);
+  CHECK(obj.trade_id == -1);
+  CHECK(obj.order_on_book == false);
+  CHECK(obj.is_trade_maker == false);
+  CHECK(obj.order_creation_time == 1634214384058ms);
+  CHECK(obj.cumulative_quote_asset_transacted_quantity == 0.0_a);
+  CHECK(obj.last_quote_asset_transacted_quantity == 0.0_a);
+  CHECK(obj.quote_order_qty == 0.0_a);
 }
 
-TEST(json_execution_report, stream) {
+TEST_CASE("json_execution_report_stream", "json_execution_report") {
   auto message = R"({)"
                  R"("stream":"UiujlmpQLUNOGNRDGzbC4NNza0fdtGtTFwrZPWwCR97UeUor2gZrpgvl4mz1",)"
                  R"("data":{)"
@@ -205,10 +207,10 @@ TEST(json_execution_report, stream) {
     bool found_ = false;
   } handler;
   json::UserStreamParser::dispatch(handler, message, buffer, trace_info);
-  EXPECT_TRUE(static_cast<bool>(handler));
+  CHECK(static_cast<bool>(handler) == true);
 }
 
-TEST(json_execution_report, stream_maker_new) {
+TEST_CASE("json_execution_report_stream_maker_new", "json_execution_report") {
   auto message = R"({)"
                  R"("stream":"x4PghblTRhWAXEO9E0wrDhwIZ0kRXDp3I32Vg9B60nxqGNjiG1lknGi1omdX",)"
                  R"("data":{)"
@@ -255,36 +257,36 @@ TEST(json_execution_report, stream_maker_new) {
     void operator()(const server::Trace<json::ExecutionReport> &event) override {
       found_ = true;
       auto &[_, obj] = event;
-      EXPECT_EQ(obj.event_type, json::EventType::EXECUTION_REPORT);
-      EXPECT_EQ(obj.event_time, 1634906177360ms);
-      EXPECT_EQ(obj.symbol, "LTCUSDT"sv);
-      EXPECT_EQ(obj.client_order_id, "SwAC6wMAAQAA8foJ1iQX"sv);
-      EXPECT_EQ(obj.side, json::Side::BUY);
-      EXPECT_EQ(obj.order_type, json::OrderType::LIMIT);
-      EXPECT_EQ(obj.time_in_force, json::TimeInForce::GTC);
-      EXPECT_DOUBLE_EQ(obj.quantity, 0.1);
-      EXPECT_DOUBLE_EQ(obj.price, 198.3);
-      EXPECT_DOUBLE_EQ(obj.stop_price, 0.0);
-      EXPECT_DOUBLE_EQ(obj.iceberg_quantity, 0.0);
-      EXPECT_EQ(obj.order_list_id, -1);
-      EXPECT_EQ(obj.original_client_order_id, ""sv);
-      EXPECT_EQ(obj.current_execution_type, json::ExecutionType::NEW);
-      EXPECT_EQ(obj.current_order_status, json::OrderStatus::NEW);
-      EXPECT_EQ(obj.order_reject_reason, "NONE"sv);
-      EXPECT_EQ(obj.order_id, 2426862755);
-      EXPECT_DOUBLE_EQ(obj.last_executed_quantity, 0.0);
-      EXPECT_DOUBLE_EQ(obj.cumulative_filled_quantity, 0.0);
-      EXPECT_DOUBLE_EQ(obj.last_executed_price, 0.0);
-      EXPECT_DOUBLE_EQ(obj.commission_amount, 0.0);
-      EXPECT_EQ(obj.commission_asset, ""sv);
-      EXPECT_EQ(obj.transaction_time, 1634906177360ms);
-      EXPECT_EQ(obj.trade_id, -1);
-      EXPECT_EQ(obj.order_on_book, true);
-      EXPECT_EQ(obj.is_trade_maker, false);
-      EXPECT_EQ(obj.order_creation_time, 1634906177360ms);
-      EXPECT_DOUBLE_EQ(obj.cumulative_quote_asset_transacted_quantity, 0.0);
-      EXPECT_DOUBLE_EQ(obj.last_quote_asset_transacted_quantity, 0.0);
-      EXPECT_DOUBLE_EQ(obj.quote_order_qty, 0.0);
+      CHECK(obj.event_type == json::EventType::EXECUTION_REPORT);
+      CHECK(obj.event_time == 1634906177360ms);
+      CHECK(obj.symbol == "LTCUSDT"sv);
+      CHECK(obj.client_order_id == "SwAC6wMAAQAA8foJ1iQX"sv);
+      CHECK(obj.side == json::Side::BUY);
+      CHECK(obj.order_type == json::OrderType::LIMIT);
+      CHECK(obj.time_in_force == json::TimeInForce::GTC);
+      CHECK(obj.quantity == 0.1_a);
+      CHECK(obj.price == 198.3_a);
+      CHECK(obj.stop_price == 0.0_a);
+      CHECK(obj.iceberg_quantity == 0.0_a);
+      CHECK(obj.order_list_id == -1);
+      CHECK(obj.original_client_order_id == ""sv);
+      CHECK(obj.current_execution_type == json::ExecutionType::NEW);
+      CHECK(obj.current_order_status == json::OrderStatus::NEW);
+      CHECK(obj.order_reject_reason == "NONE"sv);
+      CHECK(obj.order_id == 2426862755);
+      CHECK(obj.last_executed_quantity == 0.0_a);
+      CHECK(obj.cumulative_filled_quantity == 0.0_a);
+      CHECK(obj.last_executed_price == 0.0_a);
+      CHECK(obj.commission_amount == 0.0_a);
+      CHECK(obj.commission_asset == ""sv);
+      CHECK(obj.transaction_time == 1634906177360ms);
+      CHECK(obj.trade_id == -1);
+      CHECK(obj.order_on_book == true);
+      CHECK(obj.is_trade_maker == false);
+      CHECK(obj.order_creation_time == 1634906177360ms);
+      CHECK(obj.cumulative_quote_asset_transacted_quantity == 0.0_a);
+      CHECK(obj.last_quote_asset_transacted_quantity == 0.0_a);
+      CHECK(obj.quote_order_qty == 0.0_a);
     }
     void operator()(const server::Trace<json::ListStatus> &) override { FAIL(); }
 
@@ -294,10 +296,10 @@ TEST(json_execution_report, stream_maker_new) {
     bool found_ = false;
   } handler;
   json::UserStreamParser::dispatch(handler, message, buffer, trace_info);
-  EXPECT_TRUE(static_cast<bool>(handler));
+  CHECK(static_cast<bool>(handler) == true);
 }
 
-TEST(json_execution_report, stream_maker_filled) {
+TEST_CASE("json_execution_report_stream_maker_filled", "json_execution_report") {
   auto message = R"({)"
                  R"("stream":"x4PghblTRhWAXEO9E0wrDhwIZ0kRXDp3I32Vg9B60nxqGNjiG1lknGi1omdX",)"
                  R"("data":{)"
@@ -344,36 +346,36 @@ TEST(json_execution_report, stream_maker_filled) {
     void operator()(const server::Trace<json::ExecutionReport> &event) override {
       found_ = true;
       auto &[_, obj] = event;
-      EXPECT_EQ(obj.event_type, json::EventType::EXECUTION_REPORT);
-      EXPECT_EQ(obj.event_time, 1634906229934ms);
-      EXPECT_EQ(obj.symbol, "LTCUSDT"sv);
-      EXPECT_EQ(obj.client_order_id, "SwAC6wMAAQAA8foJ1iQX"sv);
-      EXPECT_EQ(obj.side, json::Side::BUY);
-      EXPECT_EQ(obj.order_type, json::OrderType::LIMIT);
-      EXPECT_EQ(obj.time_in_force, json::TimeInForce::GTC);
-      EXPECT_DOUBLE_EQ(obj.quantity, 0.1);
-      EXPECT_DOUBLE_EQ(obj.price, 198.3);
-      EXPECT_DOUBLE_EQ(obj.stop_price, 0.0);
-      EXPECT_DOUBLE_EQ(obj.iceberg_quantity, 0.0);
-      EXPECT_EQ(obj.order_list_id, -1);
-      EXPECT_EQ(obj.original_client_order_id, ""sv);
-      EXPECT_EQ(obj.current_execution_type, json::ExecutionType::TRADE);
-      EXPECT_EQ(obj.current_order_status, json::OrderStatus::FILLED);
-      EXPECT_EQ(obj.order_reject_reason, "NONE"sv);
-      EXPECT_EQ(obj.order_id, 2426862755);
-      EXPECT_DOUBLE_EQ(obj.last_executed_quantity, 0.1);
-      EXPECT_DOUBLE_EQ(obj.cumulative_filled_quantity, 0.1);
-      EXPECT_DOUBLE_EQ(obj.last_executed_price, 198.3);
-      EXPECT_DOUBLE_EQ(obj.commission_amount, 0.00003019);
-      EXPECT_EQ(obj.commission_asset, "BNB"sv);
-      EXPECT_EQ(obj.transaction_time, 1634906229933ms);
-      EXPECT_EQ(obj.trade_id, 207081035);
-      EXPECT_EQ(obj.order_on_book, false);
-      EXPECT_EQ(obj.is_trade_maker, true);
-      EXPECT_EQ(obj.order_creation_time, 1634906177360ms);
-      EXPECT_DOUBLE_EQ(obj.cumulative_quote_asset_transacted_quantity, 19.83);
-      EXPECT_DOUBLE_EQ(obj.last_quote_asset_transacted_quantity, 19.83);
-      EXPECT_DOUBLE_EQ(obj.quote_order_qty, 0.0);
+      CHECK(obj.event_type == json::EventType::EXECUTION_REPORT);
+      CHECK(obj.event_time == 1634906229934ms);
+      CHECK(obj.symbol == "LTCUSDT"sv);
+      CHECK(obj.client_order_id == "SwAC6wMAAQAA8foJ1iQX"sv);
+      CHECK(obj.side == json::Side::BUY);
+      CHECK(obj.order_type == json::OrderType::LIMIT);
+      CHECK(obj.time_in_force == json::TimeInForce::GTC);
+      CHECK(obj.quantity == 0.1_a);
+      CHECK(obj.price == 198.3_a);
+      CHECK(obj.stop_price == 0.0_a);
+      CHECK(obj.iceberg_quantity == 0.0_a);
+      CHECK(obj.order_list_id == -1);
+      CHECK(obj.original_client_order_id == ""sv);
+      CHECK(obj.current_execution_type == json::ExecutionType::TRADE);
+      CHECK(obj.current_order_status == json::OrderStatus::FILLED);
+      CHECK(obj.order_reject_reason == "NONE"sv);
+      CHECK(obj.order_id == 2426862755);
+      CHECK(obj.last_executed_quantity == 0.1_a);
+      CHECK(obj.cumulative_filled_quantity == 0.1_a);
+      CHECK(obj.last_executed_price == 198.3_a);
+      CHECK(obj.commission_amount == 0.00003019_a);
+      CHECK(obj.commission_asset == "BNB"sv);
+      CHECK(obj.transaction_time == 1634906229933ms);
+      CHECK(obj.trade_id == 207081035);
+      CHECK(obj.order_on_book == false);
+      CHECK(obj.is_trade_maker == true);
+      CHECK(obj.order_creation_time == 1634906177360ms);
+      CHECK(obj.cumulative_quote_asset_transacted_quantity == 19.83_a);
+      CHECK(obj.last_quote_asset_transacted_quantity == 19.83_a);
+      CHECK(obj.quote_order_qty == 0.0_a);
     }
     void operator()(const server::Trace<json::ListStatus> &) override { FAIL(); }
 
@@ -383,5 +385,5 @@ TEST(json_execution_report, stream_maker_filled) {
     bool found_ = false;
   } handler;
   json::UserStreamParser::dispatch(handler, message, buffer, trace_info);
-  EXPECT_TRUE(static_cast<bool>(handler));
+  CHECK(static_cast<bool>(handler) == true);
 }

@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/core/json/parser.h"
 
@@ -12,7 +12,9 @@ using namespace roq::binance;
 using namespace std::literals;
 using namespace std::chrono_literals;
 
-TEST(json_exchange_info, simple) {
+using namespace Catch::literals;
+
+TEST_CASE("json_exchange_info_simple", "json_exchange_info") {
   auto message =
       R"({)"
       R"("timezone":"UTC",)"
@@ -104,46 +106,46 @@ TEST(json_exchange_info, simple) {
   core::Buffer buffer_(65536);
   core::json::Buffer buffer(buffer_);
   auto obj = core::json::Parser::create<json::ExchangeInfo>(message, buffer);
-  EXPECT_EQ(obj.timezone, "UTC"sv);
-  EXPECT_EQ(obj.server_time, 1634180185607ms);
+  CHECK(obj.timezone == "UTC"sv);
+  CHECK(obj.server_time == 1634180185607ms);
   // not parsed: rate_limits
   // not parsed: exchange_filters
   auto &symbols = obj.symbols;
-  ASSERT_EQ(std::size(obj.symbols), 2);
+  REQUIRE(std::size(obj.symbols) == 2);
   auto &s0 = symbols[0];
-  EXPECT_EQ(s0.symbol, "ETHBTC"sv);
-  EXPECT_EQ(s0.status, json::SymbolStatus::TRADING);
-  EXPECT_EQ(s0.base_asset, "ETH"sv);
-  EXPECT_EQ(s0.base_asset_precision, 8);
-  EXPECT_EQ(s0.quote_asset, "BTC"sv);
-  EXPECT_EQ(s0.quote_precision, 8);
-  EXPECT_EQ(s0.quote_asset_precision, 8);
-  EXPECT_EQ(s0.base_commission_precision, 8);
-  EXPECT_EQ(s0.quote_commission_precision, 8);
+  CHECK(s0.symbol == "ETHBTC"sv);
+  CHECK(s0.status == json::SymbolStatus::TRADING);
+  CHECK(s0.base_asset == "ETH"sv);
+  CHECK(s0.base_asset_precision == 8);
+  CHECK(s0.quote_asset == "BTC"sv);
+  CHECK(s0.quote_precision == 8);
+  CHECK(s0.quote_asset_precision == 8);
+  CHECK(s0.base_commission_precision == 8);
+  CHECK(s0.quote_commission_precision == 8);
   // not parsed: order_type
-  EXPECT_EQ(s0.iceberg_allowed, true);
-  EXPECT_EQ(s0.oco_allowed, true);
-  EXPECT_EQ(s0.quote_order_qty_market_allowed, true);
-  EXPECT_EQ(s0.is_spot_trading_allowed, true);
-  EXPECT_EQ(s0.is_margin_trading_allowed, true);
+  CHECK(s0.iceberg_allowed == true);
+  CHECK(s0.oco_allowed == true);
+  CHECK(s0.quote_order_qty_market_allowed == true);
+  CHECK(s0.is_spot_trading_allowed == true);
+  CHECK(s0.is_margin_trading_allowed == true);
   // not parsed: filters
   // not parsed: permissions
   auto &s1 = symbols[1];
-  EXPECT_EQ(s1.symbol, "LTCBTC"sv);
-  EXPECT_EQ(s1.status, json::SymbolStatus::TRADING);
-  EXPECT_EQ(s1.base_asset, "LTC"sv);
-  EXPECT_EQ(s1.base_asset_precision, 8);
-  EXPECT_EQ(s1.quote_asset, "BTC"sv);
-  EXPECT_EQ(s1.quote_precision, 8);
-  EXPECT_EQ(s1.quote_asset_precision, 8);
-  EXPECT_EQ(s1.base_commission_precision, 8);
-  EXPECT_EQ(s1.quote_commission_precision, 8);
+  CHECK(s1.symbol == "LTCBTC"sv);
+  CHECK(s1.status == json::SymbolStatus::TRADING);
+  CHECK(s1.base_asset == "LTC"sv);
+  CHECK(s1.base_asset_precision == 8);
+  CHECK(s1.quote_asset == "BTC"sv);
+  CHECK(s1.quote_precision == 8);
+  CHECK(s1.quote_asset_precision == 8);
+  CHECK(s1.base_commission_precision == 8);
+  CHECK(s1.quote_commission_precision == 8);
   // not parsed: order_type
-  EXPECT_EQ(s1.iceberg_allowed, true);
-  EXPECT_EQ(s1.oco_allowed, true);
-  EXPECT_EQ(s1.quote_order_qty_market_allowed, true);
-  EXPECT_EQ(s1.is_spot_trading_allowed, true);
-  EXPECT_EQ(s1.is_margin_trading_allowed, true);
+  CHECK(s1.iceberg_allowed == true);
+  CHECK(s1.oco_allowed == true);
+  CHECK(s1.quote_order_qty_market_allowed == true);
+  CHECK(s1.is_spot_trading_allowed == true);
+  CHECK(s1.is_margin_trading_allowed == true);
   // not parsed: filters
   // not parsed: permissions
 }

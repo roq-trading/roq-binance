@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/core/json/parser.h"
 
@@ -12,7 +12,9 @@ using namespace roq::binance;
 using namespace std::literals;
 using namespace std::chrono_literals;
 
-TEST(json_account, simple) {
+using namespace Catch::literals;
+
+TEST_CASE("json_account_simple", "json_account") {
   // note! balances has been truncated
   auto message = R"({)"
                  R"("makerCommission":10,)"
@@ -38,23 +40,23 @@ TEST(json_account, simple) {
   core::Buffer buffer_(8192);
   core::json::Buffer buffer(buffer_);
   auto obj = core::json::Parser::create<json::Account>(message, buffer);
-  EXPECT_DOUBLE_EQ(obj.maker_commission, 10.0);
-  EXPECT_DOUBLE_EQ(obj.taker_commission, 10.0);
-  EXPECT_DOUBLE_EQ(obj.buyer_commission, 0.0);
-  EXPECT_DOUBLE_EQ(obj.seller_commission, 0.0);
-  EXPECT_EQ(obj.can_trade, true);
-  EXPECT_EQ(obj.can_withdraw, true);
-  EXPECT_EQ(obj.can_deposit, true);
-  EXPECT_EQ(obj.update_time, 1620467758218ms);
-  EXPECT_EQ(obj.account_type, "MARGIN"sv);
+  CHECK(obj.maker_commission == 10.0_a);
+  CHECK(obj.taker_commission == 10.0_a);
+  CHECK(obj.buyer_commission == 0.0_a);
+  CHECK(obj.seller_commission == 0.0_a);
+  CHECK(obj.can_trade == true);
+  CHECK(obj.can_withdraw == true);
+  CHECK(obj.can_deposit == true);
+  CHECK(obj.update_time == 1620467758218ms);
+  CHECK(obj.account_type == "MARGIN"sv);
   auto &balances = obj.balances;
-  ASSERT_EQ(std::size(balances), 2);
+  REQUIRE(std::size(balances) == 2);
   auto &b0 = balances[0];
-  EXPECT_EQ(b0.asset, "BTC"sv);
-  EXPECT_DOUBLE_EQ(b0.free, 0.0);
-  EXPECT_DOUBLE_EQ(b0.locked, 0.0);
+  CHECK(b0.asset == "BTC"sv);
+  CHECK(b0.free == 0.0_a);
+  CHECK(b0.locked == 0.0_a);
   auto &b1 = balances[1];
-  EXPECT_EQ(b1.asset, "LTC"sv);
-  EXPECT_DOUBLE_EQ(b1.free, 0.0);
-  EXPECT_DOUBLE_EQ(b1.locked, 0.0);
+  CHECK(b1.asset == "LTC"sv);
+  CHECK(b1.free == 0.0_a);
+  CHECK(b1.locked == 0.0_a);
 }

@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/core/json/parser.h"
 
@@ -12,7 +12,9 @@ using namespace roq::binance;
 using namespace std::literals;
 using namespace std::chrono_literals;
 
-TEST(json_new_order, simple) {
+using namespace Catch::literals;
+
+TEST_CASE("json_new_order_simple", "json_new_order") {
   auto message = R"({)"
                  R"("symbol":"LTCBTC",)"
                  R"("orderId":778507063,)"
@@ -32,22 +34,22 @@ TEST(json_new_order, simple) {
   core::Buffer buffer_(65536);
   core::json::Buffer buffer(buffer_);
   auto obj = core::json::Parser::create<json::NewOrder>(message, buffer);
-  EXPECT_EQ(obj.symbol, "LTCBTC"sv);
-  EXPECT_EQ(obj.order_id, 778507063);
-  EXPECT_EQ(obj.order_list_id, -1);
-  EXPECT_EQ(obj.client_order_id, "qQAC6gMAAQAAS-jxw4MW"sv);
-  EXPECT_EQ(obj.transact_time, 1634214384058ms);
-  EXPECT_DOUBLE_EQ(obj.price, 0.003041);
-  EXPECT_DOUBLE_EQ(obj.orig_qty, 0.1);
-  EXPECT_DOUBLE_EQ(obj.cummulative_quote_qty, 0.0);
-  EXPECT_EQ(obj.status, json::OrderStatus::NEW);
-  EXPECT_EQ(obj.time_in_force, json::TimeInForce::GTC);
-  EXPECT_EQ(obj.type, json::OrderType::LIMIT);
-  EXPECT_EQ(obj.side, json::Side::BUY);
-  EXPECT_EQ(std::size(obj.fills), 0);
+  CHECK(obj.symbol == "LTCBTC"sv);
+  CHECK(obj.order_id == 778507063);
+  CHECK(obj.order_list_id == -1);
+  CHECK(obj.client_order_id == "qQAC6gMAAQAAS-jxw4MW"sv);
+  CHECK(obj.transact_time == 1634214384058ms);
+  CHECK(obj.price == 0.003041_a);
+  CHECK(obj.orig_qty == 0.1_a);
+  CHECK(obj.cummulative_quote_qty == 0.0_a);
+  CHECK(obj.status == json::OrderStatus::NEW);
+  CHECK(obj.time_in_force == json::TimeInForce::GTC);
+  CHECK(obj.type == json::OrderType::LIMIT);
+  CHECK(obj.side == json::Side::BUY);
+  CHECK(std::size(obj.fills) == 0);
 }
 
-TEST(json_new_order, simple_maker) {
+TEST_CASE("json_new_order_simple_maker", "json_new_order") {
   auto message = R"({)"
                  R"("symbol":"LTCUSDT",)"
                  R"("orderId":2426862755,)"
@@ -67,23 +69,23 @@ TEST(json_new_order, simple_maker) {
   core::Buffer buffer_(65536);
   core::json::Buffer buffer(buffer_);
   auto obj = core::json::Parser::create<json::NewOrder>(message, buffer);
-  EXPECT_EQ(obj.symbol, "LTCUSDT"sv);
-  EXPECT_EQ(obj.order_id, 2426862755);
-  EXPECT_EQ(obj.order_list_id, -1);
-  EXPECT_EQ(obj.client_order_id, "SwAC6wMAAQAA8foJ1iQX"sv);
-  EXPECT_EQ(obj.transact_time, 1634906177360ms);
-  EXPECT_DOUBLE_EQ(obj.price, 198.3);
-  EXPECT_DOUBLE_EQ(obj.orig_qty, 0.1);
-  EXPECT_DOUBLE_EQ(obj.cummulative_quote_qty, 0.0);
-  EXPECT_EQ(obj.status, json::OrderStatus::NEW);
-  EXPECT_EQ(obj.time_in_force, json::TimeInForce::GTC);
-  EXPECT_EQ(obj.type, json::OrderType::LIMIT);
-  EXPECT_EQ(obj.side, json::Side::BUY);
+  CHECK(obj.symbol == "LTCUSDT"sv);
+  CHECK(obj.order_id == 2426862755);
+  CHECK(obj.order_list_id == -1);
+  CHECK(obj.client_order_id == "SwAC6wMAAQAA8foJ1iQX"sv);
+  CHECK(obj.transact_time == 1634906177360ms);
+  CHECK(obj.price == 198.3_a);
+  CHECK(obj.orig_qty == 0.1_a);
+  CHECK(obj.cummulative_quote_qty == 0.0_a);
+  CHECK(obj.status == json::OrderStatus::NEW);
+  CHECK(obj.time_in_force == json::TimeInForce::GTC);
+  CHECK(obj.type == json::OrderType::LIMIT);
+  CHECK(obj.side == json::Side::BUY);
   auto &fills = obj.fills;
-  EXPECT_EQ(std::size(fills), 0);
+  CHECK(std::size(fills) == 0);
 }
 
-TEST(json_new_order, simple_taker) {
+TEST_CASE("json_new_order_simple_taker", "json_new_order") {
   auto message = R"({)"
                  R"("symbol":"LTCUSDT",)"
                  R"("orderId":2426923399,)"
@@ -110,24 +112,24 @@ TEST(json_new_order, simple_taker) {
   core::Buffer buffer_(65536);
   core::json::Buffer buffer(buffer_);
   auto obj = core::json::Parser::create<json::NewOrder>(message, buffer);
-  EXPECT_EQ(obj.symbol, "LTCUSDT"sv);
-  EXPECT_EQ(obj.order_id, 2426923399);
-  EXPECT_EQ(obj.order_list_id, -1);
-  EXPECT_EQ(obj.client_order_id, "bQAC6QMAAQAAaNElbSUX"sv);
-  EXPECT_EQ(obj.transact_time, 1634908712538ms);
-  EXPECT_DOUBLE_EQ(obj.price, 198.5);
-  EXPECT_DOUBLE_EQ(obj.orig_qty, 0.1);
-  EXPECT_DOUBLE_EQ(obj.cummulative_quote_qty, 19.85);
-  EXPECT_EQ(obj.status, json::OrderStatus::FILLED);
-  EXPECT_EQ(obj.time_in_force, json::TimeInForce::GTC);
-  EXPECT_EQ(obj.type, json::OrderType::LIMIT);
-  EXPECT_EQ(obj.side, json::Side::SELL);
+  CHECK(obj.symbol == "LTCUSDT"sv);
+  CHECK(obj.order_id == 2426923399);
+  CHECK(obj.order_list_id == -1);
+  CHECK(obj.client_order_id == "bQAC6QMAAQAAaNElbSUX"sv);
+  CHECK(obj.transact_time == 1634908712538ms);
+  CHECK(obj.price == 198.5_a);
+  CHECK(obj.orig_qty == 0.1_a);
+  CHECK(obj.cummulative_quote_qty == 19.85_a);
+  CHECK(obj.status == json::OrderStatus::FILLED);
+  CHECK(obj.time_in_force == json::TimeInForce::GTC);
+  CHECK(obj.type == json::OrderType::LIMIT);
+  CHECK(obj.side == json::Side::SELL);
   auto &fills = obj.fills;
-  EXPECT_EQ(std::size(fills), 1);
+  CHECK(std::size(fills) == 1);
   auto &f0 = fills[0];
-  EXPECT_DOUBLE_EQ(f0.price, 198.5);
-  EXPECT_DOUBLE_EQ(f0.qty, 0.1);
-  EXPECT_DOUBLE_EQ(f0.commission, 0.0000303);
-  EXPECT_EQ(f0.commission_asset, "BNB"sv);
-  EXPECT_EQ(f0.trade_id, 207085107);
+  CHECK(f0.price == 198.5_a);
+  CHECK(f0.qty == 0.1_a);
+  CHECK(f0.commission == 0.0000303_a);
+  CHECK(f0.commission_asset == "BNB"sv);
+  CHECK(f0.trade_id == 207085107);
 }

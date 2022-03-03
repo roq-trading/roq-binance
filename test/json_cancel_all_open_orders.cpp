@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/core/json/parser.h"
 
@@ -12,15 +12,17 @@ using namespace roq::binance;
 using namespace std::literals;
 using namespace std::chrono_literals;
 
-TEST(json_cancel_all_open_orders, simple_empty) {
+using namespace Catch::literals;
+
+TEST_CASE("json_cancel_all_open_orders_simple_empty", "json_cancel_all_open_orders") {
   auto message = R"([])";
   core::Buffer buffer_(8192);
   core::json::Buffer buffer(buffer_);
   auto obj = core::json::Parser::create<json::CancelAllOpenOrders>(message, buffer);
-  ASSERT_EQ(std::size(obj.data), 0);
+  REQUIRE(std::size(obj.data) == 0);
 }
 
-TEST(json_cancel_all_open_orders, simple_1) {
+TEST_CASE("json_cancel_all_open_orders_simple_1", "json_cancel_all_open_orders") {
   auto message = R"([{)"
                  R"( "symbol":"LTCBTC",)"
                  R"("origClientOrderId":"QAAC6gMAAQAARzE1LJQW",)"
@@ -41,24 +43,24 @@ TEST(json_cancel_all_open_orders, simple_1) {
   core::json::Buffer buffer(buffer_);
   auto obj = core::json::Parser::create<json::CancelAllOpenOrders>(message, buffer);
   auto &data = obj.data;
-  ASSERT_EQ(std::size(data), 1);
+  REQUIRE(std::size(data) == 1);
   auto &d0 = data[0];
-  EXPECT_EQ(d0.symbol, "LTCBTC"sv);
-  EXPECT_EQ(d0.orig_client_order_id, "QAAC6gMAAQAARzE1LJQW"sv);
-  EXPECT_EQ(d0.order_id, 779222768);
-  EXPECT_EQ(d0.order_list_id, -1);
-  EXPECT_EQ(d0.client_order_id, "ya8dFipP337pVE3ogU1JFU"sv);
-  EXPECT_DOUBLE_EQ(d0.price, 0.002978);
-  EXPECT_DOUBLE_EQ(d0.orig_qty, 0.05);
-  EXPECT_DOUBLE_EQ(d0.executed_qty, 0.0);
-  EXPECT_DOUBLE_EQ(d0.cummulative_quote_qty, 0.0);
-  EXPECT_EQ(d0.status, json::OrderStatus::CANCELED);
-  EXPECT_EQ(d0.time_in_force, json::TimeInForce::GTC);
-  EXPECT_EQ(d0.type, json::OrderType::LIMIT);
-  EXPECT_EQ(d0.side, json::Side::BUY);
+  CHECK(d0.symbol == "LTCBTC"sv);
+  CHECK(d0.orig_client_order_id == "QAAC6gMAAQAARzE1LJQW"sv);
+  CHECK(d0.order_id == 779222768);
+  CHECK(d0.order_list_id == -1);
+  CHECK(d0.client_order_id == "ya8dFipP337pVE3ogU1JFU"sv);
+  CHECK(d0.price == 0.002978_a);
+  CHECK(d0.orig_qty == 0.05_a);
+  CHECK(d0.executed_qty == 0.0_a);
+  CHECK(d0.cummulative_quote_qty == 0.0_a);
+  CHECK(d0.status == json::OrderStatus::CANCELED);
+  CHECK(d0.time_in_force == json::TimeInForce::GTC);
+  CHECK(d0.type == json::OrderType::LIMIT);
+  CHECK(d0.side == json::Side::BUY);
 }
 
-TEST(json_cancel_all_open_orders, simple_2) {
+TEST_CASE("json_cancel_all_open_orders_simple_2", "json_cancel_all_open_orders") {
   auto message = R"([{)"
                  R"("symbol":"LTCBTC",)"
                  R"("origClientOrderId":"RAAC6wMAAQAATcQ10ZMW",)"
@@ -93,33 +95,33 @@ TEST(json_cancel_all_open_orders, simple_2) {
   core::json::Buffer buffer(buffer_);
   auto obj = core::json::Parser::create<json::CancelAllOpenOrders>(message, buffer);
   auto &data = obj.data;
-  ASSERT_EQ(std::size(data), 2);
+  REQUIRE(std::size(data) == 2);
   auto &d0 = data[0];
-  EXPECT_EQ(d0.symbol, "LTCBTC"sv);
-  EXPECT_EQ(d0.orig_client_order_id, "RAAC6wMAAQAATcQ10ZMW"sv);
-  EXPECT_EQ(d0.order_id, 779213492);
-  EXPECT_EQ(d0.order_list_id, -1);
-  EXPECT_EQ(d0.client_order_id, "xsyFwe7R4szBwr2N8UNBii"sv);
-  EXPECT_DOUBLE_EQ(d0.price, 0.002984);
-  EXPECT_DOUBLE_EQ(d0.orig_qty, 0.05);
-  EXPECT_DOUBLE_EQ(d0.executed_qty, 0.0);
-  EXPECT_DOUBLE_EQ(d0.cummulative_quote_qty, 0.0);
-  EXPECT_EQ(d0.status, json::OrderStatus::CANCELED);
-  EXPECT_EQ(d0.time_in_force, json::TimeInForce::GTC);
-  EXPECT_EQ(d0.type, json::OrderType::LIMIT);
-  EXPECT_EQ(d0.side, json::Side::BUY);
+  CHECK(d0.symbol == "LTCBTC"sv);
+  CHECK(d0.orig_client_order_id == "RAAC6wMAAQAATcQ10ZMW"sv);
+  CHECK(d0.order_id == 779213492);
+  CHECK(d0.order_list_id == -1);
+  CHECK(d0.client_order_id == "xsyFwe7R4szBwr2N8UNBii"sv);
+  CHECK(d0.price == 0.002984_a);
+  CHECK(d0.orig_qty == 0.05_a);
+  CHECK(d0.executed_qty == 0.0_a);
+  CHECK(d0.cummulative_quote_qty == 0.0_a);
+  CHECK(d0.status == json::OrderStatus::CANCELED);
+  CHECK(d0.time_in_force == json::TimeInForce::GTC);
+  CHECK(d0.type == json::OrderType::LIMIT);
+  CHECK(d0.side == json::Side::BUY);
   auto &d1 = data[1];
-  EXPECT_EQ(d1.symbol, "LTCBTC"sv);
-  EXPECT_EQ(d1.orig_client_order_id, "XgAC7AMAAQAAWZxp3JMW"sv);
-  EXPECT_EQ(d1.order_id, 779214518);
-  EXPECT_EQ(d1.order_list_id, -1);
-  EXPECT_EQ(d1.client_order_id, "xsyFwe7R4szBwr2N8UNBii"sv);
-  EXPECT_DOUBLE_EQ(d1.price, 0.002986);
-  EXPECT_DOUBLE_EQ(d1.orig_qty, 0.05);
-  EXPECT_DOUBLE_EQ(d1.executed_qty, 0.0);
-  EXPECT_DOUBLE_EQ(d1.cummulative_quote_qty, 0.0);
-  EXPECT_EQ(d1.status, json::OrderStatus::CANCELED);
-  EXPECT_EQ(d1.time_in_force, json::TimeInForce::GTC);
-  EXPECT_EQ(d1.type, json::OrderType::LIMIT);
-  EXPECT_EQ(d1.side, json::Side::BUY);
+  CHECK(d1.symbol == "LTCBTC"sv);
+  CHECK(d1.orig_client_order_id == "XgAC7AMAAQAAWZxp3JMW"sv);
+  CHECK(d1.order_id == 779214518);
+  CHECK(d1.order_list_id == -1);
+  CHECK(d1.client_order_id == "xsyFwe7R4szBwr2N8UNBii"sv);
+  CHECK(d1.price == 0.002986_a);
+  CHECK(d1.orig_qty == 0.05_a);
+  CHECK(d1.executed_qty == 0.0_a);
+  CHECK(d1.cummulative_quote_qty == 0.0_a);
+  CHECK(d1.status == json::OrderStatus::CANCELED);
+  CHECK(d1.time_in_force == json::TimeInForce::GTC);
+  CHECK(d1.type == json::OrderType::LIMIT);
+  CHECK(d1.side == json::Side::BUY);
 }

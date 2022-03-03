@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include <gtest/gtest.h>
+#include <catch2/catch.hpp>
 
 #include "roq/core/json/parser.h"
 
@@ -12,7 +12,9 @@ using namespace roq::binance;
 using namespace std::literals;
 using namespace std::chrono_literals;
 
-TEST(json_cancel_order, simple) {
+using namespace Catch::literals;
+
+TEST_CASE("json_cancel_order_simple", "json_cancel_order") {
   auto message = R"({)"
                  R"("symbol":"LTCBTC",)"
                  R"("origClientOrderId":"OgAC6QMAAQAACt7PDZQW",)"
@@ -31,17 +33,17 @@ TEST(json_cancel_order, simple) {
   core::Buffer buffer_(65536);
   core::json::Buffer buffer(buffer_);
   auto obj = core::json::Parser::create<json::CancelOrder>(message, buffer);
-  EXPECT_EQ(obj.symbol, "LTCBTC"sv);
-  EXPECT_EQ(obj.orig_client_order_id, "OgAC6QMAAQAACt7PDZQW"sv);
-  EXPECT_EQ(obj.order_id, 779219002);
-  EXPECT_EQ(obj.order_list_id, -1);
-  EXPECT_EQ(obj.client_order_id, "PQAC6QMAAgAAfWABDpQW"sv);
-  EXPECT_DOUBLE_EQ(obj.price, 0.002982);
-  EXPECT_DOUBLE_EQ(obj.orig_qty, 0.05);
-  EXPECT_DOUBLE_EQ(obj.executed_qty, 0.0);
-  EXPECT_DOUBLE_EQ(obj.cummulative_quote_qty, 0.0);
-  EXPECT_EQ(obj.status, json::OrderStatus::CANCELED);
-  EXPECT_EQ(obj.time_in_force, json::TimeInForce::GTC);
-  EXPECT_EQ(obj.type, json::OrderType::LIMIT);
-  EXPECT_EQ(obj.side, json::Side::BUY);
+  CHECK(obj.symbol == "LTCBTC"sv);
+  CHECK(obj.orig_client_order_id == "OgAC6QMAAQAACt7PDZQW"sv);
+  CHECK(obj.order_id == 779219002);
+  CHECK(obj.order_list_id == -1);
+  CHECK(obj.client_order_id == "PQAC6QMAAgAAfWABDpQW"sv);
+  CHECK(obj.price == 0.002982_a);
+  CHECK(obj.orig_qty == 0.05_a);
+  CHECK(obj.executed_qty == 0.0_a);
+  CHECK(obj.cummulative_quote_qty == 0.0_a);
+  CHECK(obj.status == json::OrderStatus::CANCELED);
+  CHECK(obj.time_in_force == json::TimeInForce::GTC);
+  CHECK(obj.type == json::OrderType::LIMIT);
+  CHECK(obj.side == json::Side::BUY);
 }
