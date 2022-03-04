@@ -159,7 +159,8 @@ TEST_CASE("json_outbound_account_position_stream_maker_new", "[json_outbound_acc
   CHECK(static_cast<bool>(handler) == true);
 }
 
-TEST_CASE("json_outbound_account_position_stream_maker_filled", "[json_outbound_account_position]") {
+TEST_CASE(
+    "json_outbound_account_position_stream_maker_filled", "[json_outbound_account_position]") {
   auto message = R"({)"
                  R"("stream":"x4PghblTRhWAXEO9E0wrDhwIZ0kRXDp3I32Vg9B60nxqGNjiG1lknGi1omdX",)"
                  R"("data":{)"
