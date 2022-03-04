@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("json_execution_report_simple", "json_execution_report") {
+TEST_CASE("json_execution_report_simple", "[json_execution_report]") {
   auto message = R"({)"
                  R"("e":"executionReport",)"
                  R"("E":1634211568285,)"
@@ -84,7 +84,7 @@ TEST_CASE("json_execution_report_simple", "json_execution_report") {
   CHECK(obj.quote_order_qty == 0.0_a);
 }
 
-TEST_CASE("json_execution_report_canceled", "json_execution_report") {
+TEST_CASE("json_execution_report_canceled", "[json_execution_report]") {
   auto message = R"({)"
                  R"("e":"executionReport",)"
                  R"("E":1634215338588,)"
@@ -154,7 +154,7 @@ TEST_CASE("json_execution_report_canceled", "json_execution_report") {
   CHECK(obj.quote_order_qty == 0.0_a);
 }
 
-TEST_CASE("json_execution_report_stream", "json_execution_report") {
+TEST_CASE("json_execution_report_stream", "[json_execution_report]") {
   auto message = R"({)"
                  R"("stream":"UiujlmpQLUNOGNRDGzbC4NNza0fdtGtTFwrZPWwCR97UeUor2gZrpgvl4mz1",)"
                  R"("data":{)"
@@ -210,7 +210,7 @@ TEST_CASE("json_execution_report_stream", "json_execution_report") {
   CHECK(static_cast<bool>(handler) == true);
 }
 
-TEST_CASE("json_execution_report_stream_maker_new", "json_execution_report") {
+TEST_CASE("json_execution_report_stream_maker_new", "[json_execution_report]") {
   auto message = R"({)"
                  R"("stream":"x4PghblTRhWAXEO9E0wrDhwIZ0kRXDp3I32Vg9B60nxqGNjiG1lknGi1omdX",)"
                  R"("data":{)"
@@ -299,7 +299,7 @@ TEST_CASE("json_execution_report_stream_maker_new", "json_execution_report") {
   CHECK(static_cast<bool>(handler) == true);
 }
 
-TEST_CASE("json_execution_report_stream_maker_filled", "json_execution_report") {
+TEST_CASE("json_execution_report_stream_maker_filled", "[json_execution_report]") {
   auto message = R"({)"
                  R"("stream":"x4PghblTRhWAXEO9E0wrDhwIZ0kRXDp3I32Vg9B60nxqGNjiG1lknGi1omdX",)"
                  R"("data":{)"

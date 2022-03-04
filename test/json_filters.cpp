@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("json_filters_simple_1", "json_filters") {
+TEST_CASE("json_filters_simple_1", "[json_filters]") {
   auto message = R"([{)"
                  R"("filterType":"PRICE_FILTER",)"
                  R"("minPrice":"0.00000001",)"
@@ -92,7 +92,7 @@ TEST_CASE("json_filters_simple_1", "json_filters") {
   CHECK(d7.max_num_algo_orders == 5);
 }
 
-TEST_CASE("json_filters_simple_2", "json_filters") {
+TEST_CASE("json_filters_simple_2", "[json_filters]") {
   auto message = R"([{)"
                  R"("filterType":"PRICE_FILTER",)"
                  R"("minPrice":"11.87800000",)"

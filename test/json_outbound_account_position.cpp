@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("json_outbound_account_position_simple", "json_outbound_account_position") {
+TEST_CASE("json_outbound_account_position_simple", "[json_outbound_account_position]") {
   auto message = R"({)"
                  R"("e":"outboundAccountPosition",)"
                  R"("E":1634285425303,)"
@@ -56,7 +56,7 @@ TEST_CASE("json_outbound_account_position_simple", "json_outbound_account_positi
   CHECK(b2.locked_amount == 0.0_a);
 }
 
-TEST_CASE("json_outbound_account_position_stream", "json_outbound_account_position") {
+TEST_CASE("json_outbound_account_position_stream", "[json_outbound_account_position]") {
   auto message = R"({)"
                  R"("stream":"sj9ht0LN4uqn6kILaJpcsmZ5q2bjVInmmJPl8PdStouqzwHiwHgbwEaBm1ai",)"
                  R"("data":{)"
@@ -99,7 +99,7 @@ TEST_CASE("json_outbound_account_position_stream", "json_outbound_account_positi
   CHECK(static_cast<bool>(handler) == true);
 }
 
-TEST_CASE("json_outbound_account_position_stream_maker_new", "json_outbound_account_position") {
+TEST_CASE("json_outbound_account_position_stream_maker_new", "[json_outbound_account_position]") {
   auto message = R"({)"
                  R"("stream":"x4PghblTRhWAXEO9E0wrDhwIZ0kRXDp3I32Vg9B60nxqGNjiG1lknGi1omdX",)"
                  R"("data":{"e":"outboundAccountPosition",)"
@@ -159,7 +159,7 @@ TEST_CASE("json_outbound_account_position_stream_maker_new", "json_outbound_acco
   CHECK(static_cast<bool>(handler) == true);
 }
 
-TEST_CASE("json_outbound_account_position_stream_maker_filled", "json_outbound_account_position") {
+TEST_CASE("json_outbound_account_position_stream_maker_filled", "[json_outbound_account_position]") {
   auto message = R"({)"
                  R"("stream":"x4PghblTRhWAXEO9E0wrDhwIZ0kRXDp3I32Vg9B60nxqGNjiG1lknGi1omdX",)"
                  R"("data":{)"

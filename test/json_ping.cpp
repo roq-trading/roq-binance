@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("json_ping_simple", "json_ping") {
+TEST_CASE("json_ping_simple", "[json_ping]") {
   auto message = R"({)"
                  R"("serverTime":1634180186435)"
                  R"(})";

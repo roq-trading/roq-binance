@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("json_cancel_all_open_orders_simple_empty", "json_cancel_all_open_orders") {
+TEST_CASE("json_cancel_all_open_orders_simple_empty", "[json_cancel_all_open_orders]") {
   auto message = R"([])";
   core::Buffer buffer_(8192);
   core::json::Buffer buffer(buffer_);
@@ -22,7 +22,7 @@ TEST_CASE("json_cancel_all_open_orders_simple_empty", "json_cancel_all_open_orde
   REQUIRE(std::size(obj.data) == 0);
 }
 
-TEST_CASE("json_cancel_all_open_orders_simple_1", "json_cancel_all_open_orders") {
+TEST_CASE("json_cancel_all_open_orders_simple_1", "[json_cancel_all_open_orders]") {
   auto message = R"([{)"
                  R"( "symbol":"LTCBTC",)"
                  R"("origClientOrderId":"QAAC6gMAAQAARzE1LJQW",)"
@@ -60,7 +60,7 @@ TEST_CASE("json_cancel_all_open_orders_simple_1", "json_cancel_all_open_orders")
   CHECK(d0.side == json::Side::BUY);
 }
 
-TEST_CASE("json_cancel_all_open_orders_simple_2", "json_cancel_all_open_orders") {
+TEST_CASE("json_cancel_all_open_orders_simple_2", "[json_cancel_all_open_orders]") {
   auto message = R"([{)"
                  R"("symbol":"LTCBTC",)"
                  R"("origClientOrderId":"RAAC6wMAAQAATcQ10ZMW",)"

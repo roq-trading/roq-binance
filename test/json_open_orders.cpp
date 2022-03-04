@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("json_open_orders_simple_empty", "json_open_orders") {
+TEST_CASE("json_open_orders_simple_empty", "[json_open_orders]") {
   auto message = R"([])";
   core::Buffer buffer_(8192);
   core::json::Buffer buffer(buffer_);
@@ -22,7 +22,7 @@ TEST_CASE("json_open_orders_simple_empty", "json_open_orders") {
   REQUIRE(std::size(obj.data) == 0);
 }
 
-TEST_CASE("json_open_orders_simple", "json_open_orders") {
+TEST_CASE("json_open_orders_simple", "[json_open_orders]") {
   auto message = R"([{)"
                  R"("symbol":"LTCBTC",)"
                  R"("orderId":778507063,)"

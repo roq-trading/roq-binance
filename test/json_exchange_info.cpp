@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("json_exchange_info_simple", "json_exchange_info") {
+TEST_CASE("json_exchange_info_simple", "[json_exchange_info]") {
   auto message =
       R"({)"
       R"("timezone":"UTC",)"

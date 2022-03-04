@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("json_cancel_order_simple", "json_cancel_order") {
+TEST_CASE("json_cancel_order_simple", "[json_cancel_order]") {
   auto message = R"({)"
                  R"("symbol":"LTCBTC",)"
                  R"("origClientOrderId":"OgAC6QMAAQAACt7PDZQW",)"

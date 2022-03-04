@@ -13,7 +13,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("json_ticker_simple", "json_ticker") {
+TEST_CASE("json_ticker_simple", "[json_ticker]") {
   auto message = R"({)"
                  R"("listenKey":"F25mdh1CpogWkUK0A2F99A7hFTciD9fGiosfYoSqw8snTMDFrRt2eNWrBaI2")"
                  R"(})";

@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("json_account_simple", "json_account") {
+TEST_CASE("json_account_simple", "[json_account]") {
   // note! balances has been truncated
   auto message = R"({)"
                  R"("makerCommission":10,)"

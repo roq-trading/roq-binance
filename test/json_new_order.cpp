@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("json_new_order_simple", "json_new_order") {
+TEST_CASE("json_new_order_simple", "[json_new_order]") {
   auto message = R"({)"
                  R"("symbol":"LTCBTC",)"
                  R"("orderId":778507063,)"
@@ -49,7 +49,7 @@ TEST_CASE("json_new_order_simple", "json_new_order") {
   CHECK(std::size(obj.fills) == 0);
 }
 
-TEST_CASE("json_new_order_simple_maker", "json_new_order") {
+TEST_CASE("json_new_order_simple_maker", "[json_new_order]") {
   auto message = R"({)"
                  R"("symbol":"LTCUSDT",)"
                  R"("orderId":2426862755,)"
@@ -85,7 +85,7 @@ TEST_CASE("json_new_order_simple_maker", "json_new_order") {
   CHECK(std::size(fills) == 0);
 }
 
-TEST_CASE("json_new_order_simple_taker", "json_new_order") {
+TEST_CASE("json_new_order_simple_taker", "[json_new_order]") {
   auto message = R"({)"
                  R"("symbol":"LTCUSDT",)"
                  R"("orderId":2426923399,)"
