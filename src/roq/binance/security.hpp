@@ -7,9 +7,9 @@
 #include <string_view>
 #include <utility>
 
-#include "roq/binance/config.h"
+#include "roq/binance/config.hpp"
 
-#include "roq/binance/tools/hasher.h"
+#include "roq/binance/tools/hasher.hpp"
 
 namespace roq {
 namespace binance {

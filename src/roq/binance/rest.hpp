@@ -8,23 +8,23 @@
 #include <string_view>
 #include <vector>
 
-#include "roq/core/download.h"
+#include "roq/core/download.hpp"
 
-#include "roq/core/metrics/counter.h"
-#include "roq/core/metrics/latency.h"
-#include "roq/core/metrics/profile.h"
+#include "roq/core/metrics/counter.hpp"
+#include "roq/core/metrics/latency.hpp"
+#include "roq/core/metrics/profile.hpp"
 
-#include "roq/core/io/context.h"
+#include "roq/core/io/context.hpp"
 
-#include "roq/core/web/client.h"
+#include "roq/core/web/client.hpp"
 
-#include "roq/server.h"
+#include "roq/server.hpp"
 
-#include "roq/binance/rest_state.h"
-#include "roq/binance/shared.h"
+#include "roq/binance/rest_state.hpp"
+#include "roq/binance/shared.hpp"
 
-#include "roq/binance/json/depth.h"
-#include "roq/binance/json/exchange_info.h"
+#include "roq/binance/json/depth.hpp"
+#include "roq/binance/json/exchange_info.hpp"
 
 namespace roq {
 namespace binance {

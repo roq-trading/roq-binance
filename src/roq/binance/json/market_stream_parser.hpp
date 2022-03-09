@@ -4,19 +4,19 @@
 
 #include <string_view>
 
-#include "roq/core/json/buffer.h"
+#include "roq/core/json/buffer.hpp"
 
-#include "roq/server.h"
+#include "roq/server.hpp"
 
-#include "roq/binance/json/error.h"
-#include "roq/binance/json/result.h"
+#include "roq/binance/json/error.hpp"
+#include "roq/binance/json/result.hpp"
 
-#include "roq/binance/json/agg_trade.h"
-#include "roq/binance/json/book_ticker.h"
-#include "roq/binance/json/depth.h"
-#include "roq/binance/json/depth_update.h"
-#include "roq/binance/json/mini_ticker.h"
-#include "roq/binance/json/trade.h"
+#include "roq/binance/json/agg_trade.hpp"
+#include "roq/binance/json/book_ticker.hpp"
+#include "roq/binance/json/depth.hpp"
+#include "roq/binance/json/depth_update.hpp"
+#include "roq/binance/json/mini_ticker.hpp"
+#include "roq/binance/json/trade.hpp"
 
 namespace roq {
 namespace binance {

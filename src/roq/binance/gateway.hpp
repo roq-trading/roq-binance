@@ -9,18 +9,18 @@
 #include <utility>
 #include <vector>
 
-#include "roq/server.h"
+#include "roq/server.hpp"
 
-#include "roq/core/io/context.h"
+#include "roq/core/io/context.hpp"
 
-#include "roq/binance/config.h"
-#include "roq/binance/drop_copy.h"
-#include "roq/binance/market_data.h"
-#include "roq/binance/order_entry.h"
-#include "roq/binance/request.h"
-#include "roq/binance/rest.h"
-#include "roq/binance/security.h"
-#include "roq/binance/shared.h"
+#include "roq/binance/config.hpp"
+#include "roq/binance/drop_copy.hpp"
+#include "roq/binance/market_data.hpp"
+#include "roq/binance/order_entry.hpp"
+#include "roq/binance/request.hpp"
+#include "roq/binance/rest.hpp"
+#include "roq/binance/security.hpp"
+#include "roq/binance/shared.hpp"
 
 namespace roq {
 namespace binance {

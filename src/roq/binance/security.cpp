@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include "roq/binance/security.h"
+#include "roq/binance/security.hpp"
 
 namespace roq {
 namespace binance {

@@ -1,10 +1,10 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include "roq/binance/application.h"
+#include "roq/binance/application.hpp"
 
-#include "roq/binance/config.h"
-#include "roq/binance/flags.h"
-#include "roq/binance/gateway.h"
+#include "roq/binance/config.hpp"
+#include "roq/binance/flags.hpp"
+#include "roq/binance/gateway.hpp"
 
 using namespace std::literals;
 

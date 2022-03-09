@@ -1,12 +1,12 @@
 /* Copyright (c) 2017-2022, Hans Erik Thrane */
 
-#include "roq/binance/config.h"
+#include "roq/binance/config.hpp"
 
 #include <utility>
 
-#include "roq/logging.h"
+#include "roq/logging.hpp"
 
-#include "roq/binance/flags.h"
+#include "roq/binance/flags.hpp"
 
 using namespace std::literals;
 

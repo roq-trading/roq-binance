@@ -2,9 +2,9 @@
 
 #include <catch2/catch.hpp>
 
-#include "roq/core/json/parser.h"
+#include "roq/core/json/parser.hpp"
 
-#include "roq/binance/json/ping.h"
+#include "roq/binance/json/ping.hpp"
 
 using namespace roq;
 using namespace roq::binance;
