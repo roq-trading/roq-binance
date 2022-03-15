@@ -2,7 +2,8 @@
 
 #include "roq/binance/drop_copy.hpp"
 
-#include "roq/utils/mask.hpp"
+#include "roq/mask.hpp"
+
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
@@ -19,7 +20,7 @@ namespace binance {
 
 namespace {
 const auto NAME = "ex"sv;
-const auto SUPPORTS = utils::Mask{
+const auto SUPPORTS = Mask{
     SupportType::ORDER_ACK,
     SupportType::ORDER,
     SupportType::TRADE,
