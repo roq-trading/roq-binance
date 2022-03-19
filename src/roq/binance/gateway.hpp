@@ -83,18 +83,18 @@ class Gateway final : public server::Handler,
  private:
   server::Dispatcher &dispatcher_;
   // security
-  absl::flat_hash_map<std::string, std::unique_ptr<Security>> security_;
+  absl::flat_hash_map<Account, std::unique_ptr<Security>> security_;
   // io
   core::io::Context context_;
   // shared
   Shared shared_;
-  absl::flat_hash_map<std::string, Request> request_;
+  absl::flat_hash_map<Account, Request> request_;
   // seed
   uint16_t stream_id_ = {};
   // streams
   Rest rest_;
-  absl::flat_hash_map<std::string, std::unique_ptr<OrderEntry>> order_entry_;
-  absl::flat_hash_map<std::string, std::unique_ptr<DropCopy>> drop_copy_;
+  absl::flat_hash_map<Account, std::unique_ptr<OrderEntry>> order_entry_;
+  absl::flat_hash_map<Account, std::unique_ptr<DropCopy>> drop_copy_;
   std::vector<std::unique_ptr<MarketData>> market_data_;
 };
 

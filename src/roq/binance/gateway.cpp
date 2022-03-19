@@ -22,21 +22,23 @@ namespace roq {
 namespace binance {
 
 namespace {
+template <typename R>
 auto create_security(const Config &config) {
-  absl::flat_hash_map<std::string, std::unique_ptr<Security>> result;
-  for (auto &[_, iter] : config.accounts) {
+  R result;
+  for (auto &[_, iter] : config.accounts)
     result.try_emplace(iter.name, std::make_unique<Security>(config, iter.name));
-  }
   return result;
 }
 
+template <typename R>
 auto create_request(const Config &config) {
-  absl::flat_hash_map<std::string, Request> result;
+  R result;
   for (auto &[_, iter] : config.accounts)
     result.try_emplace(iter.name, Request{});
   return result;
 }
 
+template <typename R>
 auto create_order_entry(
     Gateway &gateway,
     core::io::Context &context,
@@ -44,7 +46,7 @@ auto create_order_entry(
     auto &security_by_account,
     Shared &shared,
     auto &request_by_account) {
-  absl::flat_hash_map<std::string, std::unique_ptr<OrderEntry>> result;
+  R result;
   for (auto &[account, security] : security_by_account) {
     auto &request = request_by_account[account];
     result.try_emplace(
@@ -54,20 +56,22 @@ auto create_order_entry(
   return result;
 }
 
+template <typename R>
 auto create_drop_copy(auto &security_by_account) {
-  absl::flat_hash_map<std::string, std::unique_ptr<DropCopy>> result;
-  for (auto &[account, security] : security_by_account) {
+  R result;
+  for (auto &[account, security] : security_by_account)
     result.try_emplace(account, nullptr);
-  }
   return result;
 }
 }  // namespace
 
 Gateway::Gateway(server::Dispatcher &dispatcher, const Config &config)
-    : dispatcher_(dispatcher), security_(create_security(config)), shared_(dispatcher),
-      request_(create_request(config)), rest_(*this, context_, ++stream_id_, shared_),
-      order_entry_(create_order_entry(*this, context_, stream_id_, security_, shared_, request_)),
-      drop_copy_(create_drop_copy(security_)) {
+    : dispatcher_(dispatcher), security_(create_security<decltype(security_)>(config)),
+      shared_(dispatcher), request_(create_request<decltype(request_)>(config)),
+      rest_(*this, context_, ++stream_id_, shared_),
+      order_entry_(create_order_entry<decltype(order_entry_)>(
+          *this, context_, stream_id_, security_, shared_, request_)),
+      drop_copy_(create_drop_copy<decltype(drop_copy_)>(security_)) {
   if (Flags::rest_cancel_on_disconnect()) [[unlikely]]
     log::fatal("Exchange does *NOT* support cancel on disconnect"sv);
 }

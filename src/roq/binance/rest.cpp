@@ -233,7 +233,7 @@ void Rest::get_exchange_info_ack(
 void Rest::operator()(const server::Trace<json::ExchangeInfo> &event) {
   auto &[trace_info, exchange_info] = event;
   log::info<2>("exchange_info={}"sv, exchange_info);
-  std::vector<std::string> symbols;
+  std::vector<Symbol> symbols;
   size_t counter = {};
   for (const auto &item : exchange_info.symbols) {
     log::info<2>("item={}"sv, item);

@@ -69,9 +69,9 @@ class MarketData final : public core::web::ClientSocket::Handler,
  private:
   void operator()(ConnectionStatus);
 
-  void subscribe(const std::span<std::string const> &symbols);
+  void subscribe(const std::span<Symbol const> &symbols);
 
-  void subscribe(const std::span<std::string const> &symbols, const std::string_view &channel);
+  void subscribe(const std::span<Symbol const> &symbols, const std::string_view &channel);
 
   void parse(const std::string_view &message);
 
