@@ -36,10 +36,10 @@ class Rest final : public core::web::Client::Handler {
   };
 
   struct Handler {
-    virtual void operator()(const server::Trace<StreamStatus> &) = 0;
-    virtual void operator()(const server::Trace<ExternalLatency> &) = 0;
-    virtual void operator()(const server::Trace<ReferenceData> &, bool is_last) = 0;
-    virtual void operator()(const server::Trace<MarketStatus> &, bool is_last) = 0;
+    virtual void operator()(const Trace<StreamStatus> &) = 0;
+    virtual void operator()(const Trace<ExternalLatency> &) = 0;
+    virtual void operator()(const Trace<ReferenceData> &, bool is_last) = 0;
+    virtual void operator()(const Trace<MarketStatus> &, bool is_last) = 0;
     // cross-communication
     virtual void operator()(SymbolsUpdate &) = 0;
   };
@@ -67,12 +67,12 @@ class Rest final : public core::web::Client::Handler {
   uint32_t download(RestState state);
 
   void get_exchange_info();
-  void get_exchange_info_ack(const server::Trace<core::web::Response> &, uint32_t sequence);
-  void operator()(const server::Trace<json::ExchangeInfo> &);
+  void get_exchange_info_ack(const Trace<core::web::Response> &, uint32_t sequence);
+  void operator()(const Trace<json::ExchangeInfo> &);
 
   void get_depth(const std::string_view &symbol);
-  void get_depth_ack(const server::Trace<core::web::Response> &, const std::string_view &symbol);
-  void operator()(const server::Trace<json::Depth> &, const std::string_view &symbol);
+  void get_depth_ack(const Trace<core::web::Response> &, const std::string_view &symbol);
+  void operator()(const Trace<json::Depth> &, const std::string_view &symbol);
 
   void check_request_queue(std::chrono::nanoseconds now);
 

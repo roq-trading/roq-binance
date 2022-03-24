@@ -18,7 +18,7 @@ void UserStreamParser::dispatch(
     UserStreamParser::Handler &handler,
     const std::string_view &message,
     core::json::Buffer &buffer,
-    const server::TraceInfo &trace_info) {
+    const TraceInfo &trace_info) {
   // XXX HANS this is bad... 3 levels of parsing
   // XXX HANS buffer will not be used for first iteration
   auto user_stream = core::json::Parser::create<UserStream>(message, buffer);
@@ -42,7 +42,7 @@ bool UserStreamParser::try_dispatch(
     const std::string_view &message,
     core::json::Buffer &buffer,
     EventType event_type,
-    const server::TraceInfo &trace_info) {
+    const TraceInfo &trace_info) {
   switch (event_type) {
     case EventType::UNDEFINED:
     case EventType::UNKNOWN:
@@ -56,25 +56,25 @@ bool UserStreamParser::try_dispatch(
     case EventType::OUTBOUND_ACCOUNT_POSITION: {
       auto outbound_account_position =
           core::json::Parser::create<OutboundAccountPosition>(message, buffer);
-      server::Trace event(trace_info, outbound_account_position);
+      Trace event(trace_info, outbound_account_position);
       handler(event);
       break;
     }
     case EventType::BALANCE_UPDATE: {
       auto balance_update = core::json::Parser::create<BalanceUpdate>(message);
-      server::Trace event(trace_info, balance_update);
+      Trace event(trace_info, balance_update);
       handler(event);
       break;
     }
     case EventType::EXECUTION_REPORT: {
       auto execution_report = core::json::Parser::create<ExecutionReport>(message);
-      server::Trace event(trace_info, execution_report);
+      Trace event(trace_info, execution_report);
       handler(event);
       break;
     }
     case EventType::LIST_STATUS: {
       auto list_status = core::json::Parser::create<ListStatus>(message, buffer);
-      server::Trace event(trace_info, list_status);
+      Trace event(trace_info, list_status);
       handler(event);
       break;
     }

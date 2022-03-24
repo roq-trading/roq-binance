@@ -23,7 +23,7 @@ void MarketStreamParser::dispatch(
     MarketStreamParser::Handler &handler,
     const std::string_view &message,
     core::json::Buffer &buffer,
-    const server::TraceInfo &trace_info) {
+    const TraceInfo &trace_info) {
   int64_t id = -1;
   std::string symbol;  // allocating because we need uppercase
   auto stream = Stream::UNDEFINED;
@@ -46,7 +46,7 @@ void MarketStreamParser::dispatch(
         case Field::ERROR:
           if (id >= 0) {
             Error error(value);
-            server::Trace event(trace_info, error);
+            Trace event(trace_info, error);
             dispatched = true;
             handler(event, id);
           }
@@ -54,7 +54,7 @@ void MarketStreamParser::dispatch(
         case Field::RESULT:
           if (id >= 0) {
             Result result(value, buffer);
-            server::Trace event(trace_info, result);
+            Trace event(trace_info, result);
             dispatched = true;
             handler(event, id);
           }
@@ -92,28 +92,28 @@ void MarketStreamParser::dispatch(
             case Stream::AGG_TRADE: {
               AggTrade agg_trade(value);
               dispatched = true;
-              server::Trace event(trace_info, agg_trade);
+              Trace event(trace_info, agg_trade);
               handler(event);
               break;
             }
             case Stream::TRADE: {
               Trade trade(value);
               dispatched = true;
-              server::Trace event(trace_info, trade);
+              Trace event(trace_info, trade);
               handler(event);
               break;
             }
             case Stream::MINI_TICKER: {
               MiniTicker mini_ticker(value);
               dispatched = true;
-              server::Trace event(trace_info, mini_ticker);
+              Trace event(trace_info, mini_ticker);
               handler(event);
               break;
             }
             case Stream::BOOK_TICKER: {
               BookTicker book_ticker(value);
               dispatched = true;
-              server::Trace event(trace_info, book_ticker);
+              Trace event(trace_info, book_ticker);
               handler(event);
               break;
             }
@@ -123,7 +123,7 @@ void MarketStreamParser::dispatch(
               assert(!std::empty(symbol));
               Depth depth(value, buffer);
               dispatched = true;
-              server::Trace event(trace_info, depth);
+              Trace event(trace_info, depth);
               handler(event, symbol);
               break;
             }
@@ -131,7 +131,7 @@ void MarketStreamParser::dispatch(
               assert(!std::empty(symbol));
               DepthUpdate depth_update(value, buffer);
               dispatched = true;
-              server::Trace event(trace_info, depth_update);
+              Trace event(trace_info, depth_update);
               handler(event);
               break;
             }

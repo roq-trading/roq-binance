@@ -136,7 +136,7 @@ void DropCopy::operator()(const core::web::ClientSocket::Latency &latency) {
       .account = security_.get_account(),
       .latency = latency.sample,
   };
-  server::create_trace_and_dispatch(handler_, trace_info, external_latency);
+  create_trace_and_dispatch(handler_, trace_info, external_latency);
   latency_.ping.update(latency.sample);
 }
 
@@ -160,7 +160,7 @@ void DropCopy::operator()(ConnectionStatus status) {
         .priority = Priority::PRIMARY,
     };
     log::info("stream_status={}"sv, stream_status);
-    server::create_trace_and_dispatch(handler_, trace_info, stream_status);
+    create_trace_and_dispatch(handler_, trace_info, stream_status);
   }
 }
 
@@ -200,7 +200,7 @@ void DropCopy::parse(const std::string_view &message) {
   });
 }
 
-void DropCopy::operator()(const server::Trace<json::OutboundAccountPosition> &event) {
+void DropCopy::operator()(const Trace<json::OutboundAccountPosition> &event) {
   profile_.outbound_account_position([&]() {
     auto &[trace_info, outbound_account_position] = event;
     log::info<2>("outbound_account_position={}"sv, outbound_account_position);
@@ -218,7 +218,7 @@ void DropCopy::operator()(const server::Trace<json::OutboundAccountPosition> &ev
   });
 }
 
-void DropCopy::operator()(const server::Trace<json::BalanceUpdate> &event) {
+void DropCopy::operator()(const Trace<json::BalanceUpdate> &event) {
   profile_.balance_update([&]() {
     auto &[trace_info, balance_update] = event;
     log::info<2>("balance_update={}"sv, balance_update);
@@ -226,7 +226,7 @@ void DropCopy::operator()(const server::Trace<json::BalanceUpdate> &event) {
   });
 }
 
-void DropCopy::operator()(const server::Trace<json::ExecutionReport> &event) {
+void DropCopy::operator()(const Trace<json::ExecutionReport> &event) {
   profile_.execution_report([&]() {
     // auto &[trace_info, execution_report] = event;  // XXX clang13
     auto &trace_info = event.trace_info;
@@ -298,7 +298,7 @@ void DropCopy::operator()(const server::Trace<json::ExecutionReport> &event) {
                     .fills = {&fill, 1},
                     .routing_id = order.routing_id,
                 };
-                server::create_trace_and_dispatch(
+                create_trace_and_dispatch(
                     handler_, trace_info, trade_update, true, order.user_id);
               }
             })) {
@@ -309,7 +309,7 @@ void DropCopy::operator()(const server::Trace<json::ExecutionReport> &event) {
   });
 }
 
-void DropCopy::operator()(const server::Trace<json::ListStatus> &event) {
+void DropCopy::operator()(const Trace<json::ListStatus> &event) {
   profile_.list_status([&]() {
     auto &[trace_info, list_status] = event;
     log::info<2>("list_status={}"sv, list_status);

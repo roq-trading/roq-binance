@@ -195,7 +195,7 @@ void OrderEntry::operator()(const core::web::Client::Latency &latency) {
       .account = security_.get_account(),
       .latency = latency.sample,
   };
-  server::create_trace_and_dispatch(handler_, trace_info, external_latency);
+  create_trace_and_dispatch(handler_, trace_info, external_latency);
   latency_.ping.update(latency.sample);
 }
 
@@ -211,7 +211,7 @@ void OrderEntry::operator()(ConnectionStatus status) {
         .priority = Priority::PRIMARY,
     };
     log::info("stream_status={}"sv, stream_status);
-    server::create_trace_and_dispatch(handler_, trace_info, stream_status);
+    create_trace_and_dispatch(handler_, trace_info, stream_status);
   }
 }
 
@@ -256,14 +256,14 @@ void OrderEntry::get_listen_key() {
         request,
         [this, sequence]([[maybe_unused]] auto &request_id, auto &response) {
           auto trace_info = server::create_trace_info();
-          server::Trace event(trace_info, response);
+          Trace event(trace_info, response);
           get_listen_key_ack(event, sequence);
         });
   });
 }
 
 void OrderEntry::get_listen_key_ack(
-    const server::Trace<core::web::Response> &event, [[maybe_unused]] uint32_t sequence) {
+    const Trace<core::web::Response> &event, [[maybe_unused]] uint32_t sequence) {
   profile_.listen_key_ack([&]() {
     auto &[trace_info, response] = event;
     auto state = OrderEntryState::LISTEN_KEY;
@@ -272,7 +272,7 @@ void OrderEntry::get_listen_key_ack(
       log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
       response.expect(core::http::Status::OK);
       auto listen_key = core::json::Parser::create<json::ListenKey>(body);
-      server::Trace event(trace_info, listen_key);
+      Trace event(trace_info, listen_key);
       (*this)(event);
       download_.check_relaxed(state);
     } catch (core::NetworkError &e) {
@@ -283,7 +283,7 @@ void OrderEntry::get_listen_key_ack(
   });
 }
 
-void OrderEntry::operator()(const server::Trace<json::ListenKey> &event) {
+void OrderEntry::operator()(const Trace<json::ListenKey> &event) {
   auto &[trace_info, listen_key] = event;
   log::info<2>("listen_key={}"sv, listen_key);
   bool initial = std::empty(listen_key_);
@@ -323,13 +323,13 @@ void OrderEntry::get_account() {
     };
     connection_("account"sv, request, [this]([[maybe_unused]] auto &request_id, auto &response) {
       auto trace_info = server::create_trace_info();
-      server::Trace event(trace_info, response);
+      Trace event(trace_info, response);
       get_account_ack(event);
     });
   });
 }
 
-void OrderEntry::get_account_ack(const server::Trace<core::web::Response> &event) {
+void OrderEntry::get_account_ack(const Trace<core::web::Response> &event) {
   profile_.account_ack([&]() {
     auto &[trace_info, response] = event;
     try {
@@ -338,7 +338,7 @@ void OrderEntry::get_account_ack(const server::Trace<core::web::Response> &event
       response.expect(core::http::Status::OK);
       core::json::Buffer buffer(decode_buffer_);
       auto account = core::json::Parser::create<json::Account>(body, buffer);
-      server::Trace event(trace_info, account);
+      Trace event(trace_info, account);
       (*this)(event);
       download_account_ = false;
       log::debug("HERE"sv);
@@ -349,7 +349,7 @@ void OrderEntry::get_account_ack(const server::Trace<core::web::Response> &event
   });
 }
 
-void OrderEntry::operator()(const server::Trace<json::Account> &event) {
+void OrderEntry::operator()(const Trace<json::Account> &event) {
   auto &[trace_info, account] = event;
   log::info<2>("account={}"sv, account);
   for (auto &item : account.balances) {
@@ -394,13 +394,13 @@ void OrderEntry::get_open_orders() {
     connection_(
         "open_orders"sv, request, [this]([[maybe_unused]] auto &request_id, auto &response) {
           auto trace_info = server::create_trace_info();
-          server::Trace event(trace_info, response);
+          Trace event(trace_info, response);
           get_open_orders_ack(event);
         });
   });
 }
 
-void OrderEntry::get_open_orders_ack(const server::Trace<core::web::Response> &event) {
+void OrderEntry::get_open_orders_ack(const Trace<core::web::Response> &event) {
   profile_.open_orders_ack([&]() {
     auto &[trace_info, response] = event;
     try {
@@ -409,7 +409,7 @@ void OrderEntry::get_open_orders_ack(const server::Trace<core::web::Response> &e
       response.expect(core::http::Status::OK);
       core::json::Buffer buffer(decode_buffer_);
       auto open_orders = core::json::Parser::create<json::OpenOrders>(body, buffer);
-      server::Trace event(trace_info, open_orders);
+      Trace event(trace_info, open_orders);
       (*this)(event);
       download_orders_ = false;
       request_.respond_orders = core::clock::GetSystem();
@@ -419,7 +419,7 @@ void OrderEntry::get_open_orders_ack(const server::Trace<core::web::Response> &e
   });
 }
 
-void OrderEntry::operator()(const server::Trace<json::OpenOrders> &event) {
+void OrderEntry::operator()(const Trace<json::OpenOrders> &event) {
   auto &[trace_info, open_orders] = event;
   for (auto &order : open_orders.data) {
     log::info<2>("order={}"sv, order);
@@ -560,14 +560,14 @@ void OrderEntry::new_order(
             [[maybe_unused]] auto &request_id, auto &response) {
           const uint32_t version = 1;
           auto trace_info = server::create_trace_info();
-          server::Trace event(trace_info, response);
+          Trace event(trace_info, response);
           new_order_ack(event, user_id, order_id, version);
         });
   });
 }
 
 void OrderEntry::new_order_ack(
-    const server::Trace<core::web::Response> &event,
+    const Trace<core::web::Response> &event,
     uint8_t user_id,
     uint32_t order_id,
     uint32_t version) {
@@ -581,7 +581,7 @@ void OrderEntry::new_order_ack(
         case core::http::Category::SUCCESS: {  // 2xx
           core::json::Buffer buffer(decode_buffer_);
           auto new_order = core::json::Parser::create<json::NewOrder>(body, buffer);
-          server::Trace event(trace_info, new_order);
+          Trace event(trace_info, new_order);
           (*this)(event, user_id, order_id, version);
           break;
         }
@@ -641,7 +641,7 @@ void OrderEntry::new_order_ack(
 }
 
 void OrderEntry::operator()(
-    const server::Trace<json::NewOrder> &event,
+    const Trace<json::NewOrder> &event,
     uint8_t user_id,
     uint32_t order_id,
     uint32_t version) {
@@ -764,14 +764,14 @@ void OrderEntry::cancel_order(
          order_id = cancel_order.order_id,
          version = cancel_order.version]([[maybe_unused]] auto &request_id, auto &response) {
           auto trace_info = server::create_trace_info();
-          server::Trace event(trace_info, response);
+          Trace event(trace_info, response);
           cancel_order_ack(event, user_id, order_id, version);
         });
   });
 }
 
 void OrderEntry::cancel_order_ack(
-    const server::Trace<core::web::Response> &event,
+    const Trace<core::web::Response> &event,
     uint8_t user_id,
     uint32_t order_id,
     uint32_t version) {
@@ -784,7 +784,7 @@ void OrderEntry::cancel_order_ack(
       switch (category) {
         case core::http::Category::SUCCESS: {  // 2xx
           auto cancel_order = core::json::Parser::create<json::CancelOrder>(body);
-          server::Trace event(trace_info, cancel_order);
+          Trace event(trace_info, cancel_order);
           (*this)(event, user_id, order_id, version);
           break;
         }
@@ -849,7 +849,7 @@ void OrderEntry::cancel_order_ack(
 }
 
 void OrderEntry::operator()(
-    const server::Trace<json::CancelOrder> &event,
+    const Trace<json::CancelOrder> &event,
     uint8_t user_id,
     uint32_t order_id,
     uint32_t version) {
@@ -944,14 +944,14 @@ void OrderEntry::cancel_all_open_orders(
       };
       connection_(request_id, request, [this]([[maybe_unused]] auto &request_id, auto &response) {
         auto trace_info = server::create_trace_info();
-        server::Trace event(trace_info, response);
+        Trace event(trace_info, response);
         cancel_all_open_orders_ack(event);
       });
     }
   });
 }
 
-void OrderEntry::cancel_all_open_orders_ack(const server::Trace<core::web::Response> &event) {
+void OrderEntry::cancel_all_open_orders_ack(const Trace<core::web::Response> &event) {
   profile_.cancel_all_open_orders_ack([&]() {
     auto &[trace_info, response] = event;
     try {
@@ -961,7 +961,7 @@ void OrderEntry::cancel_all_open_orders_ack(const server::Trace<core::web::Respo
         case core::http::Category::SUCCESS: {  // 2xx
           core::json::Buffer buffer(decode_buffer_);
           auto cancel_order = core::json::Parser::create<json::CancelAllOpenOrders>(body, buffer);
-          server::Trace event(trace_info, cancel_order);
+          Trace event(trace_info, cancel_order);
           (*this)(event);
           break;
         }
@@ -982,7 +982,7 @@ void OrderEntry::cancel_all_open_orders_ack(const server::Trace<core::web::Respo
   });
 }
 
-void OrderEntry::operator()(const server::Trace<json::CancelAllOpenOrders> &event) {
+void OrderEntry::operator()(const Trace<json::CancelAllOpenOrders> &event) {
   auto &[trace_info, cancel_all_open_orders] = event;
   log::info<2>("cancel_all_open_orders={}"sv, cancel_all_open_orders);
   for (auto &order : cancel_all_open_orders.data) {
