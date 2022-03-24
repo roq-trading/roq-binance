@@ -567,10 +567,7 @@ void OrderEntry::new_order(
 }
 
 void OrderEntry::new_order_ack(
-    const Trace<core::web::Response> &event,
-    uint8_t user_id,
-    uint32_t order_id,
-    uint32_t version) {
+    const Trace<core::web::Response> &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
   profile_.new_order_ack([&]() {
     auto &[trace_info, response] = event;
     log::debug("user_id={}, order_id={}, version={}"sv, user_id, order_id, version);
@@ -641,10 +638,7 @@ void OrderEntry::new_order_ack(
 }
 
 void OrderEntry::operator()(
-    const Trace<json::NewOrder> &event,
-    uint8_t user_id,
-    uint32_t order_id,
-    uint32_t version) {
+    const Trace<json::NewOrder> &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
   auto &[trace_info, new_order] = event;
   log::info<2>(
       "new_order={}, user_id={}, order_id={}, version={}"sv, new_order, user_id, order_id, version);
@@ -771,10 +765,7 @@ void OrderEntry::cancel_order(
 }
 
 void OrderEntry::cancel_order_ack(
-    const Trace<core::web::Response> &event,
-    uint8_t user_id,
-    uint32_t order_id,
-    uint32_t version) {
+    const Trace<core::web::Response> &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
   profile_.cancel_order_ack([&]() {
     auto &[trace_info, response] = event;
     log::debug("user_id={}, order_id={}, version={}"sv, user_id, order_id, version);
@@ -849,10 +840,7 @@ void OrderEntry::cancel_order_ack(
 }
 
 void OrderEntry::operator()(
-    const Trace<json::CancelOrder> &event,
-    uint8_t user_id,
-    uint32_t order_id,
-    uint32_t version) {
+    const Trace<json::CancelOrder> &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
   auto &[trace_info, cancel_order] = event;
   log::info<2>(
       "cancel_order={}, user_id={}, order_id={}, version={}"sv,

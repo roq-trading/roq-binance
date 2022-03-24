@@ -386,8 +386,7 @@ void MarketData::operator()(const Trace<json::DepthUpdate> &event) {
                 .quantity_decimals = {},
                 .checksum = {},
             };
-            create_trace_and_dispatch(
-                handler_, trace_info, market_by_price_update, true, false);
+            create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true, false);
           },
           [&](auto &bids, auto &asks, auto sequence) {  // snapshot
             log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);

@@ -83,9 +83,7 @@ TEST_CASE("json_outbound_account_position_stream", "[json_outbound_account_posit
   core::json::Buffer buffer(buffer_);
   auto trace_info = server::create_trace_info();
   struct MyHandler final : public json::UserStreamParser::Handler {
-    void operator()(const Trace<json::OutboundAccountPosition> &) override {
-      found_ = true;
-    }
+    void operator()(const Trace<json::OutboundAccountPosition> &) override { found_ = true; }
     void operator()(const Trace<json::BalanceUpdate> &) override { FAIL(); }
     void operator()(const Trace<json::ExecutionReport> &) override { FAIL(); }
     void operator()(const Trace<json::ListStatus> &) override { FAIL(); }

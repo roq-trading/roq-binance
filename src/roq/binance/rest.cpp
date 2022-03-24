@@ -205,8 +205,7 @@ void Rest::get_exchange_info() {
   });
 }
 
-void Rest::get_exchange_info_ack(
-    const Trace<core::web::Response> &event, uint32_t sequence) {
+void Rest::get_exchange_info_ack(const Trace<core::web::Response> &event, uint32_t sequence) {
   profile_.exchange_info_ack([&]() {
     auto &[trace_info, response] = event;
     auto state = RestState::EXCHANGE_INFO;
@@ -366,8 +365,7 @@ void Rest::get_depth(const std::string_view &symbol) {
   });
 }
 
-void Rest::get_depth_ack(
-    const Trace<core::web::Response> &event, const std::string_view &symbol) {
+void Rest::get_depth_ack(const Trace<core::web::Response> &event, const std::string_view &symbol) {
   profile_.depth_ack([&]() {
     auto &[trace_info, response] = event;
     try {
