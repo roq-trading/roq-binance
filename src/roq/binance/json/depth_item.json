@@ -1,8 +1,14 @@
 {
-"name": "DepthItem",
-"type": "array_item",
-"values": [
-	{ "name": "price", "type": "double" },
-	{ "name": "qty", "type": "double"}
-]
+  "name": "DepthItem",
+  "type": "array_item",
+  "values": [
+    {
+      "name": "price",
+      "type": "double"
+    },
+    {
+      "name": "qty",
+      "type": "double"
+    }
+  ]
 }

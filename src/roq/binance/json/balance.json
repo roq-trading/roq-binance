@@ -1,9 +1,18 @@
 {
-"name": "Balance",
-"type": "item",
-"values": [
-	{ "name": "asset", "type": "std::string_view" },
-	{ "name": "free", "type": "double" },
-	{ "name": "locked", "type": "double" }
-]
+  "name": "Balance",
+  "type": "item",
+  "values": [
+    {
+      "name": "asset",
+      "type": "std::string_view"
+    },
+    {
+      "name": "free",
+      "type": "double"
+    },
+    {
+      "name": "locked",
+      "type": "double"
+    }
+  ]
 }

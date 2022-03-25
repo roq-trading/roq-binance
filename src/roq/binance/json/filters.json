@@ -1,7 +1,10 @@
 {
-"name": "Filters",
-"type": "array",
-"values": [
-	{ "name": "data", "type": "std::span<Filter>" }
-]
+  "name": "Filters",
+  "type": "array",
+  "values": [
+    {
+      "name": "data",
+      "type": "std::span<Filter>"
+    }
+  ]
 }

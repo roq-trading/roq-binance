@@ -107,10 +107,7 @@ class OrderEntry final : public core::web::Client::Handler {
   void new_order(
       const Event<CreateOrder> &, const oms::Order &order, const std::string_view &request_id);
   void new_order_ack(
-      const Trace<core::web::Response> &,
-      uint8_t user_id,
-      uint32_t order_id,
-      uint32_t version);
+      const Trace<core::web::Response> &, uint8_t user_id, uint32_t order_id, uint32_t version);
   void operator()(
       const Trace<json::NewOrder> &, uint8_t user_id, uint32_t order_id, uint32_t version);
 
@@ -120,15 +117,9 @@ class OrderEntry final : public core::web::Client::Handler {
       const std::string_view &request_id,
       const std::string_view &previous_request_id);
   void cancel_order_ack(
-      const Trace<core::web::Response> &,
-      uint8_t user_id,
-      uint32_t order_id,
-      uint32_t version);
+      const Trace<core::web::Response> &, uint8_t user_id, uint32_t order_id, uint32_t version);
   void operator()(
-      const Trace<json::CancelOrder> &,
-      uint8_t user_id,
-      uint32_t order_id,
-      uint32_t version);
+      const Trace<json::CancelOrder> &, uint8_t user_id, uint32_t order_id, uint32_t version);
 
   void cancel_all_open_orders(const Event<CancelAllOrders> &, const std::string_view &request_id);
   void cancel_all_open_orders_ack(const Trace<core::web::Response> &);

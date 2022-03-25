@@ -1,7 +1,10 @@
 {
-"name": "Result",
-"type": "array",
-"values": [
-	{ "name": "data", "type": "std::span<std::string_view>" }
-]
+  "name": "Result",
+  "type": "array",
+  "values": [
+    {
+      "name": "data",
+      "type": "std::span<std::string_view>"
+    }
+  ]
 }

@@ -1,17 +1,61 @@
 {
-"name": "ListStatus",
-"type": "comp",
-"values": [
-	{ "raw": "e", "name": "event_type", "type": "EventType" },
-	{ "raw": "E", "name": "event_time", "type": "std::chrono::milliseconds" },
-	{ "raw": "s", "name": "symbol", "type": "std::string_view" },
-	{ "raw": "g", "name": "order_list_id", "type": "int32_t" },
-	{ "raw": "c", "name": "contingency_type", "type": "std::string_view" },
-	{ "raw": "l", "name": "list_status_type", "type": "std::string_view" },
-	{ "raw": "L", "name": "list_order_status", "type": "std::string_view" },
-	{ "raw": "r", "name": "list_reject_reasson", "type": "std::string_view" },
-	{ "raw": "C", "name": "list_client_order_id", "type": "std::string_view" },
-	{ "raw": "T", "name": "transaction_time", "type": "std::chrono::milliseconds" },
-	{ "raw": "O", "name": "objects", "type": "std::span<ListStatusItem>" }
-]
+  "name": "ListStatus",
+  "type": "comp",
+  "values": [
+    {
+      "raw": "e",
+      "name": "event_type",
+      "type": "EventType"
+    },
+    {
+      "raw": "E",
+      "name": "event_time",
+      "type": "std::chrono::milliseconds"
+    },
+    {
+      "raw": "s",
+      "name": "symbol",
+      "type": "std::string_view"
+    },
+    {
+      "raw": "g",
+      "name": "order_list_id",
+      "type": "int32_t"
+    },
+    {
+      "raw": "c",
+      "name": "contingency_type",
+      "type": "std::string_view"
+    },
+    {
+      "raw": "l",
+      "name": "list_status_type",
+      "type": "std::string_view"
+    },
+    {
+      "raw": "L",
+      "name": "list_order_status",
+      "type": "std::string_view"
+    },
+    {
+      "raw": "r",
+      "name": "list_reject_reasson",
+      "type": "std::string_view"
+    },
+    {
+      "raw": "C",
+      "name": "list_client_order_id",
+      "type": "std::string_view"
+    },
+    {
+      "raw": "T",
+      "name": "transaction_time",
+      "type": "std::chrono::milliseconds"
+    },
+    {
+      "raw": "O",
+      "name": "objects",
+      "type": "std::span<ListStatusItem>"
+    }
+  ]
 }

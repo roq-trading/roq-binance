@@ -1,10 +1,22 @@
 {
-"name": "ExchangeFilter",
-"type": "item",
-"values": [
-	{ "name": "filterType", "type": "FilterType" },
-	{ "name": "minNotional", "type": "double" },
-	{ "name": "applyToMarket", "type": "bool" },
-	{ "name": "avgPriceMins", "type": "int32_t" }
-]
+  "name": "ExchangeFilter",
+  "type": "item",
+  "values": [
+    {
+      "name": "filterType",
+      "type": "FilterType"
+    },
+    {
+      "name": "minNotional",
+      "type": "double"
+    },
+    {
+      "name": "applyToMarket",
+      "type": "bool"
+    },
+    {
+      "name": "avgPriceMins",
+      "type": "int32_t"
+    }
+  ]
 }

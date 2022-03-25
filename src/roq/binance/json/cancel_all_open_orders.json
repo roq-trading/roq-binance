@@ -1,7 +1,10 @@
 {
-"name": "CancelAllOpenOrders",
-"type": "array",
-"values": [
-	{ "name": "data", "type": "std::span<Order>" }
-]
+  "name": "CancelAllOpenOrders",
+  "type": "array",
+  "values": [
+    {
+      "name": "data",
+      "type": "std::span<Order>"
+    }
+  ]
 }

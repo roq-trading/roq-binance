@@ -1,22 +1,85 @@
 {
-"name": "Filter",
-"type": "item",
-"values": [
-	{ "name": "filterType", "type": "FilterType" },
-	{ "name": "minNotional", "type": "double", "comment": "MIN_NOTIONAL" },
-	{ "name": "applyToMarket", "type": "bool", "comment": "MIN_NOTIONAL" },
-	{ "name": "avgPriceMins", "type": "int32_t", "comment": "MIN_NOTIONAL,PERCENT_PRICE" },
-	{ "name": "minPrice", "type": "double", "comment": "PRICE_FILTER" },
-	{ "name": "maxPrice", "type": "double", "comment": "PRICE_FILTER" },
-	{ "name": "tickSize", "type": "double", "comment": "PRICE_FILTER" },
-	{ "name": "multiplierUp", "type": "double", "comment": "PERCENT_PRICE" },
-	{ "name": "multiplierDown", "type": "double", "comment": "PERCENT_PRICE" },
-	{ "name": "minQty", "type": "double", "comment": "LOT_SIZE,MARKET_LOT_SIZE" },
-	{ "name": "maxQty", "type": "double", "comment": "LOT_SIZE,MARKET_LOT_SIZE" },
-	{ "name": "stepSize", "type": "double", "comment": "LOT_SIZE,MARKET_LOT_SIZE" },
-	{ "name": "limit", "type": "int32_t", "comment": "ICEBERG_PARTS" },
-	{ "name": "maxNumOrders", "type": "int32_t", "comment": "MAX_NUM_ORDERS" },
-	{ "name": "maxNumAlgoOrders", "type": "int32_t", "comment": "MAX_NUM_ALGO_ORDERS" },
-	{ "name": "maxPosition", "type": "double", "comment": "MAX_POSITION" }
-]
+  "name": "Filter",
+  "type": "item",
+  "values": [
+    {
+      "name": "filterType",
+      "type": "FilterType"
+    },
+    {
+      "name": "minNotional",
+      "type": "double",
+      "comment": "MIN_NOTIONAL"
+    },
+    {
+      "name": "applyToMarket",
+      "type": "bool",
+      "comment": "MIN_NOTIONAL"
+    },
+    {
+      "name": "avgPriceMins",
+      "type": "int32_t",
+      "comment": "MIN_NOTIONAL,PERCENT_PRICE"
+    },
+    {
+      "name": "minPrice",
+      "type": "double",
+      "comment": "PRICE_FILTER"
+    },
+    {
+      "name": "maxPrice",
+      "type": "double",
+      "comment": "PRICE_FILTER"
+    },
+    {
+      "name": "tickSize",
+      "type": "double",
+      "comment": "PRICE_FILTER"
+    },
+    {
+      "name": "multiplierUp",
+      "type": "double",
+      "comment": "PERCENT_PRICE"
+    },
+    {
+      "name": "multiplierDown",
+      "type": "double",
+      "comment": "PERCENT_PRICE"
+    },
+    {
+      "name": "minQty",
+      "type": "double",
+      "comment": "LOT_SIZE,MARKET_LOT_SIZE"
+    },
+    {
+      "name": "maxQty",
+      "type": "double",
+      "comment": "LOT_SIZE,MARKET_LOT_SIZE"
+    },
+    {
+      "name": "stepSize",
+      "type": "double",
+      "comment": "LOT_SIZE,MARKET_LOT_SIZE"
+    },
+    {
+      "name": "limit",
+      "type": "int32_t",
+      "comment": "ICEBERG_PARTS"
+    },
+    {
+      "name": "maxNumOrders",
+      "type": "int32_t",
+      "comment": "MAX_NUM_ORDERS"
+    },
+    {
+      "name": "maxNumAlgoOrders",
+      "type": "int32_t",
+      "comment": "MAX_NUM_ALGO_ORDERS"
+    },
+    {
+      "name": "maxPosition",
+      "type": "double",
+      "comment": "MAX_POSITION"
+    }
+  ]
 }

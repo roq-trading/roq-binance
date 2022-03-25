@@ -1,9 +1,18 @@
 {
-"name": "Depth",
-"type": "comp",
-"values": [
-	{ "name": "lastUpdateId", "type": "int64_t" },
-	{ "name": "bids", "type": "std::span<DepthItem>" },
-	{ "name": "asks", "type": "std::span<DepthItem>" }
-]
+  "name": "Depth",
+  "type": "comp",
+  "values": [
+    {
+      "name": "lastUpdateId",
+      "type": "int64_t"
+    },
+    {
+      "name": "bids",
+      "type": "std::span<DepthItem>"
+    },
+    {
+      "name": "asks",
+      "type": "std::span<DepthItem>"
+    }
+  ]
 }
