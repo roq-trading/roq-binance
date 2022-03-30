@@ -27,7 +27,7 @@ namespace binance {
 namespace {
 const auto NAME = "rest"sv;
 
-const auto SUPPORTS = Mask{
+const Mask<SupportType> SUPPORTS{
     SupportType::REFERENCE_DATA,
     SupportType::MARKET_STATUS,
 };
@@ -149,7 +149,7 @@ void Rest::operator()(ConnectionStatus status) {
     StreamStatus stream_status{
         .stream_id = stream_id_,
         .account = {},
-        .supports = SUPPORTS.get(),
+        .supports = SUPPORTS,
         .status = status_,
         .type = StreamType::REST,
         .priority = Priority::PRIMARY,
