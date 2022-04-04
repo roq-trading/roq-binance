@@ -27,7 +27,7 @@ namespace binance {
 namespace {
 const auto NAME = "rest"sv;
 
-const Mask<SupportType> SUPPORTS{
+const Mask SUPPORTS{
     SupportType::REFERENCE_DATA,
     SupportType::MARKET_STATUS,
 };
