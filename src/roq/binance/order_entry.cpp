@@ -648,7 +648,7 @@ void OrderEntry::operator()(
   auto external_order_id = fmt::format("{}"sv, new_order.order_id);
   auto order_status = json::map(new_order.status);
   auto remaining_quantity = new_order.orig_qty - new_order.executed_qty;
-  auto average_traded_price = utils::compare(new_order.executed_qty, 0.0) == 0
+  auto average_traded_price = utils::is_zero(new_order.executed_qty)
                                   ? NaN
                                   : (new_order.cummulative_quote_qty / new_order.executed_qty);
   auto last_traded_quantity = NaN;  // note! could also use new_order.executed_qty
@@ -658,7 +658,7 @@ void OrderEntry::operator()(
     last_traded_quantity += item.qty;
     tmp += item.price * item.qty;
   }
-  if (utils::compare(last_traded_quantity, 0.0) > 0)
+  if (utils::is_greater(last_traded_quantity, 0.0))
     last_traded_price = tmp / last_traded_quantity;
   oms::Response response{
       .type = RequestType::CREATE_ORDER,

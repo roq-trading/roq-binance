@@ -237,11 +237,10 @@ void DropCopy::operator()(const Trace<json::ExecutionReport> &event) {
     auto time_in_force = json::map(execution_report.time_in_force);
     auto external_order_id = fmt::format("{}"sv, execution_report.order_id);
     auto status = json::map(execution_report.current_order_status);
-    auto average_traded_price =
-        utils::compare(execution_report.cumulative_filled_quantity, 0.0) == 0
-            ? NaN
-            : (execution_report.cumulative_quote_asset_transacted_quantity /
-               execution_report.cumulative_filled_quantity);
+    auto average_traded_price = utils::is_zero(execution_report.cumulative_filled_quantity)
+                                    ? NaN
+                                    : (execution_report.cumulative_quote_asset_transacted_quantity /
+                                       execution_report.cumulative_filled_quantity);
     auto last_liquidity = execution_report.is_trade_maker ? Liquidity::MAKER : Liquidity::TAKER;
     oms::OrderUpdate order_update{
         .account = security_.get_account(),
