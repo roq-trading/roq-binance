@@ -44,35 +44,36 @@ bool UserStreamParser::try_dispatch(
     EventType event_type,
     const TraceInfo &trace_info) {
   switch (event_type) {
-    case EventType::UNDEFINED:
-    case EventType::UNKNOWN:
-    case EventType::AGG_TRADE:
-    case EventType::TRADE:
-    case EventType::_24HR_MINI_TICKER:
-    case EventType::BOOK_TICKER:
-    case EventType::DEPTH_UPDATE:
+    using enum EventType::type_t;
+    case UNDEFINED:
+    case UNKNOWN:
+    case AGG_TRADE:
+    case TRADE:
+    case _24HR_MINI_TICKER:
+    case BOOK_TICKER:
+    case DEPTH_UPDATE:
       log::fatal("Unexpected"sv);
       break;
-    case EventType::OUTBOUND_ACCOUNT_POSITION: {
+    case OUTBOUND_ACCOUNT_POSITION: {
       auto outbound_account_position =
           core::json::Parser::create<OutboundAccountPosition>(message, buffer);
       Trace event(trace_info, outbound_account_position);
       handler(event);
       break;
     }
-    case EventType::BALANCE_UPDATE: {
+    case BALANCE_UPDATE: {
       auto balance_update = core::json::Parser::create<BalanceUpdate>(message);
       Trace event(trace_info, balance_update);
       handler(event);
       break;
     }
-    case EventType::EXECUTION_REPORT: {
+    case EXECUTION_REPORT: {
       auto execution_report = core::json::Parser::create<ExecutionReport>(message);
       Trace event(trace_info, execution_report);
       handler(event);
       break;
     }
-    case EventType::LIST_STATUS: {
+    case LIST_STATUS: {
       auto list_status = core::json::Parser::create<ListStatus>(message, buffer);
       Trace event(trace_info, list_status);
       handler(event);

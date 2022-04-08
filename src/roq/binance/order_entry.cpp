@@ -217,13 +217,14 @@ void OrderEntry::operator()(ConnectionStatus status) {
 
 uint32_t OrderEntry::download(OrderEntryState state) {
   switch (state) {
-    case OrderEntryState::UNDEFINED:
+    using enum OrderEntryState;
+    case UNDEFINED:
       assert(false);
       break;
-    case OrderEntryState::LISTEN_KEY:
+    case LISTEN_KEY:
       get_listen_key();
       return 1;
-    case OrderEntryState::DONE:
+    case DONE:
       (*this)(ConnectionStatus::READY);
       assert(!ready_);
       ready_ = true;
@@ -575,14 +576,15 @@ void OrderEntry::new_order_ack(
       auto [status, category, body] = response.result();
       log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
       switch (category) {
-        case core::http::Category::SUCCESS: {  // 2xx
+        using enum core::http::Category;
+        case SUCCESS: {  // 2xx
           core::json::Buffer buffer(decode_buffer_);
           auto new_order = core::json::Parser::create<json::NewOrder>(body, buffer);
           Trace event(trace_info, new_order);
           (*this)(event, user_id, order_id, version);
           break;
         }
-        case core::http::Category::CLIENT_ERROR: {  // 4xx
+        case CLIENT_ERROR: {  // 4xx
           auto error = core::json::Parser::create<json::Error>(body);
           oms::Response response{
               .type = RequestType::CREATE_ORDER,
@@ -773,13 +775,14 @@ void OrderEntry::cancel_order_ack(
       auto [status, category, body] = response.result();
       log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
       switch (category) {
-        case core::http::Category::SUCCESS: {  // 2xx
+        using enum core::http::Category;
+        case SUCCESS: {  // 2xx
           auto cancel_order = core::json::Parser::create<json::CancelOrder>(body);
           Trace event(trace_info, cancel_order);
           (*this)(event, user_id, order_id, version);
           break;
         }
-        case core::http::Category::CLIENT_ERROR: {  // 4xx
+        case CLIENT_ERROR: {  // 4xx
           auto error = core::json::Parser::create<json::Error>(body);
           auto error_2 = json::guess_error(error.code);
           oms::Response response{
@@ -946,14 +949,15 @@ void OrderEntry::cancel_all_open_orders_ack(const Trace<core::web::Response> &ev
       auto [status, category, body] = response.result();
       log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
       switch (category) {
-        case core::http::Category::SUCCESS: {  // 2xx
+        using enum core::http::Category;
+        case SUCCESS: {  // 2xx
           core::json::Buffer buffer(decode_buffer_);
           auto cancel_order = core::json::Parser::create<json::CancelAllOpenOrders>(body, buffer);
           Trace event(trace_info, cancel_order);
           (*this)(event);
           break;
         }
-        case core::http::Category::CLIENT_ERROR: {  // 4xx
+        case CLIENT_ERROR: {  // 4xx
           auto error = core::json::Parser::create<json::Error>(body);
           log::warn("error={}"sv, error);
           // XXX HANS ???

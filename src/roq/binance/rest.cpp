@@ -161,13 +161,14 @@ void Rest::operator()(ConnectionStatus status) {
 
 uint32_t Rest::download(RestState state) {
   switch (state) {
-    case RestState::UNDEFINED:
+    using enum RestState;
+    case UNDEFINED:
       assert(false);
       break;
-    case RestState::EXCHANGE_INFO:
+    case EXCHANGE_INFO:
       get_exchange_info();
       return 1;
-    case RestState::DONE:
+    case DONE:
       (*this)(ConnectionStatus::READY);
       assert(!ready_);
       ready_ = true;
@@ -251,37 +252,38 @@ void Rest::operator()(const Trace<json::ExchangeInfo> &event) {
     auto filters = core::json::Parser::create<json::Filters>(item.filters, buffer);
     for (auto &filter : filters.data) {
       switch (filter.filter_type) {
-        case json::FilterType::UNDEFINED:
+        using enum json::FilterType::type_t;
+        case UNDEFINED:
           break;
-        case json::FilterType::UNKNOWN:
+        case UNKNOWN:
           break;
-        case json::FilterType::PRICE_FILTER:
+        case PRICE_FILTER:
           tick_size = filter.tick_size;
           break;
-        case json::FilterType::PERCENT_PRICE:
+        case PERCENT_PRICE:
           break;
-        case json::FilterType::LOT_SIZE:
+        case LOT_SIZE:
           min_trade_vol = filter.min_qty;
           max_trade_vol = filter.max_qty;
           trade_vol_step_size = filter.step_size;
           break;
-        case json::FilterType::MIN_NOTIONAL:
+        case MIN_NOTIONAL:
           break;
-        case json::FilterType::ICEBERG_PARTS:
+        case ICEBERG_PARTS:
           break;
-        case json::FilterType::MARKET_LOT_SIZE:
+        case MARKET_LOT_SIZE:
           break;
-        case json::FilterType::MAX_NUM_ORDERS:
+        case MAX_NUM_ORDERS:
           break;
-        case json::FilterType::MAX_NUM_ALGO_ORDERS:
+        case MAX_NUM_ALGO_ORDERS:
           break;
-        case json::FilterType::MAX_NUM_ICEBERG_ORDERS:
+        case MAX_NUM_ICEBERG_ORDERS:
           break;
-        case json::FilterType::MAX_POSITION:
+        case MAX_POSITION:
           break;
-        case json::FilterType::EXCHANGE_MAX_NUM_ORDERS:
+        case EXCHANGE_MAX_NUM_ORDERS:
           break;
-        case json::FilterType::EXCHANGE_MAX_NUM_ALGO_ORDERS:
+        case EXCHANGE_MAX_NUM_ALGO_ORDERS:
           break;
       }
     }

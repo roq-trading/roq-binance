@@ -122,12 +122,13 @@ void Gateway::operator()(const Event<Disconnected> &event) {
       message_info.source_name,
       disconnected.order_cancel_policy);
   switch (disconnected.order_cancel_policy) {
-    case OrderCancelPolicy::UNDEFINED:
+    using enum OrderCancelPolicy;
+    case UNDEFINED:
       break;
-    case OrderCancelPolicy::MANAGED_ORDERS:
+    case MANAGED_ORDERS:
       log::warn("*** CANCEL MANAGED ORDERS NOT IMPLEMENTED ***"sv);
       break;
-    case OrderCancelPolicy::BY_ACCOUNT:
+    case BY_ACCOUNT:
       log::warn("*** CANCEL ALL ACCOUNT ORDERS ***"sv);
       for (auto &[account, order_entry] : order_entry_) {
         if (dispatcher_.can_user_trade_account(account, message_info.source)) {

@@ -34,16 +34,17 @@ void MarketStreamParser::dispatch(
     for (auto [key, value] : std::get<core::json::object_t>(root)) {
       auto field = Field(key);
       switch (field) {
-        case Field::UNDEFINED:
+        using enum Field::type_t;
+        case UNDEFINED:
           log::fatal("Unexpected"sv);
           break;
-        case Field::UNKNOWN:
+        case UNKNOWN:
 #if !defined(NDEBUG)
           log::fatal(R"(Unknown key="{}")"sv, key);
 #endif
           // XXX CALLBACK ?????????????
           break;
-        case Field::ERROR:
+        case ERROR:
           if (id >= 0) {
             Error error(value);
             Trace event(trace_info, error);
@@ -51,7 +52,7 @@ void MarketStreamParser::dispatch(
             handler(event, id);
           }
           break;
-        case Field::RESULT:
+        case RESULT:
           if (id >= 0) {
             Result result(value, buffer);
             Trace event(trace_info, result);
@@ -59,10 +60,10 @@ void MarketStreamParser::dispatch(
             handler(event, id);
           }
           break;
-        case Field::ID:
+        case ID:
           id = std::get<decltype(id)>(value);
           break;
-        case Field::STREAM: {
+        case STREAM: {
           // <symbol>@<stream>[@<freq>]
           auto full_name = std::get<std::string_view>(value);
           auto idx0 = full_name.find('@');  // <symbol>@<stream>
@@ -80,46 +81,47 @@ void MarketStreamParser::dispatch(
           stream = Stream(name);
           break;
         }
-        case Field::DATA:
+        case DATA:
           switch (stream) {
-            case Stream::UNDEFINED:
+            using enum Stream::type_t;
+            case UNDEFINED:
               break;  // wait
-            case Stream::UNKNOWN:
+            case UNKNOWN:
 #if !defined(NDEBUG)
               log::fatal("Unexpected (unknown stream)"sv);
 #endif
               return;
-            case Stream::AGG_TRADE: {
+            case AGG_TRADE: {
               AggTrade agg_trade(value);
               dispatched = true;
               Trace event(trace_info, agg_trade);
               handler(event);
               break;
             }
-            case Stream::TRADE: {
+            case TRADE: {
               Trade trade(value);
               dispatched = true;
               Trace event(trace_info, trade);
               handler(event);
               break;
             }
-            case Stream::MINI_TICKER: {
+            case MINI_TICKER: {
               MiniTicker mini_ticker(value);
               dispatched = true;
               Trace event(trace_info, mini_ticker);
               handler(event);
               break;
             }
-            case Stream::BOOK_TICKER: {
+            case BOOK_TICKER: {
               BookTicker book_ticker(value);
               dispatched = true;
               Trace event(trace_info, book_ticker);
               handler(event);
               break;
             }
-            case Stream::DEPTH5:
-            case Stream::DEPTH10:
-            case Stream::DEPTH20: {
+            case DEPTH5:
+            case DEPTH10:
+            case DEPTH20: {
               assert(!std::empty(symbol));
               Depth depth(value, buffer);
               dispatched = true;
@@ -127,7 +129,7 @@ void MarketStreamParser::dispatch(
               handler(event, symbol);
               break;
             }
-            case Stream::DEPTH: {
+            case DEPTH: {
               assert(!std::empty(symbol));
               DepthUpdate depth_update(value, buffer);
               dispatched = true;
