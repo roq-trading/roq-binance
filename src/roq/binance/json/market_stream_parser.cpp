@@ -39,7 +39,7 @@ void MarketStreamParser::dispatch(
           log::fatal("Unexpected"sv);
           break;
         case UNKNOWN:
-#if !defined(NDEBUG)
+#ifndef NDEBUG
           log::fatal(R"(Unknown key="{}")"sv, key);
 #endif
           // XXX CALLBACK ?????????????
@@ -87,7 +87,7 @@ void MarketStreamParser::dispatch(
             case UNDEFINED:
               break;  // wait
             case UNKNOWN:
-#if !defined(NDEBUG)
+#ifndef NDEBUG
               log::fatal("Unexpected (unknown stream)"sv);
 #endif
               return;
