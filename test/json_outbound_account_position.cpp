@@ -83,10 +83,10 @@ TEST_CASE("json_outbound_account_position_stream", "[json_outbound_account_posit
   core::json::Buffer buffer(buffer_);
   auto trace_info = server::create_trace_info();
   struct MyHandler final : public json::UserStreamParser::Handler {
-    void operator()(const Trace<json::OutboundAccountPosition> &) override { found_ = true; }
-    void operator()(const Trace<json::BalanceUpdate> &) override { FAIL(); }
-    void operator()(const Trace<json::ExecutionReport> &) override { FAIL(); }
-    void operator()(const Trace<json::ListStatus> &) override { FAIL(); }
+    void operator()(const Trace<json::OutboundAccountPosition const> &) override { found_ = true; }
+    void operator()(const Trace<json::BalanceUpdate const> &) override { FAIL(); }
+    void operator()(const Trace<json::ExecutionReport const> &) override { FAIL(); }
+    void operator()(const Trace<json::ListStatus const> &) override { FAIL(); }
 
     operator bool() const { return found_; }
 
@@ -123,7 +123,7 @@ TEST_CASE("json_outbound_account_position_stream_maker_new", "[json_outbound_acc
   core::json::Buffer buffer(buffer_);
   auto trace_info = server::create_trace_info();
   struct MyHandler final : public json::UserStreamParser::Handler {
-    void operator()(const Trace<json::OutboundAccountPosition> &event) override {
+    void operator()(const Trace<json::OutboundAccountPosition const> &event) override {
       found_ = true;
       auto &[_, obj] = event;
       CHECK(obj.event_type == json::EventType::OUTBOUND_ACCOUNT_POSITION);
@@ -144,9 +144,9 @@ TEST_CASE("json_outbound_account_position_stream_maker_new", "[json_outbound_acc
       CHECK(b2.free_amount == 1.31364261_a);
       CHECK(b2.locked_amount == 19.83_a);
     }
-    void operator()(const Trace<json::BalanceUpdate> &) override { FAIL(); }
-    void operator()(const Trace<json::ExecutionReport> &) override { FAIL(); }
-    void operator()(const Trace<json::ListStatus> &) override { FAIL(); }
+    void operator()(const Trace<json::BalanceUpdate const> &) override { FAIL(); }
+    void operator()(const Trace<json::ExecutionReport const> &) override { FAIL(); }
+    void operator()(const Trace<json::ListStatus const> &) override { FAIL(); }
 
     operator bool() const { return found_; }
 
@@ -185,7 +185,7 @@ TEST_CASE(
   core::json::Buffer buffer(buffer_);
   auto trace_info = server::create_trace_info();
   struct MyHandler final : public json::UserStreamParser::Handler {
-    void operator()(const Trace<json::OutboundAccountPosition> &event) override {
+    void operator()(const Trace<json::OutboundAccountPosition const> &event) override {
       found_ = true;
       auto &[_, obj] = event;
       CHECK(obj.event_type == json::EventType::OUTBOUND_ACCOUNT_POSITION);
@@ -206,9 +206,9 @@ TEST_CASE(
       CHECK(b2.free_amount == 1.31364261_a);
       CHECK(b2.locked_amount == 0.0_a);
     }
-    void operator()(const Trace<json::BalanceUpdate> &) override { FAIL(); }
-    void operator()(const Trace<json::ExecutionReport> &) override { FAIL(); }
-    void operator()(const Trace<json::ListStatus> &) override { FAIL(); }
+    void operator()(const Trace<json::BalanceUpdate const> &) override { FAIL(); }
+    void operator()(const Trace<json::ExecutionReport const> &) override { FAIL(); }
+    void operator()(const Trace<json::ListStatus const> &) override { FAIL(); }
 
     operator bool() const { return found_; }
 

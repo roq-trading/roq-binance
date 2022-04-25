@@ -131,7 +131,7 @@ void DropCopy::operator()(const core::web::ClientSocket::Close &) {
 
 void DropCopy::operator()(const core::web::ClientSocket::Latency &latency) {
   auto trace_info = server::create_trace_info();
-  ExternalLatency external_latency{
+  const auto external_latency = ExternalLatency{
       .stream_id = stream_id_,
       .account = security_.get_account(),
       .latency = latency.sample,
@@ -151,7 +151,7 @@ void DropCopy::operator()(const core::web::ClientSocket::Binary &) {
 void DropCopy::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     auto trace_info = server::create_trace_info();
-    StreamStatus stream_status{
+    const auto stream_status = StreamStatus{
         .stream_id = stream_id_,
         .account = security_.get_account(),
         .supports = SUPPORTS,
@@ -203,12 +203,12 @@ void DropCopy::parse(const std::string_view &message) {
   });
 }
 
-void DropCopy::operator()(const Trace<json::OutboundAccountPosition> &event) {
+void DropCopy::operator()(const Trace<json::OutboundAccountPosition const> &event) {
   profile_.outbound_account_position([&]() {
     auto &[trace_info, outbound_account_position] = event;
     log::info<2>("outbound_account_position={}"sv, outbound_account_position);
     for (auto &item : outbound_account_position.balances) {
-      FundsUpdate funds_update{
+      const auto funds_update = FundsUpdate{
           .stream_id = stream_id_,
           .account = security_.get_account(),
           .currency = item.asset,
@@ -221,7 +221,7 @@ void DropCopy::operator()(const Trace<json::OutboundAccountPosition> &event) {
   });
 }
 
-void DropCopy::operator()(const Trace<json::BalanceUpdate> &event) {
+void DropCopy::operator()(const Trace<json::BalanceUpdate const> &event) {
   profile_.balance_update([&]() {
     auto &[trace_info, balance_update] = event;
     log::info<2>("balance_update={}"sv, balance_update);
@@ -229,7 +229,7 @@ void DropCopy::operator()(const Trace<json::BalanceUpdate> &event) {
   });
 }
 
-void DropCopy::operator()(const Trace<json::ExecutionReport> &event) {
+void DropCopy::operator()(const Trace<json::ExecutionReport const> &event) {
   profile_.execution_report([&]() {
     // auto &[trace_info, execution_report] = event;  // XXX clang13
     auto &trace_info = event.trace_info;
@@ -286,7 +286,7 @@ void DropCopy::operator()(const Trace<json::ExecutionReport> &event) {
                     .price = execution_report.last_executed_price,
                     .liquidity = {},
                 };
-                TradeUpdate trade_update{
+                const auto trade_update = TradeUpdate{
                     .stream_id = stream_id_,
                     .account = order.account,
                     .order_id = order.order_id,
@@ -312,7 +312,7 @@ void DropCopy::operator()(const Trace<json::ExecutionReport> &event) {
   });
 }
 
-void DropCopy::operator()(const Trace<json::ListStatus> &event) {
+void DropCopy::operator()(const Trace<json::ListStatus const> &event) {
   profile_.list_status([&]() {
     auto &[trace_info, list_status] = event;
     log::info<2>("list_status={}"sv, list_status);

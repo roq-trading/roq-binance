@@ -25,15 +25,15 @@ namespace json {
 struct MarketStreamParser final {
   struct Handler {
     // response
-    virtual void operator()(const Trace<Error> &, int32_t id) = 0;
-    virtual void operator()(const Trace<Result> &, int32_t id) = 0;
+    virtual void operator()(const Trace<Error const> &, int32_t id) = 0;
+    virtual void operator()(const Trace<Result const> &, int32_t id) = 0;
     // update
-    virtual void operator()(const Trace<AggTrade> &) = 0;
-    virtual void operator()(const Trace<Trade> &) = 0;
-    virtual void operator()(const Trace<MiniTicker> &) = 0;
-    virtual void operator()(const Trace<BookTicker> &) = 0;
-    virtual void operator()(const Trace<Depth> &, const std::string_view &symbol) = 0;
-    virtual void operator()(const Trace<DepthUpdate> &) = 0;
+    virtual void operator()(const Trace<AggTrade const> &) = 0;
+    virtual void operator()(const Trace<Trade const> &) = 0;
+    virtual void operator()(const Trace<MiniTicker const> &) = 0;
+    virtual void operator()(const Trace<BookTicker const> &) = 0;
+    virtual void operator()(const Trace<Depth const> &, const std::string_view &symbol) = 0;
+    virtual void operator()(const Trace<DepthUpdate const> &) = 0;
   };
 
   static void dispatch(

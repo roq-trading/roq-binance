@@ -148,7 +148,7 @@ void MarketData::operator()(const core::web::ClientSocket::Close &) {
 
 void MarketData::operator()(const core::web::ClientSocket::Latency &latency) {
   auto trace_info = server::create_trace_info();
-  ExternalLatency external_latency{
+  const auto external_latency = ExternalLatency{
       .stream_id = stream_id_,
       .account = {},
       .latency = latency.sample,
@@ -168,7 +168,7 @@ void MarketData::operator()(const core::web::ClientSocket::Binary &) {
 void MarketData::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     auto trace_info = server::create_trace_info();
-    StreamStatus stream_status{
+    const auto stream_status = StreamStatus{
         .stream_id = stream_id_,
         .account = {},
         .supports = SUPPORTS,
@@ -230,21 +230,21 @@ void MarketData::parse(const std::string_view &message) {
   });
 }
 
-void MarketData::operator()(const Trace<json::Error> &event, int32_t id) {
+void MarketData::operator()(const Trace<json::Error const> &event, int32_t id) {
   profile_.error([&]() {
     auto &[trace_info, error] = event;
     log::warn("error={}, id={}"sv, error, id);
   });
 }
 
-void MarketData::operator()(const Trace<json::Result> &event, int32_t id) {
+void MarketData::operator()(const Trace<json::Result const> &event, int32_t id) {
   profile_.result([&]() {
     auto &[trace_info, result] = event;
     log::info("error={}, id={}"sv, result, id);
   });
 }
 
-void MarketData::operator()(const Trace<json::AggTrade> &event) {
+void MarketData::operator()(const Trace<json::AggTrade const> &event) {
   profile_.agg_trade([&]() {
     auto &[trace_info, agg_trade] = event;
     log::info<3>("agg_trade={}"sv, agg_trade);
@@ -267,7 +267,7 @@ void MarketData::operator()(const Trace<json::AggTrade> &event) {
   });
 }
 
-void MarketData::operator()(const Trace<json::Trade> &event) {
+void MarketData::operator()(const Trace<json::Trade const> &event) {
   profile_.trade([&]() {
     auto &[trace_info, trade] = event;
     log::info<3>("trade={}"sv, trade);
@@ -290,7 +290,7 @@ void MarketData::operator()(const Trace<json::Trade> &event) {
   });
 }
 
-void MarketData::operator()(const Trace<json::MiniTicker> &event) {
+void MarketData::operator()(const Trace<json::MiniTicker const> &event) {
   profile_.mini_ticker([&]() {
     auto &[trace_info, mini_ticker] = event;
     log::info<3>("mini_ticker={}"sv, mini_ticker);
@@ -324,7 +324,7 @@ void MarketData::operator()(const Trace<json::MiniTicker> &event) {
   });
 }
 
-void MarketData::operator()(const Trace<json::BookTicker> &event) {
+void MarketData::operator()(const Trace<json::BookTicker const> &event) {
   profile_.book_ticker([&]() {
     auto &[trace_info, book_ticker] = event;
     log::info<3>("book_ticker={}"sv, book_ticker);
@@ -347,11 +347,11 @@ void MarketData::operator()(const Trace<json::BookTicker> &event) {
 }
 
 void MarketData::operator()(
-    const Trace<json::Depth> &, [[maybe_unused]] const std::string_view &symbol) {
+    const Trace<json::Depth const> &, [[maybe_unused]] const std::string_view &symbol) {
   log::fatal("Unexpected"sv);
 }
 
-void MarketData::operator()(const Trace<json::DepthUpdate> &event) {
+void MarketData::operator()(const Trace<json::DepthUpdate const> &event) {
   profile_.depth_update([&]() {
     // auto &[trace_info, depth_update] = event;  // XXX clang13
     auto &trace_info = event.trace_info;
@@ -376,7 +376,7 @@ void MarketData::operator()(const Trace<json::DepthUpdate> &event) {
           previous_sequence,
           [&](auto &bids, auto &asks) {  // update
             // log::debug(R"(PUBLISH UPDATE symbol="{}")"sv, symbol);
-            MarketByPriceUpdate market_by_price_update{
+            const auto market_by_price_update = MarketByPriceUpdate{
                 .stream_id = stream_id_,
                 .exchange = Flags::exchange(),
                 .symbol = symbol,
@@ -393,7 +393,7 @@ void MarketData::operator()(const Trace<json::DepthUpdate> &event) {
           },
           [&](auto &bids, auto &asks, auto sequence) {  // snapshot
             log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
-            MarketByPriceUpdate market_by_price_update{
+            const auto market_by_price_update = MarketByPriceUpdate{
                 .stream_id = stream_id_,
                 .exchange = Flags::exchange(),
                 .symbol = symbol,

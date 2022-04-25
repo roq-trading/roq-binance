@@ -46,7 +46,7 @@ void MarketStreamParser::dispatch(
           break;
         case ERROR:
           if (id >= 0) {
-            Error error(value);
+            const Error error(value);
             Trace event(trace_info, error);
             dispatched = true;
             handler(event, id);
@@ -54,7 +54,7 @@ void MarketStreamParser::dispatch(
           break;
         case RESULT:
           if (id >= 0) {
-            Result result(value, buffer);
+            const Result result(value, buffer);
             Trace event(trace_info, result);
             dispatched = true;
             handler(event, id);
@@ -92,28 +92,28 @@ void MarketStreamParser::dispatch(
 #endif
               return;
             case AGG_TRADE: {
-              AggTrade agg_trade(value);
+              const AggTrade agg_trade(value);
               dispatched = true;
               Trace event(trace_info, agg_trade);
               handler(event);
               break;
             }
             case TRADE: {
-              Trade trade(value);
+              const Trade trade(value);
               dispatched = true;
               Trace event(trace_info, trade);
               handler(event);
               break;
             }
             case MINI_TICKER: {
-              MiniTicker mini_ticker(value);
+              const MiniTicker mini_ticker(value);
               dispatched = true;
               Trace event(trace_info, mini_ticker);
               handler(event);
               break;
             }
             case BOOK_TICKER: {
-              BookTicker book_ticker(value);
+              const BookTicker book_ticker(value);
               dispatched = true;
               Trace event(trace_info, book_ticker);
               handler(event);
@@ -123,7 +123,7 @@ void MarketStreamParser::dispatch(
             case DEPTH10:
             case DEPTH20: {
               assert(!std::empty(symbol));
-              Depth depth(value, buffer);
+              const Depth depth(value, buffer);
               dispatched = true;
               Trace event(trace_info, depth);
               handler(event, symbol);
@@ -131,7 +131,7 @@ void MarketStreamParser::dispatch(
             }
             case DEPTH: {
               assert(!std::empty(symbol));
-              DepthUpdate depth_update(value, buffer);
+              const DepthUpdate depth_update(value, buffer);
               dispatched = true;
               Trace event(trace_info, depth_update);
               handler(event);

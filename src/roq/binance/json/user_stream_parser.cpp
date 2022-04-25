@@ -55,26 +55,26 @@ bool UserStreamParser::try_dispatch(
       log::fatal("Unexpected"sv);
       break;
     case OUTBOUND_ACCOUNT_POSITION: {
-      auto outbound_account_position =
+      const auto outbound_account_position =
           core::json::Parser::create<OutboundAccountPosition>(message, buffer);
       Trace event(trace_info, outbound_account_position);
       handler(event);
       break;
     }
     case BALANCE_UPDATE: {
-      auto balance_update = core::json::Parser::create<BalanceUpdate>(message);
+      const auto balance_update = core::json::Parser::create<BalanceUpdate>(message);
       Trace event(trace_info, balance_update);
       handler(event);
       break;
     }
     case EXECUTION_REPORT: {
-      auto execution_report = core::json::Parser::create<ExecutionReport>(message);
+      const auto execution_report = core::json::Parser::create<ExecutionReport>(message);
       Trace event(trace_info, execution_report);
       handler(event);
       break;
     }
     case LIST_STATUS: {
-      auto list_status = core::json::Parser::create<ListStatus>(message, buffer);
+      const auto list_status = core::json::Parser::create<ListStatus>(message, buffer);
       Trace event(trace_info, list_status);
       handler(event);
       break;
