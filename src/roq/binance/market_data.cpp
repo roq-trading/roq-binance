@@ -148,7 +148,7 @@ void MarketData::operator()(const core::web::ClientSocket::Close &) {
 
 void MarketData::operator()(const core::web::ClientSocket::Latency &latency) {
   auto trace_info = server::create_trace_info();
-  const auto external_latency = ExternalLatency{
+  const ExternalLatency external_latency{
       .stream_id = stream_id_,
       .account = {},
       .latency = latency.sample,
@@ -168,7 +168,7 @@ void MarketData::operator()(const core::web::ClientSocket::Binary &) {
 void MarketData::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     auto trace_info = server::create_trace_info();
-    const auto stream_status = StreamStatus{
+    const StreamStatus stream_status{
         .stream_id = stream_id_,
         .account = {},
         .supports = SUPPORTS,
@@ -376,7 +376,7 @@ void MarketData::operator()(const Trace<json::DepthUpdate const> &event) {
           previous_sequence,
           [&](auto &bids, auto &asks) {  // update
             // log::debug(R"(PUBLISH UPDATE symbol="{}")"sv, symbol);
-            const auto market_by_price_update = MarketByPriceUpdate{
+            const MarketByPriceUpdate market_by_price_update{
                 .stream_id = stream_id_,
                 .exchange = Flags::exchange(),
                 .symbol = symbol,
@@ -393,7 +393,7 @@ void MarketData::operator()(const Trace<json::DepthUpdate const> &event) {
           },
           [&](auto &bids, auto &asks, auto sequence) {  // snapshot
             log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
-            const auto market_by_price_update = MarketByPriceUpdate{
+            const MarketByPriceUpdate market_by_price_update{
                 .stream_id = stream_id_,
                 .exchange = Flags::exchange(),
                 .symbol = symbol,

@@ -131,7 +131,7 @@ void DropCopy::operator()(const core::web::ClientSocket::Close &) {
 
 void DropCopy::operator()(const core::web::ClientSocket::Latency &latency) {
   auto trace_info = server::create_trace_info();
-  const auto external_latency = ExternalLatency{
+  const ExternalLatency external_latency{
       .stream_id = stream_id_,
       .account = security_.get_account(),
       .latency = latency.sample,
@@ -151,7 +151,7 @@ void DropCopy::operator()(const core::web::ClientSocket::Binary &) {
 void DropCopy::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     auto trace_info = server::create_trace_info();
-    const auto stream_status = StreamStatus{
+    const StreamStatus stream_status{
         .stream_id = stream_id_,
         .account = security_.get_account(),
         .supports = SUPPORTS,
@@ -208,7 +208,7 @@ void DropCopy::operator()(const Trace<json::OutboundAccountPosition const> &even
     auto &[trace_info, outbound_account_position] = event;
     log::info<2>("outbound_account_position={}"sv, outbound_account_position);
     for (auto &item : outbound_account_position.balances) {
-      const auto funds_update = FundsUpdate{
+      const FundsUpdate funds_update{
           .stream_id = stream_id_,
           .account = security_.get_account(),
           .currency = item.asset,
@@ -286,7 +286,7 @@ void DropCopy::operator()(const Trace<json::ExecutionReport const> &event) {
                     .price = execution_report.last_executed_price,
                     .liquidity = {},
                 };
-                const auto trade_update = TradeUpdate{
+                const TradeUpdate trade_update{
                     .stream_id = stream_id_,
                     .account = order.account,
                     .order_id = order.order_id,

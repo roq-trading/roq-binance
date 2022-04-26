@@ -190,7 +190,7 @@ void OrderEntry::operator()(const core::web::Client::Disconnected &) {
 
 void OrderEntry::operator()(const core::web::Client::Latency &latency) {
   auto trace_info = server::create_trace_info();
-  const auto external_latency = ExternalLatency{
+  const ExternalLatency external_latency{
       .stream_id = stream_id_,
       .account = security_.get_account(),
       .latency = latency.sample,
@@ -202,7 +202,7 @@ void OrderEntry::operator()(const core::web::Client::Latency &latency) {
 void OrderEntry::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     auto trace_info = server::create_trace_info();
-    const auto stream_status = StreamStatus{
+    const StreamStatus stream_status{
         .stream_id = stream_id_,
         .account = security_.get_account(),
         .supports = SUPPORTS,
@@ -293,7 +293,7 @@ void OrderEntry::operator()(const Trace<json::ListenKey const> &event) {
   if (utils::update(listen_key_, listen_key.listen_key)) {
     if (initial) {
       log::info<1>(R"(Listen key has been acquired (value="{}"))"sv, listen_key_);
-      const auto listen_key_update = ListenKeyUpdate{
+      const ListenKeyUpdate listen_key_update{
           .account = security_.get_account(),
           .listen_key = listen_key.listen_key,
       };
@@ -357,7 +357,7 @@ void OrderEntry::operator()(const Trace<json::Account const> &event) {
   log::info<2>("account={}"sv, account);
   for (auto &item : account.balances) {
     // log::debug("item={}"sv, item);
-    const auto funds_update = FundsUpdate{
+    const FundsUpdate funds_update{
         .stream_id = stream_id_,
         .account = security_.get_account(),
         .currency = item.asset,
@@ -434,7 +434,7 @@ void OrderEntry::operator()(const Trace<json::OpenOrders const> &event) {
     auto time_in_force = json::map(order.time_in_force);
     auto external_order_id = fmt::format("{}"sv, order.order_id);
     auto order_status = json::map(order.status);
-    const auto order_update = oms::OrderUpdate{
+    const oms::OrderUpdate order_update{
         .account = security_.get_account(),
         .exchange = Flags::exchange(),
         .symbol = order.symbol,
@@ -546,7 +546,7 @@ void OrderEntry::new_order(
     log::debug(R"(body="{}")"sv, body);
     auto query = security_.create_query(body);
     auto headers = security_.create_headers();
-    const auto request = core::web::Request{
+    const core::web::Request request{
         .method = method,
         .path = path,
         .query = query,
@@ -591,7 +591,7 @@ void OrderEntry::new_order_ack(
         }
         case CLIENT_ERROR: {  // 4xx
           auto error = core::json::Parser::create<json::Error>(body);
-          const auto response = oms::Response{
+          const oms::Response response{
               .type = RequestType::CREATE_ORDER,
               .origin = Origin::EXCHANGE,
               .status = RequestStatus::REJECTED,
@@ -619,7 +619,7 @@ void OrderEntry::new_order_ack(
       }
     } catch (core::NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
-      const auto response = oms::Response{
+      const oms::Response response{
           .type = RequestType::CREATE_ORDER,
           .origin = Origin::GATEWAY,
           .status = e.request_status(),
@@ -670,7 +670,7 @@ void OrderEntry::operator()(
   }
   if (utils::is_greater(last_traded_quantity, 0.0))
     last_traded_price = tmp / last_traded_quantity;
-  const auto response = oms::Response{
+  const oms::Response response{
       .type = RequestType::CREATE_ORDER,
       .origin = Origin::EXCHANGE,
       .status = RequestStatus::ACCEPTED,
@@ -681,7 +681,7 @@ void OrderEntry::operator()(
       .quantity = NaN,
       .price = NaN,
   };
-  const auto order_update = oms::OrderUpdate{
+  const oms::OrderUpdate order_update{
       .account = security_.get_account(),
       .exchange = Flags::exchange(),
       .symbol = new_order.symbol,
@@ -750,7 +750,7 @@ void OrderEntry::cancel_order(
     log::debug(R"(body="{}")"sv, body);
     auto query = security_.create_query(body);
     auto headers = security_.create_headers();
-    const auto request = core::web::Request{
+    const core::web::Request request{
         .method = method,
         .path = path,
         .query = query,
@@ -796,7 +796,7 @@ void OrderEntry::cancel_order_ack(
         case CLIENT_ERROR: {  // 4xx
           auto error = core::json::Parser::create<json::Error>(body);
           auto error_2 = json::guess_error(error.code);
-          const auto response = oms::Response{
+          const oms::Response response{
               .type = RequestType::CANCEL_ORDER,
               .origin = Origin::EXCHANGE,
               .status = RequestStatus::REJECTED,
@@ -870,7 +870,7 @@ void OrderEntry::operator()(
   auto time_in_force = json::map(cancel_order.time_in_force);
   auto external_order_id = fmt::format("{}"sv, cancel_order.order_id);
   auto order_status = json::map(cancel_order.status);
-  const auto response = oms::Response{
+  const oms::Response response{
       .type = RequestType::CANCEL_ORDER,
       .origin = Origin::EXCHANGE,
       .status = RequestStatus::ACCEPTED,
@@ -881,7 +881,7 @@ void OrderEntry::operator()(
       .quantity = NaN,
       .price = NaN,
   };
-  const auto order_update = oms::OrderUpdate{
+  const oms::OrderUpdate order_update{
       .account = security_.get_account(),
       .exchange = Flags::exchange(),
       .symbol = cancel_order.symbol,
@@ -937,7 +937,7 @@ void OrderEntry::cancel_all_open_orders(
       log::debug(R"(body="{}")"sv, body);
       auto query = security_.create_query(body);
       auto headers = security_.create_headers();
-      const auto request = core::web::Request{
+      const core::web::Request request{
           .method = method,
           .path = path,
           .query = query,
@@ -1001,7 +1001,7 @@ void OrderEntry::operator()(const Trace<json::CancelAllOpenOrders const> &event)
     auto time_in_force = json::map(order.time_in_force);
     auto external_order_id = fmt::format("{}"sv, order.order_id);
     auto order_status = json::map(order.status);
-    const auto order_update = oms::OrderUpdate{
+    const oms::OrderUpdate order_update{
         .account = security_.get_account(),
         .exchange = Flags::exchange(),
         .symbol = order.symbol,

@@ -134,7 +134,7 @@ void Rest::operator()(const core::web::Client::Disconnected &) {
 
 void Rest::operator()(const core::web::Client::Latency &latency) {
   auto trace_info = server::create_trace_info();
-  const auto external_latency = ExternalLatency{
+  const ExternalLatency external_latency{
       .stream_id = stream_id_,
       .account = {},
       .latency = latency.sample,
@@ -146,7 +146,7 @@ void Rest::operator()(const core::web::Client::Latency &latency) {
 void Rest::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     auto trace_info = server::create_trace_info();
-    const auto stream_status = StreamStatus{
+    const StreamStatus stream_status{
         .stream_id = stream_id_,
         .account = {},
         .supports = SUPPORTS,
@@ -297,7 +297,7 @@ void Rest::operator()(const Trace<json::ExchangeInfo const> &event) {
     if (all_symbols_.emplace(symbol).second)  // only include new
       symbols.emplace_back(symbol);
     ++counter;
-    const auto reference_data = ReferenceData{
+    const ReferenceData reference_data{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
         .symbol = item.symbol,
@@ -324,7 +324,7 @@ void Rest::operator()(const Trace<json::ExchangeInfo const> &event) {
     };
     create_trace_and_dispatch(handler_, trace_info, reference_data, false);
     auto trading_status = json::map(item.status);
-    const auto market_status = MarketStatus{
+    const MarketStatus market_status{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
         .symbol = item.symbol,
@@ -407,7 +407,7 @@ void Rest::operator()(const Trace<json::Depth const> &event, const std::string_v
         sequence,
         [&](auto &bids, auto &asks, auto sequence) {  // snapshot
           log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
-          const auto market_by_price_update = MarketByPriceUpdate{
+          const MarketByPriceUpdate market_by_price_update{
               .stream_id = stream_id_,
               .exchange = Flags::exchange(),
               .symbol = symbol,
