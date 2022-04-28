@@ -28,18 +28,15 @@ struct UserStreamParser final {
   };
 
   static void dispatch(
-      Handler &handler,
-      const std::string_view &message,
-      core::json::Buffer &buffer,
-      const TraceInfo &trace);
+      Handler &, const std::string_view &message, core::json::Buffer &, const TraceInfo &);
 
  private:
   static bool try_dispatch(
-      UserStreamParser::Handler &handler,
+      UserStreamParser::Handler &,
       const std::string_view &message,
-      core::json::Buffer &buffer,
-      EventType event_type,
-      const TraceInfo &trace);
+      core::json::Buffer &,
+      EventType,
+      const TraceInfo &);
 };
 
 }  // namespace json

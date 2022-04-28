@@ -25,7 +25,7 @@ void UserStreamParser::dispatch(
   auto &data = user_stream.data;
   core::json::Parser parser(data);
   auto root = parser.root();
-  for (auto [key, value] : std::get<core::json::object_t>(root)) {
+  for (auto [key, value] : std::get<core::json::Object>(root)) {
     if (key.compare("e"sv) != 0)
       continue;
     EventType event_type(value);
