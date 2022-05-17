@@ -287,6 +287,8 @@ void Rest::operator()(const Trace<json::ExchangeInfo const> &event) {
           break;
         case EXCHANGE_MAX_NUM_ALGO_ORDERS:
           break;
+        case TRAILING_DELTA:
+          break;
       }
     }
     // note! convert to lowercase

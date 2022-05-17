@@ -80,6 +80,26 @@
       "name": "maxPosition",
       "type": "double",
       "comment": "MAX_POSITION"
+    },
+    {
+      "name": "minTrailingAboveDelta",
+      "type": "double",
+      "comment": "TRAILING_DELTA"
+    },
+    {
+      "name": "maxTrailingAboveDelta",
+      "type": "double",
+      "comment": "TRAILING_DELTA"
+    },
+    {
+      "name": "minTrailingBelowDelta",
+      "type": "double",
+      "comment": "TRAILING_DELTA"
+    },
+    {
+      "name": "maxTrailingBelowDelta",
+      "type": "double",
+      "comment": "TRAILING_DELTA"
     }
   ]
 }

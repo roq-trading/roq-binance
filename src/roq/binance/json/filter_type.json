@@ -37,6 +37,9 @@
     },
     {
       "name": "EXCHANGE_MAX_NUM_ALGO_ORDERS"
+    },
+    {
+      "name": "TRAILING_DELTA"
     }
   ]
 }
