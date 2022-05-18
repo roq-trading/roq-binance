@@ -16,9 +16,9 @@ namespace json {
 
 void UserStreamParser::dispatch(
     UserStreamParser::Handler &handler,
-    const std::string_view &message,
+    std::string_view const &message,
     core::json::Buffer &buffer,
-    const TraceInfo &trace_info) {
+    TraceInfo const &trace_info) {
   // XXX HANS this is bad... 3 levels of parsing
   // XXX HANS buffer will not be used for first iteration
   auto user_stream = core::json::Parser::create<UserStream>(message, buffer);
@@ -39,10 +39,10 @@ void UserStreamParser::dispatch(
 
 bool UserStreamParser::try_dispatch(
     UserStreamParser::Handler &handler,
-    const std::string_view &message,
+    std::string_view const &message,
     core::json::Buffer &buffer,
     EventType event_type,
-    const TraceInfo &trace_info) {
+    TraceInfo const &trace_info) {
   switch (event_type) {
     using enum EventType::type_t;
     case UNDEFINED:
@@ -55,26 +55,25 @@ bool UserStreamParser::try_dispatch(
       log::fatal("Unexpected"sv);
       break;
     case OUTBOUND_ACCOUNT_POSITION: {
-      const auto outbound_account_position =
-          core::json::Parser::create<OutboundAccountPosition>(message, buffer);
+      auto const outbound_account_position = core::json::Parser::create<OutboundAccountPosition>(message, buffer);
       Trace event(trace_info, outbound_account_position);
       handler(event);
       break;
     }
     case BALANCE_UPDATE: {
-      const auto balance_update = core::json::Parser::create<BalanceUpdate>(message);
+      auto const balance_update = core::json::Parser::create<BalanceUpdate>(message);
       Trace event(trace_info, balance_update);
       handler(event);
       break;
     }
     case EXECUTION_REPORT: {
-      const auto execution_report = core::json::Parser::create<ExecutionReport>(message);
+      auto const execution_report = core::json::Parser::create<ExecutionReport>(message);
       Trace event(trace_info, execution_report);
       handler(event);
       break;
     }
     case LIST_STATUS: {
-      const auto list_status = core::json::Parser::create<ListStatus>(message, buffer);
+      auto const list_status = core::json::Parser::create<ListStatus>(message, buffer);
       Trace event(trace_info, list_status);
       handler(event);
       break;

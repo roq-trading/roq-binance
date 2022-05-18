@@ -36,10 +36,10 @@ class Rest final : public core::web::Client::Handler {
   };
 
   struct Handler {
-    virtual void operator()(const Trace<StreamStatus const> &) = 0;
-    virtual void operator()(const Trace<ExternalLatency const> &) = 0;
-    virtual void operator()(const Trace<ReferenceData const> &, bool is_last) = 0;
-    virtual void operator()(const Trace<MarketStatus const> &, bool is_last) = 0;
+    virtual void operator()(Trace<StreamStatus const> const &) = 0;
+    virtual void operator()(Trace<ExternalLatency const> const &) = 0;
+    virtual void operator()(Trace<ReferenceData const> const &, bool is_last) = 0;
+    virtual void operator()(Trace<MarketStatus const> const &, bool is_last) = 0;
     // cross-communication
     virtual void operator()(SymbolsUpdate &) = 0;
   };
@@ -47,32 +47,32 @@ class Rest final : public core::web::Client::Handler {
   Rest(Handler &, core::io::Context &, uint16_t stream_id, Shared &);
 
   Rest(Rest &&) = delete;
-  Rest(const Rest &) = delete;
+  Rest(Rest const &) = delete;
 
   bool ready() const { return status_ == ConnectionStatus::READY; }
 
-  void operator()(const Event<Start> &);
-  void operator()(const Event<Stop> &);
-  void operator()(const Event<Timer> &);
+  void operator()(Event<Start> const &);
+  void operator()(Event<Stop> const &);
+  void operator()(Event<Timer> const &);
 
   void operator()(metrics::Writer &);
 
  protected:
-  void operator()(const core::web::Client::Connected &);
-  void operator()(const core::web::Client::Disconnected &);
-  void operator()(const core::web::Client::Latency &);
+  void operator()(core::web::Client::Connected const &);
+  void operator()(core::web::Client::Disconnected const &);
+  void operator()(core::web::Client::Latency const &);
 
   void operator()(ConnectionStatus);
 
   uint32_t download(RestState state);
 
   void get_exchange_info();
-  void get_exchange_info_ack(const Trace<core::web::Response const> &, uint32_t sequence);
-  void operator()(const Trace<json::ExchangeInfo const> &);
+  void get_exchange_info_ack(Trace<core::web::Response const> const &, uint32_t sequence);
+  void operator()(Trace<json::ExchangeInfo const> const &);
 
-  void get_depth(const std::string_view &symbol);
-  void get_depth_ack(const Trace<core::web::Response const> &, const std::string_view &symbol);
-  void operator()(const Trace<json::Depth const> &, const std::string_view &symbol);
+  void get_depth(std::string_view const &symbol);
+  void get_depth_ack(Trace<core::web::Response const> const &, std::string_view const &symbol);
+  void operator()(Trace<json::Depth const> const &, std::string_view const &symbol);
 
   void check_request_queue(std::chrono::nanoseconds now);
 

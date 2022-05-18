@@ -29,63 +29,61 @@
 namespace roq {
 namespace binance {
 
-class MarketData final : public core::web::ClientSocket::Handler,
-                         public json::MarketStreamParser::Handler {
+class MarketData final : public core::web::ClientSocket::Handler, public json::MarketStreamParser::Handler {
  public:
   struct Handler {
-    virtual void operator()(const Trace<StreamStatus const> &) = 0;
-    virtual void operator()(const Trace<ExternalLatency const> &) = 0;
-    virtual void operator()(const Trace<TopOfBook const> &, bool is_last) = 0;
-    virtual void operator()(
-        const Trace<MarketByPriceUpdate const> &, bool is_last, bool refresh) = 0;
-    virtual void operator()(const Trace<TradeSummary const> &, bool is_last) = 0;
-    virtual void operator()(const Trace<StatisticsUpdate const> &, bool is_last) = 0;
+    virtual void operator()(Trace<StreamStatus const> const &) = 0;
+    virtual void operator()(Trace<ExternalLatency const> const &) = 0;
+    virtual void operator()(Trace<TopOfBook const> const &, bool is_last) = 0;
+    virtual void operator()(Trace<MarketByPriceUpdate const> const &, bool is_last, bool refresh) = 0;
+    virtual void operator()(Trace<TradeSummary const> const &, bool is_last) = 0;
+    virtual void operator()(Trace<StatisticsUpdate const> const &, bool is_last) = 0;
   };
 
   MarketData(Handler &, core::io::Context &, uint32_t stream_id, Shared &, size_t index);
 
   MarketData(MarketData &&) = delete;
-  MarketData(const MarketData &) = delete;
+  MarketData(MarketData const &) = delete;
 
   bool ready() const { return status_ == ConnectionStatus::READY; }
 
-  void operator()(const Event<Start> &);
-  void operator()(const Event<Stop> &);
-  void operator()(const Event<Timer> &);
+  void operator()(Event<Start> const &);
+  void operator()(Event<Stop> const &);
+  void operator()(Event<Timer> const &);
 
   void operator()(metrics::Writer &);
 
   void subscribe(size_t start_from = 0);
 
  protected:
-  void operator()(const core::web::ClientSocket::Connected &) override;
-  void operator()(const core::web::ClientSocket::Disconnected &) override;
-  void operator()(const core::web::ClientSocket::Ready &) override;
-  void operator()(const core::web::ClientSocket::Close &) override;
-  void operator()(const core::web::ClientSocket::Latency &) override;
-  void operator()(const core::web::ClientSocket::Text &) override;
-  void operator()(const core::web::ClientSocket::Binary &) override;
+  void operator()(core::web::ClientSocket::Connected const &) override;
+  void operator()(core::web::ClientSocket::Disconnected const &) override;
+  void operator()(core::web::ClientSocket::Ready const &) override;
+  void operator()(core::web::ClientSocket::Close const &) override;
+  void operator()(core::web::ClientSocket::Latency const &) override;
+  void operator()(core::web::ClientSocket::Text const &) override;
+  void operator()(core::web::ClientSocket::Binary const &) override;
 
  private:
   void operator()(ConnectionStatus);
 
-  void subscribe(const std::span<Symbol const> &symbols);
+  void subscribe(std::span<Symbol const> const &symbols);
 
-  void subscribe(const std::span<Symbol const> &symbols, const std::string_view &channel);
+  void subscribe(std::span<Symbol const> const &symbols, std::string_view const &channel);
 
-  void parse(const std::string_view &message);
+  void parse(std::string_view const &message);
 
   // response
-  void operator()(const Trace<json::Error const> &, int32_t id) override;
-  void operator()(const Trace<json::Result const> &, int32_t id) override;
+  void operator()(Trace<json::Error const> const &, int32_t id) override;
+  void operator()(Trace<json::Result const> const &, int32_t id) override;
 
   // update
-  void operator()(const Trace<json::AggTrade const> &) override;
-  void operator()(const Trace<json::Trade const> &) override;
-  void operator()(const Trace<json::MiniTicker const> &) override;
-  void operator()(const Trace<json::BookTicker const> &) override;
-  void operator()(const Trace<json::Depth const> &, const std::string_view &symbol) override;
-  void operator()(const Trace<json::DepthUpdate const> &) override;
+  void operator()(Trace<json::AggTrade const> const &) override;
+  void operator()(Trace<json::Trade const> const &) override;
+  void operator()(Trace<json::MiniTicker const> const &) override;
+  void operator()(Trace<json::BookTicker const> const &) override;
+  void operator()(Trace<json::Depth const> const &, std::string_view const &symbol) override;
+  void operator()(Trace<json::DepthUpdate const> const &) override;
 
   void check_subscribe_queue(std::chrono::nanoseconds now);
 
@@ -106,8 +104,7 @@ class MarketData final : public core::web::ClientSocket::Handler,
     core::metrics::Counter disconnect;
   } counter_;
   struct {
-    core::metrics::Profile parse, error, result, agg_trade, trade, mini_ticker, book_ticker, depth,
-        depth_update;
+    core::metrics::Profile parse, error, result, agg_trade, trade, mini_ticker, book_ticker, depth, depth_update;
   } profile_;
   struct {
     core::metrics::Latency ping, heartbeat;

@@ -16,14 +16,14 @@ namespace binance {
 
 class Security final {
  public:
-  Security(const Config &, const std::string_view &account);
+  Security(Config const &, std::string_view const &account);
 
   Security(Security &&) = delete;
-  Security(const Security &) = delete;
+  Security(Security const &) = delete;
 
   std::string_view get_account() const { return account_; }
 
-  std::string create_query(const std::string_view &body) { return hasher_.create_query(body); }
+  std::string create_query(std::string_view const &body) { return hasher_.create_query(body); }
   std::string create_query() { return create_query({}); }
 
   std::string_view create_headers() const { return hasher_.create_headers(); }

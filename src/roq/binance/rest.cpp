@@ -25,7 +25,7 @@ namespace roq {
 namespace binance {
 
 namespace {
-const auto NAME = "rest"sv;
+auto const NAME = "rest"sv;
 
 const Mask SUPPORTS{
     SupportType::REFERENCE_DATA,
@@ -33,7 +33,7 @@ const Mask SUPPORTS{
 };
 
 struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(const std::string_view &group, const std::string_view &function)
+  explicit create_metrics(std::string_view const &group, std::string_view const &function)
       : core::metrics::Factory(server::Flags::name(), group, function) {}
 };
 
@@ -83,19 +83,18 @@ Rest::Rest(Handler &handler, core::io::Context &context, uint16_t stream_id, Sha
       latency_{
           .ping = create_metrics(name_, "ping"sv),
       },
-      shared_(shared),
-      download_(Flags::rest_request_timeout(), [this](auto state) { return download(state); }) {
+      shared_(shared), download_(Flags::rest_request_timeout(), [this](auto state) { return download(state); }) {
 }
 
-void Rest::operator()(const Event<Start> &) {
+void Rest::operator()(Event<Start> const &) {
   connection_.start();
 }
 
-void Rest::operator()(const Event<Stop> &) {
+void Rest::operator()(Event<Stop> const &) {
   connection_.stop();
 }
 
-void Rest::operator()(const Event<Timer> &event) {
+void Rest::operator()(Event<Timer> const &event) {
   auto now = event.value.now;
   connection_.refresh(now);
   if (ready())
@@ -115,7 +114,7 @@ void Rest::operator()(metrics::Writer &writer) {
       .write(latency_.ping, metrics::LATENCY);
 }
 
-void Rest::operator()(const core::web::Client::Connected &) {
+void Rest::operator()(core::web::Client::Connected const &) {
   if (download_.downloading()) {
     download_.bump();
   } else {
@@ -124,7 +123,7 @@ void Rest::operator()(const core::web::Client::Connected &) {
   }
 }
 
-void Rest::operator()(const core::web::Client::Disconnected &) {
+void Rest::operator()(core::web::Client::Disconnected const &) {
   ++counter_.disconnect;
   ready_ = false;
   (*this)(ConnectionStatus::DISCONNECTED);
@@ -132,7 +131,7 @@ void Rest::operator()(const core::web::Client::Disconnected &) {
     download_.reset();
 }
 
-void Rest::operator()(const core::web::Client::Latency &latency) {
+void Rest::operator()(core::web::Client::Latency const &latency) {
   auto trace_info = server::create_trace_info();
   const ExternalLatency external_latency{
       .stream_id = stream_id_,
@@ -197,18 +196,15 @@ void Rest::get_exchange_info() {
         .quality_of_service = {},
     };
     auto sequence = download_.sequence();
-    connection_(
-        "exchange_info"sv,
-        request,
-        [this, sequence]([[maybe_unused]] auto &request_id, auto &response) {
-          auto trace_info = server::create_trace_info();
-          Trace event(trace_info, response);
-          get_exchange_info_ack(event, sequence);
-        });
+    connection_("exchange_info"sv, request, [this, sequence]([[maybe_unused]] auto &request_id, auto &response) {
+      auto trace_info = server::create_trace_info();
+      Trace event(trace_info, response);
+      get_exchange_info_ack(event, sequence);
+    });
   });
 }
 
-void Rest::get_exchange_info_ack(const Trace<core::web::Response const> &event, uint32_t sequence) {
+void Rest::get_exchange_info_ack(Trace<core::web::Response const> const &event, uint32_t sequence) {
   profile_.exchange_info_ack([&]() {
     auto &[trace_info, response] = event;
     auto state = RestState::EXCHANGE_INFO;
@@ -232,12 +228,12 @@ void Rest::get_exchange_info_ack(const Trace<core::web::Response const> &event, 
   });
 }
 
-void Rest::operator()(const Trace<json::ExchangeInfo const> &event) {
+void Rest::operator()(Trace<json::ExchangeInfo const> const &event) {
   auto &[trace_info, exchange_info] = event;
   log::info<2>("exchange_info={}"sv, exchange_info);
   std::vector<Symbol> symbols;
   size_t counter = {};
-  for (const auto &item : exchange_info.symbols) {
+  for (auto const &item : exchange_info.symbols) {
     log::info<2>("item={}"sv, item);
     if (shared_.discard_symbol(item.symbol)) {
       log::info<1>(R"(Drop symbol="{}")"sv, item.symbol);
@@ -293,9 +289,7 @@ void Rest::operator()(const Trace<json::ExchangeInfo const> &event) {
     }
     // note! convert to lowercase
     std::string symbol(item.symbol);
-    std::transform(std::begin(symbol), std::end(symbol), std::begin(symbol), [](auto c) {
-      return std::tolower(c);
-    });
+    std::transform(std::begin(symbol), std::end(symbol), std::begin(symbol), [](auto c) { return std::tolower(c); });
     if (all_symbols_.emplace(symbol).second)  // only include new
       symbols.emplace_back(symbol);
     ++counter;
@@ -345,7 +339,7 @@ void Rest::operator()(const Trace<json::ExchangeInfo const> &event) {
 
 // depth
 
-void Rest::get_depth(const std::string_view &symbol) {
+void Rest::get_depth(std::string_view const &symbol) {
   profile_.depth([&]() {
     auto method = core::http::Method::GET;
     auto path = "/api/v3/depth"sv;
@@ -361,9 +355,7 @@ void Rest::get_depth(const std::string_view &symbol) {
         .quality_of_service = {},
     };
     connection_(
-        "depth"sv,
-        request,
-        [this, symbol = std::string{symbol}]([[maybe_unused]] auto &request_id, auto &response) {
+        "depth"sv, request, [this, symbol = std::string{symbol}]([[maybe_unused]] auto &request_id, auto &response) {
           auto trace_info = server::create_trace_info();
           Trace event(trace_info, response);
           get_depth_ack(event, symbol);
@@ -371,8 +363,7 @@ void Rest::get_depth(const std::string_view &symbol) {
   });
 }
 
-void Rest::get_depth_ack(
-    const Trace<core::web::Response const> &event, const std::string_view &symbol) {
+void Rest::get_depth_ack(Trace<core::web::Response const> const &event, std::string_view const &symbol) {
   profile_.depth_ack([&]() {
     auto &[trace_info, response] = event;
     try {
@@ -390,7 +381,7 @@ void Rest::get_depth_ack(
   });
 }
 
-void Rest::operator()(const Trace<json::Depth const> &event, const std::string_view &symbol) {
+void Rest::operator()(Trace<json::Depth const> const &event, std::string_view const &symbol) {
   // auto &[trace_info, depth] = event; // XXX clang13
   auto &trace_info = event.trace_info;
   auto &depth = event.value;
@@ -423,14 +414,11 @@ void Rest::operator()(const Trace<json::Depth const> &event, const std::string_v
               .checksum = {},
           };
           Trace event(trace_info, market_by_price_update);
-          shared_(event, true, [&](auto &market_by_price) {
-            collector.apply(market_by_price, sequence, false);
-          });
+          shared_(event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, false); });
         },
         [&](auto retries) {  // request
           log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
-          if (Flags::ws_mbp_request_max_retries() &&
-              Flags::ws_mbp_request_max_retries() < retries) {
+          if (Flags::ws_mbp_request_max_retries() && Flags::ws_mbp_request_max_retries() < retries) {
             log::fatal(R"(Unexpected: symbol="{}", retries={})"sv, symbol, retries);
           }
           shared_.depth_request_queue.emplace_back(symbol);

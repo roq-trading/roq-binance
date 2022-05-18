@@ -15,12 +15,12 @@ namespace tools {
 
 class Hasher final {
  public:
-  Hasher(const std::string_view &key, const std::string_view &secret);
+  Hasher(std::string_view const &key, std::string_view const &secret);
 
   Hasher(Hasher &&) = delete;
-  Hasher(const Hasher &) = delete;
+  Hasher(Hasher const &) = delete;
 
-  std::string create_query(const std::string_view &body);
+  std::string create_query(std::string_view const &body);
 
   std::string_view create_headers() const { return headers_; }
 

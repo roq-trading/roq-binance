@@ -21,9 +21,9 @@ namespace json {
 
 void MarketStreamParser::dispatch(
     MarketStreamParser::Handler &handler,
-    const std::string_view &message,
+    std::string_view const &message,
     core::json::Buffer &buffer,
-    const TraceInfo &trace_info) {
+    TraceInfo const &trace_info) {
   int64_t id = -1;
   std::string symbol;  // allocating because we need uppercase
   auto stream = Stream::UNDEFINED;
@@ -71,9 +71,8 @@ void MarketStreamParser::dispatch(
             log::fatal(R"(Unexpected: name="{}")"sv, full_name);
           symbol = std::string_view(std::begin(full_name), idx0);
           // note! convert to uppercase
-          std::transform(std::begin(symbol), std::end(symbol), std::begin(symbol), [](auto c) {
-            return std::toupper(c);
-          });
+          std::transform(
+              std::begin(symbol), std::end(symbol), std::begin(symbol), [](auto c) { return std::toupper(c); });
           auto idx1 = full_name.find('@', idx0 + 1);
           auto name = std::string_view(
               std::begin(full_name) + idx0 + 1,

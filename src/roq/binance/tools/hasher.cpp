@@ -19,11 +19,11 @@ namespace roq {
 namespace binance {
 namespace tools {
 
-Hasher::Hasher(const std::string_view &key, const std::string_view &secret)
+Hasher::Hasher(std::string_view const &key, std::string_view const &secret)
     : key_(key), hmac_(secret), headers_(fmt::format("X-MBX-APIKEY: {}\r\n"sv, key_)) {
 }
 
-std::string Hasher::create_query(const std::string_view &body) {
+std::string Hasher::create_query(std::string_view const &body) {
   auto now = core::clock::GetRealTime<std::chrono::milliseconds>();
   auto timestamp = fmt::format("timestamp={}"sv, now.count());
   hmac_.clear();

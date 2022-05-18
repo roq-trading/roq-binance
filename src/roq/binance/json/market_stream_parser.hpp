@@ -25,19 +25,18 @@ namespace json {
 struct MarketStreamParser final {
   struct Handler {
     // response
-    virtual void operator()(const Trace<Error const> &, int32_t id) = 0;
-    virtual void operator()(const Trace<Result const> &, int32_t id) = 0;
+    virtual void operator()(Trace<Error const> const &, int32_t id) = 0;
+    virtual void operator()(Trace<Result const> const &, int32_t id) = 0;
     // update
-    virtual void operator()(const Trace<AggTrade const> &) = 0;
-    virtual void operator()(const Trace<Trade const> &) = 0;
-    virtual void operator()(const Trace<MiniTicker const> &) = 0;
-    virtual void operator()(const Trace<BookTicker const> &) = 0;
-    virtual void operator()(const Trace<Depth const> &, const std::string_view &symbol) = 0;
-    virtual void operator()(const Trace<DepthUpdate const> &) = 0;
+    virtual void operator()(Trace<AggTrade const> const &) = 0;
+    virtual void operator()(Trace<Trade const> const &) = 0;
+    virtual void operator()(Trace<MiniTicker const> const &) = 0;
+    virtual void operator()(Trace<BookTicker const> const &) = 0;
+    virtual void operator()(Trace<Depth const> const &, std::string_view const &symbol) = 0;
+    virtual void operator()(Trace<DepthUpdate const> const &) = 0;
   };
 
-  static void dispatch(
-      Handler &, const std::string_view &message, core::json::Buffer &, const TraceInfo &);
+  static void dispatch(Handler &, std::string_view const &message, core::json::Buffer &, TraceInfo const &);
 };
 
 }  // namespace json

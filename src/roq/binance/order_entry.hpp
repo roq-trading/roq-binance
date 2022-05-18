@@ -43,93 +43,81 @@ class OrderEntry final : public core::web::Client::Handler {
   };
 
   struct Handler {
-    virtual void operator()(const Trace<StreamStatus const> &) = 0;
-    virtual void operator()(const Trace<ExternalLatency const> &) = 0;
-    virtual void operator()(const Trace<ReferenceData const> &, bool is_last) = 0;
-    virtual void operator()(const Trace<MarketStatus const> &, bool is_last) = 0;
-    virtual void operator()(const Trace<TradeUpdate const> &, bool is_last, uint8_t user_id) = 0;
-    virtual void operator()(const Trace<FundsUpdate const> &, bool is_last) = 0;
+    virtual void operator()(Trace<StreamStatus const> const &) = 0;
+    virtual void operator()(Trace<ExternalLatency const> const &) = 0;
+    virtual void operator()(Trace<ReferenceData const> const &, bool is_last) = 0;
+    virtual void operator()(Trace<MarketStatus const> const &, bool is_last) = 0;
+    virtual void operator()(Trace<TradeUpdate const> const &, bool is_last, uint8_t user_id) = 0;
+    virtual void operator()(Trace<FundsUpdate const> const &, bool is_last) = 0;
     // cross-communication
-    virtual void operator()(const ListenKeyUpdate &) = 0;
+    virtual void operator()(ListenKeyUpdate const &) = 0;
   };
 
   OrderEntry(Handler &, core::io::Context &, uint16_t stream_id, Security &, Shared &, Request &);
 
   OrderEntry(OrderEntry &&) = delete;
-  OrderEntry(const OrderEntry &) = delete;
+  OrderEntry(OrderEntry const &) = delete;
 
   bool ready() const { return status_ == ConnectionStatus::READY; }
   bool downloading() const { return download_account_ || download_orders_; }
 
-  void operator()(const Event<Start> &);
-  void operator()(const Event<Stop> &);
-  void operator()(const Event<Timer> &);
+  void operator()(Event<Start> const &);
+  void operator()(Event<Stop> const &);
+  void operator()(Event<Timer> const &);
 
   void operator()(metrics::Writer &);
 
+  uint16_t operator()(Event<CreateOrder> const &, oms::Order const &, std::string_view const &request_id);
   uint16_t operator()(
-      const Event<CreateOrder> &, const oms::Order &, const std::string_view &request_id);
+      Event<ModifyOrder> const &,
+      oms::Order const &,
+      std::string_view const &request_id,
+      std::string_view const &previous_request_id);
   uint16_t operator()(
-      const Event<ModifyOrder> &,
-      const oms::Order &,
-      const std::string_view &request_id,
-      const std::string_view &previous_request_id);
-  uint16_t operator()(
-      const Event<CancelOrder> &,
-      const oms::Order &,
-      const std::string_view &request_id,
-      const std::string_view &previous_request_id);
-  uint16_t operator()(const Event<CancelAllOrders> &, const std::string_view &request_id);
+      Event<CancelOrder> const &,
+      oms::Order const &,
+      std::string_view const &request_id,
+      std::string_view const &previous_request_id);
+  uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id);
 
  protected:
-  void operator()(const core::web::Client::Connected &);
-  void operator()(const core::web::Client::Disconnected &);
-  void operator()(const core::web::Client::Latency &);
+  void operator()(core::web::Client::Connected const &);
+  void operator()(core::web::Client::Disconnected const &);
+  void operator()(core::web::Client::Latency const &);
 
   void operator()(ConnectionStatus);
 
   uint32_t download(OrderEntryState state);
 
   void get_listen_key();
-  void get_listen_key_ack(const Trace<core::web::Response const> &, uint32_t sequence);
-  void operator()(const Trace<json::ListenKey const> &);
+  void get_listen_key_ack(Trace<core::web::Response const> const &, uint32_t sequence);
+  void operator()(Trace<json::ListenKey const> const &);
 
   void get_account();
-  void get_account_ack(const Trace<core::web::Response const> &);
-  void operator()(const Trace<json::Account const> &);
+  void get_account_ack(Trace<core::web::Response const> const &);
+  void operator()(Trace<json::Account const> const &);
 
   void get_open_orders();
-  void get_open_orders_ack(const Trace<core::web::Response const> &);
-  void operator()(const Trace<json::OpenOrders const> &);
+  void get_open_orders_ack(Trace<core::web::Response const> const &);
+  void operator()(Trace<json::OpenOrders const> const &);
 
   void refresh_listen_key();
 
-  void new_order(
-      const Event<CreateOrder> &, const oms::Order &order, const std::string_view &request_id);
-  void new_order_ack(
-      const Trace<core::web::Response const> &,
-      uint8_t user_id,
-      uint32_t order_id,
-      uint32_t version);
-  void operator()(
-      const Trace<json::NewOrder const> &, uint8_t user_id, uint32_t order_id, uint32_t version);
+  void new_order(Event<CreateOrder> const &, oms::Order const &order, std::string_view const &request_id);
+  void new_order_ack(Trace<core::web::Response const> const &, uint8_t user_id, uint32_t order_id, uint32_t version);
+  void operator()(Trace<json::NewOrder const> const &, uint8_t user_id, uint32_t order_id, uint32_t version);
 
   void cancel_order(
-      const Event<CancelOrder> &,
-      const oms::Order &,
-      const std::string_view &request_id,
-      const std::string_view &previous_request_id);
-  void cancel_order_ack(
-      const Trace<core::web::Response const> &,
-      uint8_t user_id,
-      uint32_t order_id,
-      uint32_t version);
-  void operator()(
-      const Trace<json::CancelOrder const> &, uint8_t user_id, uint32_t order_id, uint32_t version);
+      Event<CancelOrder> const &,
+      oms::Order const &,
+      std::string_view const &request_id,
+      std::string_view const &previous_request_id);
+  void cancel_order_ack(Trace<core::web::Response const> const &, uint8_t user_id, uint32_t order_id, uint32_t version);
+  void operator()(Trace<json::CancelOrder const> const &, uint8_t user_id, uint32_t order_id, uint32_t version);
 
-  void cancel_all_open_orders(const Event<CancelAllOrders> &, const std::string_view &request_id);
-  void cancel_all_open_orders_ack(const Trace<core::web::Response const> &);
-  void operator()(const Trace<json::CancelAllOpenOrders const> &);
+  void cancel_all_open_orders(Event<CancelAllOrders> const &, std::string_view const &request_id);
+  void cancel_all_open_orders_ack(Trace<core::web::Response const> const &);
+  void operator()(Trace<json::CancelAllOpenOrders const> const &);
 
  private:
   Handler &handler_;
