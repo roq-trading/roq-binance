@@ -235,11 +235,7 @@ void Rest::operator()(Trace<json::ExchangeInfo const> const &event) {
   size_t counter = {};
   for (auto const &item : exchange_info.symbols) {
     log::info<2>("item={}"sv, item);
-    if (shared_.discard_symbol(item.symbol)) {
-      log::info<1>(R"(Drop symbol="{}")"sv, item.symbol);
-      continue;
-    }
-    log::debug("item={}"sv, item);
+    auto discard = shared_.discard_symbol(item.symbol);
     // fall-back values
     auto tick_size = std::pow(10.0, -static_cast<double>(item.quote_precision));
     auto min_trade_vol = std::pow(10.0, -static_cast<double>(item.base_asset_precision));
@@ -287,12 +283,6 @@ void Rest::operator()(Trace<json::ExchangeInfo const> const &event) {
           break;
       }
     }
-    // note! convert to lowercase
-    std::string symbol(item.symbol);
-    std::transform(std::begin(symbol), std::end(symbol), std::begin(symbol), [](auto c) { return std::tolower(c); });
-    if (all_symbols_.emplace(symbol).second)  // only include new
-      symbols.emplace_back(symbol);
-    ++counter;
     const ReferenceData reference_data{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
@@ -317,8 +307,19 @@ void Rest::operator()(Trace<json::ExchangeInfo const> const &event) {
         .settlement_date = {},
         .expiry_datetime = {},
         .expiry_datetime_utc = {},
+        .discard = discard,
     };
     create_trace_and_dispatch(handler_, trace_info, reference_data, false);
+    if (discard) {
+      log::info<1>(R"(Drop symbol="{}")"sv, item.symbol);
+      continue;
+    }
+    // note! convert to lowercase
+    std::string symbol(item.symbol);
+    std::transform(std::begin(symbol), std::end(symbol), std::begin(symbol), [](auto c) { return std::tolower(c); });
+    if (all_symbols_.emplace(symbol).second)  // only include new
+      symbols.emplace_back(symbol);
+    ++counter;
     auto trading_status = json::map(item.status);
     const MarketStatus market_status{
         .stream_id = stream_id_,
