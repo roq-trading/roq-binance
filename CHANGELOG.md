@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Changed
+
+* Market data support for `--net_disconnect_on_idle_timeout`.
+
 ## 0.8.4 &ndash; 2022-05-14
 
 ### Changed
