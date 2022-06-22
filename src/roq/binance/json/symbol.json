@@ -71,6 +71,10 @@
     {
       "name": "allowTrailingStop",
       "type": "bool"
+    },
+    {
+      "name": "cancelReplaceAllowed",
+      "type": "bool"
     }
   ]
 }
