@@ -12,6 +12,8 @@
 #include "roq/core/clock.hpp"
 #include "roq/core/utils.hpp"
 
+#include "roq/core/io/event_context.hpp"
+
 #include "roq/binance/flags.hpp"
 
 #include "roq/binance/json/utils.hpp"
@@ -65,10 +67,11 @@ auto create_drop_copy(auto &security_by_account) {
 }  // namespace
 
 Gateway::Gateway(server::Dispatcher &dispatcher, Config const &config)
-    : dispatcher_(dispatcher), security_(create_security<decltype(security_)>(config)), shared_(dispatcher),
-      request_(create_request<decltype(request_)>(config)), rest_(*this, context_, ++stream_id_, shared_),
+    : dispatcher_(dispatcher), security_(create_security<decltype(security_)>(config)),
+      context_(core::io::EventContext::create()), shared_(dispatcher),
+      request_(create_request<decltype(request_)>(config)), rest_(*this, *context_, ++stream_id_, shared_),
       order_entry_(
-          create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, security_, shared_, request_)),
+          create_order_entry<decltype(order_entry_)>(*this, *context_, stream_id_, security_, shared_, request_)),
       drop_copy_(create_drop_copy<decltype(drop_copy_)>(security_)) {
   if (Flags::rest_cancel_on_disconnect()) [[unlikely]]
     log::fatal("Exchange does *NOT* support cancel on disconnect"sv);
@@ -107,7 +110,7 @@ void Gateway::operator()(Event<Timer> const &event) {
       (*drop_copy)(event);
   for (auto &iter : market_data_)
     (*iter)(event);
-  context_.drain();
+  (*context_).drain();
 }
 
 void Gateway::operator()(Event<Connected> const &) {
@@ -194,7 +197,7 @@ void Gateway::ensure_symbol_slices(size_t size) {
     auto stream_id = ++stream_id_;
     auto index = std::size(market_data_);
     log::debug("Create MarketData (stream_id={}, index={}))"sv, stream_id, index);
-    auto market_data = std::make_unique<MarketData>(*this, context_, stream_id, shared_, index);
+    auto market_data = std::make_unique<MarketData>(*this, *context_, stream_id, shared_, index);
     MessageInfo message_info;
     Start start;
     create_event_and_dispatch(*market_data, message_info, start);
@@ -211,7 +214,7 @@ void Gateway::operator()(OrderEntry::ListenKeyUpdate const &listen_key_update) {
   } else if (!static_cast<bool>((*iter).second)) {
     log::info(R"(Create drop-copy (user-stream) for account="{}")"sv, account);
     auto drop_copy = std::make_unique<DropCopy>(
-        *this, context_, ++stream_id_, *security_[account], shared_, request_[account], listen_key_update.listen_key);
+        *this, *context_, ++stream_id_, *security_[account], shared_, request_[account], listen_key_update.listen_key);
     MessageInfo message_info;
     Start start;
     create_event_and_dispatch(*drop_copy, message_info, start);

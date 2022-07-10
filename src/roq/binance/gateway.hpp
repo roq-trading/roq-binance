@@ -11,7 +11,7 @@
 
 #include "roq/server.hpp"
 
-#include "roq/core/io/event_context.hpp"
+#include "roq/core/io/context.hpp"
 
 #include "roq/binance/config.hpp"
 #include "roq/binance/drop_copy.hpp"
@@ -84,7 +84,7 @@ class Gateway final : public server::Handler,
   // security
   absl::flat_hash_map<Account, std::unique_ptr<Security>> security_;
   // io
-  core::io::EventContext context_;
+  std::unique_ptr<core::io::Context> context_;
   // shared
   Shared shared_;
   absl::flat_hash_map<Account, Request> request_;
