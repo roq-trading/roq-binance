@@ -12,7 +12,7 @@
 #include "roq/core/clock.hpp"
 #include "roq/core/utils.hpp"
 
-#include "roq/core/io/event_context.hpp"
+#include "roq/io/event/context_factory.hpp"
 
 #include "roq/binance/flags.hpp"
 
@@ -43,7 +43,7 @@ auto create_request(Config const &config) {
 template <typename R>
 auto create_order_entry(
     Gateway &gateway,
-    core::io::Context &context,
+    io::Context &context,
     uint16_t &stream_id,
     auto &security_by_account,
     Shared &shared,
@@ -68,7 +68,7 @@ auto create_drop_copy(auto &security_by_account) {
 
 Gateway::Gateway(server::Dispatcher &dispatcher, Config const &config)
     : dispatcher_(dispatcher), security_(create_security<decltype(security_)>(config)),
-      context_(core::io::EventContext::create()), shared_(dispatcher),
+      context_(io::event::ContextFactory::create()), shared_(dispatcher),
       request_(create_request<decltype(request_)>(config)), rest_(*this, *context_, ++stream_id_, shared_),
       order_entry_(
           create_order_entry<decltype(order_entry_)>(*this, *context_, stream_id_, security_, shared_, request_)),

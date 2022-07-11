@@ -11,7 +11,7 @@
 #include "roq/core/metrics/latency.hpp"
 #include "roq/core/metrics/profile.hpp"
 
-#include "roq/core/io/context.hpp"
+#include "roq/io/context.hpp"
 
 #include "roq/core/web/client_socket.hpp"
 
@@ -38,7 +38,7 @@ class DropCopy final : public core::web::ClientSocket::Handler, public json::Use
 
   DropCopy(
       Handler &,
-      core::io::Context &,
+      io::Context &,
       uint16_t stream_id,
       Security &,
       Shared &,

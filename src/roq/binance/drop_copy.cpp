@@ -53,7 +53,7 @@ auto create_connection(auto &handler, auto &context, auto const &listen_key) {
 
 DropCopy::DropCopy(
     Handler &handler,
-    core::io::Context &context,
+    io::Context &context,
     uint16_t stream_id,
     Security &security,
     Shared &shared,
