@@ -23,14 +23,14 @@
     },
     {
       "name": "rest_uri",
-      "type": "roq::core::URI",
+      "type": "roq::io::web::URI",
       "validator": "roq::core::flags::URI<std::string>",
       "default": "https://testnet.binance.com",
       "description": "REST end-point (URI)"
     },
     {
       "name": "rest_proxy",
-      "type": "roq::core::URI",
+      "type": "roq::io::web::URI",
       "validator": "roq::core::flags::URI<std::string>",
       "description": "REST proxy end-point (URI)"
     },
@@ -77,7 +77,7 @@
     },
     {
       "name": "ws_uri",
-      "type": "roq::core::URI",
+      "type": "roq::io::web::URI",
       "validator": "roq::core::flags::URI<std::string>",
       "default": "wss://testnet.binance.com/realtime",
       "description": "WebSocket end-point (URI)"
