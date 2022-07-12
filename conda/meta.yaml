@@ -22,6 +22,7 @@ requirements:
   host:
     - roq-api
     - roq-core
+    - roq-io
     - roq-oss-abseil-cpp
     - roq-oss-benchmark
     - roq-oss-brotli
