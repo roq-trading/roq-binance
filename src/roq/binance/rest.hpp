@@ -16,7 +16,7 @@
 
 #include "roq/io/context.hpp"
 
-#include "roq/core/web/client.hpp"
+#include "roq/web/rest/client.hpp"
 
 #include "roq/server.hpp"
 
@@ -29,7 +29,7 @@
 namespace roq {
 namespace binance {
 
-class Rest final : public core::web::Client::Handler {
+class Rest final : public web::rest::Client::Handler {
  public:
   struct SymbolsUpdate final {
     std::vector<Symbol> &symbols;
@@ -58,20 +58,20 @@ class Rest final : public core::web::Client::Handler {
   void operator()(metrics::Writer &);
 
  protected:
-  void operator()(core::web::Client::Connected const &);
-  void operator()(core::web::Client::Disconnected const &);
-  void operator()(core::web::Client::Latency const &);
+  void operator()(web::rest::Client::Connected const &);
+  void operator()(web::rest::Client::Disconnected const &);
+  void operator()(web::rest::Client::Latency const &);
 
   void operator()(ConnectionStatus);
 
   uint32_t download(RestState state);
 
   void get_exchange_info();
-  void get_exchange_info_ack(Trace<core::web::Response const> const &, uint32_t sequence);
+  void get_exchange_info_ack(Trace<web::rest::Response const> const &, uint32_t sequence);
   void operator()(Trace<json::ExchangeInfo const> const &);
 
   void get_depth(std::string_view const &symbol);
-  void get_depth_ack(Trace<core::web::Response const> const &, std::string_view const &symbol);
+  void get_depth_ack(Trace<web::rest::Response const> const &, std::string_view const &symbol);
   void operator()(Trace<json::Depth const> const &, std::string_view const &symbol);
 
   void check_request_queue(std::chrono::nanoseconds now);
@@ -82,7 +82,7 @@ class Rest final : public core::web::Client::Handler {
   const uint16_t stream_id_;
   const std::string name_;
   // connection
-  core::web::Client connection_;
+  std::unique_ptr<web::rest::Client> connection_;
   // buffers
   core::Buffer decode_buffer_;
   core::Buffer decode_buffer_2_;  // note! decode nested arrays (ExchangeInfo)

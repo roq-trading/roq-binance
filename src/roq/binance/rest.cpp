@@ -14,6 +14,8 @@
 
 #include "roq/core/metrics/factory.hpp"
 
+#include "roq/web/rest/client_factory.hpp"
+
 #include "roq/binance/flags.hpp"
 
 #include "roq/binance/json/filters.hpp"
@@ -51,20 +53,20 @@ void emplace(MBPUpdate &result, const T &value) {
 
 auto create_connection(auto &handler, auto &context) {
   auto uri = Flags::rest_uri();
-  core::web::Client::Config config{
+  web::rest::Client::Config config{
       .decode_buffer_size = Flags::decode_buffer_size(),
       .encode_buffer_size = Flags::encode_buffer_size(),
       .validate_certificate = server::Flags::net_tls_validate_certificate(),
       .uris = {&uri, 1},
       .proxy = Flags::rest_proxy(),
       .user_agent = ROQ_PACKAGE_NAME,
-      .connection = core::http::Connection::KEEP_ALIVE,
+      .connection = web::http::Connection::KEEP_ALIVE,
       .allow_pipelining = true,
       .request_timeout = Flags::rest_request_timeout(),
       .ping_frequency = Flags::rest_ping_freq(),
       .ping_path = Flags::rest_ping_path(),
   };
-  return core::web::Client{handler, context, config};
+  return web::rest::ClientFactory::create(handler, context, config);
 }
 }  // namespace
 
@@ -88,16 +90,16 @@ Rest::Rest(Handler &handler, io::Context &context, uint16_t stream_id, Shared &s
 }
 
 void Rest::operator()(Event<Start> const &) {
-  connection_.start();
+  (*connection_).start();
 }
 
 void Rest::operator()(Event<Stop> const &) {
-  connection_.stop();
+  (*connection_).stop();
 }
 
 void Rest::operator()(Event<Timer> const &event) {
   auto now = event.value.now;
-  connection_.refresh(now);
+  (*connection_).refresh(now);
   if (ready())
     check_request_queue(now);
 }
@@ -115,7 +117,7 @@ void Rest::operator()(metrics::Writer &writer) {
       .write(latency_.ping, metrics::LATENCY);
 }
 
-void Rest::operator()(core::web::Client::Connected const &) {
+void Rest::operator()(web::rest::Client::Connected const &) {
   if (download_.downloading()) {
     download_.bump();
   } else {
@@ -124,7 +126,7 @@ void Rest::operator()(core::web::Client::Connected const &) {
   }
 }
 
-void Rest::operator()(core::web::Client::Disconnected const &) {
+void Rest::operator()(web::rest::Client::Disconnected const &) {
   ++counter_.disconnect;
   ready_ = false;
   (*this)(ConnectionStatus::DISCONNECTED);
@@ -132,7 +134,7 @@ void Rest::operator()(core::web::Client::Disconnected const &) {
     download_.reset();
 }
 
-void Rest::operator()(core::web::Client::Latency const &latency) {
+void Rest::operator()(web::rest::Client::Latency const &latency) {
   auto trace_info = server::create_trace_info();
   const ExternalLatency external_latency{
       .stream_id = stream_id_,
@@ -184,20 +186,20 @@ uint32_t Rest::download(RestState state) {
 
 void Rest::get_exchange_info() {
   profile_.exchange_info([&]() {
-    auto method = core::http::Method::GET;
+    auto method = web::http::Method::GET;
     auto path = "/api/v3/exchangeInfo"sv;
-    core::web::Request request{
+    web::rest::Request request{
         .method = method,
         .path = path,
         .query = {},
-        .accept = core::http::Accept::JSON,
+        .accept = web::http::Accept::JSON,
         .content_type = {},
         .headers = {},
         .body = {},
         .quality_of_service = {},
     };
     auto sequence = download_.sequence();
-    connection_("exchange_info"sv, request, [this, sequence]([[maybe_unused]] auto &request_id, auto &response) {
+    (*connection_)("exchange_info"sv, request, [this, sequence]([[maybe_unused]] auto &request_id, auto &response) {
       auto trace_info = server::create_trace_info();
       Trace event(trace_info, response);
       get_exchange_info_ack(event, sequence);
@@ -205,7 +207,7 @@ void Rest::get_exchange_info() {
   });
 }
 
-void Rest::get_exchange_info_ack(Trace<core::web::Response const> const &event, uint32_t sequence) {
+void Rest::get_exchange_info_ack(Trace<web::rest::Response const> const &event, uint32_t sequence) {
   profile_.exchange_info_ack([&]() {
     auto &[trace_info, response] = event;
     auto state = RestState::EXCHANGE_INFO;
@@ -216,7 +218,7 @@ void Rest::get_exchange_info_ack(Trace<core::web::Response const> const &event, 
         log::info("Download state={} has already been processed"sv, state);
         return;
       }
-      response.expect(core::http::Status::OK);
+      response.expect(web::http::Status::OK);
       core::json::Buffer buffer(decode_buffer_);
       const auto exchange_info = core::json::Parser::create<json::ExchangeInfo>(body, buffer);
       Trace event(trace_info, exchange_info);
@@ -343,20 +345,20 @@ void Rest::operator()(Trace<json::ExchangeInfo const> const &event) {
 
 void Rest::get_depth(std::string_view const &symbol) {
   profile_.depth([&]() {
-    auto method = core::http::Method::GET;
+    auto method = web::http::Method::GET;
     auto path = "/api/v3/depth"sv;
     auto query = fmt::format("?symbol={}&limit={}"sv, symbol, Flags::ws_subscribe_depth_levels());
-    core::web::Request request{
+    web::rest::Request request{
         .method = method,
         .path = path,
         .query = query,
-        .accept = core::http::Accept::JSON,
+        .accept = web::http::Accept::JSON,
         .content_type = {},
         .headers = {},
         .body = {},
         .quality_of_service = {},
     };
-    connection_(
+    (*connection_)(
         "depth"sv, request, [this, symbol = std::string{symbol}]([[maybe_unused]] auto &request_id, auto &response) {
           auto trace_info = server::create_trace_info();
           Trace event(trace_info, response);
@@ -365,13 +367,13 @@ void Rest::get_depth(std::string_view const &symbol) {
   });
 }
 
-void Rest::get_depth_ack(Trace<core::web::Response const> const &event, std::string_view const &symbol) {
+void Rest::get_depth_ack(Trace<web::rest::Response const> const &event, std::string_view const &symbol) {
   profile_.depth_ack([&]() {
     auto &[trace_info, response] = event;
     try {
       auto [status, category, body] = response.result();
       log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
-      response.expect(core::http::Status::OK);
+      response.expect(web::http::Status::OK);
       core::json::Buffer buffer(decode_buffer_);
       const auto depth = core::json::Parser::create<json::Depth>(body, buffer);
       Trace event(trace_info, depth);
