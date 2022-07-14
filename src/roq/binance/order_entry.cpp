@@ -270,7 +270,7 @@ void OrderEntry::get_listen_key_ack(Trace<web::rest::Response const> const &even
       Trace event(trace_info, listen_key);
       (*this)(event);
       download_.check_relaxed(state);
-    } catch (core::NetworkError &e) {
+    } catch (NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
       if (download_.downloading())
         download_.retry(state);
@@ -338,7 +338,7 @@ void OrderEntry::get_account_ack(Trace<web::rest::Response const> const &event) 
       download_account_ = false;
       log::debug("HERE"sv);
       request_.respond_account = core::clock::GetSystem();
-    } catch (core::NetworkError &e) {
+    } catch (NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
     }
   });
@@ -407,7 +407,7 @@ void OrderEntry::get_open_orders_ack(Trace<web::rest::Response const> const &eve
       (*this)(event);
       download_orders_ = false;
       request_.respond_orders = core::clock::GetSystem();
-    } catch (core::NetworkError &e) {
+    } catch (NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
     }
   });
@@ -595,7 +595,7 @@ void OrderEntry::new_order_ack(
         default:
           response.expect(web::http::Status::OK);  // throws
       }
-    } catch (core::NetworkError &e) {
+    } catch (NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
       const oms::Response response{
           .type = RequestType::CREATE_ORDER,
@@ -773,7 +773,7 @@ void OrderEntry::cancel_order_ack(
         default:
           response.expect(web::http::Status::OK);  // throws
       }
-    } catch (core::NetworkError &e) {
+    } catch (NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
       oms::Response response{
           .type = RequestType::CANCEL_ORDER,
@@ -908,7 +908,7 @@ void OrderEntry::cancel_all_open_orders_ack(Trace<web::rest::Response const> con
         default:
           response.expect(web::http::Status::OK);  // throws
       }
-    } catch (core::NetworkError &e) {
+    } catch (NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
       // XXX HANS ???
     }

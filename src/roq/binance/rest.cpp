@@ -224,7 +224,7 @@ void Rest::get_exchange_info_ack(Trace<web::rest::Response const> const &event, 
       Trace event(trace_info, exchange_info);
       (*this)(event);
       download_.check(state);
-    } catch (core::NetworkError &e) {
+    } catch (NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
       download_.retry(state);
     }
@@ -378,7 +378,7 @@ void Rest::get_depth_ack(Trace<web::rest::Response const> const &event, std::str
       const auto depth = core::json::Parser::create<json::Depth>(body, buffer);
       Trace event(trace_info, depth);
       (*this)(event, symbol);
-    } catch (core::NetworkError &e) {
+    } catch (NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
       // XXX HANS ???
     }
