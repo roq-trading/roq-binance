@@ -265,6 +265,7 @@ void Rest::operator()(Trace<json::ExchangeInfo const> const &event) {
           trade_vol_step_size = filter.step_size;
           break;
         case MIN_NOTIONAL:
+          min_trade_vol = filter.min_notional;
           break;
         case ICEBERG_PARTS:
           break;
