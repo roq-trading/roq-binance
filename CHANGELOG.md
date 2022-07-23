@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Changed
+
+* Added support for `ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE`
+
 ## 0.8.6 &ndash; 2022-07-18
 
 ## 0.8.5 &ndash; 2022-06-06

@@ -475,6 +475,17 @@ void OrderEntry::refresh_listen_key() {
 
 // new-order
 
+namespace {
+json::OrderType map_order_type(auto order_type, auto execution_instructions) {
+  if (!std::empty(execution_instructions)) {
+    if (execution_instructions.has(ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE) && order_type == OrderType::LIMIT)
+      return json::OrderType::LIMIT_MAKER;
+    log::warn("Unexpected: execution_instructions={}"sv, execution_instructions);
+  }
+  return json::map(order_type);
+}
+}  // namespace
+
 void OrderEntry::new_order(
     Event<CreateOrder> const &event, oms::Order const &order, std::string_view const &request_id) {
   profile_.new_order([&]() {
@@ -485,7 +496,7 @@ void OrderEntry::new_order(
     auto method = web::http::Method::POST;
     auto path = "/api/v3/order"sv;
     auto side = json::map(create_order.side).as_raw_text();
-    auto type = json::map(create_order.order_type).as_raw_text();
+    auto type = map_order_type(create_order.order_type, create_order.execution_instructions).as_raw_text();
     auto time_in_force = json::map(create_order.time_in_force).as_raw_text();
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(Flags::rest_order_recv_window());
     std::string body;
