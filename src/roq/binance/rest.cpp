@@ -233,7 +233,7 @@ void Rest::get_exchange_info_ack(Trace<web::rest::Response const> const &event, 
 
 void Rest::operator()(Trace<json::ExchangeInfo const> const &event) {
   auto &[trace_info, exchange_info] = event;
-  log::info<2>("exchange_info={}"sv, exchange_info);
+  // log::info<2>("exchange_info={}"sv, exchange_info);
   std::vector<Symbol> symbols;
   size_t counter = {};
   for (auto const &item : exchange_info.symbols) {
@@ -244,6 +244,7 @@ void Rest::operator()(Trace<json::ExchangeInfo const> const &event) {
     auto min_trade_vol = std::pow(10.0, -static_cast<double>(item.base_asset_precision));
     auto max_trade_vol = NaN;
     auto trade_vol_step_size = min_trade_vol;
+    auto min_notional = NaN;
     // parse filters and update
     core::json::Buffer buffer(decode_buffer_2_);
     auto filters = core::json::Parser::create<json::Filters>(item.filters, buffer);
@@ -265,7 +266,7 @@ void Rest::operator()(Trace<json::ExchangeInfo const> const &event) {
           trade_vol_step_size = filter.step_size;
           break;
         case MIN_NOTIONAL:
-          min_trade_vol = filter.min_notional;
+          min_notional = filter.min_notional;
           break;
         case ICEBERG_PARTS:
           break;
@@ -299,6 +300,7 @@ void Rest::operator()(Trace<json::ExchangeInfo const> const &event) {
         .commission_currency = {},
         .tick_size = tick_size,
         .multiplier = NaN,
+        .min_notional = min_notional,
         .min_trade_vol = min_trade_vol,
         .max_trade_vol = max_trade_vol,
         .trade_vol_step_size = trade_vol_step_size,
