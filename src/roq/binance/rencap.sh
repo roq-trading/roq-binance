@@ -20,8 +20,8 @@ WS_URI="wss://stream.$URI:9443/stream"
 $PREFIX ./roq-binance \
 	--name "$NAME" \
 	--config_file "$CONFIG_FILE" \
-	--client_listen_address $CWD/$NAME.sock \
-	--metrics_listen_address $CWD/${NAME}_metrics.sock \
+	--client_listen_address "$HOME/run/$NAME.sock" \
+	--metrics_listen_address "$HOME/run/${NAME}_metrics.sock" \
 	--ws_uri "$WS_URI" \
 	--rest_uri "$REST_URI" \
 	$@
