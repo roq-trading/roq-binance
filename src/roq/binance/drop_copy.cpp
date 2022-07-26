@@ -300,6 +300,7 @@ void DropCopy::operator()(Trace<json::ExecutionReport const> const &event) {
                 .fills = {&fill, 1},
                 .routing_id = order.routing_id,
                 .update_type = {},
+                .user = {},
             };
             create_trace_and_dispatch(handler_, trace_info, trade_update, true, order.user_id);
           }
