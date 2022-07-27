@@ -5,6 +5,7 @@
 #include "roq/core/json/parser.hpp"
 
 #include "roq/binance/json/new_order.hpp"
+#include "roq/binance/json/utils.hpp"
 
 using namespace roq;
 using namespace roq::binance;
@@ -132,4 +133,176 @@ TEST_CASE("json_new_order_simple_taker", "[json_new_order]") {
   CHECK(f0.commission == 0.0000303_a);
   CHECK(f0.commission_asset == "BNB"sv);
   CHECK(f0.trade_id == 207085107);
+}
+
+TEST_CASE("json_new_order_create_market", "[json_new_order]") {
+  CreateOrder create_order{
+      .account = {},
+      .order_id = {},
+      .exchange = {},
+      .symbol = "BTC"sv,
+      .side = Side::BUY,
+      .position_effect = {},
+      .max_show_quantity = NaN,
+      .order_type = OrderType::MARKET,
+      .time_in_force = {},
+      .execution_instructions = {},
+      .order_template = {},
+      .quantity = 123.4,
+      .price = NaN,
+      .stop_price = NaN,
+      .routing_id = {},
+  };
+  oms::Order order = {};
+  order.price_decimals = Decimals::_2;
+  order.quantity_decimals = Decimals::_2;
+  std::vector<char> buffer;
+  auto body = json::new_order(buffer, create_order, order, "abc123"sv, 5s);
+  auto expected =
+      "symbol=BTC&"
+      "side=BUY&"
+      "type=MARKET&"
+      "quantity=123.40&"
+      "newClientOrderId=abc123&"
+      "recvWindow=5000"sv;
+  CHECK(body == expected);
+}
+
+TEST_CASE("json_new_order_create_limit", "[json_new_order]") {
+  CreateOrder create_order{
+      .account = {},
+      .order_id = {},
+      .exchange = {},
+      .symbol = "BTC"sv,
+      .side = Side::BUY,
+      .position_effect = {},
+      .max_show_quantity = NaN,
+      .order_type = OrderType::LIMIT,
+      .time_in_force = TimeInForce::GTC,
+      .execution_instructions = {},
+      .order_template = {},
+      .quantity = 123.4,
+      .price = 123.4,
+      .stop_price = NaN,
+      .routing_id = {},
+  };
+  oms::Order order = {};
+  order.price_decimals = Decimals::_2;
+  order.quantity_decimals = Decimals::_2;
+  std::vector<char> buffer;
+  auto body = json::new_order(buffer, create_order, order, "abc123"sv, 5s);
+  auto expected =
+      "symbol=BTC&"
+      "side=BUY&"
+      "type=LIMIT&"
+      "quantity=123.40&"
+      "timeInForce=GTC&"
+      "price=123.40&"
+      "newClientOrderId=abc123&"
+      "recvWindow=5000"sv;
+  CHECK(body == expected);
+}
+
+TEST_CASE("json_new_order_create_limit_maker", "[json_new_order]") {
+  CreateOrder create_order{
+      .account = {},
+      .order_id = {},
+      .exchange = {},
+      .symbol = "BTC"sv,
+      .side = Side::BUY,
+      .position_effect = {},
+      .max_show_quantity = NaN,
+      .order_type = OrderType::LIMIT,
+      .time_in_force = TimeInForce::GTC,
+      .execution_instructions = {ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE},
+      .order_template = {},
+      .quantity = 123.4,
+      .price = 123.4,
+      .stop_price = NaN,
+      .routing_id = {},
+  };
+  oms::Order order = {};
+  order.price_decimals = Decimals::_2;
+  order.quantity_decimals = Decimals::_2;
+  std::vector<char> buffer;
+  auto body = json::new_order(buffer, create_order, order, "abc123"sv, 5s);
+  auto expected =
+      "symbol=BTC&"
+      "side=BUY&"
+      "type=LIMIT_MAKER&"
+      "quantity=123.40&"
+      "price=123.40&"
+      "newClientOrderId=abc123&"
+      "recvWindow=5000"sv;
+  CHECK(body == expected);
+}
+
+TEST_CASE("json_new_order_create_stop_loss", "[json_new_order]") {
+  CreateOrder create_order{
+      .account = {},
+      .order_id = {},
+      .exchange = {},
+      .symbol = "BTC"sv,
+      .side = Side::BUY,
+      .position_effect = {},
+      .max_show_quantity = NaN,
+      .order_type = OrderType::MARKET,
+      .time_in_force = {},
+      .execution_instructions = {},
+      .order_template = {},
+      .quantity = 123.4,
+      .price = NaN,
+      .stop_price = 123.4,
+      .routing_id = {},
+  };
+  oms::Order order = {};
+  order.price_decimals = Decimals::_2;
+  order.quantity_decimals = Decimals::_2;
+  std::vector<char> buffer;
+  auto body = json::new_order(buffer, create_order, order, "abc123"sv, 5s);
+  auto expected =
+      "symbol=BTC&"
+      "side=BUY&"
+      "type=STOP_LOSS&"
+      "quantity=123.40&"
+      "stopPrice=123.40&"
+      "newClientOrderId=abc123&"
+      "recvWindow=5000"sv;
+  CHECK(body == expected);
+}
+
+TEST_CASE("json_new_order_create_stop_loss_limit", "[json_new_order]") {
+  CreateOrder create_order{
+      .account = {},
+      .order_id = {},
+      .exchange = {},
+      .symbol = "BTC"sv,
+      .side = Side::BUY,
+      .position_effect = {},
+      .max_show_quantity = NaN,
+      .order_type = OrderType::LIMIT,
+      .time_in_force = TimeInForce::GTC,
+      .execution_instructions = {},
+      .order_template = {},
+      .quantity = 123.4,
+      .price = 123.4,
+      .stop_price = 123.4,
+      .routing_id = {},
+  };
+  oms::Order order = {};
+  order.price_decimals = Decimals::_2;
+  order.quantity_decimals = Decimals::_2;
+  std::vector<char> buffer;
+  auto body = json::new_order(buffer, create_order, order, "abc123"sv, 5s);
+  auto expected =
+      "symbol=BTC&"
+      "side=BUY&"
+      "type=STOP_LOSS_LIMIT&"
+      "quantity=123.40&"
+      "timeInForce=GTC&"
+      "price=123.40&"
+      "stopPrice=123.40&"
+      "newClientOrderId=abc123&"
+      "recvWindow=5000"sv;
+  CHECK(body == expected);
 }

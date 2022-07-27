@@ -2,6 +2,12 @@
 
 #include "roq/binance/json/utils.hpp"
 
+#include "roq/logging.hpp"
+
+#include "roq/utils/number.hpp"
+
+using namespace std::literals;
+
 namespace roq {
 namespace binance {
 namespace json {
@@ -102,6 +108,80 @@ Error guess_error(int32_t code) {
   limit."}
   '-4051': InsufficientFunds,  # {"code":-4051,"msg":"Isolated balance insufficient."}
   */
+}
+
+namespace {
+json::OrderType map_order_type(auto &create_order) {
+  switch (create_order.order_type) {
+    using enum roq::OrderType;
+    case UNDEFINED:
+      break;
+    case MARKET:
+      if (!std::isnan(create_order.stop_price))
+        return json::OrderType::STOP_LOSS;
+      return json::OrderType::MARKET;
+    case LIMIT:
+      if (create_order.execution_instructions.has(ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE))
+        return json::OrderType::LIMIT_MAKER;
+      if (!std::isnan(create_order.stop_price))
+        return json::OrderType::STOP_LOSS_LIMIT;
+      return json::OrderType::LIMIT;
+  }
+  return json::map(create_order.order_type);
+}
+
+json::TimeInForce map_time_in_force(auto &create_order) {
+  switch (create_order.order_type) {
+    using enum roq::OrderType;
+    case UNDEFINED:
+      break;
+    case MARKET:
+      return {};
+    case LIMIT:
+      if (create_order.execution_instructions.has(ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE))
+        return {};
+      break;
+  }
+  return json::map(create_order.time_in_force);
+}
+}  // namespace
+
+std::string_view new_order(
+    std::vector<char> &buffer,
+    CreateOrder const &create_order,
+    oms::Order const &order,
+    std::string_view const &request_id,
+    std::chrono::milliseconds recv_window) {
+  auto side = map(create_order.side);
+  auto type = map_order_type(create_order);
+  auto time_in_force = map_time_in_force(create_order);
+  buffer.clear();
+  fmt::format_to(
+      std::back_inserter(buffer),
+      R"(symbol={}&)"
+      R"(side={}&)"
+      R"(type={}&)"
+      R"(quantity={}&)"sv,
+      create_order.symbol,
+      side.as_raw_text(),
+      type.as_raw_text(),
+      utils::Number{create_order.quantity, order.quantity_decimals});
+  if (time_in_force != json::TimeInForce{})
+    fmt::format_to(std::back_inserter(buffer), R"(timeInForce={}&)"sv, time_in_force.as_raw_text());
+  if (!std::isnan(create_order.price))
+    fmt::format_to(
+        std::back_inserter(buffer), R"(price={}&)"sv, utils::Number{create_order.price, order.price_decimals});
+  if (!std::isnan(create_order.stop_price))
+    fmt::format_to(
+        std::back_inserter(buffer), R"(stopPrice={}&)"sv, utils::Number{create_order.stop_price, order.price_decimals});
+  fmt::format_to(
+      std::back_inserter(buffer),
+      R"(newClientOrderId={}&)"
+      R"(recvWindow={})"sv,
+      request_id,
+      recv_window.count());
+  std::string_view result{std::data(buffer), std::size(buffer)};
+  return result;
 }
 
 }  // namespace json

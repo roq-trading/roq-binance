@@ -504,40 +504,8 @@ void OrderEntry::new_order(
     open_orders_symbols_.emplace(create_order.symbol);
     auto method = web::http::Method::POST;
     auto path = "/api/v3/order"sv;
-    auto side = json::map(create_order.side);
-    auto type = map_order_type(create_order);
-    auto time_in_force = map_time_in_force(create_order);
-    auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(Flags::rest_order_recv_window());
-    encode_buffer_.clear();
-    fmt::format_to(
-        std::back_inserter(encode_buffer_),
-        R"(symbol={}&)"
-        R"(side={}&)"
-        R"(type={}&)"
-        R"(quantity={}&)"sv,
-        create_order.symbol,
-        side.as_raw_text(),
-        type.as_raw_text(),
-        utils::Number{create_order.quantity, order.quantity_decimals});
-    if (time_in_force != json::TimeInForce{})
-      fmt::format_to(std::back_inserter(encode_buffer_), R"(timeInForce={}&)"sv, time_in_force.as_raw_text());
-    if (!std::isnan(create_order.price))
-      fmt::format_to(
-          std::back_inserter(encode_buffer_),
-          R"(price={}&)"sv,
-          utils::Number{create_order.price, order.price_decimals});
-    if (!std::isnan(create_order.stop_price))
-      fmt::format_to(
-          std::back_inserter(encode_buffer_),
-          R"(stopPrice={}&)"sv,
-          utils::Number{create_order.stop_price, order.price_decimals});
-    fmt::format_to(
-        std::back_inserter(encode_buffer_),
-        R"(newClientOrderId={}&)"
-        R"(recvWindow={})"sv,
-        request_id,
-        recv_window.count());
-    std::string_view body{std::data(encode_buffer_), std::size(encode_buffer_)};
+    auto body = json::new_order(
+        encode_buffer_, create_order, order, request_id, utils::safe_cast(Flags::rest_order_recv_window()));
     log::debug(R"(body="{}")"sv, body);
     auto query = security_.create_query(body);
     auto headers = security_.create_headers();
