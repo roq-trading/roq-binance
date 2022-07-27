@@ -155,6 +155,7 @@ class OrderEntry final : public web::rest::Client::Handler {
   absl::flat_hash_set<Symbol> open_orders_symbols_;
   bool download_account_ = false;
   bool download_orders_ = false;
+  std::vector<char> encode_buffer_;
 };
 
 }  // namespace binance

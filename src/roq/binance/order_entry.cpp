@@ -476,13 +476,22 @@ void OrderEntry::refresh_listen_key() {
 // new-order
 
 namespace {
-json::OrderType map_order_type(auto order_type, auto execution_instructions) {
-  if (!std::empty(execution_instructions)) {
-    if (execution_instructions.has(ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE) && order_type == OrderType::LIMIT)
+json::OrderType map_order_type(auto &create_order) {
+  if (!std::empty(create_order.execution_instructions)) {
+    if (create_order.order_type == OrderType::LIMIT &&
+        create_order.execution_instructions.has(ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE))
       return json::OrderType::LIMIT_MAKER;
-    log::warn("Unexpected: execution_instructions={}"sv, execution_instructions);
+    log::warn("Unexpected: execution_instructions={}"sv, create_order.execution_instructions);
   }
-  return json::map(order_type);
+  return json::map(create_order.order_type);
+}
+json::TimeInForce map_time_in_force(auto &create_order) {
+  if (create_order.order_type == OrderType::MARKET ||
+      (create_order.order_type == OrderType::LIMIT &&
+       (create_order.execution_instructions.has(ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE) ||
+        !std::isnan(create_order.stop_price))))
+    return json::TimeInForce{};
+  return json::map(create_order.time_in_force);
 }
 }  // namespace
 
@@ -495,51 +504,40 @@ void OrderEntry::new_order(
     open_orders_symbols_.emplace(create_order.symbol);
     auto method = web::http::Method::POST;
     auto path = "/api/v3/order"sv;
-    auto side = json::map(create_order.side).as_raw_text();
-    auto type = map_order_type(create_order.order_type, create_order.execution_instructions).as_raw_text();
-    auto time_in_force = json::map(create_order.time_in_force).as_raw_text();
+    auto side = json::map(create_order.side);
+    auto type = map_order_type(create_order);
+    auto time_in_force = map_time_in_force(create_order);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(Flags::rest_order_recv_window());
-    std::string body;
-    if (std::isnan(create_order.stop_price)) {
-      body = fmt::format(
-          R"(symbol={}&)"
-          R"(side={}&)"
-          R"(type={}&)"
-          R"(timeInForce={}&)"
-          R"(quantity={}&)"
-          R"(price={}&)"
-          R"(newClientOrderId={}&)"
-          R"(recvWindow={})"sv,
-          create_order.symbol,
-          side,
-          type,
-          time_in_force,
-          utils::Number{create_order.quantity, order.quantity_decimals},
-          utils::Number{create_order.price, order.price_decimals},
-          request_id,
-          recv_window.count());
-    } else {
-      body = fmt::format(
-          R"(symbol={}&)"
-          R"(side={}&)"
-          R"(type={}&)"
-          R"(timeInForce={}&)"
-          R"(quantity={}&)"
-          R"(price={}&)"
-          R"(newClientOrderId={}&)"
-          R"(stopPrice={}&)"
-          R"(recvWindow={})"
-          R"(}})"sv,
-          create_order.symbol,
-          side,
-          type,
-          time_in_force,
-          utils::Number{create_order.quantity, order.quantity_decimals},
-          utils::Number{create_order.price, order.price_decimals},
-          request_id,
-          utils::Number{create_order.stop_price, order.price_decimals},
-          recv_window.count());
-    }
+    encode_buffer_.clear();
+    fmt::format_to(
+        std::back_inserter(encode_buffer_),
+        R"(symbol={}&)"
+        R"(side={}&)"
+        R"(type={}&)"
+        R"(quantity={}&)"sv,
+        create_order.symbol,
+        side.as_raw_text(),
+        type.as_raw_text(),
+        utils::Number{create_order.quantity, order.quantity_decimals});
+    if (time_in_force != json::TimeInForce{})
+      fmt::format_to(std::back_inserter(encode_buffer_), R"(timeInForce={}&)"sv, time_in_force.as_raw_text());
+    if (!std::isnan(create_order.price))
+      fmt::format_to(
+          std::back_inserter(encode_buffer_),
+          R"(price={}&)"sv,
+          utils::Number{create_order.price, order.price_decimals});
+    if (!std::isnan(create_order.stop_price))
+      fmt::format_to(
+          std::back_inserter(encode_buffer_),
+          R"(stopPrice={}&)"sv,
+          utils::Number{create_order.stop_price, order.price_decimals});
+    fmt::format_to(
+        std::back_inserter(encode_buffer_),
+        R"(newClientOrderId={}&)"
+        R"(recvWindow={})"sv,
+        request_id,
+        recv_window.count());
+    std::string_view body{std::data(encode_buffer_), std::size(encode_buffer_)};
     log::debug(R"(body="{}")"sv, body);
     auto query = security_.create_query(body);
     auto headers = security_.create_headers();
