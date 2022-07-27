@@ -127,7 +127,7 @@ json::OrderType map_order_type(auto &create_order) {
         return json::OrderType::STOP_LOSS_LIMIT;
       return json::OrderType::LIMIT;
   }
-  return json::map(create_order.order_type);
+  return map(create_order.order_type);
 }
 
 json::TimeInForce map_time_in_force(auto &create_order) {
@@ -142,7 +142,7 @@ json::TimeInForce map_time_in_force(auto &create_order) {
         return {};
       break;
   }
-  return json::map(create_order.time_in_force);
+  return map(create_order.time_in_force);
 }
 }  // namespace
 
