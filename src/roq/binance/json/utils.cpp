@@ -14,100 +14,99 @@ namespace json {
 
 Error guess_error(int32_t code) {
   switch (code) {
-    case -1000:
+      // https://binance-docs.github.io/apidocs/spot/en/#10xx-general-server-or-network-issues
+    case -1000:  // UNKNOWN
       break;
-    case -1001:
+    case -1001:  // DISCONNECTED
       break;
-    case -1002:
+    case -1002:  // UNAUTHORIZED
       return Error::NOT_AUTHORIZED;
-    case -1003:
+    case -1003:  // TOO_MANY_REQUESTS
       return Error::REQUEST_RATE_LIMIT_REACHED;
-    case -1013:
-      return Error::INVALID_REQUEST_ARGS;
-    case -1015:
-      return Error::REQUEST_RATE_LIMIT_REACHED;
-    case -1016:
+    case -1004:  // SERVER_BUSY
       break;
-    case -1020:
-    case -1021:
+    case -1006:  // UNEXPECTED_RESP
+      break;
+    case -1007:  // TIMEOUT
+      break;
+    case -1014:  // UNKNOWN_ORDER_COMPOSITION
+      break;
+    case -1015:  // TOO_MANY_ORDERS
+      return Error::REQUEST_RATE_LIMIT_REACHED;
+    case -1016:  // SERVICE_SHUTTING_DOWN
+      break;
+    case -1020:  // UNSUPPORTED_OPERATION
+      break;
+    case -1021:  // INVALID_TIMESTAMP
       return Error::INVALID_REQUEST_ARGS;
-    case -1022:
+    case -1022:  // INVALID_SIGNATURE
       return Error::NOT_AUTHORIZED;
-    case -1100:
+    case -1099:  //  Not found, authenticated, or authorized
+      return Error::NOT_AUTHORIZED;
+    // https://binance-docs.github.io/apidocs/spot/en/#11xx-2xxx-request-issues
+    case -1100:  // ILLEGAL_CHARS
       return Error::INVALID_REQUEST_ARGS;
-    case -1101:
+    case -1101:  // TOO_MANY_PARAMETERS
       return Error::INVALID_REQUEST_ARGS;
-    case -1102:
+    case -1102:  // MANDATORY_PARAM_EMPTY_OR_MALFORMED
       return Error::INVALID_REQUEST_ARGS;
-    case -1103:
+    case -1103:  // UNKNOWN_PARAM
       return Error::INVALID_REQUEST_ARGS;
-    case -1104:
+    case -1104:  // UNREAD_PARAMETERS
       return Error::INVALID_REQUEST_ARGS;
-    case -1105:
+    case -1105:  // PARAM_EMPTY
       return Error::INVALID_REQUEST_ARGS;
-    case -1106:
+    case -1106:  // PARAM_NOT_REQUIRED
       return Error::INVALID_REQUEST_ARGS;
-    case -1111:
+    case -1111:  // BAD_PRECISION
       return Error::INVALID_REQUEST_ARGS;
-    case -1112:
-      return Error::INVALID_ORDER_ID;
-    case -1114:
+    case -1112:  // NO_DEPTH
+      break;
+    case -1114:  // TIF_NOT_REQUIRED
       return Error::INVALID_TIME_IN_FORCE;
-    case -1115:
+    case -1115:  // INVALID_TIF
       return Error::INVALID_TIME_IN_FORCE;
-    case -1116:
+    case -1116:  // INVALID_ORDER_TYPE
       return Error::INVALID_ORDER_TYPE;
-    case -1117:
+    case -1117:  // INVALID_SIDE
       return Error::INVALID_SIDE;
-    case -1118:
+    case -1118:  // EMPTY_NEW_CL_ORD_ID
       return Error::INVALID_REQUEST_ID;
-    case -1119:
+    case -1119:  // EMPTY_ORG_CL_ORD_ID
       return Error::INVALID_REQUEST_ID;
-    case -1120:
+    case -1120:  // BAD_INTERVAL
       break;
-    case -1121:
+    case -1121:  // BAD_SYMBOL
       return Error::INVALID_SYMBOL;
-    case -1125:
+    case -1125:  // INVALID_LISTEN_KEY
       return Error::NOT_AUTHORIZED;
-    case -1127:
+    case -1127:  // MORE_THAN_XX_HOURS
       break;
-    case -1128:
+    case -1128:  // OPTIONAL_PARAMS_BAD_COMBO
       return Error::INVALID_REQUEST_ARGS;
-    case -1130:
+    case -1130:  // INVALID_PARAMETER
       return Error::INVALID_REQUEST_ARGS;
-    case -1131:
+    case -1131:  // BAD_RECV_WINDOW
       return Error::INVALID_REQUEST_ARGS;
     case -2008:
       return Error::NOT_AUTHORIZED;
-    case -2010:
-      return Error::INSUFFICIENT_FUNDS;
+    case -2010:  // NEW_ORDER_REJECTED
       break;
+    case -2011:  // CANCEL_REJECTED
+      break;
+    case -2013:  // NO_SUCH_ORDER
+      return Error::UNKNOWN_ORDER_ID;
+    case -2014:  // BAD_API_KEY_FMT
+      break;
+    case -2015:  // REJECTED_MBX_KEY
+      break;
+    case -2016:  // NO_TRADING_WINDOW
+      break;
+      // https://binance-docs.github.io/apidocs/spot/en/#3xxx-5xxx-sapi-specific-issues
+      // https://binance-docs.github.io/apidocs/spot/en/#6xxx-savings-issues
+      // ...
   }
   return Error::UNKNOWN;
-  /*
-  '-2011': OrderNotFound,  # cancelOrder(1, 'BTC/USDT') -> 'UNKNOWN_ORDER'
-  '-2013': OrderNotFound,  # fetchOrder(1, 'BTC/USDT') -> 'Order does not exist'
-  '-2014': AuthenticationError,  # {"code":-2014, "msg": "API-key format invalid."}
-  '-2015': AuthenticationError,  # "Invalid API-key, IP, or permissions for action."
-  '-2019': InsufficientFunds,  # {"code":-2019,"msg":"Margin is insufficient."}
-  '-3005': InsufficientFunds,  # {"code":-3005,"msg":"Transferring out not allowed. Transfer out
-  amount exceeds max amount."}
-  '-3006': InsufficientFunds,  # {"code":-3006,"msg":"Your borrow amount has exceed maximum borrow
-  amount."}
-  '-3008': InsufficientFunds,  # {"code":-3008,"msg":"Borrow not allowed. Your borrow amount has
-  exceed maximum borrow amount."}
-  '-3010': ExchangeError,  # {"code":-3010,"msg":"Repay not allowed. Repay amount exceeds borrow
-  amount."}
-  '-3015': ExchangeError,  # {"code":-3015,"msg":"Repay amount exceeds borrow amount."}
-  '-3022': AccountSuspended,  # You account's trading is banned.
-  '-4028': BadRequest,  # {"code":-4028,"msg":"Leverage 100 is not valid"}
-  '-3020': InsufficientFunds,  # {"code":-3020,"msg":"Transfer out amount exceeds max amount."}
-  '-3041': InsufficientFunds,  # {"code":-3041,"msg":"Balance is not enough"}
-  '-5013': InsufficientFunds,  # Asset transfer failed: insufficient balance"
-  '-11008': InsufficientFunds,  # {"code":-11008,"msg":"Exceeding the account's maximum borrowable
-  limit."}
-  '-4051': InsufficientFunds,  # {"code":-4051,"msg":"Isolated balance insufficient."}
-  */
 }
 
 namespace {
