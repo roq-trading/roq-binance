@@ -235,7 +235,6 @@ void DropCopy::operator()(Trace<json::BalanceUpdate const> const &event) {
 
 void DropCopy::operator()(Trace<json::ExecutionReport const> const &event) {
   profile_.execution_report([&]() {
-    // auto &[trace_info, execution_report] = event;  // XXX clang13
     auto &trace_info = event.trace_info;
     auto &execution_report = event.value;
     log::info<2>("execution_report={}"sv, execution_report);

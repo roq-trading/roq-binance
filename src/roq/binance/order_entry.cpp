@@ -603,6 +603,9 @@ void OrderEntry::operator()(
   auto time_in_force = json::map(new_order.time_in_force);
   auto external_order_id = fmt::format("{}"sv, new_order.order_id);
   auto order_status = json::map(new_order.status);
+  // LIMIT_MAKER orders do not return any order state + we only end up here if we receive HTTP status OK
+  if (order_status == OrderStatus{})
+    order_status = OrderStatus::WORKING;
   auto remaining_quantity = new_order.orig_qty - new_order.executed_qty;
   auto average_traded_price =
       utils::is_zero(new_order.executed_qty) ? NaN : (new_order.cummulative_quote_qty / new_order.executed_qty);

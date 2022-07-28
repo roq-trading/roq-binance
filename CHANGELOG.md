@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Fixed
+
+* Issues with `LIMIT_MAKER` orders (#257)
+
 ### Changed
 
 * Added support for `ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE`
