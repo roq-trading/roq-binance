@@ -4,6 +4,7 @@ set(SOURCES
     json_account.cpp
     json_cancel_all_open_orders.cpp
     json_cancel_order.cpp
+    json_cancel_replace_order.cpp
     json_exchange_info.cpp
     json_execution_report.cpp
     json_filters.cpp

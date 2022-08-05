@@ -770,7 +770,8 @@ void OrderEntry::cancel_replace_order_ack(
       switch (category) {
         using enum web::http::Category;
         case SUCCESS: {  // 2xx
-          const auto cancel_replace_order = core::json::Parser::create<json::CancelReplaceOrder>(body);
+          core::json::Buffer buffer(decode_buffer_);
+          const auto cancel_replace_order = core::json::Parser::create<json::CancelReplaceOrder>(body, buffer);
           Trace event(trace_info, cancel_replace_order);
           (*this)(event, user_id, order_id, version);
           break;
@@ -830,11 +831,12 @@ void OrderEntry::operator()(
       user_id,
       order_id,
       version);
-  auto side = json::map(cancel_replace_order.side);
-  auto order_type = json::map(cancel_replace_order.type);
-  auto time_in_force = json::map(cancel_replace_order.time_in_force);
-  auto external_order_id = fmt::format("{}"sv, cancel_replace_order.order_id);
-  auto order_status = json::map(cancel_replace_order.status);
+  auto &new_order = cancel_replace_order.new_order_response;
+  auto side = json::map(new_order.side);
+  auto order_type = json::map(new_order.type);
+  auto time_in_force = json::map(new_order.time_in_force);
+  auto external_order_id = fmt::format("{}"sv, new_order.order_id);
+  auto order_status = json::map(new_order.status);
   const oms::Response response{
       .type = RequestType::CANCEL_ORDER,
       .origin = Origin::EXCHANGE,
@@ -849,7 +851,7 @@ void OrderEntry::operator()(
   const oms::OrderUpdate order_update{
       .account = security_.get_account(),
       .exchange = Flags::exchange(),
-      .symbol = cancel_replace_order.symbol,
+      .symbol = new_order.symbol,
       .side = side,
       .position_effect = {},
       .max_show_quantity = NaN,
@@ -862,11 +864,11 @@ void OrderEntry::operator()(
       .external_account = {},
       .external_order_id = external_order_id,
       .status = order_status,
-      .quantity = cancel_replace_order.orig_qty,
-      .price = cancel_replace_order.price,
+      .quantity = new_order.orig_qty,
+      .price = new_order.price,
       .stop_price = NaN,
       .remaining_quantity = NaN,
-      .traded_quantity = cancel_replace_order.executed_qty,
+      .traded_quantity = new_order.executed_qty,
       .average_traded_price = NaN,
       .last_traded_quantity = NaN,
       .last_traded_price = NaN,
