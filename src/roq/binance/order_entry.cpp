@@ -32,6 +32,7 @@ auto const NAME = "om"sv;
 
 const Mask SUPPORTS{
     SupportType::CREATE_ORDER,
+    SupportType::MODIFY_ORDER,
     SupportType::CANCEL_ORDER,
     SupportType::ORDER_ACK,
     SupportType::TRADE,
@@ -79,6 +80,8 @@ OrderEntry::OrderEntry(
           .open_orders_ack = create_metrics(name_, "open_orders_ack"sv),
           .new_order = create_metrics(name_, "new_order"sv),
           .new_order_ack = create_metrics(name_, "new_order_ack"sv),
+          .cancel_replace_order = create_metrics(name_, "cancel_replace_order"sv),
+          .cancel_replace_order_ack = create_metrics(name_, "cancel_replace_order_ack"sv),
           .cancel_order = create_metrics(name_, "cancel_order"sv),
           .cancel_order_ack = create_metrics(name_, "cancel_order_ack"sv),
           .cancel_all_open_orders = create_metrics(name_, "cancel_all_open_orders"sv),
@@ -129,6 +132,8 @@ void OrderEntry::operator()(metrics::Writer &writer) {
       .write(profile_.open_orders_ack, metrics::PROFILE)
       .write(profile_.new_order, metrics::PROFILE)
       .write(profile_.new_order_ack, metrics::PROFILE)
+      .write(profile_.cancel_replace_order, metrics::PROFILE)
+      .write(profile_.cancel_replace_order_ack, metrics::PROFILE)
       .write(profile_.cancel_order, metrics::PROFILE)
       .write(profile_.cancel_order_ack, metrics::PROFILE)
       .write(profile_.cancel_all_open_orders, metrics::PROFILE)
@@ -144,11 +149,12 @@ uint16_t OrderEntry::operator()(
 }
 
 uint16_t OrderEntry::operator()(
-    Event<ModifyOrder> const &,
-    oms::Order const &,
-    [[maybe_unused]] std::string_view const &request_id,
-    [[maybe_unused]] std::string_view const &previous_request_id) {
-  throw oms::NotSupported("not supported"sv);
+    Event<ModifyOrder> const &event,
+    oms::Order const &order,
+    std::string_view const &request_id,
+    std::string_view const &previous_request_id) {
+  cancel_replace_order(event, order, request_id, previous_request_id);
+  return stream_id_;
 }
 
 uint16_t OrderEntry::operator()(
@@ -660,6 +666,215 @@ void OrderEntry::operator()(
           user_id, order_id, stream_id_, trace_info, response, order_update, [&]([[maybe_unused]] auto &order) {
             // note! fills will be reported by drop copy
           })) {
+  } else {
+    log::warn("Did not find order: user_id={}, order_id={}"sv, user_id, order_id);
+  }
+}
+
+// cancel-replace-order
+
+void OrderEntry::cancel_replace_order(
+    Event<ModifyOrder> const &event,
+    oms::Order const &order,
+    std::string_view const &request_id,
+    std::string_view const &previous_request_id) {
+  profile_.cancel_replace_order([&]() {
+    if (!ready())
+      throw oms::NotReady("not ready"sv);
+    auto &[message_info, modify_order] = event;
+    auto method = web::http::Method::POST;
+    auto path = "/api/v3/order/cancelReplace"sv;
+    auto body = json::cancel_replace_order(
+        encode_buffer_,
+        modify_order,
+        order,
+        request_id,
+        previous_request_id,
+        utils::safe_cast(Flags::rest_order_recv_window()));
+    log::debug(R"(body="{}")"sv, body);
+    auto query = security_.create_query(body);
+    auto headers = security_.create_headers();
+    const web::rest::Request request{
+        .method = method,
+        .path = path,
+        .query = query,
+        .accept = web::http::Accept::APPLICATION_JSON,
+        .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
+        .headers = headers,
+        .body = body,
+        .quality_of_service = io::QualityOfService::IMMEDIATE,
+    };
+    (*connection_)(
+        request_id,
+        request,
+        [this, user_id = message_info.source, order_id = modify_order.order_id, version = modify_order.version](
+            [[maybe_unused]] auto &request_id, auto &response) {
+          auto trace_info = server::create_trace_info();
+          Trace event(trace_info, response);
+          cancel_replace_order_ack(event, user_id, order_id, version);
+        });
+  });
+}
+
+/*
+{"code":-1102,"msg":"Mandatory parameter 'timeInForce' was not sent, was empty/null, or malformed."}
+{"code":-1013,"msg":"Filter failure: MIN_NOTIONAL"}
+{"code":-1102,"msg":"Mandatory parameter 'quantity' was not sent, was empty/null, or malformed."}
+*/
+/*
+symbol=BTCUSDT&side=BUY&type=LIMIT&cancelReplaceMode=STOP_ON_FAILURE&timeInForce=GTC&quantity=0.00100&price=23144.46&cancelOrigClientOrderId=CgAC6QMAAQAAvgAMirEt&newClientOrderId=gwAC6QMAAgAAXFo-irEt&recvWindow=5000
+{
+"cancelResult":"SUCCESS",
+"newOrderResult":"SUCCESS",
+"cancelResponse":{
+"symbol":"BTCUSDT",
+"origClientOrderId":"CgAC6QMAAQAAvgAMirEt",
+"orderId":12166372890,
+"orderListId":-1,
+"clientOrderId":"PZSf3aT26PBaSacwoUWU9g",
+"price":"23238.21000000",
+"origQty":"0.00100000",
+"executedQty":"0.00000000",
+"cummulativeQuoteQty":"0.00000000",
+"status":"CANCELED",
+"timeInForce":"GTC",
+"type":"LIMIT",
+"side":"BUY"
+},
+"newOrderResponse":{
+"symbol":"BTCUSDT",
+"orderId":12166375153,
+"orderListId":-1,
+"clientOrderId":"gwAC6QMAAgAAXFo-irEt",
+"transactTime":1659699751935,
+"price":"23144.46000000",
+"origQty":"0.00100000",
+"executedQty":"0.00000000",
+"cummulativeQuoteQty":"0.00000000",
+"status":"NEW",
+"timeInForce":"GTC",
+"type":"LIMIT",
+"side":"BUY",
+"fills":[]
+}
+}
+*/
+void OrderEntry::cancel_replace_order_ack(
+    Trace<web::rest::Response const> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
+  profile_.cancel_replace_order_ack([&]() {
+    auto &[trace_info, response] = event;
+    log::debug("user_id={}, order_id={}, version={}"sv, user_id, order_id, version);
+    try {
+      auto [status, category, body] = response.result();
+      log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
+      switch (category) {
+        using enum web::http::Category;
+        case SUCCESS: {  // 2xx
+          const auto cancel_replace_order = core::json::Parser::create<json::CancelReplaceOrder>(body);
+          Trace event(trace_info, cancel_replace_order);
+          (*this)(event, user_id, order_id, version);
+          break;
+        }
+        case CLIENT_ERROR: {  // 4xx
+          auto error = core::json::Parser::create<json::Error>(body);
+          auto error_2 = json::guess_error(error.code);
+          const oms::Response response{
+              .type = RequestType::CANCEL_ORDER,
+              .origin = Origin::EXCHANGE,
+              .status = RequestStatus::REJECTED,
+              .error = error_2,
+              .text = error.msg,
+              .version = version,
+              .request_id = {},
+              .quantity = NaN,
+              .price = NaN,
+          };
+          if (shared_.update_order(
+                  user_id, order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
+          } else {
+            log::warn("Did not find order: user_id={}, order_id={}"sv, user_id, order_id);
+          }
+          break;
+        }
+        default:
+          response.expect(web::http::Status::OK);  // throws
+      }
+    } catch (NetworkError &e) {
+      log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
+      oms::Response response{
+          .type = RequestType::CANCEL_ORDER,
+          .origin = Origin::GATEWAY,
+          .status = e.request_status(),
+          .error = e.error(),
+          .text = e.what(),
+          .version = version,
+          .request_id = {},
+          .quantity = NaN,
+          .price = NaN,
+      };
+      if (shared_.update_order(
+              user_id, order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
+      } else {
+        log::warn("Did not find order: user_id={}, order_id={}, version={}"sv, user_id, order_id, version);
+      }
+    }
+  });
+}
+
+void OrderEntry::operator()(
+    Trace<json::CancelReplaceOrder const> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
+  auto &[trace_info, cancel_replace_order] = event;
+  log::info<2>(
+      "cancel_replace_order={}, user_id={}, order_id={}, version={}"sv,
+      cancel_replace_order,
+      user_id,
+      order_id,
+      version);
+  auto side = json::map(cancel_replace_order.side);
+  auto order_type = json::map(cancel_replace_order.type);
+  auto time_in_force = json::map(cancel_replace_order.time_in_force);
+  auto external_order_id = fmt::format("{}"sv, cancel_replace_order.order_id);
+  auto order_status = json::map(cancel_replace_order.status);
+  const oms::Response response{
+      .type = RequestType::CANCEL_ORDER,
+      .origin = Origin::EXCHANGE,
+      .status = RequestStatus::ACCEPTED,
+      .error = {},
+      .text = {},
+      .version = version,
+      .request_id = {},
+      .quantity = NaN,
+      .price = NaN,
+  };
+  const oms::OrderUpdate order_update{
+      .account = security_.get_account(),
+      .exchange = Flags::exchange(),
+      .symbol = cancel_replace_order.symbol,
+      .side = side,
+      .position_effect = {},
+      .max_show_quantity = NaN,
+      .order_type = order_type,
+      .time_in_force = time_in_force,
+      .execution_instructions = {},
+      .order_template = {},
+      .create_time_utc = {},
+      .update_time_utc = {},
+      .external_account = {},
+      .external_order_id = external_order_id,
+      .status = order_status,
+      .quantity = cancel_replace_order.orig_qty,
+      .price = cancel_replace_order.price,
+      .stop_price = NaN,
+      .remaining_quantity = NaN,
+      .traded_quantity = cancel_replace_order.executed_qty,
+      .average_traded_price = NaN,
+      .last_traded_quantity = NaN,
+      .last_traded_price = NaN,
+      .last_liquidity = {},
+      .update_type = UpdateType::INCREMENTAL,
+  };
+  if (shared_.update_order(
+          user_id, order_id, stream_id_, trace_info, response, order_update, []([[maybe_unused]] auto &order) {})) {
   } else {
     log::warn("Did not find order: user_id={}, order_id={}"sv, user_id, order_id);
   }

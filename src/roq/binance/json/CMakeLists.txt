@@ -8,13 +8,14 @@ set(AUTOGEN_SCHEMAS
     account.json
     agg_trade.json
     balance.json
-    balance_update.json
     balances_item.json
+    balance_update.json
     book_ticker.json
     cancel_all_open_orders.json
     cancel_order.json
-    depth.json
+    cancel_replace_order.json
     depth_item.json
+    depth.json
     depth_update.json
     error.json
     event_type.json
@@ -27,9 +28,9 @@ set(AUTOGEN_SCHEMAS
     filter.json
     filters.json
     filter_type.json
-    list_status.json
-    list_status_item.json
     listen_key.json
+    list_status_item.json
+    list_status.json
     mini_ticker.json
     new_order.json
     open_orders.json

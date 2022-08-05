@@ -110,23 +110,23 @@ Error guess_error(int32_t code) {
 }
 
 namespace {
-json::OrderType map_order_type(auto &create_order) {
-  switch (create_order.order_type) {
+json::OrderType map_order_type(auto &order) {
+  switch (order.order_type) {
     using enum roq::OrderType;
     case UNDEFINED:
       break;
     case MARKET:
-      if (!std::isnan(create_order.stop_price))
+      if (!std::isnan(order.stop_price))
         return json::OrderType::STOP_LOSS;
       return json::OrderType::MARKET;
     case LIMIT:
-      if (create_order.execution_instructions.has(ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE))
+      if (order.execution_instructions.has(ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE))
         return json::OrderType::LIMIT_MAKER;
-      if (!std::isnan(create_order.stop_price))
+      if (!std::isnan(order.stop_price))
         return json::OrderType::STOP_LOSS_LIMIT;
       return json::OrderType::LIMIT;
   }
-  return map(create_order.order_type);
+  return map(order.order_type);
 }
 
 json::TimeInForce map_time_in_force(auto &create_order) {
@@ -177,6 +177,46 @@ std::string_view new_order(
       std::back_inserter(buffer),
       R"(newClientOrderId={}&)"
       R"(recvWindow={})"sv,
+      request_id,
+      recv_window.count());
+  std::string_view result{std::data(buffer), std::size(buffer)};
+  return result;
+}
+
+std::string_view cancel_replace_order(
+    std::vector<char> &buffer,
+    ModifyOrder const &modify_order,
+    oms::Order const &order,
+    std::string_view const &request_id,
+    std::string_view const &previous_request_id,
+    std::chrono::milliseconds recv_window) {
+  auto side = map(order.side);
+  auto type = map_order_type(order);
+  auto time_in_force = map_time_in_force(order);
+  auto quantity = std::isnan(modify_order.quantity) ? order.quantity : modify_order.quantity;
+  auto price = std::isnan(modify_order.price) ? order.price : modify_order.price;
+  buffer.clear();
+  fmt::format_to(
+      std::back_inserter(buffer),
+      R"(symbol={}&)"
+      R"(side={}&)"
+      R"(type={}&)"
+      R"(cancelReplaceMode=STOP_ON_FAILURE&)"sv,
+      order.symbol,
+      side.as_raw_text(),
+      type.as_raw_text());
+  if (time_in_force != json::TimeInForce{})
+    fmt::format_to(std::back_inserter(buffer), R"(timeInForce={}&)"sv, time_in_force.as_raw_text());
+  fmt::format_to(
+      std::back_inserter(buffer),
+      R"(quantity={}&)"
+      R"(price={}&)"
+      R"(cancelOrigClientOrderId={}&)"
+      R"(newClientOrderId={}&)"
+      R"(recvWindow={})"sv,
+      utils::Number{quantity, order.quantity_decimals},
+      utils::Number{price, order.price_decimals},
+      previous_request_id,
       request_id,
       recv_window.count());
   std::string_view result{std::data(buffer), std::size(buffer)};

@@ -28,6 +28,7 @@
 #include "roq/binance/json/account.hpp"
 #include "roq/binance/json/cancel_all_open_orders.hpp"
 #include "roq/binance/json/cancel_order.hpp"
+#include "roq/binance/json/cancel_replace_order.hpp"
 #include "roq/binance/json/listen_key.hpp"
 #include "roq/binance/json/new_order.hpp"
 #include "roq/binance/json/open_orders.hpp"
@@ -104,6 +105,15 @@ class OrderEntry final : public web::rest::Client::Handler {
   void new_order_ack(Trace<web::rest::Response const> const &, uint8_t user_id, uint32_t order_id, uint32_t version);
   void operator()(Trace<json::NewOrder const> const &, uint8_t user_id, uint32_t order_id, uint32_t version);
 
+  void cancel_replace_order(
+      Event<ModifyOrder> const &,
+      oms::Order const &,
+      std::string_view const &request_id,
+      std::string_view const &previous_request_id);
+  void cancel_replace_order_ack(
+      Trace<web::rest::Response const> const &, uint8_t user_id, uint32_t order_id, uint32_t version);
+  void operator()(Trace<json::CancelReplaceOrder const> const &, uint8_t user_id, uint32_t order_id, uint32_t version);
+
   void cancel_order(
       Event<CancelOrder> const &,
       oms::Order const &,
@@ -130,11 +140,12 @@ class OrderEntry final : public web::rest::Client::Handler {
     core::metrics::Counter disconnect;
   } counter_;
   struct {
-    core::metrics::Profile listen_key, listen_key_ack,  //
-        account, account_ack,                           //
-        open_orders, open_orders_ack,                   //
-        new_order, new_order_ack,                       //
-        cancel_order, cancel_order_ack,                 //
+    core::metrics::Profile listen_key, listen_key_ack,   //
+        account, account_ack,                            //
+        open_orders, open_orders_ack,                    //
+        new_order, new_order_ack,                        //
+        cancel_replace_order, cancel_replace_order_ack,  //
+        cancel_order, cancel_order_ack,                  //
         cancel_all_open_orders, cancel_all_open_orders_ack;
   } profile_;
   struct {

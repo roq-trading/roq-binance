@@ -251,6 +251,14 @@ extern std::string_view new_order(
     std::string_view const &request_id,
     std::chrono::milliseconds recv_window);
 
+extern std::string_view cancel_replace_order(
+    std::vector<char> &buffer,
+    ModifyOrder const &,
+    oms::Order const &,
+    std::string_view const &request_id,
+    std::string_view const &previous_request_id,
+    std::chrono::milliseconds recv_window);
+
 }  // namespace json
 }  // namespace binance
 }  // namespace roq

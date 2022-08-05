@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Added
+
+* Support for `ModifyOrder` (#262)
+
 ### Fixed
 
 * Issues with `LIMIT_MAKER` orders (#257)
