@@ -32,7 +32,6 @@ auto const NAME = "om"sv;
 
 const Mask SUPPORTS{
     SupportType::CREATE_ORDER,
-    SupportType::MODIFY_ORDER,
     SupportType::CANCEL_ORDER,
     SupportType::ORDER_ACK,
     SupportType::TRADE,
@@ -153,6 +152,7 @@ uint16_t OrderEntry::operator()(
     oms::Order const &order,
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
+  throw oms::NotSupported("not supported"sv);  // note! cancel-replace order isn't actually useful
   cancel_replace_order(event, order, request_id, previous_request_id);
   return stream_id_;
 }

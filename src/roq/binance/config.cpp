@@ -53,7 +53,6 @@ void Config::dispatch(server::Config::Handler &handler) const {
           SupportType::REFERENCE_DATA,
           SupportType::MARKET_STATUS,
           SupportType::CREATE_ORDER,
-          SupportType::MODIFY_ORDER,
           SupportType::CANCEL_ORDER,
           SupportType::ORDER_ACK,
           SupportType::FUNDS,
