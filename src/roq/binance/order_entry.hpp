@@ -65,6 +65,8 @@ class OrderEntry final : public web::rest::Client::Handler {
 
   void operator()(metrics::Writer &);
 
+  void operator()(Event<Disconnected> const &);
+
   uint16_t operator()(Event<CreateOrder> const &, oms::Order const &, std::string_view const &request_id);
   uint16_t operator()(
       Event<ModifyOrder> const &,
@@ -125,6 +127,24 @@ class OrderEntry final : public web::rest::Client::Handler {
   void cancel_all_open_orders(Event<CancelAllOrders> const &, std::string_view const &request_id);
   void cancel_all_open_orders_ack(Trace<web::rest::Response const> const &);
   void operator()(Trace<json::CancelAllOpenOrders const> const &);
+
+  // bulk
+
+  void cancel_replace(
+      Event<CancelOrder> const &,
+      oms::Order const &,
+      std::string_view const &cancel_request_id,
+      std::string_view const &cancel_previous_request_id,
+      Event<CreateOrder> const &,
+      oms::Order const &,
+      std::string_view const &create_request_id);
+  void cancel_replace_ack(
+      Trace<web::rest::Response const> const &,
+      uint8_t user_id,
+      uint32_t cancel_order_id,
+      uint32_t cancel_version,
+      uint32_t create_order_id,
+      uint32_t create_version);
 
  private:
   Handler &handler_;

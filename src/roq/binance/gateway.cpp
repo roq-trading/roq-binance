@@ -142,6 +142,8 @@ void Gateway::operator()(Event<Disconnected> const &event) {
         }
       }
   }
+  for (auto &[account, order_entry] : order_entry_)
+    (*order_entry)(event);
 }
 
 void Gateway::operator()(Trace<StreamStatus const> const &event) {

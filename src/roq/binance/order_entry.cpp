@@ -141,9 +141,21 @@ void OrderEntry::operator()(metrics::Writer &writer) {
       .write(latency_.ping, metrics::LATENCY);
 }
 
+void OrderEntry::operator()(Event<Disconnected> const &) {
+  // XXX clear holding buffer for user
+}
+
 uint16_t OrderEntry::operator()(
     Event<CreateOrder> const &event, oms::Order const &order, std::string_view const &request_id) {
+#if (1)
   new_order(event, order, request_id);
+#else
+  if (event.message_info.is_last) {
+    new_order(event, order, request_id);
+  } else {
+    // append to order cache
+  }
+#endif
   return stream_id_;
 }
 
@@ -1154,6 +1166,28 @@ void OrderEntry::operator()(Trace<json::CancelAllOpenOrders const> const &event)
     shared_.update_order(
         order.client_order_id, stream_id_, trace_info, order_update, []([[maybe_unused]] auto &order) {});
   }
+}
+
+// bulk
+
+void OrderEntry::cancel_replace(
+    Event<CancelOrder> const &,
+    oms::Order const &,
+    [[maybe_unused]] std::string_view const &cancel_request_id,
+    [[maybe_unused]] std::string_view const &cancel_previous_request_id,
+    Event<CreateOrder> const &,
+    oms::Order const &,
+    [[maybe_unused]] std::string_view const &create_request_id) {
+}
+
+// XXX this looks worrying -- we're potentially going to capture many parameters
+void OrderEntry::cancel_replace_ack(
+    Trace<web::rest::Response const> const &,
+    [[maybe_unused]] uint8_t user_id,
+    [[maybe_unused]] uint32_t cancel_order_id,
+    [[maybe_unused]] uint32_t cancel_version,
+    [[maybe_unused]] uint32_t create_order_id,
+    [[maybe_unused]] uint32_t create_version) {
 }
 
 }  // namespace binance
