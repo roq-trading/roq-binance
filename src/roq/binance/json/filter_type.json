@@ -40,6 +40,9 @@
     },
     {
       "name": "TRAILING_DELTA"
+    },
+    {
+      "name": "PERCENT_PRICE_BY_SIDE"
     }
   ]
 }

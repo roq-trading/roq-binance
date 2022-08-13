@@ -75,6 +75,7 @@ MarketData::MarketData(Handler &handler, io::Context &context, uint32_t stream_i
       request_id_(static_cast<uint64_t>(stream_id_) * 1000000),  // scale (debugging)
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
+          .total_bytes_received = create_metrics(name_, "total_bytes_received"sv),
       },
       profile_{
           .parse = create_metrics(name_, "parse"sv),
@@ -113,6 +114,7 @@ void MarketData::operator()(metrics::Writer &writer) {
   writer
       // counter
       .write(counter_.disconnect, metrics::COUNTER)
+      .write(counter_.total_bytes_received, metrics::COUNTER)
       // profile
       .write(profile_.parse, metrics::PROFILE)
       .write(profile_.error, metrics::PROFILE)
@@ -163,6 +165,7 @@ void MarketData::operator()(web::socket::Client::Latency const &latency) {
 
 void MarketData::operator()(web::socket::Client::Text const &text) {
   parse(text.payload);
+  counter_.total_bytes_received.update((*connection_).total_bytes_received());
 }
 
 void MarketData::operator()(web::socket::Client::Binary const &) {

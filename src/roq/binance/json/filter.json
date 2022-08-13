@@ -100,6 +100,26 @@
       "name": "maxTrailingBelowDelta",
       "type": "double",
       "comment": "TRAILING_DELTA"
+    },
+    {
+      "name": "bidMultiplierUp",
+      "type": "double",
+      "comment": "PERCENT_PRICE_BY_SIDE?"
+    },
+    {
+      "name": "bidMultiplierDown",
+      "type": "double",
+      "comment": "PERCENT_PRICE_BY_SIDE?"
+    },
+    {
+      "name": "askMultiplierUp",
+      "type": "double",
+      "comment": "PERCENT_PRICE_BY_SIDE?"
+    },
+    {
+      "name": "askMultiplierDown",
+      "type": "double",
+      "comment": "PERCENT_PRICE_BY_SIDE?"
     }
   ]
 }

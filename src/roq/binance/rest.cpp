@@ -213,7 +213,7 @@ void Rest::get_exchange_info_ack(Trace<web::rest::Response const> const &event, 
     auto state = RestState::EXCHANGE_INFO;
     try {
       auto [status, category, body] = response.result();
-      log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
+      // log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
       if (download_.skip(sequence, state)) {
         log::info("Download state={} has already been processed"sv, state);
         return;
@@ -285,6 +285,8 @@ void Rest::operator()(Trace<json::ExchangeInfo const> const &event) {
         case EXCHANGE_MAX_NUM_ALGO_ORDERS:
           break;
         case TRAILING_DELTA:
+          break;
+        case PERCENT_PRICE_BY_SIDE:
           break;
       }
     }

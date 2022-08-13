@@ -347,7 +347,7 @@ void OrderEntry::get_account_ack(Trace<web::rest::Response const> const &event) 
     auto &[trace_info, response] = event;
     try {
       auto [status, category, body] = response.result();
-      log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
+      // log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
       response.expect(web::http::Status::OK);
       core::json::Buffer buffer(decode_buffer_);
       const auto account = core::json::Parser::create<json::Account>(body, buffer);
