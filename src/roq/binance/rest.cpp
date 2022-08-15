@@ -377,7 +377,7 @@ void Rest::get_depth_ack(Trace<web::rest::Response const> const &event, std::str
     auto &[trace_info, response] = event;
     try {
       auto [status, category, body] = response.result();
-      log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
+      // log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
       response.expect(web::http::Status::OK);
       core::json::Buffer buffer(decode_buffer_);
       const auto depth = core::json::Parser::create<json::Depth>(body, buffer);
