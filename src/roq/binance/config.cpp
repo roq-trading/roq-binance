@@ -57,7 +57,7 @@ void Config::dispatch(server::Config::Handler &handler) const {
           SupportType::ORDER_ACK,
           SupportType::FUNDS,
       },
-      .mbp_max_depth = {},
+      .mbp_max_depth = flags::Flags::mbp_max_depth(),
       .mbp_tick_size_multiplier = NaN,
       .mbp_min_trade_vol_multiplier = NaN,
       .mbp_allow_remove_non_existing = true,

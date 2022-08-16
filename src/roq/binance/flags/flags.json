@@ -160,6 +160,11 @@
       "type": "bool",
       "default": false,
       "description": "allow price inversion?"
+    },
+    {
+      "name": "mbp_max_depth",
+      "type": "uint32_t",
+      "description": "max depth levels (count)"
     }
   ]
 }
