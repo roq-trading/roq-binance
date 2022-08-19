@@ -85,7 +85,9 @@ TEST_CASE("json_depth_update_simple", "[json_depth_update]") {
     void operator()(Trace<json::Trade const> const &) override { FAIL(); }
     void operator()(Trace<json::MiniTicker const> const &) override { FAIL(); }
     void operator()(Trace<json::BookTicker const> const &) override { FAIL(); }
-    void operator()(Trace<json::Depth const> const &, std::string_view const &symbol) override { FAIL(); }
+    void operator()(Trace<json::Depth const> const &, [[maybe_unused]] std::string_view const &symbol) override {
+      FAIL();
+    }
     void operator()(Trace<json::DepthUpdate const> const &) override { ++counter; }
   } handler;
   json::MarketStreamParser::dispatch(handler, message, buffer, TraceInfo{});
