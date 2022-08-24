@@ -4,8 +4,11 @@
 
 #include <absl/container/flat_hash_set.h>
 
+#include <memory>
 #include <string>
 #include <string_view>
+
+#include "roq/cache/cancel_order.hpp"
 
 #include "roq/core/buffer.hpp"
 #include "roq/core/download.hpp"
@@ -37,6 +40,13 @@ namespace roq {
 namespace binance {
 
 class OrderEntry final : public web::rest::Client::Handler {
+  struct HoldCancelOrder final {
+    cache::CancelOrder cancel_order;
+    RequestId request_id;
+    RequestId previous_request_id;
+    Symbol symbol;
+  };
+
  public:
   struct ListenKeyUpdate final {
     std::string_view account;
@@ -108,13 +118,21 @@ class OrderEntry final : public web::rest::Client::Handler {
   void operator()(Trace<json::NewOrder const> const &, uint8_t user_id, uint32_t order_id, uint32_t version);
 
   void cancel_replace_order(
-      Event<ModifyOrder> const &,
-      oms::Order const &,
-      std::string_view const &request_id,
-      std::string_view const &previous_request_id);
+      HoldCancelOrder const &, Event<CreateOrder> const &, oms::Order const &, std::string_view const &_request_id);
   void cancel_replace_order_ack(
-      Trace<web::rest::Response const> const &, uint8_t user_id, uint32_t order_id, uint32_t version);
-  void operator()(Trace<json::CancelReplaceOrder const> const &, uint8_t user_id, uint32_t order_id, uint32_t version);
+      Trace<web::rest::Response const> const &,
+      uint8_t user_id,
+      uint32_t cancel_order_id,
+      uint32_t cancel_version,
+      uint32_t create_order_id,
+      uint32_t create_version);
+  void operator()(
+      Trace<json::CancelReplaceOrder const> const &,
+      uint8_t user_id,
+      uint32_t cancel_order_id,
+      uint32_t cancel_version,
+      uint32_t create_order_id,
+      uint32_t create_version);
 
   void cancel_order(
       Event<CancelOrder> const &,
@@ -187,6 +205,8 @@ class OrderEntry final : public web::rest::Client::Handler {
   bool download_account_ = false;
   bool download_orders_ = false;
   std::vector<char> encode_buffer_;
+  // batch
+  std::vector<std::unique_ptr<HoldCancelOrder>> hold_cancel_order_;
 };
 
 }  // namespace binance

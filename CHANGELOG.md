@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Added
+
+* Support for 1-shot cancel-replace request (this is *not* modify order!)
+
 ## 0.8.7 &ndash; 2022-08-22
 
 ### Fixed

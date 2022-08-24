@@ -145,6 +145,7 @@ json::TimeInForce map_time_in_force(auto &create_order) {
 }
 }  // namespace
 
+// https://binance-docs.github.io/apidocs/spot/en/#new-order-trade
 std::string_view new_order(
     std::vector<char> &buffer,
     CreateOrder const &create_order,
@@ -183,41 +184,47 @@ std::string_view new_order(
   return result;
 }
 
+// https://binance-docs.github.io/apidocs/spot/en/#cancel-an-existing-order-and-send-a-new-order-trade
 std::string_view cancel_replace_order(
     std::vector<char> &buffer,
-    ModifyOrder const &modify_order,
+    std::string_view const &cancel_request_id,
+    std::string_view const &cancel_previous_request_id,
+    CreateOrder const &create_order,
     oms::Order const &order,
-    std::string_view const &request_id,
-    std::string_view const &previous_request_id,
+    std::string_view const &create_request_id,
     std::chrono::milliseconds recv_window) {
   auto side = map(order.side);
   auto type = map_order_type(order);
   auto time_in_force = map_time_in_force(order);
-  auto quantity = std::isnan(modify_order.quantity) ? order.quantity : modify_order.quantity;
-  auto price = std::isnan(modify_order.price) ? order.price : modify_order.price;
   buffer.clear();
   fmt::format_to(
       std::back_inserter(buffer),
       R"(symbol={}&)"
+      R"(cancelReplaceMode=STOP_ON_FAILURE&)"
+      R"(cancelOrigClientOrderId={}&)"
+      R"(cancelNewClientOrderId={}&)"
       R"(side={}&)"
       R"(type={}&)"
-      R"(cancelReplaceMode=STOP_ON_FAILURE&)"sv,
+      R"(quantity={}&)"sv,
       order.symbol,
+      cancel_previous_request_id,
+      cancel_request_id,
       side.as_raw_text(),
-      type.as_raw_text());
+      type.as_raw_text(),
+      utils::Number{create_order.quantity, order.quantity_decimals});
   if (time_in_force != json::TimeInForce{})
     fmt::format_to(std::back_inserter(buffer), R"(timeInForce={}&)"sv, time_in_force.as_raw_text());
+  if (!std::isnan(create_order.price))
+    fmt::format_to(
+        std::back_inserter(buffer), R"(price={}&)"sv, utils::Number{create_order.price, order.price_decimals});
+  if (!std::isnan(create_order.stop_price))
+    fmt::format_to(
+        std::back_inserter(buffer), R"(stopPrice={}&)"sv, utils::Number{create_order.stop_price, order.price_decimals});
   fmt::format_to(
       std::back_inserter(buffer),
-      R"(quantity={}&)"
-      R"(price={}&)"
-      R"(cancelOrigClientOrderId={}&)"
       R"(newClientOrderId={}&)"
       R"(recvWindow={})"sv,
-      utils::Number{quantity, order.quantity_decimals},
-      utils::Number{price, order.price_decimals},
-      previous_request_id,
-      request_id,
+      create_request_id,
       recv_window.count());
   std::string_view result{std::data(buffer), std::size(buffer)};
   return result;

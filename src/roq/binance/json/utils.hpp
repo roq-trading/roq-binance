@@ -253,10 +253,11 @@ extern std::string_view new_order(
 
 extern std::string_view cancel_replace_order(
     std::vector<char> &buffer,
-    ModifyOrder const &,
+    std::string_view const &cancel_request_id,
+    std::string_view const &cancel_previous_request_id,
+    CreateOrder const &,
     oms::Order const &,
-    std::string_view const &request_id,
-    std::string_view const &previous_request_id,
+    std::string_view const &create_request_id,
     std::chrono::milliseconds recv_window);
 
 }  // namespace json
