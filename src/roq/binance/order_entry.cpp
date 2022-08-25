@@ -142,8 +142,9 @@ void OrderEntry::operator()(metrics::Writer &writer) {
       .write(latency_.ping, metrics::LATENCY);
 }
 
-void OrderEntry::operator()(Event<Disconnected> const &) {
-  // XXX clear holding buffer for user
+void OrderEntry::operator()(Event<Disconnected> const &event) {
+  auto user_id = event.message_info.source;
+  hold_cancel_order_[user_id].reset();
 }
 
 uint16_t OrderEntry::operator()(

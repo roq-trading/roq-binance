@@ -122,6 +122,8 @@ void Gateway::operator()(Event<Disconnected> const &event) {
       R"(Disconnected: source="{}", order_cancel_policy={})"sv,
       message_info.source_name,
       disconnected.order_cancel_policy);
+  for (auto &[_, order_entry] : order_entry_)
+    (*order_entry)(event);
   switch (disconnected.order_cancel_policy) {
     using enum OrderCancelPolicy;
     case UNDEFINED:
