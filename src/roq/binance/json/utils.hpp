@@ -258,7 +258,8 @@ extern std::string_view cancel_replace_order(
     CreateOrder const &,
     oms::Order const &,
     std::string_view const &create_request_id,
-    std::chrono::milliseconds recv_window);
+    std::chrono::milliseconds recv_window,
+    bool stop_on_failure);
 
 }  // namespace json
 }  // namespace binance

@@ -9,6 +9,7 @@ book_ticker.hpp
 cancel_all_open_orders.hpp
 cancel_order.hpp
 cancel_replace_order.hpp
+cancel_replace_order_error.hpp
 depth_item.hpp
 depth.hpp
 depth_update.hpp
@@ -36,6 +37,7 @@ outbound_account_position.hpp
 result.hpp
 side.hpp
 stream.hpp
+success_or_failure.hpp
 symbol.hpp
 symbol_status.hpp
 ticker.hpp
@@ -51,6 +53,7 @@ book_ticker.cpp
 cancel_all_open_orders.cpp
 cancel_order.cpp
 cancel_replace_order.cpp
+cancel_replace_order_error.cpp
 depth_item.cpp
 depth.cpp
 depth_update.cpp
@@ -78,6 +81,7 @@ outbound_account_position.cpp
 result.cpp
 side.cpp
 stream.cpp
+success_or_failure.cpp
 symbol.cpp
 symbol_status.cpp
 ticker.cpp

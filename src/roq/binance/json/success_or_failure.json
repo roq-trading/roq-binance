@@ -1,0 +1,15 @@
+{
+  "name": "SuccessOrFailure",
+  "type": "enum",
+  "values": [
+    {
+      "name": "SUCCESS"
+    },
+    {
+      "name": "FAILURE"
+    },
+    {
+      "name": "NOT_ATTEMPTED"
+    }
+  ]
+}

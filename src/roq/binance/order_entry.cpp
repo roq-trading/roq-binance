@@ -153,13 +153,9 @@ uint16_t OrderEntry::operator()(
   if (!tmp) {
     new_order(event, order, request_id);
   } else {
-    try {
-      cancel_replace_order(*tmp, event, order, request_id);
-      tmp.reset();
-    } catch (...) {
-      tmp.reset();
-      throw;
-    }
+    typename std::remove_cvref<decltype(tmp)>::type tmp2;
+    tmp.swap(tmp2);
+    cancel_replace_order(*tmp2, event, order, request_id);
   }
   return stream_id_;
 }
@@ -716,7 +712,8 @@ void OrderEntry::cancel_replace_order(
         create_order,
         order,
         request_id,
-        utils::safe_cast(Flags::rest_order_recv_window()));
+        utils::safe_cast(Flags::rest_order_recv_window()),
+        flags::Flags::cancel_replace_stop_on_failure());
     log::debug(R"(body="{}")"sv, body);
     auto query = security_.create_query(body);
     auto headers = security_.create_headers();
@@ -798,11 +795,12 @@ void OrderEntry::cancel_replace_order_ack(
   profile_.cancel_replace_order_ack([&]() {
     auto &[trace_info, response] = event;
     log::debug(
-        "user_id={}, cancel_order_id={}, cancel_version={}, create_order_id={}"sv,
+        "user_id={}, cancel_order_id={}, cancel_version={}, create_order_id={}, create_version={}"sv,
         user_id,
         cancel_order_id,
         cancel_version,
-        create_order_id);
+        create_order_id,
+        create_version);
     try {
       auto [status, category, body] = response.result();
       log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
@@ -816,24 +814,11 @@ void OrderEntry::cancel_replace_order_ack(
           break;
         }
         case CLIENT_ERROR: {  // 4xx
-          auto error = core::json::Parser::create<json::Error>(body);
-          auto error_2 = json::guess_error(error.code);
-          const oms::Response response{
-              .type = RequestType::CANCEL_ORDER,
-              .origin = Origin::EXCHANGE,
-              .status = RequestStatus::REJECTED,
-              .error = error_2,
-              .text = error.msg,
-              .version = cancel_version,
-              .request_id = {},
-              .quantity = NaN,
-              .price = NaN,
-          };
-          if (shared_.update_order(
-                  user_id, cancel_order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
-          } else {
-            log::warn("Did not find order: user_id={}, order_id={}"sv, user_id, cancel_order_id);
-          }
+          core::json::Buffer buffer(decode_buffer_);
+          const auto cancel_replace_order_error =
+              core::json::Parser::create<json::CancelReplaceOrderError>(body, buffer);
+          Trace event(trace_info, cancel_replace_order_error);
+          (*this)(event, user_id, cancel_order_id, cancel_version, create_order_id, create_version);
           break;
         }
         default:
@@ -841,25 +826,43 @@ void OrderEntry::cancel_replace_order_ack(
       }
     } catch (NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
-      oms::Response response{
-          .type = RequestType::CANCEL_ORDER,
-          .origin = Origin::GATEWAY,
-          .status = e.request_status(),
-          .error = e.error(),
-          .text = e.what(),
-          .version = cancel_version,
-          .request_id = {},
-          .quantity = NaN,
-          .price = NaN,
-      };
-      if (shared_.update_order(
-              user_id, cancel_order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
-      } else {
-        log::warn(
-            "Did not find order: user_id={}, cancel_order_id={}, cancel_version={}"sv,
-            user_id,
-            cancel_order_id,
-            cancel_version);
+      {  // cancel
+        oms::Response response{
+            .type = RequestType::CANCEL_ORDER,
+            .origin = Origin::GATEWAY,
+            .status = e.request_status(),
+            .error = e.error(),
+            .text = e.what(),
+            .version = cancel_version,
+            .request_id = {},
+            .quantity = NaN,
+            .price = NaN,
+        };
+        if (shared_.update_order(
+                user_id, cancel_order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
+        } else {
+          log::warn(
+              "Did not find order: user_id={}, order_id={}, version={}"sv, user_id, cancel_order_id, cancel_version);
+        }
+      }
+      {  // create
+        oms::Response response{
+            .type = RequestType::CREATE_ORDER,
+            .origin = Origin::GATEWAY,
+            .status = e.request_status(),
+            .error = e.error(),
+            .text = e.what(),
+            .version = create_version,
+            .request_id = {},
+            .quantity = NaN,
+            .price = NaN,
+        };
+        if (shared_.update_order(
+                user_id, create_order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
+        } else {
+          log::warn(
+              "Did not find order: user_id={}, order_id={}, version={}"sv, user_id, create_order_id, create_version);
+        }
       }
     }
   });
@@ -874,116 +877,210 @@ void OrderEntry::operator()(
     uint32_t create_version) {
   auto &[trace_info, cancel_replace_order] = event;
   log::info<2>(
-      "cancel_replace_order={}, user_id={}, cancel_order_id={}, cancel_version={}, create_order_id={}"sv,
+      "cancel_replace_order={}, user_id={}, cancel_order_id={}, cancel_version={}, create_order_id={}, create_version={}"sv,
       cancel_replace_order,
       user_id,
       cancel_order_id,
       cancel_version,
-      create_order_id);
-  {
-    auto &cancel_order = cancel_replace_order.cancel_response;
-    auto side = json::map(cancel_order.side);
-    auto order_type = json::map(cancel_order.type);
-    auto time_in_force = json::map(cancel_order.time_in_force);
-    auto external_order_id = fmt::format("{}"sv, cancel_order.order_id);
-    auto order_status = json::map(cancel_order.status);
-    const oms::Response response{
-        .type = RequestType::CANCEL_ORDER,
-        .origin = Origin::EXCHANGE,
-        .status = RequestStatus::ACCEPTED,
-        .error = {},
-        .text = {},
-        .version = cancel_version,
-        .request_id = {},
-        .quantity = NaN,
-        .price = NaN,
-    };
-    const oms::OrderUpdate order_update{
-        .account = security_.get_account(),
-        .exchange = Flags::exchange(),
-        .symbol = cancel_order.symbol,
-        .side = side,
-        .position_effect = {},
-        .max_show_quantity = NaN,
-        .order_type = order_type,
-        .time_in_force = time_in_force,
-        .execution_instructions = {},
-        .order_template = {},
-        .create_time_utc = {},
-        .update_time_utc = {},
-        .external_account = {},
-        .external_order_id = external_order_id,
-        .status = order_status,
-        .quantity = cancel_order.orig_qty,
-        .price = cancel_order.price,
-        .stop_price = NaN,
-        .remaining_quantity = NaN,
-        .traded_quantity = cancel_order.executed_qty,
-        .average_traded_price = NaN,
-        .last_traded_quantity = NaN,
-        .last_traded_price = NaN,
-        .last_liquidity = {},
-        .update_type = UpdateType::INCREMENTAL,
-    };
-    if (shared_.update_order(
-            user_id, cancel_order_id, stream_id_, trace_info, response, order_update, []([[maybe_unused]] auto &order) {
-            })) {
-    } else {
-      log::warn("Did not find order: user_id={}, cancel_order_id={}"sv, user_id, cancel_order_id);
+      create_order_id,
+      create_version);
+  switch (cancel_replace_order.cancel_result) {
+    using enum json::SuccessOrFailure::type_t;
+    case UNDEFINED:
+    case UNKNOWN:
+      log::warn("Unexpected"sv);
+      break;
+    case SUCCESS: {
+      auto &cancel_order = cancel_replace_order.cancel_response;
+      auto side = json::map(cancel_order.side);
+      auto order_type = json::map(cancel_order.type);
+      auto time_in_force = json::map(cancel_order.time_in_force);
+      auto external_order_id = fmt::format("{}"sv, cancel_order.order_id);
+      auto order_status = json::map(cancel_order.status);
+      const oms::Response response{
+          .type = RequestType::CANCEL_ORDER,
+          .origin = Origin::EXCHANGE,
+          .status = RequestStatus::ACCEPTED,
+          .error = {},
+          .text = {},
+          .version = cancel_version,
+          .request_id = {},
+          .quantity = NaN,
+          .price = NaN,
+      };
+      const oms::OrderUpdate order_update{
+          .account = security_.get_account(),
+          .exchange = Flags::exchange(),
+          .symbol = cancel_order.symbol,
+          .side = side,
+          .position_effect = {},
+          .max_show_quantity = NaN,
+          .order_type = order_type,
+          .time_in_force = time_in_force,
+          .execution_instructions = {},
+          .order_template = {},
+          .create_time_utc = {},
+          .update_time_utc = {},
+          .external_account = {},
+          .external_order_id = external_order_id,
+          .status = order_status,
+          .quantity = cancel_order.orig_qty,
+          .price = cancel_order.price,
+          .stop_price = NaN,
+          .remaining_quantity = NaN,
+          .traded_quantity = cancel_order.executed_qty,
+          .average_traded_price = NaN,
+          .last_traded_quantity = NaN,
+          .last_traded_price = NaN,
+          .last_liquidity = {},
+          .update_type = UpdateType::INCREMENTAL,
+      };
+      if (shared_.update_order(
+              user_id,
+              cancel_order_id,
+              stream_id_,
+              trace_info,
+              response,
+              order_update,
+              []([[maybe_unused]] auto &order) {})) {
+      } else {
+        log::warn(
+            "Did not find order: user_id={}, order_id={}, version={}"sv, user_id, cancel_order_id, cancel_version);
+      }
+      break;
+    }
+    case FAILURE:
+    case NOT_ATTEMPTED: {
+      auto &cancel_order = cancel_replace_order.cancel_response;
+      const oms::Response response{
+          .type = RequestType::CANCEL_ORDER,
+          .origin = Origin::EXCHANGE,
+          .status = RequestStatus::REJECTED,
+          .error = json::guess_error(cancel_order.code),
+          .text = cancel_order.msg,
+          .version = cancel_version,
+          .request_id = {},
+          .quantity = NaN,
+          .price = NaN,
+      };
+      if (shared_.update_order(
+              user_id, cancel_order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
+      } else {
+        log::warn(
+            "Did not find order: user_id={}, order_id={}, version={}"sv, user_id, cancel_order_id, cancel_version);
+      }
+      break;
     }
   }
-  {
-    auto &new_order = cancel_replace_order.new_order_response;
-    auto side = json::map(new_order.side);
-    auto order_type = json::map(new_order.type);
-    auto time_in_force = json::map(new_order.time_in_force);
-    auto external_order_id = fmt::format("{}"sv, new_order.order_id);
-    auto order_status = json::map(new_order.status);
-    const oms::Response response{
-        .type = RequestType::CREATE_ORDER,
-        .origin = Origin::EXCHANGE,
-        .status = RequestStatus::ACCEPTED,
-        .error = {},
-        .text = {},
-        .version = create_version,
-        .request_id = {},
-        .quantity = NaN,
-        .price = NaN,
-    };
-    const oms::OrderUpdate order_update{
-        .account = security_.get_account(),
-        .exchange = Flags::exchange(),
-        .symbol = new_order.symbol,
-        .side = side,
-        .position_effect = {},
-        .max_show_quantity = NaN,
-        .order_type = order_type,
-        .time_in_force = time_in_force,
-        .execution_instructions = {},
-        .order_template = {},
-        .create_time_utc = {},
-        .update_time_utc = {},
-        .external_account = {},
-        .external_order_id = external_order_id,
-        .status = order_status,
-        .quantity = new_order.orig_qty,
-        .price = new_order.price,
-        .stop_price = NaN,
-        .remaining_quantity = NaN,
-        .traded_quantity = new_order.executed_qty,
-        .average_traded_price = NaN,
-        .last_traded_quantity = NaN,
-        .last_traded_price = NaN,
-        .last_liquidity = {},
-        .update_type = UpdateType::INCREMENTAL,
-    };
-    if (shared_.update_order(
-            user_id, create_order_id, stream_id_, trace_info, response, order_update, []([[maybe_unused]] auto &order) {
-            })) {
-    } else {
-      log::warn("Did not find order: user_id={}, create_order_id={}"sv, user_id, create_order_id);
+  switch (cancel_replace_order.cancel_result) {
+    using enum json::SuccessOrFailure::type_t;
+    case UNDEFINED:
+    case UNKNOWN:
+      log::warn("Unexpected"sv);
+      break;
+    case SUCCESS: {
+      auto &new_order = cancel_replace_order.new_order_response;
+      auto side = json::map(new_order.side);
+      auto order_type = json::map(new_order.type);
+      auto time_in_force = json::map(new_order.time_in_force);
+      auto external_order_id = fmt::format("{}"sv, new_order.order_id);
+      auto order_status = json::map(new_order.status);
+      const oms::Response response{
+          .type = RequestType::CREATE_ORDER,
+          .origin = Origin::EXCHANGE,
+          .status = RequestStatus::ACCEPTED,
+          .error = {},
+          .text = {},
+          .version = create_version,
+          .request_id = {},
+          .quantity = NaN,
+          .price = NaN,
+      };
+      const oms::OrderUpdate order_update{
+          .account = security_.get_account(),
+          .exchange = Flags::exchange(),
+          .symbol = new_order.symbol,
+          .side = side,
+          .position_effect = {},
+          .max_show_quantity = NaN,
+          .order_type = order_type,
+          .time_in_force = time_in_force,
+          .execution_instructions = {},
+          .order_template = {},
+          .create_time_utc = {},
+          .update_time_utc = {},
+          .external_account = {},
+          .external_order_id = external_order_id,
+          .status = order_status,
+          .quantity = new_order.orig_qty,
+          .price = new_order.price,
+          .stop_price = NaN,
+          .remaining_quantity = NaN,
+          .traded_quantity = new_order.executed_qty,
+          .average_traded_price = NaN,
+          .last_traded_quantity = NaN,
+          .last_traded_price = NaN,
+          .last_liquidity = {},
+          .update_type = UpdateType::INCREMENTAL,
+      };
+      if (shared_.update_order(
+              user_id,
+              create_order_id,
+              stream_id_,
+              trace_info,
+              response,
+              order_update,
+              []([[maybe_unused]] auto &order) {})) {
+      } else {
+        log::warn(
+            "Did not find order: user_id={}, order_id={}, version={}"sv, user_id, create_order_id, create_version);
+      }
+      break;
+    }
+    case FAILURE:
+    case NOT_ATTEMPTED: {
+      auto &new_order = cancel_replace_order.new_order_response;
+      const oms::Response response{
+          .type = RequestType::CREATE_ORDER,
+          .origin = Origin::EXCHANGE,
+          .status = RequestStatus::REJECTED,
+          .error = json::guess_error(new_order.code),
+          .text = new_order.msg,
+          .version = create_version,
+          .request_id = {},
+          .quantity = NaN,
+          .price = NaN,
+      };
+      if (shared_.update_order(
+              user_id, create_order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
+      } else {
+        log::warn(
+            "Did not find order: user_id={}, order_id={}, version={}"sv, user_id, create_order_id, create_version);
+      }
+      break;
     }
   }
+}
+
+void OrderEntry::operator()(
+    Trace<json::CancelReplaceOrderError const> const &event,
+    uint8_t user_id,
+    uint32_t cancel_order_id,
+    uint32_t cancel_version,
+    uint32_t create_order_id,
+    uint32_t create_version) {
+  auto &[trace_info, cancel_replace_order_error] = event;
+  log::info<2>(
+      "cancel_replace_order_error={}, user_id={}, cancel_order_id={}, cancel_version={}, create_order_id={}, create_version={}"sv,
+      cancel_replace_order_error,
+      user_id,
+      cancel_order_id,
+      cancel_version,
+      create_order_id,
+      create_version);
+  assert(cancel_replace_order_error.code != 0);
+  Trace event_2{trace_info, cancel_replace_order_error.data};
+  (*this)(event_2, user_id, cancel_order_id, cancel_version, create_order_id, create_version);
 }
 
 // cancel-order
@@ -1258,28 +1355,6 @@ void OrderEntry::operator()(Trace<json::CancelAllOpenOrders const> const &event)
     shared_.update_order(
         order.client_order_id, stream_id_, trace_info, order_update, []([[maybe_unused]] auto &order) {});
   }
-}
-
-// bulk
-
-void OrderEntry::cancel_replace(
-    Event<CancelOrder> const &,
-    oms::Order const &,
-    [[maybe_unused]] std::string_view const &cancel_request_id,
-    [[maybe_unused]] std::string_view const &cancel_previous_request_id,
-    Event<CreateOrder> const &,
-    oms::Order const &,
-    [[maybe_unused]] std::string_view const &create_request_id) {
-}
-
-// XXX this looks worrying -- we're potentially going to capture many parameters
-void OrderEntry::cancel_replace_ack(
-    Trace<web::rest::Response const> const &,
-    [[maybe_unused]] uint8_t user_id,
-    [[maybe_unused]] uint32_t cancel_order_id,
-    [[maybe_unused]] uint32_t cancel_version,
-    [[maybe_unused]] uint32_t create_order_id,
-    [[maybe_unused]] uint32_t create_version) {
 }
 
 }  // namespace binance

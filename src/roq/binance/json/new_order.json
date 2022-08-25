@@ -57,6 +57,16 @@
     {
       "name": "fills",
       "type": "std::span<Fill>"
+    },
+    {
+      "name": "code",
+      "type": "int32_t",
+      "comment": "only populated by cancel-replace"
+    },
+    {
+      "name": "msg",
+      "type": "std::string_view",
+      "comment": "only populated by cancel-replace"
     }
   ]
 }

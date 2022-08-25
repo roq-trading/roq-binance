@@ -32,6 +32,7 @@
 #include "roq/binance/json/cancel_all_open_orders.hpp"
 #include "roq/binance/json/cancel_order.hpp"
 #include "roq/binance/json/cancel_replace_order.hpp"
+#include "roq/binance/json/cancel_replace_order_error.hpp"
 #include "roq/binance/json/listen_key.hpp"
 #include "roq/binance/json/new_order.hpp"
 #include "roq/binance/json/open_orders.hpp"
@@ -133,6 +134,13 @@ class OrderEntry final : public web::rest::Client::Handler {
       uint32_t cancel_version,
       uint32_t create_order_id,
       uint32_t create_version);
+  void operator()(
+      Trace<json::CancelReplaceOrderError const> const &,
+      uint8_t user_id,
+      uint32_t cancel_order_id,
+      uint32_t cancel_version,
+      uint32_t create_order_id,
+      uint32_t create_version);
 
   void cancel_order(
       Event<CancelOrder> const &,
@@ -145,24 +153,6 @@ class OrderEntry final : public web::rest::Client::Handler {
   void cancel_all_open_orders(Event<CancelAllOrders> const &, std::string_view const &request_id);
   void cancel_all_open_orders_ack(Trace<web::rest::Response const> const &);
   void operator()(Trace<json::CancelAllOpenOrders const> const &);
-
-  // bulk
-
-  void cancel_replace(
-      Event<CancelOrder> const &,
-      oms::Order const &,
-      std::string_view const &cancel_request_id,
-      std::string_view const &cancel_previous_request_id,
-      Event<CreateOrder> const &,
-      oms::Order const &,
-      std::string_view const &create_request_id);
-  void cancel_replace_ack(
-      Trace<web::rest::Response const> const &,
-      uint8_t user_id,
-      uint32_t cancel_order_id,
-      uint32_t cancel_version,
-      uint32_t create_order_id,
-      uint32_t create_version);
 
  private:
   Handler &handler_;

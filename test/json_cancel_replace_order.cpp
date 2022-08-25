@@ -53,8 +53,8 @@ TEST_CASE("json_cancel_replace_order_simple", "[json_cancel_replace_order]") {
   core::Buffer buffer_(65536);
   core::json::Buffer buffer(buffer_);
   auto obj = core::json::Parser::create<json::CancelReplaceOrder>(message, buffer);
-  CHECK(obj.cancel_result == "SUCCESS"sv);
-  CHECK(obj.new_order_result == "SUCCESS"sv);
+  CHECK(obj.cancel_result == json::SuccessOrFailure::SUCCESS);
+  CHECK(obj.new_order_result == json::SuccessOrFailure::SUCCESS);
   // cancel order
   auto &cancel = obj.cancel_response;
   CHECK(cancel.symbol == "BTCUSDT"sv);

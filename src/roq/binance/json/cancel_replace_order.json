@@ -4,11 +4,11 @@
   "values": [
     {
       "name": "cancelResult",
-      "type": "std::string_view"
+      "type": "SuccessOrFailure"
     },
     {
       "name": "newOrderResult",
-      "type": "std::string_view"
+      "type": "SuccessOrFailure"
     },
     {
       "name": "cancelResponse",

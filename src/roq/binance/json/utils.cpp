@@ -192,7 +192,8 @@ std::string_view cancel_replace_order(
     CreateOrder const &create_order,
     oms::Order const &order,
     std::string_view const &create_request_id,
-    std::chrono::milliseconds recv_window) {
+    std::chrono::milliseconds recv_window,
+    bool stop_on_failure) {
   auto side = map(order.side);
   auto type = map_order_type(order);
   auto time_in_force = map_time_in_force(order);
@@ -200,13 +201,14 @@ std::string_view cancel_replace_order(
   fmt::format_to(
       std::back_inserter(buffer),
       R"(symbol={}&)"
-      R"(cancelReplaceMode=STOP_ON_FAILURE&)"
+      R"(cancelReplaceMode={}&)"
       R"(cancelOrigClientOrderId={}&)"
       R"(cancelNewClientOrderId={}&)"
       R"(side={}&)"
       R"(type={}&)"
       R"(quantity={}&)"sv,
       order.symbol,
+      stop_on_failure ? "STOP_ON_FAILURE"sv : "ALLOW_FAILURE"sv,
       cancel_previous_request_id,
       cancel_request_id,
       side.as_raw_text(),

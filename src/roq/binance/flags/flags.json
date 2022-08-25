@@ -165,6 +165,12 @@
       "name": "mbp_max_depth",
       "type": "uint16_t",
       "description": "max depth levels (count)"
+    },
+    {
+      "name": "cancel_replace_stop_on_failure",
+      "type": "bool",
+      "default": false,
+      "description": "if the cancel request fails, the replacement will not be attempted"
     }
   ]
 }

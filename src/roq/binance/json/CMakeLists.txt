@@ -14,6 +14,7 @@ set(AUTOGEN_SCHEMAS
     cancel_all_open_orders.json
     cancel_order.json
     cancel_replace_order.json
+    cancel_replace_order_error.json
     depth_item.json
     depth.json
     depth_update.json
@@ -41,6 +42,7 @@ set(AUTOGEN_SCHEMAS
     result.json
     side.json
     stream.json
+    success_or_failure.json
     symbol.json
     symbol_status.json
     ticker.json
