@@ -185,7 +185,8 @@ uint16_t OrderEntry::operator()(
     auto &tmp = hold_cancel_order_[message_info.source];
     if (tmp)
       throw oms::NotSupported("not supported"sv);
-    tmp = std::make_unique<HoldCancelOrder>(cancel_order, request_id, previous_request_id, order.symbol);
+    HoldCancelOrder hold{cancel_order, request_id, previous_request_id, order.symbol};
+    tmp = std::make_unique<HoldCancelOrder>(std::move(hold));
   }
   return stream_id_;
 }
