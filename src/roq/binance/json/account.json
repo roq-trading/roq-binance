@@ -44,6 +44,10 @@
     },
     {
       "name": "permissions"
+    },
+    {
+      "name": "brokered",
+      "type": "bool"
     }
   ]
 }
