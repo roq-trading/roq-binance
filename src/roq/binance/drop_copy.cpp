@@ -207,7 +207,7 @@ void DropCopy::parse(std::string_view const &message) {
   });
 }
 
-void DropCopy::operator()(Trace<json::OutboundAccountPosition const> const &event) {
+void DropCopy::operator()(Trace<json::OutboundAccountPosition> const &event) {
   profile_.outbound_account_position([&]() {
     auto &[trace_info, outbound_account_position] = event;
     log::info<2>("outbound_account_position={}"sv, outbound_account_position);
@@ -225,7 +225,7 @@ void DropCopy::operator()(Trace<json::OutboundAccountPosition const> const &even
   });
 }
 
-void DropCopy::operator()(Trace<json::BalanceUpdate const> const &event) {
+void DropCopy::operator()(Trace<json::BalanceUpdate> const &event) {
   profile_.balance_update([&]() {
     auto &[trace_info, balance_update] = event;
     log::info<2>("balance_update={}"sv, balance_update);
@@ -233,7 +233,7 @@ void DropCopy::operator()(Trace<json::BalanceUpdate const> const &event) {
   });
 }
 
-void DropCopy::operator()(Trace<json::ExecutionReport const> const &event) {
+void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
   profile_.execution_report([&]() {
     auto &trace_info = event.trace_info;
     auto &execution_report = event.value;
@@ -311,7 +311,7 @@ void DropCopy::operator()(Trace<json::ExecutionReport const> const &event) {
   });
 }
 
-void DropCopy::operator()(Trace<json::ListStatus const> const &event) {
+void DropCopy::operator()(Trace<json::ListStatus> const &event) {
   profile_.list_status([&]() {
     auto &[trace_info, list_status] = event;
     log::info<2>("list_status={}"sv, list_status);

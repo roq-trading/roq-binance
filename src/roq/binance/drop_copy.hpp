@@ -30,10 +30,10 @@ namespace binance {
 class DropCopy final : public web::socket::Client::Handler, public json::UserStreamParser::Handler {
  public:
   struct Handler {
-    virtual void operator()(Trace<StreamStatus const> const &) = 0;
-    virtual void operator()(Trace<ExternalLatency const> const &) = 0;
-    virtual void operator()(Trace<TradeUpdate const> const &, bool is_last, uint8_t user_id) = 0;
-    virtual void operator()(Trace<FundsUpdate const> const &, bool is_last) = 0;
+    virtual void operator()(Trace<StreamStatus> const &) = 0;
+    virtual void operator()(Trace<ExternalLatency> const &) = 0;
+    virtual void operator()(Trace<TradeUpdate> const &, bool is_last, uint8_t user_id) = 0;
+    virtual void operator()(Trace<FundsUpdate> const &, bool is_last) = 0;
   };
 
   DropCopy(
@@ -72,10 +72,10 @@ class DropCopy final : public web::socket::Client::Handler, public json::UserStr
 
   void parse(std::string_view const &message);
 
-  void operator()(Trace<json::OutboundAccountPosition const> const &) override;
-  void operator()(Trace<json::BalanceUpdate const> const &) override;
-  void operator()(Trace<json::ExecutionReport const> const &) override;
-  void operator()(Trace<json::ListStatus const> const &) override;
+  void operator()(Trace<json::OutboundAccountPosition> const &) override;
+  void operator()(Trace<json::BalanceUpdate> const &) override;
+  void operator()(Trace<json::ExecutionReport> const &) override;
+  void operator()(Trace<json::ListStatus> const &) override;
 
   void request_account();
   void check_response_account();

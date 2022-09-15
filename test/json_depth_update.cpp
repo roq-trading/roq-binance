@@ -79,16 +79,14 @@ TEST_CASE("json_depth_update_simple", "[json_depth_update]") {
   core::json::Buffer buffer(buffer_);
   struct Handler : public json::MarketStreamParser::Handler {
     size_t counter = 0;
-    void operator()(Trace<json::Error const> const &, [[maybe_unused]] int32_t id) override { FAIL(); }
-    void operator()(Trace<json::Result const> const &, [[maybe_unused]] int32_t id) override { FAIL(); }
-    void operator()(Trace<json::AggTrade const> const &) override { FAIL(); }
-    void operator()(Trace<json::Trade const> const &) override { FAIL(); }
-    void operator()(Trace<json::MiniTicker const> const &) override { FAIL(); }
-    void operator()(Trace<json::BookTicker const> const &) override { FAIL(); }
-    void operator()(Trace<json::Depth const> const &, [[maybe_unused]] std::string_view const &symbol) override {
-      FAIL();
-    }
-    void operator()(Trace<json::DepthUpdate const> const &) override { ++counter; }
+    void operator()(Trace<json::Error> const &, [[maybe_unused]] int32_t id) override { FAIL(); }
+    void operator()(Trace<json::Result> const &, [[maybe_unused]] int32_t id) override { FAIL(); }
+    void operator()(Trace<json::AggTrade> const &) override { FAIL(); }
+    void operator()(Trace<json::Trade> const &) override { FAIL(); }
+    void operator()(Trace<json::MiniTicker> const &) override { FAIL(); }
+    void operator()(Trace<json::BookTicker> const &) override { FAIL(); }
+    void operator()(Trace<json::Depth> const &, [[maybe_unused]] std::string_view const &symbol) override { FAIL(); }
+    void operator()(Trace<json::DepthUpdate> const &) override { ++counter; }
   } handler;
   json::MarketStreamParser::dispatch(handler, message, buffer, TraceInfo{});
   CHECK(handler.counter == 1);

@@ -32,12 +32,12 @@ namespace binance {
 class MarketData final : public web::socket::Client::Handler, public json::MarketStreamParser::Handler {
  public:
   struct Handler {
-    virtual void operator()(Trace<StreamStatus const> const &) = 0;
-    virtual void operator()(Trace<ExternalLatency const> const &) = 0;
-    virtual void operator()(Trace<TopOfBook const> const &, bool is_last) = 0;
-    virtual void operator()(Trace<MarketByPriceUpdate const> const &, bool is_last, bool refresh) = 0;
-    virtual void operator()(Trace<TradeSummary const> const &, bool is_last) = 0;
-    virtual void operator()(Trace<StatisticsUpdate const> const &, bool is_last) = 0;
+    virtual void operator()(Trace<StreamStatus> const &) = 0;
+    virtual void operator()(Trace<ExternalLatency> const &) = 0;
+    virtual void operator()(Trace<TopOfBook> const &, bool is_last) = 0;
+    virtual void operator()(Trace<MarketByPriceUpdate> const &, bool is_last, bool refresh) = 0;
+    virtual void operator()(Trace<TradeSummary> const &, bool is_last) = 0;
+    virtual void operator()(Trace<StatisticsUpdate> const &, bool is_last) = 0;
   };
 
   MarketData(Handler &, io::Context &, uint32_t stream_id, Shared &, size_t index);
@@ -74,16 +74,16 @@ class MarketData final : public web::socket::Client::Handler, public json::Marke
   void parse(std::string_view const &message);
 
   // response
-  void operator()(Trace<json::Error const> const &, int32_t id) override;
-  void operator()(Trace<json::Result const> const &, int32_t id) override;
+  void operator()(Trace<json::Error> const &, int32_t id) override;
+  void operator()(Trace<json::Result> const &, int32_t id) override;
 
   // update
-  void operator()(Trace<json::AggTrade const> const &) override;
-  void operator()(Trace<json::Trade const> const &) override;
-  void operator()(Trace<json::MiniTicker const> const &) override;
-  void operator()(Trace<json::BookTicker const> const &) override;
-  void operator()(Trace<json::Depth const> const &, std::string_view const &symbol) override;
-  void operator()(Trace<json::DepthUpdate const> const &) override;
+  void operator()(Trace<json::AggTrade> const &) override;
+  void operator()(Trace<json::Trade> const &) override;
+  void operator()(Trace<json::MiniTicker> const &) override;
+  void operator()(Trace<json::BookTicker> const &) override;
+  void operator()(Trace<json::Depth> const &, std::string_view const &symbol) override;
+  void operator()(Trace<json::DepthUpdate> const &) override;
 
   void check_subscribe_queue(std::chrono::nanoseconds now);
 

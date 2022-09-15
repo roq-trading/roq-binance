@@ -21,10 +21,10 @@ namespace json {
 
 struct UserStreamParser final {
   struct Handler {
-    virtual void operator()(Trace<OutboundAccountPosition const> const &) = 0;
-    virtual void operator()(Trace<BalanceUpdate const> const &) = 0;
-    virtual void operator()(Trace<ExecutionReport const> const &) = 0;
-    virtual void operator()(Trace<ListStatus const> const &) = 0;
+    virtual void operator()(Trace<OutboundAccountPosition> const &) = 0;
+    virtual void operator()(Trace<BalanceUpdate> const &) = 0;
+    virtual void operator()(Trace<ExecutionReport> const &) = 0;
+    virtual void operator()(Trace<ListStatus> const &) = 0;
   };
 
   static void dispatch(Handler &, std::string_view const &message, core::json::Buffer &, TraceInfo const &);

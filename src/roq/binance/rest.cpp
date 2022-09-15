@@ -207,7 +207,7 @@ void Rest::get_exchange_info() {
   });
 }
 
-void Rest::get_exchange_info_ack(Trace<web::rest::Response const> const &event, uint32_t sequence) {
+void Rest::get_exchange_info_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
   profile_.exchange_info_ack([&]() {
     auto &[trace_info, response] = event;
     auto state = RestState::EXCHANGE_INFO;
@@ -231,7 +231,7 @@ void Rest::get_exchange_info_ack(Trace<web::rest::Response const> const &event, 
   });
 }
 
-void Rest::operator()(Trace<json::ExchangeInfo const> const &event) {
+void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
   auto &[trace_info, exchange_info] = event;
   // log::info<2>("exchange_info={}"sv, exchange_info);
   std::vector<Symbol> symbols;
@@ -372,7 +372,7 @@ void Rest::get_depth(std::string_view const &symbol) {
   });
 }
 
-void Rest::get_depth_ack(Trace<web::rest::Response const> const &event, std::string_view const &symbol) {
+void Rest::get_depth_ack(Trace<web::rest::Response> const &event, std::string_view const &symbol) {
   profile_.depth_ack([&]() {
     auto &[trace_info, response] = event;
     try {
@@ -390,7 +390,7 @@ void Rest::get_depth_ack(Trace<web::rest::Response const> const &event, std::str
   });
 }
 
-void Rest::operator()(Trace<json::Depth const> const &event, std::string_view const &symbol) {
+void Rest::operator()(Trace<json::Depth> const &event, std::string_view const &symbol) {
   // auto &[trace_info, depth] = event; // XXX clang13
   auto &trace_info = event.trace_info;
   auto &depth = event.value;

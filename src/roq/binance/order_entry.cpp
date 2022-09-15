@@ -286,7 +286,7 @@ void OrderEntry::get_listen_key() {
   });
 }
 
-void OrderEntry::get_listen_key_ack(Trace<web::rest::Response const> const &event, [[maybe_unused]] uint32_t sequence) {
+void OrderEntry::get_listen_key_ack(Trace<web::rest::Response> const &event, [[maybe_unused]] uint32_t sequence) {
   profile_.listen_key_ack([&]() {
     auto &[trace_info, response] = event;
     auto state = OrderEntryState::LISTEN_KEY;
@@ -306,7 +306,7 @@ void OrderEntry::get_listen_key_ack(Trace<web::rest::Response const> const &even
   });
 }
 
-void OrderEntry::operator()(Trace<json::ListenKey const> const &event) {
+void OrderEntry::operator()(Trace<json::ListenKey> const &event) {
   auto &[trace_info, listen_key] = event;
   log::info<2>("listen_key={}"sv, listen_key);
   bool initial = std::empty(listen_key_);
@@ -352,7 +352,7 @@ void OrderEntry::get_account() {
   });
 }
 
-void OrderEntry::get_account_ack(Trace<web::rest::Response const> const &event) {
+void OrderEntry::get_account_ack(Trace<web::rest::Response> const &event) {
   profile_.account_ack([&]() {
     auto &[trace_info, response] = event;
     try {
@@ -372,7 +372,7 @@ void OrderEntry::get_account_ack(Trace<web::rest::Response const> const &event) 
   });
 }
 
-void OrderEntry::operator()(Trace<json::Account const> const &event) {
+void OrderEntry::operator()(Trace<json::Account> const &event) {
   auto &[trace_info, account] = event;
   log::info<2>("account={}"sv, account);
   for (auto &item : account.balances) {
@@ -422,7 +422,7 @@ void OrderEntry::get_open_orders() {
   });
 }
 
-void OrderEntry::get_open_orders_ack(Trace<web::rest::Response const> const &event) {
+void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event) {
   profile_.open_orders_ack([&]() {
     auto &[trace_info, response] = event;
     try {
@@ -441,7 +441,7 @@ void OrderEntry::get_open_orders_ack(Trace<web::rest::Response const> const &eve
   });
 }
 
-void OrderEntry::operator()(Trace<json::OpenOrders const> const &event) {
+void OrderEntry::operator()(Trace<json::OpenOrders> const &event) {
   auto &[trace_info, open_orders] = event;
   for (auto &order : open_orders.data) {
     log::info<2>("order={}"sv, order);
@@ -561,7 +561,7 @@ void OrderEntry::new_order(
 }
 
 void OrderEntry::new_order_ack(
-    Trace<web::rest::Response const> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
+    Trace<web::rest::Response> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
   profile_.new_order_ack([&]() {
     auto &[trace_info, response] = event;
     log::debug("user_id={}, order_id={}, version={}"sv, user_id, order_id, version);
@@ -622,8 +622,7 @@ void OrderEntry::new_order_ack(
   });
 }
 
-void OrderEntry::operator()(
-    Trace<json::NewOrder const> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
+void OrderEntry::operator()(Trace<json::NewOrder> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
   auto &[trace_info, new_order] = event;
   log::info<2>("new_order={}, user_id={}, order_id={}, version={}"sv, new_order, user_id, order_id, version);
   auto side = json::map(new_order.side);
@@ -787,7 +786,7 @@ symbol=BTCUSDT&side=BUY&type=LIMIT&cancelReplaceMode=STOP_ON_FAILURE&timeInForce
 }
 */
 void OrderEntry::cancel_replace_order_ack(
-    Trace<web::rest::Response const> const &event,
+    Trace<web::rest::Response> const &event,
     uint8_t user_id,
     uint32_t cancel_order_id,
     uint32_t cancel_version,
@@ -870,7 +869,7 @@ void OrderEntry::cancel_replace_order_ack(
 }
 
 void OrderEntry::operator()(
-    Trace<json::CancelReplaceOrder const> const &event,
+    Trace<json::CancelReplaceOrder> const &event,
     uint8_t user_id,
     uint32_t cancel_order_id,
     uint32_t cancel_version,
@@ -1064,7 +1063,7 @@ void OrderEntry::operator()(
 }
 
 void OrderEntry::operator()(
-    Trace<json::CancelReplaceOrderError const> const &event,
+    Trace<json::CancelReplaceOrderError> const &event,
     uint8_t user_id,
     uint32_t cancel_order_id,
     uint32_t cancel_version,
@@ -1133,7 +1132,7 @@ void OrderEntry::cancel_order(
 }
 
 void OrderEntry::cancel_order_ack(
-    Trace<web::rest::Response const> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
+    Trace<web::rest::Response> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
   profile_.cancel_order_ack([&]() {
     auto &[trace_info, response] = event;
     log::debug("user_id={}, order_id={}, version={}"sv, user_id, order_id, version);
@@ -1195,7 +1194,7 @@ void OrderEntry::cancel_order_ack(
 }
 
 void OrderEntry::operator()(
-    Trace<json::CancelOrder const> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
+    Trace<json::CancelOrder> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
   auto &[trace_info, cancel_order] = event;
   log::info<2>("cancel_order={}, user_id={}, order_id={}, version={}"sv, cancel_order, user_id, order_id, version);
   auto side = json::map(cancel_order.side);
@@ -1282,7 +1281,7 @@ void OrderEntry::cancel_all_open_orders(
   });
 }
 
-void OrderEntry::cancel_all_open_orders_ack(Trace<web::rest::Response const> const &event) {
+void OrderEntry::cancel_all_open_orders_ack(Trace<web::rest::Response> const &event) {
   profile_.cancel_all_open_orders_ack([&]() {
     auto &[trace_info, response] = event;
     try {
@@ -1314,7 +1313,7 @@ void OrderEntry::cancel_all_open_orders_ack(Trace<web::rest::Response const> con
   });
 }
 
-void OrderEntry::operator()(Trace<json::CancelAllOpenOrders const> const &event) {
+void OrderEntry::operator()(Trace<json::CancelAllOpenOrders> const &event) {
   auto &[trace_info, cancel_all_open_orders] = event;
   log::info<2>("cancel_all_open_orders={}"sv, cancel_all_open_orders);
   for (auto &order : cancel_all_open_orders.data) {
