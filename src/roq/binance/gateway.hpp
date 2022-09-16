@@ -31,7 +31,7 @@ class Gateway final : public server::Handler,
                       public OrderEntry::Handler,
                       public DropCopy::Handler {
  public:
-  Gateway(server::Dispatcher &, Config const &);
+  Gateway(server::Dispatcher &, Config const &, io::Context &);
 
  protected:
   void operator()(Event<Start> const &) override;
@@ -84,7 +84,7 @@ class Gateway final : public server::Handler,
   // security
   absl::flat_hash_map<Account, std::unique_ptr<Security>> security_;
   // io
-  std::unique_ptr<io::Context> context_;
+  io::Context &context_;
   // shared
   Shared shared_;
   absl::flat_hash_map<Account, Request> request_;
