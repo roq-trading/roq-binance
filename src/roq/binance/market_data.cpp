@@ -41,7 +41,7 @@ struct create_metrics final : public core::metrics::Factory {
 };
 
 template <typename T>
-void emplace(MBPUpdate &result, const T &value) {
+void emplace(MBPUpdate &result, T const &value) {
   new (&result) MBPUpdate{
       .price = value.price,
       .quantity = value.qty,
@@ -260,6 +260,8 @@ void MarketData::operator()(Trace<json::AggTrade> const &event) {
         .price = agg_trade.price,
         .quantity = agg_trade.quantity,
         .trade_id = {},
+        .taker_order_id = {},
+        .maker_order_id = {},
     };
     core::charconv::to_string(std::back_inserter(trade.trade_id), agg_trade.agg_trade_id);
     const TradeSummary trade_summary{
@@ -268,6 +270,7 @@ void MarketData::operator()(Trace<json::AggTrade> const &event) {
         .symbol = agg_trade.symbol,
         .trades = {&trade, 1},
         .exchange_time_utc = agg_trade.event_time,
+        .exchange_sequence = {},
     };
     create_trace_and_dispatch(handler_, trace_info, trade_summary, true);
   });
@@ -284,6 +287,8 @@ void MarketData::operator()(Trace<json::Trade> const &event) {
         .price = trade.price,
         .quantity = trade.quantity,
         .trade_id = {},
+        .taker_order_id = {},
+        .maker_order_id = {},
     };
     core::charconv::to_string(std::back_inserter(trade_.trade_id), trade.trade_id);
     const TradeSummary trade_summary{
@@ -292,6 +297,7 @@ void MarketData::operator()(Trace<json::Trade> const &event) {
         .symbol = trade.symbol,
         .trades = {&trade_, 1},
         .exchange_time_utc = trade.event_time,
+        .exchange_sequence = {},
     };
     create_trace_and_dispatch(handler_, trace_info, trade_summary, true);
   });
