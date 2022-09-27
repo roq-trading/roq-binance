@@ -26,6 +26,8 @@ using namespace std::literals;
 namespace roq {
 namespace binance {
 
+// === CONSTANTS ===
+
 namespace {
 auto const NAME = "rest"sv;
 
@@ -33,22 +35,13 @@ const Mask SUPPORTS{
     SupportType::REFERENCE_DATA,
     SupportType::MARKET_STATUS,
 };
+}  // namespace
 
-struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(std::string_view const &group, std::string_view const &function)
-      : core::metrics::Factory(server::Flags::name(), group, function) {}
-};
+// === HELPERS ===
 
-template <typename T>
-void emplace(MBPUpdate &result, const T &value) {
-  new (&result) MBPUpdate{
-      .price = value.price,
-      .quantity = value.qty,
-      .implied_quantity = NaN,
-      .number_of_orders = {},
-      .update_action = {},
-      .price_level = {},
-  };
+namespace {
+auto create_name(auto stream_id) {
+  return fmt::format("{}:{}"sv, stream_id, NAME);
 }
 
 auto create_connection(auto &handler, auto &context) {
@@ -68,10 +61,17 @@ auto create_connection(auto &handler, auto &context) {
   };
   return web::rest::ClientFactory::create(handler, context, config);
 }
+
+struct create_metrics final : public core::metrics::Factory {
+  explicit create_metrics(auto const &group, auto const &function)
+      : core::metrics::Factory(server::Flags::name(), group, function) {}
+};
 }  // namespace
 
+// === IMPLEMENTATION ===
+
 Rest::Rest(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared)
-    : handler_(handler), stream_id_(stream_id), name_(fmt::format("{}:{}"sv, stream_id_, NAME)),
+    : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_)),
       connection_(create_connection(*this, context)), decode_buffer_(Flags::decode_buffer_size()),
       decode_buffer_2_(Flags::decode_buffer_size()),
       counter_{
@@ -391,16 +391,25 @@ void Rest::get_depth_ack(Trace<web::rest::Response> const &event, std::string_vi
 }
 
 void Rest::operator()(Trace<json::Depth> const &event, std::string_view const &symbol) {
-  // auto &[trace_info, depth] = event; // XXX clang13
   auto &trace_info = event.trace_info;
   auto &depth = event.value;
   log::info<4>(R"(depth={}, symbol="{}")"sv, depth, symbol);
   auto sequence = depth.last_update_id;
+  auto create_mbp_update = []<typename T>(T &result, auto const &value) {
+    new (&result) T{
+        .price = value.price,
+        .quantity = value.qty,
+        .implied_quantity = NaN,
+        .number_of_orders = {},
+        .update_action = {},
+        .price_level = {},
+    };
+  };
   core::back_emplacer bids(shared_.bids), asks(shared_.asks);
   for (auto &item : depth.bids)
-    bids.emplace_back([&item](auto &result) { emplace(result, item); });
+    bids.emplace_back([&](auto &result) { create_mbp_update(result, item); });
   for (auto &item : depth.asks)
-    asks.emplace_back([&item](auto &result) { emplace(result, item); });
+    asks.emplace_back([&](auto &result) { create_mbp_update(result, item); });
   auto &collector = shared_.mbp_collector[symbol];
   try {
     collector(

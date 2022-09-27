@@ -20,19 +20,25 @@ using namespace std::literals;
 namespace roq {
 namespace binance {
 
+// === CONSTANTS ===
+
 namespace {
 auto const NAME = "ex"sv;
+
 const Mask SUPPORTS{
     SupportType::ORDER_ACK,
     SupportType::ORDER,
     SupportType::TRADE,
     SupportType::FUNDS,
 };
+}  // namespace
 
-struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(std::string_view const &group, std::string_view const &function)
-      : core::metrics::Factory(server::Flags::name(), group, function) {}
-};
+// === HELPERS ===
+
+namespace {
+auto create_name(auto stream_id, auto const &account) {
+  return fmt::format("{}:{}:{}"sv, stream_id, NAME, account);
+}
 
 auto create_connection(auto &handler, auto &context, auto const &listen_key) {
   assert(!std::empty(listen_key));
@@ -51,7 +57,14 @@ auto create_connection(auto &handler, auto &context, auto const &listen_key) {
   };
   return web::socket::ClientFactory::create(handler, context, config, []() { return std::string(); });
 }
+
+struct create_metrics final : public core::metrics::Factory {
+  explicit create_metrics(auto const &group, auto const &function)
+      : core::metrics::Factory(server::Flags::name(), group, function) {}
+};
 }  // namespace
+
+// === IMPLEMENTATION ===
 
 DropCopy::DropCopy(
     Handler &handler,
@@ -61,8 +74,7 @@ DropCopy::DropCopy(
     Shared &shared,
     Request &request,
     std::string_view const &listen_key)
-    : handler_(handler), stream_id_(stream_id),
-      name_(fmt::format("{}:{}:{}"sv, stream_id_, NAME, security.get_account())),
+    : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_, security.get_account())),
       connection_(create_connection(*this, context, listen_key)), decode_buffer_(Flags::decode_buffer_size()),
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
