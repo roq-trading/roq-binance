@@ -26,7 +26,8 @@ requirements:
     - abseil-cpp
     - roq-oss-benchmark
     - roq-oss-brotli
-    - catch2
+    - catch2  # [linux]
+    - roq-oss-catch2  # [osx]
     - roq-oss-libsodium
     - roq-oss-magic_enum
     - roq-oss-range-v3
