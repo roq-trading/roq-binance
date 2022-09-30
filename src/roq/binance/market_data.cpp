@@ -392,54 +392,48 @@ void MarketData::operator()(Trace<json::DepthUpdate> const &event) {
     for (auto &item : depth_update.asks)
       asks.emplace_back([&](auto &result) { create_mbp_update(result, item); });
     try {
+      auto create_update = [&](auto &bids, auto &asks, auto update_type, auto exchange_sequence) {
+        return MarketByPriceUpdate{
+            .stream_id = stream_id_,
+            .exchange = Flags::exchange(),
+            .symbol = symbol,
+            .bids = bids,
+            .asks = asks,
+            .update_type = update_type,
+            .exchange_time_utc = depth_update.event_time,
+            .exchange_sequence = exchange_sequence,
+            .price_decimals = {},
+            .quantity_decimals = {},
+            .checksum = {},
+        };
+      };
+      auto publish_update = [&](auto &bids, auto &asks) {
+        // log::debug(R"(PUBLISH UPDATE symbol="{}")"sv, symbol);
+        auto market_by_price_update = create_update(bids, asks, UpdateType::INCREMENTAL, last_sequence);
+        create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true, false);
+      };
+      auto publish_snapshot = [&](auto &bids, auto &asks, auto sequence) {
+        log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
+        auto market_by_price_update = create_update(bids, asks, UpdateType::SNAPSHOT, collector.last_sequence());
+        Trace event(trace_info, market_by_price_update);
+        shared_(event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, false); });
+      };
+      auto request_snapshot = [&](auto retries) {
+        log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
+        if (Flags::ws_mbp_request_max_retries() && Flags::ws_mbp_request_max_retries() < retries) {
+          log::fatal(R"(Unexpected: symbol="{}", retries={})"sv, symbol, retries);
+        }
+        shared_.depth_request_queue.emplace_back(symbol);
+      };
       collector(
           bids,
           asks,
           first_sequence,
           last_sequence,
           previous_sequence,
-          [&](auto &bids, auto &asks) {  // update
-            // log::debug(R"(PUBLISH UPDATE symbol="{}")"sv, symbol);
-            const MarketByPriceUpdate market_by_price_update{
-                .stream_id = stream_id_,
-                .exchange = Flags::exchange(),
-                .symbol = symbol,
-                .bids = bids,
-                .asks = asks,
-                .update_type = UpdateType::INCREMENTAL,
-                .exchange_time_utc = depth_update.event_time,
-                .exchange_sequence = last_sequence,
-                .price_decimals = {},
-                .quantity_decimals = {},
-                .checksum = {},
-            };
-            create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true, false);
-          },
-          [&](auto &bids, auto &asks, auto sequence) {  // snapshot
-            log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
-            const MarketByPriceUpdate market_by_price_update{
-                .stream_id = stream_id_,
-                .exchange = Flags::exchange(),
-                .symbol = symbol,
-                .bids = bids,
-                .asks = asks,
-                .update_type = UpdateType::SNAPSHOT,
-                .exchange_time_utc = depth_update.event_time,
-                .exchange_sequence = collector.last_sequence(),
-                .price_decimals = {},
-                .quantity_decimals = {},
-                .checksum = {},
-            };
-            Trace event(trace_info, market_by_price_update);
-            shared_(event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, false); });
-          },
-          [&](auto retries) {  // request
-            log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
-            if (Flags::ws_mbp_request_max_retries() && Flags::ws_mbp_request_max_retries() < retries) {
-              log::fatal(R"(Unexpected: symbol="{}", retries={})"sv, symbol, retries);
-            }
-            shared_.depth_request_queue.emplace_back(symbol);
-          });
+          publish_update,
+          publish_snapshot,
+          request_snapshot);
     } catch (BadState &) {
       log::warn(R"(RESUBSCRIBE symbol="{}")"sv, symbol);
       // XXX HANS publish stale
