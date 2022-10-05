@@ -21,6 +21,8 @@ using namespace std::literals;
 namespace roq {
 namespace binance {
 
+// === HELPERS ===
+
 namespace {
 template <typename R>
 auto create_security(Config const &config) {
@@ -63,6 +65,8 @@ auto create_drop_copy(auto &security_by_account) {
   return result;
 }
 }  // namespace
+
+// === IMPLEMENTATION ===
 
 Gateway::Gateway(server::Dispatcher &dispatcher, Config const &config, io::Context &context)
     : dispatcher_(dispatcher), security_(create_security<decltype(security_)>(config)), context_(context),
@@ -165,8 +169,8 @@ void Gateway::operator()(Trace<TopOfBook> const &event, bool is_last) {
 }
 
 void Gateway::operator()(Trace<MarketByPriceUpdate> const &event, bool is_last, bool refresh) {
-  dispatcher_(
-      event, is_last, refresh, shared_.final_bids, shared_.final_asks, []([[maybe_unused]] auto &market_by_price) {});
+  auto callback = []([[maybe_unused]] auto &market_by_price) {};
+  dispatcher_(event, is_last, refresh, shared_.final_bids, shared_.final_asks, callback);
 }
 
 void Gateway::operator()(Trace<TradeSummary> const &event, bool is_last) {
