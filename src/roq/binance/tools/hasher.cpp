@@ -19,8 +19,18 @@ namespace roq {
 namespace binance {
 namespace tools {
 
+// === HELPERS ===
+
+namespace {
+auto create_headers_helper(auto const &key) {
+  return fmt::format("X-MBX-APIKEY: {}\r\n"sv, key);
+}
+}  // namespace
+
+// === IMPLEMENTATION ===
+
 Hasher::Hasher(std::string_view const &key, std::string_view const &secret)
-    : key_(key), hmac_(secret), headers_(fmt::format("X-MBX-APIKEY: {}\r\n"sv, key_)) {
+    : key_(key), hmac_(secret), headers_(create_headers_helper(key_)) {
 }
 
 std::string Hasher::create_query(std::string_view const &body) {

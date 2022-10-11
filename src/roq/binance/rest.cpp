@@ -31,7 +31,7 @@ namespace binance {
 namespace {
 auto const NAME = "rest"sv;
 
-const Mask SUPPORTS{
+Mask const SUPPORTS{
     SupportType::REFERENCE_DATA,
     SupportType::MARKET_STATUS,
 };
@@ -186,11 +186,9 @@ uint32_t Rest::download(RestState state) {
 
 void Rest::get_exchange_info() {
   profile_.exchange_info([&]() {
-    auto method = web::http::Method::GET;
-    auto path = "/api/v3/exchangeInfo"sv;
     web::rest::Request request{
-        .method = method,
-        .path = path,
+        .method = web::http::Method::GET,
+        .path = "/api/v3/exchangeInfo"sv,
         .query = {},
         .accept = web::http::Accept::APPLICATION_JSON,
         .content_type = {},
@@ -201,7 +199,7 @@ void Rest::get_exchange_info() {
     auto sequence = download_.sequence();
     (*connection_)("exchange_info"sv, request, [this, sequence]([[maybe_unused]] auto &request_id, auto &response) {
       auto trace_info = server::create_trace_info();
-      Trace event(trace_info, response);
+      Trace event{trace_info, response};
       get_exchange_info_ack(event, sequence);
     });
   });
@@ -219,9 +217,9 @@ void Rest::get_exchange_info_ack(Trace<web::rest::Response> const &event, uint32
         return;
       }
       response.expect(web::http::Status::OK);
-      core::json::Buffer buffer(decode_buffer_);
+      core::json::Buffer buffer{decode_buffer_};
       const auto exchange_info = core::json::Parser::create<json::ExchangeInfo>(body, buffer);
-      Trace event(trace_info, exchange_info);
+      Trace event{trace_info, exchange_info};
       (*this)(event);
       download_.check(state);
     } catch (NetworkError &e) {
@@ -246,7 +244,7 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
     auto trade_vol_step_size = min_trade_vol;
     auto min_notional = NaN;
     // parse filters and update
-    core::json::Buffer buffer(decode_buffer_2_);
+    core::json::Buffer buffer{decode_buffer_2_};
     auto filters = core::json::Parser::create<json::Filters>(item.filters, buffer);
     for (auto &filter : filters.data) {
       switch (filter.filter_type) {
@@ -323,7 +321,7 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
       continue;
     }
     // note! convert to lowercase
-    std::string symbol(item.symbol);
+    std::string symbol{item.symbol};
     std::transform(std::begin(symbol), std::end(symbol), std::begin(symbol), [](auto c) { return std::tolower(c); });
     if (all_symbols_.emplace(symbol).second)  // only include new
       symbols.emplace_back(symbol);
@@ -350,12 +348,10 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
 
 void Rest::get_depth(std::string_view const &symbol) {
   profile_.depth([&]() {
-    auto method = web::http::Method::GET;
-    auto path = "/api/v3/depth"sv;
     auto query = fmt::format("?symbol={}&limit={}"sv, symbol, Flags::ws_subscribe_depth_levels());
     web::rest::Request request{
-        .method = method,
-        .path = path,
+        .method = web::http::Method::GET,
+        .path = "/api/v3/depth"sv,
         .query = query,
         .accept = web::http::Accept::APPLICATION_JSON,
         .content_type = {},
@@ -366,7 +362,7 @@ void Rest::get_depth(std::string_view const &symbol) {
     (*connection_)(
         "depth"sv, request, [this, symbol = std::string{symbol}]([[maybe_unused]] auto &request_id, auto &response) {
           auto trace_info = server::create_trace_info();
-          Trace event(trace_info, response);
+          Trace event{trace_info, response};
           get_depth_ack(event, symbol);
         });
   });
@@ -379,9 +375,9 @@ void Rest::get_depth_ack(Trace<web::rest::Response> const &event, std::string_vi
       auto [status, category, body] = response.result();
       // log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
       response.expect(web::http::Status::OK);
-      core::json::Buffer buffer(decode_buffer_);
+      core::json::Buffer buffer{decode_buffer_};
       const auto depth = core::json::Parser::create<json::Depth>(body, buffer);
-      Trace event(trace_info, depth);
+      Trace event{trace_info, depth};
       (*this)(event, symbol);
     } catch (NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
@@ -427,7 +423,7 @@ void Rest::operator()(Trace<json::Depth> const &event, std::string_view const &s
           .quantity_decimals = {},
           .checksum = {},
       };
-      Trace event(trace_info, market_by_price_update);
+      Trace event{trace_info, market_by_price_update};
       shared_(event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, false); });
     };
     auto request_snapshot = [&](auto retries) {

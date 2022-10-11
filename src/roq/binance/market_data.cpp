@@ -30,7 +30,7 @@ namespace binance {
 namespace {
 auto const NAME = "md"sv;
 
-const Mask SUPPORTS{
+Mask const SUPPORTS{
     SupportType::TOP_OF_BOOK,
     SupportType::MARKET_BY_PRICE,
     SupportType::TRADE_SUMMARY,
@@ -193,11 +193,10 @@ void MarketData::operator()(ConnectionStatus status) {
 void MarketData::subscribe(std::span<Symbol const> const &symbols) {
   if (std::empty(symbols))
     return;
-  if (Flags::ws_subscribe_trade_details()) {
+  if (Flags::ws_subscribe_trade_details())
     subscribe(symbols, "trade"sv);
-  } else {
+  else
     subscribe(symbols, "aggTrade"sv);
-  }
   subscribe(symbols, "miniTicker"sv);
   subscribe(symbols, "bookTicker"sv);
   auto frequency = std::chrono::duration_cast<std::chrono::milliseconds>(Flags::ws_subscribe_depth_freq());
@@ -226,7 +225,7 @@ void MarketData::parse(std::string_view const &message) {
   profile_.parse([&]() {
     try {
       auto trace_info = server::create_trace_info();
-      core::json::Buffer buffer(decode_buffer_);
+      core::json::Buffer buffer{decode_buffer_};
       json::MarketStreamParser::dispatch(*this, message, buffer, trace_info);
     } catch (...) {
       log::warn(R"(message="{}")"sv, message);
@@ -415,7 +414,7 @@ void MarketData::operator()(Trace<json::DepthUpdate> const &event) {
       auto publish_snapshot = [&](auto &bids, auto &asks, auto sequence) {
         log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
         auto market_by_price_update = create_update(bids, asks, UpdateType::SNAPSHOT, collector.last_sequence());
-        Trace event(trace_info, market_by_price_update);
+        Trace event{trace_info, market_by_price_update};
         shared_(event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, false); });
       };
       auto request_snapshot = [&](auto retries) {
