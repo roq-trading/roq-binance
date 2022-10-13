@@ -27,3 +27,4 @@ _CPack_Packages/
 
 # roq-data
 *.roq
+roq-cache/
