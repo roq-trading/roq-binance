@@ -160,11 +160,12 @@ void OrderEntry::operator()(Event<Disconnected> const &event) {
 
 uint16_t OrderEntry::operator()(
     Event<CreateOrder> const &event, oms::Order const &order, std::string_view const &request_id) {
-  auto &[message_info, create_order] = event;
+  auto &message_info = event.message_info;
   auto &tmp = hold_cancel_order_[message_info.source];
   if (!tmp) {
     new_order(event, order, request_id);
   } else {
+    // cancel + replace
     typename std::remove_cvref<decltype(tmp)>::type tmp2;
     tmp.swap(tmp2);
     cancel_replace_order(*tmp2, event, order, request_id);
@@ -186,13 +187,14 @@ uint16_t OrderEntry::operator()(
     oms::Order const &order,
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
-  if (event.message_info.is_last) {
-    cancel_order(event, order, request_id, previous_request_id);
+  auto &[message_info, cancel_order] = event;
+  auto &tmp = hold_cancel_order_[message_info.source];
+  if (tmp)
+    throw oms::NotSupported{"not supported"sv};
+  if (message_info.is_last) {
+    (*this).cancel_order(event, order, request_id, previous_request_id);
   } else {
-    auto &[message_info, cancel_order] = event;
-    auto &tmp = hold_cancel_order_[message_info.source];
-    if (tmp)
-      throw oms::NotSupported{"not supported"sv};
+    // cancel + replace
     HoldCancelOrder hold{cancel_order, request_id, previous_request_id, order.symbol};
     tmp = std::make_unique<HoldCancelOrder>(std::move(hold));
   }
@@ -508,28 +510,6 @@ void OrderEntry::refresh_listen_key() {
 
 // new-order
 
-/*
-namespace {
-json::OrderType map_order_type(auto &create_order) {
-  if (!std::empty(create_order.execution_instructions)) {
-    if (create_order.order_type == OrderType::LIMIT &&
-        create_order.execution_instructions.has(ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE))
-      return json::OrderType::LIMIT_MAKER;
-    log::warn("Unexpected: execution_instructions={}"sv, create_order.execution_instructions);
-  }
-  return json::map(create_order.order_type);
-}
-json::TimeInForce map_time_in_force(auto &create_order) {
-  if (create_order.order_type == OrderType::MARKET ||
-      (create_order.order_type == OrderType::LIMIT &&
-       (create_order.execution_instructions.has(ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE) ||
-        !std::isnan(create_order.stop_price))))
-    return json::TimeInForce{};
-  return json::map(create_order.time_in_force);
-}
-}  // namespace
-*/
-
 void OrderEntry::new_order(
     Event<CreateOrder> const &event, oms::Order const &order, std::string_view const &request_id) {
   profile_.new_order([&]() {
@@ -717,7 +697,7 @@ void OrderEntry::cancel_replace_order(
         request_id,
         utils::safe_cast(Flags::rest_order_recv_window()),
         flags::Flags::cancel_replace_stop_on_failure());
-    log::debug(R"(body="{}")"sv, body);
+    log::info(R"(DEBUG body="{}")"sv, body);
     auto query = security_.create_query(body);
     auto headers = security_.create_headers();
     const web::rest::Request request{
@@ -797,8 +777,8 @@ void OrderEntry::cancel_replace_order_ack(
     uint32_t create_version) {
   profile_.cancel_replace_order_ack([&]() {
     auto &[trace_info, response] = event;
-    log::debug(
-        "user_id={}, cancel_order_id={}, cancel_version={}, create_order_id={}, create_version={}"sv,
+    log::info(
+        "DEBUG user_id={}, cancel_order_id={}, cancel_version={}, create_order_id={}, create_version={}"sv,
         user_id,
         cancel_order_id,
         cancel_version,
@@ -806,7 +786,7 @@ void OrderEntry::cancel_replace_order_ack(
         create_version);
     try {
       auto [status, category, body] = response.result();
-      log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
+      log::info(R"(DEBUG status={}, category={}, body="{}")"sv, status, category, body);
       switch (category) {
         using enum web::http::Category;
         case SUCCESS: {  // 2xx
