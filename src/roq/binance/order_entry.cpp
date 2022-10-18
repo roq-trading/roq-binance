@@ -562,7 +562,8 @@ void OrderEntry::new_order(
 void OrderEntry::new_order_ack(
     Trace<web::rest::Response> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
   profile_.new_order_ack([&]() {
-    auto &[trace_info, response] = event;
+    auto &trace_info = event.trace_info;
+    auto &response = event.value;
     log::debug("user_id={}, order_id={}, version={}"sv, user_id, order_id, version);
     try {
       auto [status, category, body] = response.result();
@@ -792,7 +793,8 @@ void OrderEntry::cancel_replace_order_ack(
     uint32_t create_order_id,
     uint32_t create_version) {
   profile_.cancel_replace_order_ack([&]() {
-    auto &[trace_info, response] = event;
+    auto &trace_info = event.trace_info;
+    auto &response = event.value;
     log::info(
         "DEBUG user_id={}, cancel_order_id={}, cancel_version={}, create_order_id={}, create_version={}"sv,
         user_id,
@@ -801,7 +803,8 @@ void OrderEntry::cancel_replace_order_ack(
         create_order_id,
         create_version);
     try {
-      auto [status, category, body] = response.result();
+      auto [status, category, body_] = response.result();
+      auto body = body_;  // XXX clang workaround
       log::info(R"(DEBUG status={}, category={}, body="{}")"sv, status, category, body);
       test(status);
       switch (category) {
@@ -1185,7 +1188,8 @@ void OrderEntry::cancel_order(
 void OrderEntry::cancel_order_ack(
     Trace<web::rest::Response> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
   profile_.cancel_order_ack([&]() {
-    auto &[trace_info, response] = event;
+    auto &trace_info = event.trace_info;
+    auto &response = event.value;
     log::debug("user_id={}, order_id={}, version={}"sv, user_id, order_id, version);
     try {
       auto [status, category, body] = response.result();
