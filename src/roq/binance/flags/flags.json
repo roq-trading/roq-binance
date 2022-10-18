@@ -44,6 +44,19 @@
       "description": "request: timeout"
     },
     {
+      "name": "rest_terminate_on_403",
+      "type": "bool",
+      "default": false,
+      "description": "terminate when getting a 403 response code"
+    },
+    {
+      "name": "rest_back_off_delay",
+      "type": "std::chrono::nanoseconds",
+      "validator": "roq::core::flags::TimePeriod",
+      "default": "300s",
+      "description": "time to wait before retrying a rejected request"
+    },
+    {
       "name": "rest_listen_key_refresh",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::core::flags::TimePeriod",

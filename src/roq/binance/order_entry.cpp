@@ -114,8 +114,9 @@ void OrderEntry::operator()(Event<Stop> const &) {
 }
 
 void OrderEntry::operator()(Event<Timer> const &event) {
-  (*connection_).refresh(event.value.now);
-  refresh_listen_key();
+  auto now = event.value.now;
+  (*connection_).refresh(now);
+  refresh_listen_key(now);
   if (ready() && !downloading()) {
     if (!downloading() && request_.respond_account < request_.request_account) {
       log::info("Download account..."sv);
@@ -304,11 +305,23 @@ void OrderEntry::get_listen_key_ack(Trace<web::rest::Response> const &event, [[m
     try {
       auto [status, category, body] = response.result();
       log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
-      response.expect(web::http::Status::OK);
-      const auto listen_key = core::json::Parser::create<json::ListenKey>(body);
-      Trace event{trace_info, listen_key};
-      (*this)(event);
-      download_.check_relaxed(state);
+      test(status);
+      switch (category) {
+        using enum web::http::Category;
+        case SUCCESS: {  // 2xx
+          const auto listen_key = core::json::Parser::create<json::ListenKey>(body);
+          Trace event{trace_info, listen_key};
+          (*this)(event);
+          download_.check_relaxed(state);
+          break;
+        }
+        case CLIENT_ERROR:  // 4xx ... assuming any such response is rate limiter violation
+          if (download_.downloading())
+            download_.retry(state);
+          break;
+        default:
+          response.expect(web::http::Status::OK);  // throws
+      }
     } catch (NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
       if (download_.downloading())
@@ -367,6 +380,7 @@ void OrderEntry::get_account_ack(Trace<web::rest::Response> const &event) {
     try {
       auto [status, category, body] = response.result();
       // log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
+      test(status);
       response.expect(web::http::Status::OK);
       core::json::Buffer buffer{decode_buffer_};
       const auto account = core::json::Parser::create<json::Account>(body, buffer);
@@ -435,6 +449,7 @@ void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event) {
     try {
       auto [status, category, body] = response.result();
       // log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
+      test(status);
       response.expect(web::http::Status::OK);
       core::json::Buffer buffer{decode_buffer_};
       const auto open_orders = core::json::Parser::create<json::OpenOrders>(body, buffer);
@@ -497,10 +512,9 @@ void OrderEntry::operator()(Trace<json::OpenOrders> const &event) {
 
 // ...
 
-void OrderEntry::refresh_listen_key() {
+void OrderEntry::refresh_listen_key(std::chrono::nanoseconds now) {
   if (!ready_)
     return;
-  auto now = core::clock::GetSystem();
   if (listen_key_refresh_ == listen_key_refresh_.zero() || now < listen_key_refresh_)
     return;
   log::info<1>("Refreshing listen key..."sv);
@@ -553,6 +567,7 @@ void OrderEntry::new_order_ack(
     try {
       auto [status, category, body] = response.result();
       log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
+      test(status);
       switch (category) {
         using enum web::http::Category;
         case SUCCESS: {  // 2xx
@@ -562,26 +577,27 @@ void OrderEntry::new_order_ack(
           (*this)(event, user_id, order_id, version);
           break;
         }
-        case CLIENT_ERROR: {  // 4xx
-          auto error = core::json::Parser::create<json::Error>(body);
-          const oms::Response response{
-              .type = RequestType::CREATE_ORDER,
-              .origin = Origin::EXCHANGE,
-              .status = RequestStatus::REJECTED,
-              .error = json::guess_error(error.code),
-              .text = error.msg,
-              .version = version,
-              .request_id = {},
-              .quantity = NaN,
-              .price = NaN,
-          };
-          if (shared_.update_order(
-                  user_id, order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
-          } else {
-            log::warn("Did not find order: user_id={}, order_id={}"sv, user_id, order_id);
-          }
+        case CLIENT_ERROR:  // 4xx
+        case SERVER_ERROR:  // 5xx
+          dispatch_error(category, status, body, [&](auto status, auto error, auto text) {
+            const oms::Response response{
+                .type = RequestType::CREATE_ORDER,
+                .origin = Origin::EXCHANGE,
+                .status = status,
+                .error = error,
+                .text = text,
+                .version = version,
+                .request_id = {},
+                .quantity = NaN,
+                .price = NaN,
+            };
+            if (shared_.update_order(
+                    user_id, order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
+            } else {
+              log::warn("Did not find order: user_id={}, order_id={}"sv, user_id, order_id);
+            }
+          });
           break;
-        }
         default:
           response.expect(web::http::Status::OK);  // throws
       }
@@ -787,6 +803,7 @@ void OrderEntry::cancel_replace_order_ack(
     try {
       auto [status, category, body] = response.result();
       log::info(R"(DEBUG status={}, category={}, body="{}")"sv, status, category, body);
+      test(status);
       switch (category) {
         using enum web::http::Category;
         case SUCCESS: {  // 2xx
@@ -796,12 +813,63 @@ void OrderEntry::cancel_replace_order_ack(
           (*this)(event, user_id, cancel_order_id, cancel_version, create_order_id, create_version);
           break;
         }
-        case CLIENT_ERROR: {  // 4xx
-          core::json::Buffer buffer{decode_buffer_};
-          const auto cancel_replace_order_error =
-              core::json::Parser::create<json::CancelReplaceOrderError>(body, buffer);
-          Trace event{trace_info, cancel_replace_order_error};
-          (*this)(event, user_id, cancel_order_id, cancel_version, create_order_id, create_version);
+        case CLIENT_ERROR:    // 4xx
+        case SERVER_ERROR: {  // 5xx
+          auto parse = [&]() {
+            core::json::Buffer buffer{decode_buffer_};
+            const auto cancel_replace_order_error =
+                core::json::Parser::create<json::CancelReplaceOrderError>(body, buffer);
+            Trace event{trace_info, cancel_replace_order_error};
+            (*this)(event, user_id, cancel_order_id, cancel_version, create_order_id, create_version);
+          };
+          dispatch_error_2(category, status, parse, [&]([[maybe_unused]] auto status, auto error, auto text) {
+            {  // cancel
+              oms::Response response{
+                  .type = RequestType::CANCEL_ORDER,
+                  .origin = Origin::EXCHANGE,
+                  .status = status,
+                  .error = error,
+                  .text = text,
+                  .version = cancel_version,
+                  .request_id = {},
+                  .quantity = NaN,
+                  .price = NaN,
+              };
+              if (shared_.update_order(
+                      user_id, cancel_order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {
+                      })) {
+              } else {
+                log::warn(
+                    "Did not find order: user_id={}, order_id={}, version={}"sv,
+                    user_id,
+                    cancel_order_id,
+                    cancel_version);
+              }
+            }
+            {  // create
+              oms::Response response{
+                  .type = RequestType::CREATE_ORDER,
+                  .origin = Origin::EXCHANGE,
+                  .status = status,
+                  .error = error,
+                  .text = text,
+                  .version = create_version,
+                  .request_id = {},
+                  .quantity = NaN,
+                  .price = NaN,
+              };
+              if (shared_.update_order(
+                      user_id, create_order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {
+                      })) {
+              } else {
+                log::warn(
+                    "Did not find order: user_id={}, order_id={}, version={}"sv,
+                    user_id,
+                    create_order_id,
+                    create_version);
+              }
+            }
+          });
           break;
         }
         default:
@@ -1122,6 +1190,7 @@ void OrderEntry::cancel_order_ack(
     try {
       auto [status, category, body] = response.result();
       log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
+      test(status);
       switch (category) {
         using enum web::http::Category;
         case SUCCESS: {  // 2xx
@@ -1130,27 +1199,27 @@ void OrderEntry::cancel_order_ack(
           (*this)(event, user_id, order_id, version);
           break;
         }
-        case CLIENT_ERROR: {  // 4xx
-          auto error = core::json::Parser::create<json::Error>(body);
-          auto error_2 = json::guess_error(error.code);
-          const oms::Response response{
-              .type = RequestType::CANCEL_ORDER,
-              .origin = Origin::EXCHANGE,
-              .status = RequestStatus::REJECTED,
-              .error = error_2,
-              .text = error.msg,
-              .version = version,
-              .request_id = {},
-              .quantity = NaN,
-              .price = NaN,
-          };
-          if (shared_.update_order(
-                  user_id, order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
-          } else {
-            log::warn("Did not find order: user_id={}, order_id={}"sv, user_id, order_id);
-          }
+        case CLIENT_ERROR:  // 4xx
+        case SERVER_ERROR:  // 5xx
+          dispatch_error(category, status, body, [&](auto status, auto error, auto text) {
+            const oms::Response response{
+                .type = RequestType::CANCEL_ORDER,
+                .origin = Origin::EXCHANGE,
+                .status = status,
+                .error = error,
+                .text = text,
+                .version = version,
+                .request_id = {},
+                .quantity = NaN,
+                .price = NaN,
+            };
+            if (shared_.update_order(
+                    user_id, order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
+            } else {
+              log::warn("Did not find order: user_id={}, order_id={}"sv, user_id, order_id);
+            }
+          });
           break;
-        }
         default:
           response.expect(web::http::Status::OK);  // throws
       }
@@ -1233,6 +1302,10 @@ void OrderEntry::operator()(
 void OrderEntry::cancel_all_open_orders(
     Event<CancelAllOrders> const &, [[maybe_unused]] std::string_view const &request_id) {
   profile_.cancel_all_open_orders([&]() {
+    if (!ready()) {
+      log::warn("*** NOT POSSIBLE TO CANCEL ALL OPEN ORDERS (NOT READY) ***"sv);
+      return;
+    }
     for (auto &symbol : open_orders_symbols_) {
       auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(Flags::rest_order_recv_window());
       auto body = fmt::format(
@@ -1268,6 +1341,7 @@ void OrderEntry::cancel_all_open_orders_ack(Trace<web::rest::Response> const &ev
     try {
       auto [status, category, body] = response.result();
       log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
+      test(status);
       switch (category) {
         using enum web::http::Category;
         case SUCCESS: {  // 2xx
@@ -1277,13 +1351,14 @@ void OrderEntry::cancel_all_open_orders_ack(Trace<web::rest::Response> const &ev
           (*this)(event);
           break;
         }
-        case CLIENT_ERROR: {  // 4xx
-          auto error = core::json::Parser::create<json::Error>(body);
-          log::warn("error={}"sv, error);
-          // XXX HANS ???
-          // not outstanding orders: {code=-2011, msg="Unknown order sent."}
+        case CLIENT_ERROR:  // 4xx
+        case SERVER_ERROR:  // 5xx
+          dispatch_error(category, status, body, [&]([[maybe_unused]] auto status, auto error, auto text) {
+            log::warn(R"(error={}, text="{}")"sv, error, text);
+            // XXX HANS ???
+            // not outstanding orders: {code=-2011, msg="Unknown order sent."}
+          });
           break;
-        }
         default:
           response.expect(web::http::Status::OK);  // throws
       }
@@ -1336,6 +1411,111 @@ void OrderEntry::operator()(Trace<json::CancelAllOpenOrders> const &event) {
     shared_.update_order(
         order.client_order_id, stream_id_, trace_info, order_update, []([[maybe_unused]] auto &order) {});
   }
+}
+
+template <typename Callback>
+void OrderEntry::dispatch_error(
+    web::http::Category category, web::http::Status status, std::string_view const &body, Callback callback) {
+  switch (category) {
+    using enum web::http::Category;
+    case UNKNOWN:
+      break;
+    case INFORMATIONAL_RESPONSE:
+    case SUCCESS:
+    case REDIRECTION:
+      assert(false);
+      break;
+    case CLIENT_ERROR:
+      try {
+        // HTTP 4XX return codes are used for malformed requests; the issue is on the sender's side.
+        // HTTP 403 return code is used when the WAF Limit (Web Application Firewall) has been violated.
+        // HTTP 409 return code is used when a cancelReplace order partially succeeds. (e.g. if the
+        //   cancellation of the order fails but the new order placement succeeds.)
+        // HTTP 418 return code is used when an IP has been auto-banned for continuing to send requests
+        //   after receiving 429 codes.
+        // HTTP 429 return code is used when breaking a request rate limit.
+        switch (status) {
+          using enum web::http::Status;
+          case FORBIDDEN:          // 403
+          case I_AM_A_TEAPOT:      // 418
+          case TOO_MANY_REQUESTS:  // 429
+            callback(RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, magic_enum::enum_name(status));
+            break;
+          case CONFLICT:  // 409
+            assert(false);
+            [[fallthrough]];
+          default: {
+            auto error = core::json::Parser::create<json::Error>(body);
+            callback(RequestStatus::REJECTED, json::guess_error(error.code), error.msg);
+          }
+        }
+      } catch (std::exception &e) {  // parse error
+        callback(RequestStatus::ERROR, Error::UNKNOWN, e.what());
+      }
+      break;
+    case SERVER_ERROR:
+      // HTTP 5XX return codes are used for internal errors; the issue is on Binance's side.
+      //   It is important to NOT treat this as a failure operation; the execution status is UNKNOWN
+      //   and could have been a success.
+      callback(RequestStatus::ERROR, Error::UNKNOWN, magic_enum::enum_name(status));
+      break;
+  }
+}
+
+// note! used by cancel-replace
+template <typename Parse, typename Callback>
+void OrderEntry::dispatch_error_2(
+    web::http::Category category, web::http::Status status, Parse parse, Callback callback) {
+  switch (category) {
+    using enum web::http::Category;
+    case UNKNOWN:
+      break;
+    case INFORMATIONAL_RESPONSE:
+    case SUCCESS:
+    case REDIRECTION:
+      assert(false);
+      break;
+    case CLIENT_ERROR:
+      try {
+        // HTTP 4XX return codes are used for malformed requests; the issue is on the sender's side.
+        // HTTP 403 return code is used when the WAF Limit (Web Application Firewall) has been violated.
+        // HTTP 409 return code is used when a cancelReplace order partially succeeds. (e.g. if the
+        //   cancellation of the order fails but the new order placement succeeds.)
+        // HTTP 418 return code is used when an IP has been auto-banned for continuing to send requests
+        //   after receiving 429 codes.
+        // HTTP 429 return code is used when breaking a request rate limit.
+        switch (status) {
+          using enum web::http::Status;
+          case FORBIDDEN:          // 403
+          case I_AM_A_TEAPOT:      // 418
+          case TOO_MANY_REQUESTS:  // 429
+            callback(RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, magic_enum::enum_name(status));
+            break;
+          case CONFLICT:  // 409
+            assert(false);
+            [[fallthrough]];
+          default:
+            parse();
+        }
+      } catch (std::exception &e) {  // parse error
+        callback(RequestStatus::ERROR, Error::UNKNOWN, e.what());
+      }
+      break;
+    case SERVER_ERROR:
+      // HTTP 5XX return codes are used for internal errors; the issue is on Binance's side.
+      //   It is important to NOT treat this as a failure operation; the execution status is UNKNOWN
+      //   and could have been a success.
+      callback(RequestStatus::ERROR, Error::UNKNOWN, magic_enum::enum_name(status));
+      break;
+  }
+}
+
+void OrderEntry::test(web::http::Status status) {
+  if (status != web::http::Status::FORBIDDEN) [[likely]]
+    return;
+  if (Flags::rest_terminate_on_403())
+    log::fatal("status={}"sv, status);
+  (*connection_).suspend(Flags::rest_back_off_delay());
 }
 
 }  // namespace binance

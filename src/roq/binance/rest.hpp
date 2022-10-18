@@ -76,6 +76,8 @@ class Rest final : public web::rest::Client::Handler {
 
   void check_request_queue(std::chrono::nanoseconds now);
 
+  void test(web::http::Status);
+
  private:
   Handler &handler_;
   // config

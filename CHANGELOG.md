@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Fixed
+
+* OrderAck was missing when HTTP response was HTML (instead of JSON) (#293)
+
 ## 0.8.8 &ndash; 2022-10-04
 
 ### Added

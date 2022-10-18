@@ -21,7 +21,7 @@ $PREFIX ./roq-binance \
 	--name "$NAME" \
 	--config_file "$CONFIG_FILE" \
 	--client_listen_address "$HOME/run/$NAME.sock" \
-	--metrics_listen_address "$HOME/run/${NAME}_metrics.sock" \
+	--metrics_listen_address "$HOME/run/metrics/${NAME}.sock" \
 	--ws_uri "$WS_URI" \
 	--rest_uri "$REST_URI" \
 	$@

@@ -112,7 +112,7 @@ class OrderEntry final : public web::rest::Client::Handler {
   void get_open_orders_ack(Trace<web::rest::Response> const &);
   void operator()(Trace<json::OpenOrders> const &);
 
-  void refresh_listen_key();
+  void refresh_listen_key(std::chrono::nanoseconds now);
 
   void new_order(Event<CreateOrder> const &, oms::Order const &order, std::string_view const &request_id);
   void new_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint32_t order_id, uint32_t version);
@@ -153,6 +153,14 @@ class OrderEntry final : public web::rest::Client::Handler {
   void cancel_all_open_orders(Event<CancelAllOrders> const &, std::string_view const &request_id);
   void cancel_all_open_orders_ack(Trace<web::rest::Response> const &);
   void operator()(Trace<json::CancelAllOpenOrders> const &);
+
+  template <typename Callback>
+  void dispatch_error(web::http::Category, web::http::Status, std::string_view const &body, Callback);
+
+  template <typename Parse, typename Callback>
+  void dispatch_error_2(web::http::Category, web::http::Status, Parse, Callback);
+
+  void test(web::http::Status);
 
  private:
   Handler &handler_;

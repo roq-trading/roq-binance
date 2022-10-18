@@ -212,16 +212,28 @@ void Rest::get_exchange_info_ack(Trace<web::rest::Response> const &event, uint32
     try {
       auto [status, category, body] = response.result();
       // log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
+      test(status);
       if (download_.skip(sequence, state)) {
         log::info("Download state={} has already been processed"sv, state);
         return;
       }
-      response.expect(web::http::Status::OK);
-      core::json::Buffer buffer{decode_buffer_};
-      const auto exchange_info = core::json::Parser::create<json::ExchangeInfo>(body, buffer);
-      Trace event{trace_info, exchange_info};
-      (*this)(event);
-      download_.check(state);
+      switch (category) {
+        using enum web::http::Category;
+        case SUCCESS: {  // 2xx
+          core::json::Buffer buffer{decode_buffer_};
+          const auto exchange_info = core::json::Parser::create<json::ExchangeInfo>(body, buffer);
+          Trace event{trace_info, exchange_info};
+          (*this)(event);
+          download_.check(state);
+          break;
+        }
+        case CLIENT_ERROR:  // 4xx ... assuming any such response is rate limiter violation
+          if (download_.downloading())
+            download_.retry(state);
+          break;
+        default:
+          response.expect(web::http::Status::OK);  // throws
+      }
     } catch (NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
       download_.retry(state);
@@ -374,6 +386,7 @@ void Rest::get_depth_ack(Trace<web::rest::Response> const &event, std::string_vi
     try {
       auto [status, category, body] = response.result();
       // log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
+      test(status);
       response.expect(web::http::Status::OK);
       core::json::Buffer buffer{decode_buffer_};
       const auto depth = core::json::Parser::create<json::Depth>(body, buffer);
@@ -454,5 +467,12 @@ void Rest::check_request_queue(std::chrono::nanoseconds now) {
       now);
 }
 
+void Rest::test(web::http::Status status) {
+  if (status != web::http::Status::FORBIDDEN) [[likely]]
+    return;
+  if (Flags::rest_terminate_on_403())
+    log::fatal("status={}"sv, status);
+  (*connection_).suspend(Flags::rest_back_off_delay());
+}
 }  // namespace binance
 }  // namespace roq

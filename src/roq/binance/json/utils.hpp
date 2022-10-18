@@ -13,6 +13,8 @@
 
 #include "roq/core/charconv/datetime.hpp"
 
+#include "roq/web/http/status.hpp"
+
 #include "roq/binance/json/order_status.hpp"
 #include "roq/binance/json/order_type.hpp"
 #include "roq/binance/json/side.hpp"
