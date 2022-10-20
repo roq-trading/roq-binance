@@ -1337,6 +1337,9 @@ void OrderEntry::process_response(web::rest::Response const &response, Parse par
       default:
         response.expect(web::http::Status::OK);  // throws
     }
+  } catch (oms::Exception &e) {
+    log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
+    error_handler(e.origin, e.status, e.error, e.what());
   } catch (NetworkError &e) {
     log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
     error_handler(Origin::GATEWAY, e.request_status(), e.error(), e.what());
