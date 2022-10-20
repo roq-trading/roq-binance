@@ -18,12 +18,12 @@ REST_URI="https://api.$URI"
 WS_URI="wss://stream.$URI:9443/stream"
 
 $PREFIX ./roq-binance \
-	--name "$NAME" \
-	--config_file "$CONFIG_FILE" \
+  --name "$NAME" \
+  --config_file "$CONFIG_FILE" \
   --event_log_dir "$HOME/var/lib/roq/data" \
   --event_log_symlink \
-	--client_listen_address "$HOME/run/$NAME.sock" \
-	--metrics_listen_address "$HOME/run/metrics/${NAME}.sock" \
-	--ws_uri "$WS_URI" \
-	--rest_uri "$REST_URI" \
-	$@
+  --client_listen_address "$HOME/run/$NAME.sock" \
+  --metrics_listen_address "$HOME/run/metrics/${NAME}.sock" \
+  --ws_uri "$WS_URI" \
+  --rest_uri "$REST_URI" \
+  $@

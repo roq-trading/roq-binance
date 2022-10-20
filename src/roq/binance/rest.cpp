@@ -18,6 +18,7 @@
 
 #include "roq/binance/flags.hpp"
 
+#include "roq/binance/json/error.hpp"
 #include "roq/binance/json/filters.hpp"
 #include "roq/binance/json/utils.hpp"
 
@@ -136,7 +137,7 @@ void Rest::operator()(web::rest::Client::Disconnected const &) {
 
 void Rest::operator()(web::rest::Client::Latency const &latency) {
   auto trace_info = server::create_trace_info();
-  const ExternalLatency external_latency{
+  ExternalLatency external_latency{
       .stream_id = stream_id_,
       .account = {},
       .latency = latency.sample,
@@ -148,7 +149,7 @@ void Rest::operator()(web::rest::Client::Latency const &latency) {
 void Rest::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     auto trace_info = server::create_trace_info();
-    const StreamStatus stream_status{
+    StreamStatus stream_status{
         .stream_id = stream_id_,
         .account = {},
         .supports = SUPPORTS,
@@ -196,54 +197,42 @@ void Rest::get_exchange_info() {
         .body = {},
         .quality_of_service = {},
     };
-    auto sequence = download_.sequence();
-    (*connection_)("exchange_info"sv, request, [this, sequence]([[maybe_unused]] auto &request_id, auto &response) {
+    auto callback = [this, sequence = download_.sequence()]([[maybe_unused]] auto &request_id, auto &response) {
       auto trace_info = server::create_trace_info();
       Trace event{trace_info, response};
       get_exchange_info_ack(event, sequence);
-    });
+    };
+    (*connection_)("exchange_info"sv, request, callback);
   });
 }
 
 void Rest::get_exchange_info_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
+  constexpr auto const STATE = RestState::EXCHANGE_INFO;
   profile_.exchange_info_ack([&]() {
-    auto &[trace_info, response] = event;
-    auto state = RestState::EXCHANGE_INFO;
-    try {
-      auto [status, category, body] = response.result();
-      // log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
-      test(status);
-      if (download_.skip(sequence, state)) {
-        log::info("Download state={} has already been processed"sv, state);
-        return;
+    auto &trace_info = event.trace_info;
+    auto parse = [&](auto &body) {
+      if (download_.skip(sequence, STATE)) {
+        log::info("Download state={} has already been processed"sv, STATE);
+      } else {
+        core::json::Buffer buffer{decode_buffer_};
+        auto exchange_info = core::json::Parser::create<json::ExchangeInfo>(body, buffer);
+        log::debug("exchange_info={}"sv, exchange_info);
+        Trace event{trace_info, exchange_info};
+        (*this)(event);
+        download_.check(STATE);
       }
-      switch (category) {
-        using enum web::http::Category;
-        case SUCCESS: {  // 2xx
-          core::json::Buffer buffer{decode_buffer_};
-          const auto exchange_info = core::json::Parser::create<json::ExchangeInfo>(body, buffer);
-          Trace event{trace_info, exchange_info};
-          (*this)(event);
-          download_.check(state);
-          break;
-        }
-        case CLIENT_ERROR:  // 4xx ... assuming any such response is rate limiter violation
-          if (download_.downloading())
-            download_.retry(state);
-          break;
-        default:
-          response.expect(web::http::Status::OK);  // throws
-      }
-    } catch (NetworkError &e) {
-      log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
-      download_.retry(state);
-    }
+    };
+    auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
+      log::warn(R"(error={}, text="{}")"sv, error, text);
+      if (download_.downloading())
+        download_.retry(STATE);
+    };
+    process_response(event, parse, handle_error);
   });
 }
 
 void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
   auto &[trace_info, exchange_info] = event;
-  // log::info<2>("exchange_info={}"sv, exchange_info);
   std::vector<Symbol> symbols;
   size_t counter = {};
   for (auto const &item : exchange_info.symbols) {
@@ -300,7 +289,7 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
           break;
       }
     }
-    const ReferenceData reference_data{
+    ReferenceData reference_data{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
         .symbol = item.symbol,
@@ -332,14 +321,17 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
       log::info<1>(R"(Drop symbol="{}")"sv, item.symbol);
       continue;
     }
-    // note! convert to lowercase
-    std::string symbol{item.symbol};
-    std::transform(std::begin(symbol), std::end(symbol), std::begin(symbol), [](auto c) { return std::tolower(c); });
+    auto create_symbol = [](auto const &value) {
+      std::string tmp{value};
+      std::transform(std::begin(tmp), std::end(tmp), std::begin(tmp), [](auto c) { return std::tolower(c); });
+      return tmp;
+    };
+    auto symbol = create_symbol(item.symbol);
     if (all_symbols_.emplace(symbol).second)  // only include new
       symbols.emplace_back(symbol);
     ++counter;
     auto trading_status = json::map(item.status);
-    const MarketStatus market_status{
+    MarketStatus market_status{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
         .symbol = item.symbol,
@@ -371,31 +363,29 @@ void Rest::get_depth(std::string_view const &symbol) {
         .body = {},
         .quality_of_service = {},
     };
-    (*connection_)(
-        "depth"sv, request, [this, symbol = std::string{symbol}]([[maybe_unused]] auto &request_id, auto &response) {
-          auto trace_info = server::create_trace_info();
-          Trace event{trace_info, response};
-          get_depth_ack(event, symbol);
-        });
+    auto callback = [this, symbol = std::string{symbol}]([[maybe_unused]] auto &request_id, auto &response) {
+      auto trace_info = server::create_trace_info();
+      Trace event{trace_info, response};
+      get_depth_ack(event, symbol);
+    };
+    (*connection_)("depth"sv, request, callback);
   });
 }
 
 void Rest::get_depth_ack(Trace<web::rest::Response> const &event, std::string_view const &symbol) {
   profile_.depth_ack([&]() {
-    auto &[trace_info, response] = event;
-    try {
-      auto [status, category, body] = response.result();
-      // log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
-      test(status);
-      response.expect(web::http::Status::OK);
+    auto &trace_info = event.trace_info;
+    auto parse = [&](auto &body) {
       core::json::Buffer buffer{decode_buffer_};
-      const auto depth = core::json::Parser::create<json::Depth>(body, buffer);
+      auto depth = core::json::Parser::create<json::Depth>(body, buffer);
       Trace event{trace_info, depth};
       (*this)(event, symbol);
-    } catch (NetworkError &e) {
-      log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
-      // XXX HANS ???
-    }
+    };
+    auto handle_error = []([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
+      log::warn(R"(error={}, text="{}")"sv, error, text);
+      // XXX WHAT ???
+    };
+    process_response(event, parse, handle_error);
   });
 }
 
@@ -423,7 +413,7 @@ void Rest::operator()(Trace<json::Depth> const &event, std::string_view const &s
   try {
     auto publish_snapshot = [&](auto &bids, auto &asks, auto sequence) {
       log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
-      const MarketByPriceUpdate market_by_price_update{
+      MarketByPriceUpdate market_by_price_update{
           .stream_id = stream_id_,
           .exchange = Flags::exchange(),
           .symbol = symbol,
@@ -455,8 +445,6 @@ void Rest::operator()(Trace<json::Depth> const &event, std::string_view const &s
   }
 }
 
-// queue
-
 void Rest::check_request_queue(std::chrono::nanoseconds now) {
   shared_.depth_request_queue.dispatch(
       [&](auto now) { return shared_.rate_limiter.can_request(now); },
@@ -467,12 +455,68 @@ void Rest::check_request_queue(std::chrono::nanoseconds now) {
       now);
 }
 
+template <typename Parse, typename ErrorHandler>
+void Rest::process_response(web::rest::Response const &response, Parse parse, ErrorHandler error_handler) {
+  try {
+    auto [status, category, body] = response.result();
+    log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
+    switch (category) {
+      using enum web::http::Category;
+      case SUCCESS:  // 2xx
+        parse(body);
+        break;
+      case CLIENT_ERROR:  // 4xx
+        switch (status) {
+          using enum web::http::Status;
+          case FORBIDDEN:           // 403
+            waf_limit_violation();  // note! this is *very* serious
+            [[fallthrough]];
+          case I_AM_A_TEAPOT:      // 418
+          case TOO_MANY_REQUESTS:  // 429
+            error_handler(
+                Origin::EXCHANGE,
+                RequestStatus::REJECTED,
+                Error::REQUEST_RATE_LIMIT_REACHED,
+                magic_enum::enum_name(status));
+            break;
+          case CONFLICT:  // 409
+            assert(false);
+            [[fallthrough]];
+          default: {
+            auto error = core::json::Parser::create<json::Error>(body);
+            error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, json::guess_error(error.code), error.msg);
+          }
+        }
+        break;
+      case SERVER_ERROR:  // 5xx
+        error_handler(Origin::EXCHANGE, RequestStatus::ERROR, Error::UNKNOWN, magic_enum::enum_name(status));
+        break;
+      default:
+        response.expect(web::http::Status::OK);  // throws
+    }
+  } catch (NetworkError &e) {
+    log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
+    error_handler(Origin::GATEWAY, e.request_status(), e.error(), e.what());
+  } catch (std::exception &e) {
+    log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
+    error_handler(Origin::EXCHANGE, RequestStatus::ERROR, Error::UNKNOWN, e.what());
+  }
+}
+
 void Rest::test(web::http::Status status) {
   if (status != web::http::Status::FORBIDDEN) [[likely]]
     return;
-  if (Flags::rest_terminate_on_403())
-    log::fatal("status={}"sv, status);
-  (*connection_).suspend(Flags::rest_back_off_delay());
+  waf_limit_violation();
 }
+
+void Rest::waf_limit_violation() {
+  if (Flags::rest_terminate_on_403()) {
+    log::fatal("WAF limit violation"sv);
+  } else {
+    log::warn("WAF limit violation"sv);
+    (*connection_).suspend(Flags::rest_back_off_delay());
+  }
+}
+
 }  // namespace binance
 }  // namespace roq

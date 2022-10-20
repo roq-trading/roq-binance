@@ -263,6 +263,17 @@ extern std::string_view cancel_replace_order(
     std::chrono::milliseconds recv_window,
     bool stop_on_failure);
 
+extern std::string_view cancel_order(
+    std::vector<char> &buffer,
+    roq::CancelOrder const &,
+    oms::Order const &,
+    std::string_view const &request_id,
+    std::string_view const &previous_request_id,
+    std::chrono::milliseconds recv_window);
+
+extern std::string_view cancel_all_open_orders(
+    std::vector<char> &buffer, std::string_view const &symbol, std::chrono::milliseconds recv_window);
+
 }  // namespace json
 }  // namespace binance
 }  // namespace roq

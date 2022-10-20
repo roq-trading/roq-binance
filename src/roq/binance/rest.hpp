@@ -76,7 +76,11 @@ class Rest final : public web::rest::Client::Handler {
 
   void check_request_queue(std::chrono::nanoseconds now);
 
-  void test(web::http::Status);
+  template <typename Parse, typename ErrorHandler>
+  void process_response(web::rest::Response const &, Parse, ErrorHandler);
+
+  void test(web::http::Status);  // XXX
+  void waf_limit_violation();
 
  private:
   Handler &handler_;

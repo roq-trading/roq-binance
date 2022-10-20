@@ -93,7 +93,7 @@ Error guess_error(int32_t code) {
     case -2010:  // NEW_ORDER_REJECTED
       break;
     case -2011:  // CANCEL_REJECTED
-      break;
+      return Error::TOO_LATE_TO_MODIFY_OR_CANCEL;
     case -2013:  // NO_SUCH_ORDER
       return Error::UNKNOWN_ORDER_ID;
     case -2014:  // BAD_API_KEY_FMT
@@ -227,6 +227,41 @@ std::string_view cancel_replace_order(
       R"(newClientOrderId={}&)"
       R"(recvWindow={})"sv,
       create_request_id,
+      recv_window.count());
+  std::string_view result{std::data(buffer), std::size(buffer)};
+  return result;
+}
+
+std::string_view cancel_order(
+    std::vector<char> &buffer,
+    roq::CancelOrder const &,
+    oms::Order const &order,
+    std::string_view const &request_id,
+    std::string_view const &previous_request_id,
+    std::chrono::milliseconds recv_window) {
+  buffer.clear();
+  fmt::format_to(
+      std::back_inserter(buffer),
+      R"(symbol={}&)"
+      R"(origClientOrderId={}&)"
+      R"(newClientOrderId={}&)"
+      R"(recvWindow={})"sv,
+      order.symbol,
+      previous_request_id,
+      request_id,
+      recv_window.count());
+  std::string_view result{std::data(buffer), std::size(buffer)};
+  return result;
+}
+
+std::string_view cancel_all_open_orders(
+    std::vector<char> &buffer, std::string_view const &symbol, std::chrono::milliseconds recv_window) {
+  buffer.clear();
+  fmt::format_to(
+      std::back_inserter(buffer),
+      R"(symbol={}&)"
+      R"(recvWindow={})"sv,
+      symbol,
       recv_window.count());
   std::string_view result{std::data(buffer), std::size(buffer)};
   return result;

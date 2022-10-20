@@ -154,13 +154,20 @@ class OrderEntry final : public web::rest::Client::Handler {
   void cancel_all_open_orders_ack(Trace<web::rest::Response> const &);
   void operator()(Trace<json::CancelAllOpenOrders> const &);
 
-  template <typename Callback>
-  void dispatch_error(web::http::Category, web::http::Status, std::string_view const &body, Callback);
+  template <typename Parse, typename ErrorHandler>
+  void process_response(web::rest::Response const &, Parse, ErrorHandler);
+
+  template <typename... Args>
+  void operator()(Trace<oms::Response> const &, uint8_t user_id, uint32_t order_id, Args &&...);
+
+  template <typename... Args>
+  void operator()(Trace<oms::OrderUpdate> const &, std::string_view const &client_order_id, Args &&...);
 
   template <typename Parse, typename Callback>
-  void dispatch_error_2(web::http::Category, web::http::Status, Parse, Callback);
+  void dispatch_error_2(web::http::Category, web::http::Status, Parse, Callback);  // XXX
 
-  void test(web::http::Status);
+  void test(web::http::Status);  // XXX
+  void waf_limit_violation();
 
  private:
   Handler &handler_;
