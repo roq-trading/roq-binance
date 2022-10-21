@@ -154,8 +154,8 @@ class OrderEntry final : public web::rest::Client::Handler {
   void cancel_all_open_orders_ack(Trace<web::rest::Response> const &);
   void operator()(Trace<json::CancelAllOpenOrders> const &);
 
-  template <typename Parse, typename ErrorHandler>
-  void process_response(web::rest::Response const &, Parse, ErrorHandler);
+  template <typename SuccessHandler, typename ErrorHandler>
+  void process_response(web::rest::Response const &, SuccessHandler, ErrorHandler);
 
   template <typename... Args>
   void operator()(Trace<oms::Response> const &, uint8_t user_id, uint32_t order_id, Args &&...);

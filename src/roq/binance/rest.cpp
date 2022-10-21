@@ -209,16 +209,15 @@ void Rest::get_exchange_info() {
 void Rest::get_exchange_info_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
   constexpr auto const STATE = RestState::EXCHANGE_INFO;
   profile_.exchange_info_ack([&]() {
-    auto &trace_info = event.trace_info;
-    auto parse = [&](auto &body) {
+    auto handle_success = [&](auto &body) {
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
         core::json::Buffer buffer{decode_buffer_};
         auto exchange_info = core::json::Parser::create<json::ExchangeInfo>(body, buffer);
         log::debug("exchange_info={}"sv, exchange_info);
-        Trace event{trace_info, exchange_info};
-        (*this)(event);
+        Trace event_2{event, exchange_info};
+        (*this)(event_2);
         download_.check(STATE);
       }
     };
@@ -227,7 +226,7 @@ void Rest::get_exchange_info_ack(Trace<web::rest::Response> const &event, uint32
       if (download_.downloading())
         download_.retry(STATE);
     };
-    process_response(event, parse, handle_error);
+    process_response(event, handle_success, handle_error);
   });
 }
 
@@ -374,18 +373,17 @@ void Rest::get_depth(std::string_view const &symbol) {
 
 void Rest::get_depth_ack(Trace<web::rest::Response> const &event, std::string_view const &symbol) {
   profile_.depth_ack([&]() {
-    auto &trace_info = event.trace_info;
-    auto parse = [&](auto &body) {
+    auto handle_success = [&](auto &body) {
       core::json::Buffer buffer{decode_buffer_};
       auto depth = core::json::Parser::create<json::Depth>(body, buffer);
-      Trace event{trace_info, depth};
-      (*this)(event, symbol);
+      Trace event_2{event, depth};
+      (*this)(event_2, symbol);
     };
     auto handle_error = []([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
       log::warn(R"(error={}, text="{}")"sv, error, text);
       // XXX WHAT ???
     };
-    process_response(event, parse, handle_error);
+    process_response(event, handle_success, handle_error);
   });
 }
 
@@ -455,15 +453,16 @@ void Rest::check_request_queue(std::chrono::nanoseconds now) {
       now);
 }
 
-template <typename Parse, typename ErrorHandler>
-void Rest::process_response(web::rest::Response const &response, Parse parse, ErrorHandler error_handler) {
+template <typename SuccessHandler, typename ErrorHandler>
+void Rest::process_response(
+    web::rest::Response const &response, SuccessHandler success_handler, ErrorHandler error_handler) {
   try {
     auto [status, category, body] = response.result();
     log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
     switch (category) {
       using enum web::http::Category;
       case SUCCESS:  // 2xx
-        parse(body);
+        success_handler(body);
         break;
       case CLIENT_ERROR:  // 4xx
         switch (status) {
