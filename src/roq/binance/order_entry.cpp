@@ -302,7 +302,7 @@ void OrderEntry::get_listen_key_ack(Trace<web::rest::Response> const &event, [[m
   auto const constexpr STATE = OrderEntryState::LISTEN_KEY;
   profile_.listen_key_ack([&]() {
     auto handle_success = [&](auto &body) {
-      auto listen_key = core::json::Parser::create<json::ListenKey>(body);
+      json::ListenKey listen_key{body};
       log::debug("listen_key={}"sv, listen_key);
       Trace event_2{event, listen_key};
       (*this)(event_2);
@@ -365,8 +365,7 @@ void OrderEntry::get_account() {
 void OrderEntry::get_account_ack(Trace<web::rest::Response> const &event) {
   profile_.account_ack([&]() {
     auto handle_success = [&](auto &body) {
-      core::json::Buffer buffer{decode_buffer_};
-      auto account = core::json::Parser::create<json::Account>(body, buffer);
+      json::Account account{body, decode_buffer_};
       Trace event_2{event, account};
       (*this)(event_2);
       request_.respond_account = core::clock::GetSystem();  // completion
@@ -435,8 +434,7 @@ void OrderEntry::get_open_orders() {
 void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event) {
   profile_.open_orders_ack([&]() {
     auto handle_success = [&](auto &body) {
-      core::json::Buffer buffer{decode_buffer_};
-      auto open_orders = core::json::Parser::create<json::OpenOrders>(body, buffer);
+      json::OpenOrders open_orders{body, decode_buffer_};
       Trace event_2{event, open_orders};
       (*this)(event_2);
       request_.respond_orders = core::clock::GetSystem();  // completion
@@ -545,8 +543,7 @@ void OrderEntry::new_order_ack(
     Trace<web::rest::Response> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
   profile_.new_order_ack([&]() {
     auto handle_success = [&](auto &body) {
-      core::json::Buffer buffer{decode_buffer_};
-      auto new_order = core::json::Parser::create<json::NewOrder>(body, buffer);
+      json::NewOrder new_order{body, decode_buffer_};
       log::debug("new_order={}"sv, new_order);
       Trace event_2{event, new_order};
       (*this)(event_2, user_id, order_id, version);
@@ -749,8 +746,7 @@ void OrderEntry::cancel_replace_order_ack(
       switch (category) {
         using enum web::http::Category;
         case SUCCESS: {  // 2xx
-          core::json::Buffer buffer{decode_buffer_};
-          auto cancel_replace_order = core::json::Parser::create<json::CancelReplaceOrder>(body, buffer);
+          json::CancelReplaceOrder cancel_replace_order{body, decode_buffer_};
           Trace event{trace_info, cancel_replace_order};
           (*this)(event, user_id, cancel_order_id, cancel_version, create_order_id, create_version);
           break;
@@ -758,8 +754,7 @@ void OrderEntry::cancel_replace_order_ack(
         case CLIENT_ERROR:    // 4xx
         case SERVER_ERROR: {  // 5xx
           auto parse = [&]() {
-            core::json::Buffer buffer{decode_buffer_};
-            auto cancel_replace_order_error = core::json::Parser::create<json::CancelReplaceOrderError>(body, buffer);
+            json::CancelReplaceOrderError cancel_replace_order_error{body, decode_buffer_};
             Trace event{trace_info, cancel_replace_order_error};
             (*this)(event, user_id, cancel_order_id, cancel_version, create_order_id, create_version);
           };
@@ -1118,7 +1113,7 @@ void OrderEntry::cancel_order_ack(
     Trace<web::rest::Response> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
   profile_.cancel_order_ack([&]() {
     auto handle_success = [&](auto &body) {
-      auto cancel_order = core::json::Parser::create<json::CancelOrder>(body);
+      json::CancelOrder cancel_order{body};
       log::debug("cancel_order={}"sv, cancel_order);
       Trace event_2{event, cancel_order};
       (*this)(event_2, user_id, order_id, version);
@@ -1229,8 +1224,7 @@ void OrderEntry::cancel_all_open_orders(
 void OrderEntry::cancel_all_open_orders_ack(Trace<web::rest::Response> const &event) {
   profile_.cancel_all_open_orders_ack([&]() {
     auto handle_success = [&](auto &body) {
-      core::json::Buffer buffer{decode_buffer_};
-      auto cancel_all_open_orders = core::json::Parser::create<json::CancelAllOpenOrders>(body, buffer);
+      json::CancelAllOpenOrders cancel_all_open_orders{body, decode_buffer_};
       log::debug("cancel_all_open_orders={}"sv, cancel_all_open_orders);
       Trace event_2{event, cancel_all_open_orders};
       (*this)(event_2);
@@ -1321,7 +1315,7 @@ void OrderEntry::process_response(
             assert(false);
             [[fallthrough]];
           default: {
-            auto error = core::json::Parser::create<json::Error>(body);
+            json::Error error{body};
             error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, json::guess_error(error.code), error.msg);
           }
         }

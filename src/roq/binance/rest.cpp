@@ -213,8 +213,7 @@ void Rest::get_exchange_info_ack(Trace<web::rest::Response> const &event, uint32
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
-        core::json::Buffer buffer{decode_buffer_};
-        auto exchange_info = core::json::Parser::create<json::ExchangeInfo>(body, buffer);
+        json::ExchangeInfo exchange_info{body, decode_buffer_};
         log::debug("exchange_info={}"sv, exchange_info);
         Trace event_2{event, exchange_info};
         (*this)(event_2);
@@ -244,8 +243,7 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
     auto trade_vol_step_size = min_trade_vol;
     auto min_notional = NaN;
     // parse filters and update
-    core::json::Buffer buffer{decode_buffer_2_};
-    auto filters = core::json::Parser::create<json::Filters>(item.filters, buffer);
+    json::Filters filters{item.filters, decode_buffer_2_};
     for (auto &filter : filters.data) {
       switch (filter.filter_type) {
         using enum json::FilterType::type_t;
@@ -374,8 +372,7 @@ void Rest::get_depth(std::string_view const &symbol) {
 void Rest::get_depth_ack(Trace<web::rest::Response> const &event, std::string_view const &symbol) {
   profile_.depth_ack([&]() {
     auto handle_success = [&](auto &body) {
-      core::json::Buffer buffer{decode_buffer_};
-      auto depth = core::json::Parser::create<json::Depth>(body, buffer);
+      json::Depth depth{body, decode_buffer_};
       Trace event_2{event, depth};
       (*this)(event_2, symbol);
     };
@@ -482,7 +479,7 @@ void Rest::process_response(
             assert(false);
             [[fallthrough]];
           default: {
-            auto error = core::json::Parser::create<json::Error>(body);
+            json::Error error{body};
             error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, json::guess_error(error.code), error.msg);
           }
         }
