@@ -17,6 +17,7 @@
 #include "roq/web/rest/client_factory.hpp"
 
 #include "roq/binance/flags.hpp"
+#include "roq/binance/utils.hpp"
 
 #include "roq/binance/json/error.hpp"
 #include "roq/binance/json/filters.hpp"
@@ -235,7 +236,7 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
   size_t counter = {};
   for (auto const &item : exchange_info.symbols) {
     log::info<2>("item={}"sv, item);
-    auto discard = shared_.discard_symbol(item.symbol);
+    auto discard = shared_.discard_symbol(item.symbol);  // XXX should this be normalized symbol ???
     // fall-back values
     auto tick_size = std::pow(10.0, -static_cast<double>(item.quote_precision));
     auto min_trade_vol = std::pow(10.0, -static_cast<double>(item.base_asset_precision));
@@ -318,12 +319,7 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
       log::info<1>(R"(Drop symbol="{}")"sv, item.symbol);
       continue;
     }
-    auto create_symbol = [](auto const &value) {
-      std::string tmp{value};
-      std::transform(std::begin(tmp), std::end(tmp), std::begin(tmp), [](auto c) { return std::tolower(c); });
-      return tmp;
-    };
-    auto symbol = create_symbol(item.symbol);
+    auto symbol = normalized_symbol(item.symbol);
     if (all_symbols_.emplace(symbol).second)  // only include new
       symbols.emplace_back(symbol);
     ++counter;
