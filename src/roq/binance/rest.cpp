@@ -137,7 +137,7 @@ void Rest::operator()(web::rest::Client::Disconnected const &) {
 }
 
 void Rest::operator()(web::rest::Client::Latency const &latency) {
-  auto trace_info = server::create_trace_info();
+  TraceInfo trace_info;
   ExternalLatency external_latency{
       .stream_id = stream_id_,
       .account = {},
@@ -149,7 +149,7 @@ void Rest::operator()(web::rest::Client::Latency const &latency) {
 
 void Rest::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
-    auto trace_info = server::create_trace_info();
+    TraceInfo trace_info;
     StreamStatus stream_status{
         .stream_id = stream_id_,
         .account = {},
@@ -199,7 +199,7 @@ void Rest::get_exchange_info() {
         .quality_of_service = {},
     };
     auto callback = [this, sequence = download_.sequence()]([[maybe_unused]] auto &request_id, auto &response) {
-      auto trace_info = server::create_trace_info();
+      TraceInfo trace_info;
       Trace event{trace_info, response};
       get_exchange_info_ack(event, sequence);
     };
@@ -357,7 +357,7 @@ void Rest::get_depth(std::string_view const &symbol) {
         .quality_of_service = {},
     };
     auto callback = [this, symbol = std::string{symbol}]([[maybe_unused]] auto &request_id, auto &response) {
-      auto trace_info = server::create_trace_info();
+      TraceInfo trace_info;
       Trace event{trace_info, response};
       get_depth_ack(event, symbol);
     };

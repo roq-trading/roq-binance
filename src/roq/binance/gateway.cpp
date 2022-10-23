@@ -6,10 +6,11 @@
 #include <cctype>
 #include <limits>
 
+#include "roq/clock.hpp"
+
 #include "roq/logging.hpp"
 
 #include "roq/core/charconv.hpp"
-#include "roq/core/clock.hpp"
 #include "roq/core/utils.hpp"
 
 #include "roq/binance/flags.hpp"

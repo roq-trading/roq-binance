@@ -194,7 +194,7 @@ TEST_CASE("json_execution_report_stream", "[json_execution_report]") {
                  R"(})";
   core::Buffer buffer_(65536);
   core::json::Buffer buffer(buffer_);
-  auto trace_info = server::create_trace_info();
+  TraceInfo trace_info;
   struct MyHandler final : public json::UserStreamParser::Handler {
     void operator()(Trace<json::OutboundAccountPosition> const &) override { FAIL(); }
     void operator()(Trace<json::BalanceUpdate> const &) override { FAIL(); }
@@ -250,7 +250,7 @@ TEST_CASE("json_execution_report_stream_maker_new", "[json_execution_report]") {
                  R"(})";
   core::Buffer buffer_(65536);
   core::json::Buffer buffer(buffer_);
-  auto trace_info = server::create_trace_info();
+  TraceInfo trace_info;
   struct MyHandler final : public json::UserStreamParser::Handler {
     void operator()(Trace<json::OutboundAccountPosition> const &) override { FAIL(); }
     void operator()(Trace<json::BalanceUpdate> const &) override { FAIL(); }
@@ -339,7 +339,7 @@ TEST_CASE("json_execution_report_stream_maker_filled", "[json_execution_report]"
                  R"(})";
   core::Buffer buffer_(65536);
   core::json::Buffer buffer(buffer_);
-  auto trace_info = server::create_trace_info();
+  TraceInfo trace_info;
   struct MyHandler final : public json::UserStreamParser::Handler {
     void operator()(Trace<json::OutboundAccountPosition> const &) override { FAIL(); }
     void operator()(Trace<json::BalanceUpdate> const &) override { FAIL(); }

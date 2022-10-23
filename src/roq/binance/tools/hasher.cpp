@@ -7,9 +7,9 @@
 #include <array>
 #include <cassert>
 
-#include "roq/utils/safe_cast.hpp"
+#include "roq/clock.hpp"
 
-#include "roq/core/clock.hpp"
+#include "roq/utils/safe_cast.hpp"
 
 #include "roq/core/binascii/hex.hpp"
 
@@ -34,7 +34,7 @@ Hasher::Hasher(std::string_view const &key, std::string_view const &secret)
 }
 
 std::string Hasher::create_query(std::string_view const &body) {
-  auto now = core::clock::GetRealTime<std::chrono::milliseconds>();
+  auto now = clock::get_realtime<std::chrono::milliseconds>();
   auto timestamp = fmt::format("timestamp={}"sv, now.count());
   hmac_.clear();
   hmac_.update(timestamp);
