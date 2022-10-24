@@ -3,6 +3,7 @@
 #include "roq/binance/application.hpp"
 
 #include "roq/binance/config.hpp"
+#include "roq/binance/flags.hpp"
 #include "roq/binance/gateway.hpp"
 
 using namespace std::literals;
@@ -24,7 +25,8 @@ auto const SETTINGS = server::Settings{
 // === IMPLEMENTATION ===
 
 int Application::main(int, char **) {
-  Config config;
+  Flags2 flags;
+  Config config{flags};
   auto context = server::create_io_context();
   server::Trading<Gateway>{SETTINGS, config, *context}.dispatch();
   return EXIT_SUCCESS;

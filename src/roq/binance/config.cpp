@@ -6,8 +6,6 @@
 
 #include "roq/logging.hpp"
 
-#include "roq/binance/flags.hpp"
-
 using namespace std::literals;
 
 namespace roq {
@@ -32,11 +30,29 @@ auto const MBP_ALLOW_REMOVE_NON_EXISTING = true;
 auto const OMS_REQUEST_ID_TYPE = RequestIdType::BASE64;
 }  // namespace
 
+// === HELPERS ===
+
+namespace {
+auto create_options(auto &flags) {
+  return Config::Options{
+      .exchange = flags.exchange,
+      .mbp_max_depth = flags.mbp_max_depth,
+      .mbp_allow_price_inversion = flags.mbp_allow_price_inversion,
+      .mbp_checksum = server::Flags::cache_mbp_checksum(),  // note!
+  };
+}
+}  // namespace
+
 // === IMPLEMENTATION ===
 
-Config::Config() {
+Config::Config(Options const &options)
+    : exchange_{options.exchange}, mbp_max_depth_{options.mbp_max_depth},
+      mbp_allow_price_inversion_{options.mbp_allow_price_inversion}, mbp_checksum_{options.mbp_checksum} {
   server::ConfigReader::parse_file(*this);
   log::info<1>("config={}"sv, *this);
+}
+
+Config::Config(Flags2 const &flags) : Config{create_options(flags)} {
 }
 
 Account const &Config::get_master_account() const {
@@ -58,7 +74,7 @@ std::string const &Config::get_secret(Account const &account) const {
 }
 
 void Config::dispatch(server::Config::Handler &handler) const {
-  handler(Flags::exchange());
+  handler(exchange_);
   handler(symbols);
   for (auto &iter : accounts)
     handler(iter.second);
@@ -66,12 +82,12 @@ void Config::dispatch(server::Config::Handler &handler) const {
     handler(user);
   GatewaySettings gateway_settings{
       .supports = SUPPORTS,
-      .mbp_max_depth = flags::Flags::mbp_max_depth(),
+      .mbp_max_depth = mbp_max_depth_,
       .mbp_tick_size_multiplier = NaN,
       .mbp_min_trade_vol_multiplier = NaN,
       .mbp_allow_remove_non_existing = MBP_ALLOW_REMOVE_NON_EXISTING,
-      .mbp_allow_price_inversion = Flags::mbp_allow_price_inversion(),
-      .mbp_checksum = server::Flags::cache_mbp_checksum(),
+      .mbp_allow_price_inversion = mbp_allow_price_inversion_,
+      .mbp_checksum = mbp_checksum_,
       .oms_download_has_state = {},
       .oms_download_has_routing_id = {},
       .oms_request_id_type = OMS_REQUEST_ID_TYPE,

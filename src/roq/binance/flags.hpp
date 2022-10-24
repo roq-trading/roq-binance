@@ -8,6 +8,7 @@ namespace roq {
 namespace binance {
 
 using flags::Flags;
+using flags::Flags2;
 
 }  // namespace binance
 }  // namespace roq
