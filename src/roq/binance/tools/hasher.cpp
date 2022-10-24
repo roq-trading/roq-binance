@@ -30,7 +30,7 @@ auto create_headers_helper(auto const &key) {
 // === IMPLEMENTATION ===
 
 Hasher::Hasher(std::string_view const &key, std::string_view const &secret)
-    : key_(key), hmac_(secret), headers_(create_headers_helper(key_)) {
+    : key_{key}, hmac_{secret}, headers_{create_headers_helper(key_)} {
 }
 
 std::string Hasher::create_query(std::string_view const &body) {

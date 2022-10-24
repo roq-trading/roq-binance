@@ -76,8 +76,8 @@ struct create_metrics final : public core::metrics::Factory {
 
 OrderEntry::OrderEntry(
     Handler &handler, io::Context &context, uint16_t stream_id, Security &security, Shared &shared, Request &request)
-    : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_, security.get_account())),
-      connection_(create_connection(*this, context)), decode_buffer_(Flags::decode_buffer_size()),
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, security.get_account())},
+      connection_{create_connection(*this, context)}, decode_buffer_{Flags::decode_buffer_size()},
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
@@ -100,9 +100,9 @@ OrderEntry::OrderEntry(
       latency_{
           .ping = create_metrics(name_, "ping"sv),
       },
-      security_(security), shared_(shared), request_(request),
-      download_(Flags::rest_request_timeout(), [this](auto state) { return download(state); }),
-      hold_cancel_order_(256) {
+      security_{security}, shared_{shared}, request_{request},
+      download_{Flags::rest_request_timeout(), [this](auto state) { return download(state); }}, hold_cancel_order_{
+                                                                                                    256} {
 }
 
 void OrderEntry::operator()(Event<Start> const &) {

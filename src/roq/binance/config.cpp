@@ -16,7 +16,7 @@ namespace binance {
 // === CONSTANTS ===
 
 namespace {
-Mask const SUPPORTS{
+auto const SUPPORTS = Mask{
     SupportType::TOP_OF_BOOK,
     SupportType::MARKET_BY_PRICE,
     SupportType::TRADE_SUMMARY,

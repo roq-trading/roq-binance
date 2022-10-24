@@ -33,7 +33,7 @@ namespace binance {
 namespace {
 auto const NAME = "rest"sv;
 
-Mask const SUPPORTS{
+auto const SUPPORTS = Mask{
     SupportType::REFERENCE_DATA,
     SupportType::MARKET_STATUS,
 };
@@ -73,9 +73,9 @@ struct create_metrics final : public core::metrics::Factory {
 // === IMPLEMENTATION ===
 
 Rest::Rest(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared)
-    : handler_(handler), stream_id_(stream_id), name_(create_name(stream_id_)),
-      connection_(create_connection(*this, context)), decode_buffer_(Flags::decode_buffer_size()),
-      decode_buffer_2_(Flags::decode_buffer_size()),
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, connection_{create_connection(
+                                                                                    *this, context)},
+      decode_buffer_{Flags::decode_buffer_size()}, decode_buffer_2_{Flags::decode_buffer_size()},
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
@@ -88,7 +88,7 @@ Rest::Rest(Handler &handler, io::Context &context, uint16_t stream_id, Shared &s
       latency_{
           .ping = create_metrics(name_, "ping"sv),
       },
-      shared_(shared), download_(Flags::rest_request_timeout(), [this](auto state) { return download(state); }) {
+      shared_{shared}, download_{Flags::rest_request_timeout(), [this](auto state) { return download(state); }} {
 }
 
 void Rest::operator()(Event<Start> const &) {
