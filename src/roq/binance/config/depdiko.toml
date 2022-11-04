@@ -4,8 +4,8 @@ symbols = [ "BTCUSDT" ]
 
   [accounts.A1]
   master = true
-  login = "OYcSHp7Fqb8IK85SE1qYT0aEcnRKk07G6JqpUXo37YPh7wwRkqdER9o682YCy0uy"
-  secret = "Kh5MF4z3tiVR0sMxcPltqClqJ7bHKXpc4nMQjvJfHp66ZqdpcmPtxhO6Q9NnKwdd"
+  login = "mtWq5uoH427w3v6uOBfPl3SGtdIPl1swj4XXht83nrGvHeYsJlUdup8HJ9gRwtHs"
+  secret = "FAqRRoU4YZDJntUwB1qA9KO3mjjdwNBXBpAlQmyQcEJjv17ypK2aRthUgTrUk6nL"
   symbols = ".*"
 
 [users]
