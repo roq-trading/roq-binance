@@ -463,14 +463,12 @@ void Rest::process_response(
           case FORBIDDEN:           // 403
             waf_limit_violation();  // note! this is *very* serious
             [[fallthrough]];
-          case I_AM_A_TEAPOT:      // 418
-          case TOO_MANY_REQUESTS:  // 429
-            error_handler(
-                Origin::EXCHANGE,
-                RequestStatus::REJECTED,
-                Error::REQUEST_RATE_LIMIT_REACHED,
-                magic_enum::enum_name(status));
+          case I_AM_A_TEAPOT:        // 418
+          case TOO_MANY_REQUESTS: {  // 429
+            auto text = fmt::format("{}"sv, status);
+            error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, text);
             break;
+          }
           case CONFLICT:  // 409
             assert(false);
             [[fallthrough]];
@@ -480,9 +478,11 @@ void Rest::process_response(
           }
         }
         break;
-      case SERVER_ERROR:  // 5xx
-        error_handler(Origin::EXCHANGE, RequestStatus::ERROR, Error::UNKNOWN, magic_enum::enum_name(status));
+      case SERVER_ERROR: {  // 5xx
+        auto text = fmt::format("{}"sv, status);
+        error_handler(Origin::EXCHANGE, RequestStatus::ERROR, Error::UNKNOWN, text);
         break;
+      }
       default:
         response.expect(web::http::Status::OK);  // throws
     }

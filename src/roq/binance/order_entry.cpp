@@ -1303,14 +1303,12 @@ void OrderEntry::process_response(
           case FORBIDDEN:           // 403
             waf_limit_violation();  // note! this is *very* serious
             [[fallthrough]];
-          case I_AM_A_TEAPOT:      // 418
-          case TOO_MANY_REQUESTS:  // 429
-            error_handler(
-                Origin::EXCHANGE,
-                RequestStatus::REJECTED,
-                Error::REQUEST_RATE_LIMIT_REACHED,
-                magic_enum::enum_name(status));
+          case I_AM_A_TEAPOT:        // 418
+          case TOO_MANY_REQUESTS: {  // 429
+            auto text = fmt::format("{}"sv, status);
+            error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, text);
             break;
+          }
           case CONFLICT:  // 409
             assert(false);
             [[fallthrough]];
@@ -1320,9 +1318,11 @@ void OrderEntry::process_response(
           }
         }
         break;
-      case SERVER_ERROR:  // 5xx
-        error_handler(Origin::EXCHANGE, RequestStatus::ERROR, Error::UNKNOWN, magic_enum::enum_name(status));
+      case SERVER_ERROR: {  // 5xx
+        auto text = fmt::format("{}"sv, status);
+        error_handler(Origin::EXCHANGE, RequestStatus::ERROR, Error::UNKNOWN, text);
         break;
+      }
       default:
         response.expect(web::http::Status::OK);  // throws
     }
@@ -1378,7 +1378,7 @@ void OrderEntry::dispatch_error_2(
     case REDIRECTION:
       assert(false);
       break;
-    case CLIENT_ERROR:
+    case CLIENT_ERROR:  // 4xx
       try {
         // HTTP 4XX return codes are used for malformed requests; the issue is on the sender's side.
         // HTTP 403 return code is used when the WAF Limit (Web Application Firewall) has been violated.
@@ -1389,11 +1389,13 @@ void OrderEntry::dispatch_error_2(
         // HTTP 429 return code is used when breaking a request rate limit.
         switch (status) {
           using enum web::http::Status;
-          case FORBIDDEN:          // 403
-          case I_AM_A_TEAPOT:      // 418
-          case TOO_MANY_REQUESTS:  // 429
-            callback(RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, magic_enum::enum_name(status));
+          case FORBIDDEN:            // 403
+          case I_AM_A_TEAPOT:        // 418
+          case TOO_MANY_REQUESTS: {  // 429
+            auto text = fmt::format("{}"sv, status);
+            callback(RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, text);
             break;
+          }
           case CONFLICT:  // 409
             assert(false);
             [[fallthrough]];
@@ -1404,12 +1406,14 @@ void OrderEntry::dispatch_error_2(
         callback(RequestStatus::ERROR, Error::UNKNOWN, e.what());
       }
       break;
-    case SERVER_ERROR:
+    case SERVER_ERROR: {  // 5xx
       // HTTP 5XX return codes are used for internal errors; the issue is on Binance's side.
       //   It is important to NOT treat this as a failure operation; the execution status is UNKNOWN
       //   and could have been a success.
-      callback(RequestStatus::ERROR, Error::UNKNOWN, magic_enum::enum_name(status));
+      auto text = fmt::format("{}"sv, status);
+      callback(RequestStatus::ERROR, Error::UNKNOWN, text);
       break;
+    }
   }
 }
 
