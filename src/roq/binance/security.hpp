@@ -23,13 +23,13 @@ class Security final {
 
   std::string_view get_account() const { return account_; }
 
-  std::string create_query(std::string_view const &body) { return hasher_.create_query(body); }
-  std::string create_query() { return create_query({}); }
+  std::string_view create_query(std::string_view const &body) { return hasher_.create_query(body); }
+  std::string_view create_query() { return create_query({}); }
 
   std::string_view create_headers() const { return hasher_.create_headers(); }
 
  private:
-  const std::string account_;
+  std::string const account_;
   tools::Hasher hasher_;
 };
 

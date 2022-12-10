@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <array>
 #include <chrono>
 #include <string>
 #include <string_view>
@@ -20,14 +21,17 @@ class Hasher final {
   Hasher(Hasher &&) = delete;
   Hasher(Hasher const &) = delete;
 
-  std::string create_query(std::string_view const &body);
+  std::string_view create_query(std::string_view const &body);
 
   std::string_view create_headers() const { return headers_; }
 
  private:
-  const std::string key_;
+  std::string const key_;
   core::crypto::HMAC_SHA256 hmac_;
-  const std::string headers_;
+  std::string const headers_;
+  alignas(32) std::array<char, 32> buffer_;
+  std::string signature_;
+  std::string result_;
 };
 
 }  // namespace tools

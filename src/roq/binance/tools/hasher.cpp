@@ -4,7 +4,6 @@
 
 #include <fmt/format.h>
 
-#include <array>
 #include <cassert>
 
 #include "roq/clock.hpp"
@@ -31,9 +30,10 @@ auto create_headers_helper(auto const &key) {
 
 Hasher::Hasher(std::string_view const &key, std::string_view const &secret)
     : key_{key}, hmac_{secret}, headers_{create_headers_helper(key_)} {
+  result_.reserve(64);
 }
 
-std::string Hasher::create_query(std::string_view const &body) {
+std::string_view Hasher::create_query(std::string_view const &body) {
   auto now = clock::get_realtime<std::chrono::milliseconds>();
   auto timestamp = fmt::format("timestamp={}"sv, now.count());
   hmac_.clear();
@@ -43,8 +43,10 @@ std::string Hasher::create_query(std::string_view const &body) {
   std::array<char, 32> buffer;
   auto length = hmac_.digest(buffer);
   assert(length == std::size(buffer));
-  auto signature = core::binascii::Hex::encode(buffer);
-  return fmt::format("?{}&signature={}"sv, timestamp, signature);
+  signature_ = core::binascii::Hex::encode(buffer);
+  result_.clear();
+  fmt::format_to(std::back_inserter(result_), "?{}&signature={}"sv, timestamp, signature_);
+  return result_;
 }
 
 }  // namespace tools
