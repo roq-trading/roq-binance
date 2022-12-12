@@ -40,10 +40,10 @@ std::string_view Hasher::create_query(std::string_view const &body) {
   hmac_.update(timestamp);
   if (!std::empty(body))
     hmac_.update(body);
-  std::array<char, 32> buffer;
+  std::array<std::byte, 32> buffer;
   auto length = hmac_.digest(buffer);
   assert(length == std::size(buffer));
-  signature_ = core::binascii::Hex::encode(buffer);
+  core::binascii::Hex::encode(signature_, buffer);
   result_.clear();
   fmt::format_to(std::back_inserter(result_), "?{}&signature={}"sv, timestamp, signature_);
   return result_;
