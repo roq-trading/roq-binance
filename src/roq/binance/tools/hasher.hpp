@@ -8,7 +8,7 @@
 #include <string_view>
 #include <utility>
 
-#include "roq/core/crypto/hmac_sha256.hpp"
+#include "roq/core/mac/hmac_sha256.hpp"
 
 namespace roq {
 namespace binance {
@@ -27,7 +27,7 @@ class Hasher final {
 
  private:
   std::string const key_;
-  core::crypto::HMAC_SHA256 hmac_;
+  core::mac::HMAC_SHA256 hmac_;
   std::string const headers_;
   alignas(32) std::array<char, 32> buffer_;
   std::string signature_;
