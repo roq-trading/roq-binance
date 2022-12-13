@@ -3,12 +3,10 @@
 #pragma once
 
 #include <array>
-#include <chrono>
 #include <string>
 #include <string_view>
-#include <utility>
 
-#include "roq/core/mac/hmac_sha256.hpp"
+#include "roq/core/mac/hmac.hpp"
 
 namespace roq {
 namespace binance {
@@ -26,10 +24,13 @@ class Hasher final {
   std::string_view create_headers() const { return headers_; }
 
  private:
+  using MAC = core::mac::HMAC<core::hash::SHA256>;
+  using Digest = std::array<std::byte, MAC::DIGEST_LENGTH>;
+
   std::string const key_;
-  core::mac::HMAC_SHA256 hmac_;
+  MAC mac_;
+  Digest digest_;
   std::string const headers_;
-  alignas(32) std::array<char, 32> buffer_;
   std::string signature_;
   std::string result_;
 };
