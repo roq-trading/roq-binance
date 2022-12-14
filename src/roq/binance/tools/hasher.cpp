@@ -10,7 +10,7 @@
 
 #include "roq/utils/safe_cast.hpp"
 
-#include "roq/core/binascii/hex.hpp"
+#include "roq/core/codec/hex.hpp"
 
 using namespace std::literals;
 
@@ -41,7 +41,7 @@ std::string_view Hasher::create_query(std::string_view const &body) {
   if (!std::empty(body))
     mac_.update(body);
   auto digest = mac_.final(digest_);
-  core::binascii::Hex::encode(signature_, digest);
+  core::codec::Hex::encode(signature_, digest);
   result_.clear();
   fmt::format_to(std::back_inserter(result_), "?{}&signature={}"sv, timestamp, signature_);
   return result_;
