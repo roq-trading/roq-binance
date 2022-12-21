@@ -63,6 +63,10 @@
       "name": "msg",
       "type": "std::string_view",
       "comment": "only populated by cancel-replace"
+    },
+    {
+      "name": "selfTradePreventionMode",
+      "type": "std::string_view"
     }
   ]
 }

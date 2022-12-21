@@ -75,6 +75,13 @@
     {
       "name": "cancelReplaceAllowed",
       "type": "bool"
+    },
+    {
+      "name": "defaultSelfTradePreventionMode",
+      "type": "std::string_view"
+    },
+    {
+      "name": "allowedSelfTradePreventionModes"
     }
   ]
 }

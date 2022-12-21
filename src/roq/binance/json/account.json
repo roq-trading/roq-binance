@@ -48,6 +48,13 @@
     {
       "name": "brokered",
       "type": "bool"
+    },
+    {
+      "name": "commissionRates"
+    },
+    {
+      "name": "requireSelfTradePrevention",
+      "type": "bool"
     }
   ]
 }

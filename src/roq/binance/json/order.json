@@ -81,6 +81,14 @@
     {
       "name": "origClientOrderId",
       "type": "std::string_view"
+    },
+    {
+      "name": "workingTime",
+      "type": "std::chrono::milliseconds"
+    },
+    {
+      "name": "selfTradePreventionMode",
+      "type": "std::string_view"
     }
   ]
 }

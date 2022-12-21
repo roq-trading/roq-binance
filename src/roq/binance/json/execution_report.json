@@ -159,6 +159,16 @@
       "raw": "Q",
       "name": "quote_order_qty",
       "type": "double"
+    },
+    {
+      "raw": "W",
+      "name": "working_time",
+      "type": "std::chrono::milliseconds"
+    },
+    {
+      "raw": "V",
+      "name": "self_trade_prevention",
+      "type": "std::string_view"
     }
   ]
 }
