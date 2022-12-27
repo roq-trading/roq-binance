@@ -8,6 +8,8 @@
 
 using namespace std::literals;
 
+using namespace fmt::literals;
+
 namespace roq {
 namespace binance {
 namespace json {
@@ -161,23 +163,25 @@ std::string_view new_order(
       R"(symbol={}&)"
       R"(side={}&)"
       R"(type={}&)"
-      R"(quantity={}&)"sv,
+      R"(quantity={}&)"_cf,
       create_order.symbol,
       side.as_raw_text(),
       type.as_raw_text(),
       utils::Number{create_order.quantity, order.quantity_decimals});
   if (time_in_force != json::TimeInForce{})
-    fmt::format_to(std::back_inserter(buffer), R"(timeInForce={}&)"sv, time_in_force.as_raw_text());
+    fmt::format_to(std::back_inserter(buffer), R"(timeInForce={}&)"_cf, time_in_force.as_raw_text());
   if (!std::isnan(create_order.price))
     fmt::format_to(
-        std::back_inserter(buffer), R"(price={}&)"sv, utils::Number{create_order.price, order.price_decimals});
+        std::back_inserter(buffer), R"(price={}&)"_cf, utils::Number{create_order.price, order.price_decimals});
   if (!std::isnan(create_order.stop_price))
     fmt::format_to(
-        std::back_inserter(buffer), R"(stopPrice={}&)"sv, utils::Number{create_order.stop_price, order.price_decimals});
+        std::back_inserter(buffer),
+        R"(stopPrice={}&)"_cf,
+        utils::Number{create_order.stop_price, order.price_decimals});
   fmt::format_to(
       std::back_inserter(buffer),
       R"(newClientOrderId={}&)"
-      R"(recvWindow={})"sv,
+      R"(recvWindow={})"_cf,
       request_id,
       recv_window.count());
   std::string_view result{std::data(buffer), std::size(buffer)};
@@ -206,7 +210,7 @@ std::string_view cancel_replace_order(
       R"(cancelNewClientOrderId={}&)"
       R"(side={}&)"
       R"(type={}&)"
-      R"(quantity={}&)"sv,
+      R"(quantity={}&)"_cf,
       order.symbol,
       stop_on_failure ? "STOP_ON_FAILURE"sv : "ALLOW_FAILURE"sv,
       cancel_previous_request_id,
@@ -215,17 +219,19 @@ std::string_view cancel_replace_order(
       type.as_raw_text(),
       utils::Number{create_order.quantity, order.quantity_decimals});
   if (time_in_force != json::TimeInForce{})
-    fmt::format_to(std::back_inserter(buffer), R"(timeInForce={}&)"sv, time_in_force.as_raw_text());
+    fmt::format_to(std::back_inserter(buffer), R"(timeInForce={}&)"_cf, time_in_force.as_raw_text());
   if (!std::isnan(create_order.price))
     fmt::format_to(
-        std::back_inserter(buffer), R"(price={}&)"sv, utils::Number{create_order.price, order.price_decimals});
+        std::back_inserter(buffer), R"(price={}&)"_cf, utils::Number{create_order.price, order.price_decimals});
   if (!std::isnan(create_order.stop_price))
     fmt::format_to(
-        std::back_inserter(buffer), R"(stopPrice={}&)"sv, utils::Number{create_order.stop_price, order.price_decimals});
+        std::back_inserter(buffer),
+        R"(stopPrice={}&)"_cf,
+        utils::Number{create_order.stop_price, order.price_decimals});
   fmt::format_to(
       std::back_inserter(buffer),
       R"(newClientOrderId={}&)"
-      R"(recvWindow={})"sv,
+      R"(recvWindow={})"_cf,
       create_request_id,
       recv_window.count());
   std::string_view result{std::data(buffer), std::size(buffer)};
@@ -245,7 +251,7 @@ std::string_view cancel_order(
       R"(symbol={}&)"
       R"(origClientOrderId={}&)"
       R"(newClientOrderId={}&)"
-      R"(recvWindow={})"sv,
+      R"(recvWindow={})"_cf,
       order.symbol,
       previous_request_id,
       request_id,
@@ -260,7 +266,7 @@ std::string_view cancel_all_open_orders(
   fmt::format_to(
       std::back_inserter(buffer),
       R"(symbol={}&)"
-      R"(recvWindow={})"sv,
+      R"(recvWindow={})"_cf,
       symbol,
       recv_window.count());
   std::string_view result{std::data(buffer), std::size(buffer)};

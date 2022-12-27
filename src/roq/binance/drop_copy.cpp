@@ -17,6 +17,8 @@
 
 using namespace std::literals;
 
+using namespace fmt::literals;
+
 namespace roq {
 namespace binance {
 
@@ -37,13 +39,13 @@ auto const SUPPORTS = Mask{
 
 namespace {
 auto create_name(auto stream_id, auto const &account) {
-  return fmt::format("{}:{}:{}"sv, stream_id, NAME, account);
+  return fmt::format("{}:{}:{}"_cf, stream_id, NAME, account);
 }
 
 auto create_connection(auto &handler, auto &context, auto const &listen_key) {
   assert(!std::empty(listen_key));
   auto uri = Flags::ws_uri();
-  auto query = fmt::format("?streams={}"sv, listen_key);
+  auto query = fmt::format("?streams={}"_cf, listen_key);
   web::socket::Client::Config config{
       .always_reconnect = true,
       .connection_timeout = server::Flags::net_connection_timeout(),
@@ -253,7 +255,7 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
     auto side = json::map(execution_report.side);
     auto order_type = json::map(execution_report.order_type);
     auto time_in_force = json::map(execution_report.time_in_force);
-    auto external_order_id = fmt::format("{}"sv, execution_report.order_id);
+    auto external_order_id = fmt::format("{}"_cf, execution_report.order_id);
     auto status = json::map(execution_report.current_order_status);
     auto average_traded_price = utils::is_zero(execution_report.cumulative_filled_quantity)
                                     ? NaN
@@ -289,7 +291,7 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
     };
     if (shared_.update_order(execution_report.client_order_id, stream_id_, trace_info, order_update, [&](auto &order) {
           if (execution_report.current_execution_type == json::ExecutionType::TRADE) {
-            auto external_trade_id = fmt::format("{}"sv, execution_report.trade_id);
+            auto external_trade_id = fmt::format("{}"_cf, execution_report.trade_id);
             Fill fill{
                 .external_trade_id = {},
                 .quantity = execution_report.last_executed_quantity,

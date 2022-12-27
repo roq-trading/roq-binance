@@ -24,6 +24,8 @@
 
 using namespace std::literals;
 
+using namespace fmt::literals;
+
 namespace roq {
 namespace binance {
 
@@ -45,7 +47,7 @@ auto const SUPPORTS = Mask{
 
 namespace {
 auto create_name(auto stream_id, auto const &account) {
-  return fmt::format("{}:{}:{}"sv, stream_id, NAME, account);
+  return fmt::format("{}:{}:{}"_cf, stream_id, NAME, account);
 }
 
 auto create_connection(auto &handler, auto &context) {
@@ -408,7 +410,7 @@ void OrderEntry::get_open_orders() {
         std::back_inserter(encode_buffer_),
         R"({{)"
         R"("timestamp":{})"
-        R"(}})"sv,
+        R"(}})"_cf,
         timestamp.count());
     std::string body{std::data(encode_buffer_), std::size(encode_buffer_)};
     log::debug(R"(body="{}")"sv, body);
@@ -458,7 +460,7 @@ void OrderEntry::operator()(Trace<json::OpenOrders> const &event) {
     auto side = json::map(order.side);
     auto order_type = json::map(order.type);
     auto time_in_force = json::map(order.time_in_force);
-    auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
+    auto external_order_id = fmt::format("{}"_cf, order.order_id);  // alloc
     auto order_status = json::map(order.status);
     oms::OrderUpdate order_update{
         .account = security_.get_account(),
@@ -573,7 +575,7 @@ void OrderEntry::operator()(Trace<json::NewOrder> const &event, uint8_t user_id,
   auto side = json::map(new_order.side);
   auto order_type = json::map(new_order.type);
   auto time_in_force = json::map(new_order.time_in_force);
-  auto external_order_id = fmt::format("{}"sv, new_order.order_id);  // alloc
+  auto external_order_id = fmt::format("{}"_cf, new_order.order_id);  // alloc
   auto order_status = json::map(new_order.status);
   // LIMIT_MAKER orders do not return any order state + we only end up here if we receive HTTP status OK
   if (order_status == OrderStatus{})
@@ -883,7 +885,7 @@ void OrderEntry::operator()(
       auto side = json::map(cancel_order.side);
       auto order_type = json::map(cancel_order.type);
       auto time_in_force = json::map(cancel_order.time_in_force);
-      auto external_order_id = fmt::format("{}"sv, cancel_order.order_id);  // alloc
+      auto external_order_id = fmt::format("{}"_cf, cancel_order.order_id);  // alloc
       auto order_status = json::map(cancel_order.status);
       oms::Response response{
           .type = RequestType::CANCEL_ORDER,
@@ -971,7 +973,7 @@ void OrderEntry::operator()(
       auto side = json::map(new_order.side);
       auto order_type = json::map(new_order.type);
       auto time_in_force = json::map(new_order.time_in_force);
-      auto external_order_id = fmt::format("{}"sv, new_order.order_id);  // alloc
+      auto external_order_id = fmt::format("{}"_cf, new_order.order_id);  // alloc
       auto order_status = json::map(new_order.status);
       oms::Response response{
           .type = RequestType::CREATE_ORDER,
@@ -1144,7 +1146,7 @@ void OrderEntry::operator()(
   auto side = json::map(cancel_order.side);
   auto order_type = json::map(cancel_order.type);
   auto time_in_force = json::map(cancel_order.time_in_force);
-  auto external_order_id = fmt::format("{}"sv, cancel_order.order_id);  // alloc
+  auto external_order_id = fmt::format("{}"_cf, cancel_order.order_id);  // alloc
   auto order_status = json::map(cancel_order.status);
   oms::Response response{
       .type = RequestType::CANCEL_ORDER,
@@ -1252,7 +1254,7 @@ void OrderEntry::operator()(Trace<json::CancelAllOpenOrders> const &event) {
     auto side = json::map(order.side);
     auto order_type = json::map(order.type);
     auto time_in_force = json::map(order.time_in_force);
-    auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
+    auto external_order_id = fmt::format("{}"_cf, order.order_id);  // alloc
     auto order_status = json::map(order.status);
     oms::OrderUpdate order_update{
         .account = security_.get_account(),
@@ -1305,7 +1307,7 @@ void OrderEntry::process_response(
             [[fallthrough]];
           case I_AM_A_TEAPOT:        // 418
           case TOO_MANY_REQUESTS: {  // 429
-            auto text = fmt::format("{}"sv, status);
+            auto text = fmt::format("{}"_cf, status);
             error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, text);
             break;
           }
@@ -1319,7 +1321,7 @@ void OrderEntry::process_response(
         }
         break;
       case SERVER_ERROR: {  // 5xx
-        auto text = fmt::format("{}"sv, status);
+        auto text = fmt::format("{}"_cf, status);
         error_handler(Origin::EXCHANGE, RequestStatus::ERROR, Error::UNKNOWN, text);
         break;
       }
@@ -1392,7 +1394,7 @@ void OrderEntry::dispatch_error_2(
           case FORBIDDEN:            // 403
           case I_AM_A_TEAPOT:        // 418
           case TOO_MANY_REQUESTS: {  // 429
-            auto text = fmt::format("{}"sv, status);
+            auto text = fmt::format("{}"_cf, status);
             callback(RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, text);
             break;
           }
@@ -1410,7 +1412,7 @@ void OrderEntry::dispatch_error_2(
       // HTTP 5XX return codes are used for internal errors; the issue is on Binance's side.
       //   It is important to NOT treat this as a failure operation; the execution status is UNKNOWN
       //   and could have been a success.
-      auto text = fmt::format("{}"sv, status);
+      auto text = fmt::format("{}"_cf, status);
       callback(RequestStatus::ERROR, Error::UNKNOWN, text);
       break;
     }

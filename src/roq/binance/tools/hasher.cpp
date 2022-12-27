@@ -14,6 +14,8 @@
 
 using namespace std::literals;
 
+using namespace fmt::literals;
+
 namespace roq {
 namespace binance {
 namespace tools {
@@ -22,7 +24,7 @@ namespace tools {
 
 namespace {
 auto create_headers_helper(auto const &key) {
-  return fmt::format("X-MBX-APIKEY: {}\r\n"sv, key);
+  return fmt::format("X-MBX-APIKEY: {}\r\n"_cf, key);
 }
 }  // namespace
 
@@ -35,7 +37,7 @@ Hasher::Hasher(std::string_view const &key, std::string_view const &secret)
 
 std::string_view Hasher::create_query(std::string_view const &body) {
   auto now = clock::get_realtime<std::chrono::milliseconds>();
-  auto timestamp = fmt::format("timestamp={}"sv, now.count());
+  auto timestamp = fmt::format("timestamp={}"_cf, now.count());
   mac_.clear();
   mac_.update(timestamp);
   if (!std::empty(body))
@@ -43,7 +45,7 @@ std::string_view Hasher::create_query(std::string_view const &body) {
   auto digest = mac_.final(digest_);
   core::codec::Hex::encode(signature_, digest);
   result_.clear();
-  fmt::format_to(std::back_inserter(result_), "?{}&signature={}"sv, timestamp, signature_);
+  fmt::format_to(std::back_inserter(result_), "?{}&signature={}"_cf, timestamp, signature_);
   return result_;
 }
 

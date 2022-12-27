@@ -25,6 +25,8 @@
 
 using namespace std::literals;
 
+using namespace fmt::literals;
+
 namespace roq {
 namespace binance {
 
@@ -43,7 +45,7 @@ auto const SUPPORTS = Mask{
 
 namespace {
 auto create_name(auto stream_id) {
-  return fmt::format("{}:{}"sv, stream_id, NAME);
+  return fmt::format("{}:{}"_cf, stream_id, NAME);
 }
 
 auto create_connection(auto &handler, auto &context) {
@@ -345,7 +347,7 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
 
 void Rest::get_depth(std::string_view const &symbol) {
   profile_.depth([&]() {
-    auto query = fmt::format("?symbol={}&limit={}"sv, symbol, Flags::ws_subscribe_depth_levels());
+    auto query = fmt::format("?symbol={}&limit={}"_cf, symbol, Flags::ws_subscribe_depth_levels());
     web::rest::Request request{
         .method = web::http::Method::GET,
         .path = "/api/v3/depth"sv,
@@ -465,7 +467,7 @@ void Rest::process_response(
             [[fallthrough]];
           case I_AM_A_TEAPOT:        // 418
           case TOO_MANY_REQUESTS: {  // 429
-            auto text = fmt::format("{}"sv, status);
+            auto text = fmt::format("{}"_cf, status);
             error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, text);
             break;
           }
@@ -479,7 +481,7 @@ void Rest::process_response(
         }
         break;
       case SERVER_ERROR: {  // 5xx
-        auto text = fmt::format("{}"sv, status);
+        auto text = fmt::format("{}"_cf, status);
         error_handler(Origin::EXCHANGE, RequestStatus::ERROR, Error::UNKNOWN, text);
         break;
       }
