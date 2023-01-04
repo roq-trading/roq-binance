@@ -217,7 +217,7 @@ void Rest::get_exchange_info_ack(Trace<web::rest::Response> const &event, uint32
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
         json::ExchangeInfo exchange_info{body, decode_buffer_};
-        log::debug("exchange_info={}"sv, exchange_info);
+        // log::debug("exchange_info={}"sv, exchange_info);
         Trace event_2{event, exchange_info};
         (*this)(event_2);
         download_.check(STATE);
@@ -453,7 +453,7 @@ void Rest::process_response(
     web::rest::Response const &response, SuccessHandler success_handler, ErrorHandler error_handler) {
   try {
     auto [status, category, body] = response.result();
-    log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
+    // log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
     switch (category) {
       using enum web::http::Category;
       case SUCCESS:  // 2xx
