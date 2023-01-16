@@ -17,7 +17,7 @@
 
 #include "roq/core/limit/rate_limiter.hpp"
 
-#include "roq/core/market/mbp_sequencer.hpp"
+#include "roq/core/mbp/sequencer.hpp"
 
 namespace roq {
 namespace binance {
@@ -44,7 +44,7 @@ struct Shared final {
   std::vector<Fill> fills;
   std::vector<MBPUpdate> bids, asks, final_bids, final_asks;
 
-  absl::flat_hash_map<Symbol, core::market::MBP_Sequencer> mbp_collector;
+  absl::flat_hash_map<Symbol, core::mbp::Sequencer> mbp_collector;
 
  private:
   server::Dispatcher &dispatcher_;
