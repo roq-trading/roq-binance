@@ -7,8 +7,6 @@
 
 #include "roq/oms/order.hpp"
 
-#include "roq/core/utility.hpp"
-
 #include "roq/core/json/parser.hpp"
 
 #include "roq/core/charconv/datetime.hpp"
