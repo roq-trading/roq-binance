@@ -29,8 +29,7 @@
 namespace roq {
 namespace binance {
 
-class MarketData final : public web::socket::Client::Handler, public json::MarketStreamParser::Handler {
- public:
+struct MarketData final : public web::socket::Client::Handler, public json::MarketStreamParser::Handler {
   struct Handler {
     virtual void operator()(Trace<StreamStatus> const &) = 0;
     virtual void operator()(Trace<ExternalLatency> const &) = 0;

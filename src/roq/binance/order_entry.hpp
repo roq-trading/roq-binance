@@ -40,7 +40,7 @@
 namespace roq {
 namespace binance {
 
-class OrderEntry final : public web::rest::Client::Handler {
+struct OrderEntry final : public web::rest::Client::Handler {
   struct HoldCancelOrder final {
     cache::CancelOrder cancel_order;
     RequestId request_id;

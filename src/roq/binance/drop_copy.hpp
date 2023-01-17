@@ -27,8 +27,7 @@
 namespace roq {
 namespace binance {
 
-class DropCopy final : public web::socket::Client::Handler, public json::UserStreamParser::Handler {
- public:
+struct DropCopy final : public web::socket::Client::Handler, public json::UserStreamParser::Handler {
   struct Handler {
     virtual void operator()(Trace<StreamStatus> const &) = 0;
     virtual void operator()(Trace<ExternalLatency> const &) = 0;

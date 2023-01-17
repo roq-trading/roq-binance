@@ -14,8 +14,7 @@
 namespace roq {
 namespace binance {
 
-class Security final {
- public:
+struct Security final {
   Security(Config const &, std::string_view const &account);
 
   Security(Security &&) = delete;

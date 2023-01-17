@@ -25,12 +25,11 @@
 namespace roq {
 namespace binance {
 
-class Gateway final : public server::Handler,
-                      public Rest::Handler,
-                      public MarketData::Handler,
-                      public OrderEntry::Handler,
-                      public DropCopy::Handler {
- public:
+struct Gateway final : public server::Handler,
+                       public Rest::Handler,
+                       public MarketData::Handler,
+                       public OrderEntry::Handler,
+                       public DropCopy::Handler {
   Gateway(server::Dispatcher &, Config const &, io::Context &);
 
  protected:
