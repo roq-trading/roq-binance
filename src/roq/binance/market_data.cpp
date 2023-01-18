@@ -414,7 +414,7 @@ void MarketData::operator()(Trace<json::DepthUpdate> const &event) {
       auto publish_update = [&](auto &bids, auto &asks) {
         // log::debug(R"(PUBLISH UPDATE symbol="{}")"sv, symbol);
         auto market_by_price_update = create_update(bids, asks, UpdateType::INCREMENTAL, last_sequence);
-        create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true, false);
+        create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true);
       };
       auto publish_snapshot = [&](auto &bids, auto &asks, auto sequence) {
         log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
