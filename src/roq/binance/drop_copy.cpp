@@ -46,7 +46,7 @@ auto create_connection(auto &handler, auto &context, auto const &listen_key) {
   assert(!std::empty(listen_key));
   auto uri = Flags::ws_uri();
   auto query = fmt::format("?streams={}"_cf, listen_key);
-  web::socket::Client::Config config{
+  auto config = web::socket::Client::Config{
       .always_reconnect = true,
       .connection_timeout = server::Flags::net_connection_timeout(),
       .disconnect_on_idle_timeout = {},
@@ -149,7 +149,7 @@ void DropCopy::operator()(web::socket::Client::Close const &) {
 
 void DropCopy::operator()(web::socket::Client::Latency const &latency) {
   TraceInfo trace_info;
-  const ExternalLatency external_latency{
+  auto external_latency = ExternalLatency{
       .stream_id = stream_id_,
       .account = security_.get_account(),
       .latency = latency.sample,
@@ -169,7 +169,7 @@ void DropCopy::operator()(web::socket::Client::Binary const &) {
 void DropCopy::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     TraceInfo trace_info;
-    const StreamStatus stream_status{
+    auto stream_status = StreamStatus{
         .stream_id = stream_id_,
         .account = security_.get_account(),
         .supports = SUPPORTS,
@@ -226,7 +226,7 @@ void DropCopy::operator()(Trace<json::OutboundAccountPosition> const &event) {
     auto &[trace_info, outbound_account_position] = event;
     log::info<2>("outbound_account_position={}"sv, outbound_account_position);
     for (auto &item : outbound_account_position.balances) {
-      const FundsUpdate funds_update{
+      auto funds_update = FundsUpdate{
           .stream_id = stream_id_,
           .account = security_.get_account(),
           .currency = item.asset,
@@ -262,7 +262,7 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
                                     : (execution_report.cumulative_quote_asset_transacted_quantity /
                                        execution_report.cumulative_filled_quantity);
     auto last_liquidity = execution_report.is_trade_maker ? Liquidity::MAKER : Liquidity::TAKER;
-    oms::OrderUpdate order_update{
+    auto order_update = oms::OrderUpdate{
         .account = security_.get_account(),
         .exchange = Flags::exchange(),
         .symbol = execution_report.symbol,
@@ -298,7 +298,7 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
                 .price = execution_report.last_executed_price,
                 .liquidity = {},
             };
-            const TradeUpdate trade_update{
+            auto trade_update = TradeUpdate{
                 .stream_id = stream_id_,
                 .account = order.account,
                 .order_id = order.order_id,

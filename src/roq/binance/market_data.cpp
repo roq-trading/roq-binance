@@ -3,13 +3,13 @@
 #include "roq/binance/market_data.hpp"
 
 #include <algorithm>
+#include <utility>
 
 #include "roq/mask.hpp"
 
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
-#include "roq/core/back_emplacer.hpp"
 #include "roq/core/charconv.hpp"
 
 #include "roq/core/tools/exception.hpp"
@@ -49,7 +49,7 @@ auto create_name(auto stream_id) {
 
 auto create_connection(auto &handler, auto &context) {
   auto uri = Flags::ws_uri();
-  web::socket::Client::Config config{
+  auto config = web::socket::Client::Config{
       .always_reconnect = true,
       .connection_timeout = server::Flags::net_connection_timeout(),
       .disconnect_on_idle_timeout = server::Flags::net_disconnect_on_idle_timeout(),
@@ -156,7 +156,7 @@ void MarketData::operator()(web::socket::Client::Close const &) {
 
 void MarketData::operator()(web::socket::Client::Latency const &latency) {
   TraceInfo trace_info;
-  const ExternalLatency external_latency{
+  auto external_latency = ExternalLatency{
       .stream_id = stream_id_,
       .account = {},
       .latency = latency.sample,
@@ -177,7 +177,7 @@ void MarketData::operator()(web::socket::Client::Binary const &) {
 void MarketData::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     TraceInfo trace_info;
-    const StreamStatus stream_status{
+    auto stream_status = StreamStatus{
         .stream_id = stream_id_,
         .account = {},
         .supports = SUPPORTS,
@@ -256,7 +256,7 @@ void MarketData::operator()(Trace<json::AggTrade> const &event) {
     log::info<3>("agg_trade={}"sv, agg_trade);
     (*connection_).touch(trace_info.source_receive_time);
     auto side = agg_trade.buyer_is_maker ? Side::BUY : Side::SELL;
-    Trade trade{
+    auto trade = Trade{
         .side = side,
         .price = agg_trade.price,
         .quantity = agg_trade.quantity,
@@ -265,7 +265,7 @@ void MarketData::operator()(Trace<json::AggTrade> const &event) {
         .maker_order_id = {},
     };
     core::charconv::to_string(std::back_inserter(trade.trade_id), agg_trade.agg_trade_id);
-    const TradeSummary trade_summary{
+    auto trade_summary = TradeSummary{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
         .symbol = agg_trade.symbol,
@@ -283,7 +283,7 @@ void MarketData::operator()(Trace<json::Trade> const &event) {
     log::info<3>("trade={}"sv, trade);
     (*connection_).touch(trace_info.source_receive_time);
     auto side = trade.buyer_is_maker ? Side::BUY : Side::SELL;
-    Trade trade_{
+    auto trade_2 = Trade{
         .side = side,
         .price = trade.price,
         .quantity = trade.quantity,
@@ -291,12 +291,12 @@ void MarketData::operator()(Trace<json::Trade> const &event) {
         .taker_order_id = {},
         .maker_order_id = {},
     };
-    core::charconv::to_string(std::back_inserter(trade_.trade_id), trade.trade_id);
-    const TradeSummary trade_summary{
+    core::charconv::to_string(std::back_inserter(trade_2.trade_id), trade.trade_id);
+    auto trade_summary = TradeSummary{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
         .symbol = trade.symbol,
-        .trades = {&trade_, 1},
+        .trades = {&trade_2, 1},
         .exchange_time_utc = trade.event_time,
         .exchange_sequence = {},
     };
@@ -309,7 +309,7 @@ void MarketData::operator()(Trace<json::MiniTicker> const &event) {
     auto &[trace_info, mini_ticker] = event;
     log::info<3>("mini_ticker={}"sv, mini_ticker);
     (*connection_).touch(trace_info.source_receive_time);
-    Statistics statistics[] = {
+    auto statistics = std::array<Statistics, 4>{{
         {
             .type = StatisticsType::HIGHEST_TRADED_PRICE,
             .value = mini_ticker.high_price,
@@ -326,8 +326,8 @@ void MarketData::operator()(Trace<json::MiniTicker> const &event) {
             .type = StatisticsType::CLOSE_PRICE,
             .value = mini_ticker.close_price,
         },
-    };
-    const StatisticsUpdate statistics_update{
+    }};
+    auto statistics_update = StatisticsUpdate{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
         .symbol = mini_ticker.symbol,
@@ -344,7 +344,7 @@ void MarketData::operator()(Trace<json::BookTicker> const &event) {
     auto &[trace_info, book_ticker] = event;
     log::info<3>("book_ticker={}"sv, book_ticker);
     (*connection_).touch(trace_info.source_receive_time);
-    const TopOfBook top_of_book{
+    auto top_of_book = TopOfBook{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
         .symbol = book_ticker.symbol,
@@ -377,8 +377,10 @@ void MarketData::operator()(Trace<json::DepthUpdate> const &event) {
     auto last_sequence = depth_update.final_update_id;
     auto previous_sequence = first_sequence - 1;
     auto &collector = shared_.mbp_collector[symbol];
-    auto create_mbp_update = []<typename T>(T &result, auto const &value) {
-      new (&result) T{
+    shared_.bids.clear();
+    shared_.asks.clear();
+    auto emplace_back = [](auto &result, auto &value) {
+      auto mbp_update = MBPUpdate{
           .price = value.price,
           .quantity = value.qty,
           .implied_quantity = NaN,
@@ -386,15 +388,16 @@ void MarketData::operator()(Trace<json::DepthUpdate> const &event) {
           .update_action = {},
           .price_level = {},
       };
+      result.emplace_back(std::move(mbp_update));
     };
-    core::back_emplacer bids(shared_.bids), asks(shared_.asks);
     for (auto &item : depth_update.bids)
-      bids.emplace_back([&](auto &result) { create_mbp_update(result, item); });
+      emplace_back(shared_.bids, item);
     for (auto &item : depth_update.asks)
-      asks.emplace_back([&](auto &result) { create_mbp_update(result, item); });
+      emplace_back(shared_.asks, item);
     try {
-      auto create_update = [&](auto &bids, auto &asks, auto update_type, auto exchange_sequence) {
-        return MarketByPriceUpdate{
+      auto create_update =
+          [&](auto &bids, auto &asks, auto update_type, auto exchange_sequence) -> MarketByPriceUpdate {
+        return {
             .stream_id = stream_id_,
             .exchange = Flags::exchange(),
             .symbol = symbol,
@@ -427,8 +430,8 @@ void MarketData::operator()(Trace<json::DepthUpdate> const &event) {
         shared_.depth_request_queue.emplace_back(symbol);
       };
       collector(
-          bids,
-          asks,
+          shared_.bids,
+          shared_.asks,
           first_sequence,
           last_sequence,
           previous_sequence,

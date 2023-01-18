@@ -9,7 +9,6 @@
 
 #include "roq/utils/update.hpp"
 
-#include "roq/core/back_emplacer.hpp"
 #include "roq/core/charconv.hpp"
 
 #include "roq/core/metrics/factory.hpp"
@@ -50,7 +49,7 @@ auto create_name(auto stream_id) {
 
 auto create_connection(auto &handler, auto &context) {
   auto uri = Flags::rest_uri();
-  web::rest::Client::Config config{
+  auto config = web::rest::Client::Config{
       .decode_buffer_size = Flags::decode_buffer_size(),
       .encode_buffer_size = Flags::encode_buffer_size(),
       .validate_certificate = server::Flags::net_tls_validate_certificate(),
@@ -140,7 +139,7 @@ void Rest::operator()(web::rest::Client::Disconnected const &) {
 
 void Rest::operator()(web::rest::Client::Latency const &latency) {
   TraceInfo trace_info;
-  ExternalLatency external_latency{
+  auto external_latency = ExternalLatency{
       .stream_id = stream_id_,
       .account = {},
       .latency = latency.sample,
@@ -152,7 +151,7 @@ void Rest::operator()(web::rest::Client::Latency const &latency) {
 void Rest::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     TraceInfo trace_info;
-    StreamStatus stream_status{
+    auto stream_status = StreamStatus{
         .stream_id = stream_id_,
         .account = {},
         .supports = SUPPORTS,
@@ -190,7 +189,7 @@ uint32_t Rest::download(RestState state) {
 
 void Rest::get_exchange_info() {
   profile_.exchange_info([&]() {
-    web::rest::Request request{
+    auto request = web::rest::Request{
         .method = web::http::Method::GET,
         .path = "/api/v3/exchangeInfo"sv,
         .query = {},
@@ -289,7 +288,7 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
           break;
       }
     }
-    ReferenceData reference_data{
+    auto reference_data = ReferenceData{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
         .symbol = item.symbol,
@@ -326,7 +325,7 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
       symbols.emplace_back(symbol);
     ++counter;
     auto trading_status = json::map(item.status);
-    MarketStatus market_status{
+    auto market_status = MarketStatus{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
         .symbol = item.symbol,
@@ -336,7 +335,7 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
   }
   log::info("Exchange info: including symbols {}/{}"sv, counter, std::size(exchange_info.symbols));
   if (!std::empty(symbols)) {
-    SymbolsUpdate symbols_update{
+    auto symbols_update = SymbolsUpdate{
         .symbols = symbols,
     };
     handler_(symbols_update);
@@ -348,7 +347,7 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
 void Rest::get_depth(std::string_view const &symbol) {
   profile_.depth([&]() {
     auto query = fmt::format("?symbol={}&limit={}"_cf, symbol, Flags::ws_subscribe_depth_levels());
-    web::rest::Request request{
+    auto request = web::rest::Request{
         .method = web::http::Method::GET,
         .path = "/api/v3/depth"sv,
         .query = query,
@@ -387,8 +386,10 @@ void Rest::operator()(Trace<json::Depth> const &event, std::string_view const &s
   auto &depth = event.value;
   log::info<4>(R"(depth={}, symbol="{}")"sv, depth, symbol);
   auto sequence = depth.last_update_id;
-  auto create_mbp_update = []<typename T>(T &result, auto const &value) {
-    new (&result) T{
+  shared_.bids.clear();
+  shared_.asks.clear();
+  auto emplace_back = [](auto &result, auto &value) {
+    auto mbp_update = MBPUpdate{
         .price = value.price,
         .quantity = value.qty,
         .implied_quantity = NaN,
@@ -396,17 +397,17 @@ void Rest::operator()(Trace<json::Depth> const &event, std::string_view const &s
         .update_action = {},
         .price_level = {},
     };
+    result.emplace_back(std::move(mbp_update));
   };
-  core::back_emplacer bids(shared_.bids), asks(shared_.asks);
   for (auto &item : depth.bids)
-    bids.emplace_back([&](auto &result) { create_mbp_update(result, item); });
+    emplace_back(shared_.bids, item);
   for (auto &item : depth.asks)
-    asks.emplace_back([&](auto &result) { create_mbp_update(result, item); });
+    emplace_back(shared_.asks, item);
   auto &collector = shared_.mbp_collector[symbol];
   try {
     auto publish_snapshot = [&](auto &bids, auto &asks, auto sequence) {
       log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
-      MarketByPriceUpdate market_by_price_update{
+      auto market_by_price_update = MarketByPriceUpdate{
           .stream_id = stream_id_,
           .exchange = Flags::exchange(),
           .symbol = symbol,
@@ -429,7 +430,7 @@ void Rest::operator()(Trace<json::Depth> const &event, std::string_view const &s
       }
       shared_.depth_request_queue.emplace_back(symbol);
     };
-    collector(bids, asks, sequence, publish_snapshot, request_snapshot);
+    collector(shared_.bids, shared_.asks, sequence, publish_snapshot, request_snapshot);
   } catch (BadState &) {
     log::warn(R"(RESUBSCRIBE symbol="{}")"sv, symbol);
     // XXX HANS publish stale

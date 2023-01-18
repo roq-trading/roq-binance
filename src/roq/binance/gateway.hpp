@@ -94,6 +94,8 @@ struct Gateway final : public server::Handler,
   absl::flat_hash_map<Account, std::unique_ptr<OrderEntry>> order_entry_;
   absl::flat_hash_map<Account, std::unique_ptr<DropCopy>> drop_copy_;
   std::vector<std::unique_ptr<MarketData>> market_data_;
+  // cache
+  std::vector<MBPUpdate> bids_, asks_;
 };
 
 }  // namespace binance

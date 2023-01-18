@@ -41,8 +41,7 @@ struct Shared final {
   }
 
  public:
-  std::vector<Fill> fills;
-  std::vector<MBPUpdate> bids, asks, final_bids, final_asks;
+  std::vector<MBPUpdate> bids, asks;
 
   absl::flat_hash_map<Symbol, core::mbp::Sequencer> mbp_collector;
 

@@ -10,7 +10,6 @@
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
-#include "roq/core/back_emplacer.hpp"
 #include "roq/core/charconv.hpp"
 
 #include "roq/core/metrics/factory.hpp"
@@ -52,7 +51,7 @@ auto create_name(auto stream_id, auto const &account) {
 
 auto create_connection(auto &handler, auto &context) {
   auto uri = Flags::rest_uri();
-  web::rest::Client::Config config{
+  auto config = web::rest::Client::Config{
       .decode_buffer_size = Flags::decode_buffer_size(),
       .encode_buffer_size = Flags::encode_buffer_size(),
       .validate_certificate = server::Flags::net_tls_validate_certificate(),
@@ -230,7 +229,7 @@ void OrderEntry::operator()(web::rest::Client::Disconnected const &) {
 
 void OrderEntry::operator()(web::rest::Client::Latency const &latency) {
   TraceInfo trace_info;
-  ExternalLatency external_latency{
+  auto external_latency = ExternalLatency{
       .stream_id = stream_id_,
       .account = security_.get_account(),
       .latency = latency.sample,
@@ -242,7 +241,7 @@ void OrderEntry::operator()(web::rest::Client::Latency const &latency) {
 void OrderEntry::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     TraceInfo trace_info;
-    StreamStatus stream_status{
+    auto stream_status = StreamStatus{
         .stream_id = stream_id_,
         .account = security_.get_account(),
         .supports = SUPPORTS,
@@ -281,7 +280,7 @@ uint32_t OrderEntry::download(OrderEntryState state) {
 void OrderEntry::get_listen_key() {
   profile_.listen_key([&]() {
     auto headers = security_.create_headers();
-    web::rest::Request request{
+    auto request = web::rest::Request{
         .method = web::http::Method::POST,
         .path = "/api/v3/userDataStream"sv,
         .query = {},
@@ -326,7 +325,7 @@ void OrderEntry::operator()(Trace<json::ListenKey> const &event) {
   if (utils::update(listen_key_, listen_key.listen_key)) {
     if (initial) {
       log::info<1>(R"(Listen key has been acquired (value="{}"))"sv, listen_key_);
-      ListenKeyUpdate listen_key_update{
+      auto listen_key_update = ListenKeyUpdate{
           .account = security_.get_account(),
           .listen_key = listen_key.listen_key,
       };
@@ -345,7 +344,7 @@ void OrderEntry::get_account() {
   profile_.account([&]() {
     auto query = security_.create_query();
     auto headers = security_.create_headers();
-    web::rest::Request request{
+    auto request = web::rest::Request{
         .method = web::http::Method::GET,
         .path = "/api/v3/account"sv,
         .query = query,
@@ -386,7 +385,7 @@ void OrderEntry::operator()(Trace<json::Account> const &event) {
   log::info<2>("account={}"sv, account);
   for (auto &item : account.balances) {
     // log::debug("item={}"sv, item);
-    FundsUpdate funds_update{
+    auto funds_update = FundsUpdate{
         .stream_id = stream_id_,
         .account = security_.get_account(),
         .currency = item.asset,
@@ -414,7 +413,7 @@ void OrderEntry::get_open_orders() {
         timestamp.count());
     std::string body{std::data(encode_buffer_), std::size(encode_buffer_)};
     log::debug(R"(body="{}")"sv, body);
-    web::rest::Request request{
+    auto request = web::rest::Request{
         .method = web::http::Method::GET,
         .path = "/api/v3/openOrders"sv,
         .query = query,
@@ -462,7 +461,7 @@ void OrderEntry::operator()(Trace<json::OpenOrders> const &event) {
     auto time_in_force = json::map(order.time_in_force);
     auto external_order_id = fmt::format("{}"_cf, order.order_id);  // alloc
     auto order_status = json::map(order.status);
-    oms::OrderUpdate order_update{
+    auto order_update = oms::OrderUpdate{
         .account = security_.get_account(),
         .exchange = Flags::exchange(),
         .symbol = order.symbol,
@@ -520,7 +519,7 @@ void OrderEntry::new_order(
     log::debug(R"(body="{}")"sv, body);
     auto query = security_.create_query(body);
     auto headers = security_.create_headers();
-    web::rest::Request request{
+    auto request = web::rest::Request{
         .method = web::http::Method::POST,
         .path = "/api/v3/order"sv,
         .query = query,
@@ -551,7 +550,7 @@ void OrderEntry::new_order_ack(
       (*this)(event_2, user_id, order_id, version);
     };
     auto handle_error = [&](auto origin, auto status, auto error, auto text) {
-      oms::Response response{
+      auto response = oms::Response{
           .type = RequestType::CREATE_ORDER,
           .origin = origin,
           .status = status,
@@ -592,7 +591,7 @@ void OrderEntry::operator()(Trace<json::NewOrder> const &event, uint8_t user_id,
   auto last_traded_price = NaN;  // note! could also use average_traded_price
   if (utils::is_greater(last_traded_quantity, 0.0))
     last_traded_price = tmp / last_traded_quantity;
-  oms::Response response{
+  auto response = oms::Response{
       .type = RequestType::CREATE_ORDER,
       .origin = Origin::EXCHANGE,
       .status = RequestStatus::ACCEPTED,
@@ -603,7 +602,7 @@ void OrderEntry::operator()(Trace<json::NewOrder> const &event, uint8_t user_id,
       .quantity = NaN,
       .price = NaN,
   };
-  oms::OrderUpdate order_update{
+  auto order_update = oms::OrderUpdate{
       .account = security_.get_account(),
       .exchange = Flags::exchange(),
       .symbol = new_order.symbol,
@@ -657,7 +656,7 @@ void OrderEntry::cancel_replace_order(
     log::info(R"(DEBUG body="{}")"sv, body);
     auto query = security_.create_query(body);
     auto headers = security_.create_headers();
-    web::rest::Request request{
+    auto request = web::rest::Request{
         .method = web::http::Method::POST,
         .path = "/api/v3/order/cancelReplace"sv,
         .query = query,
@@ -762,7 +761,7 @@ void OrderEntry::cancel_replace_order_ack(
           };
           dispatch_error_2(category, status, parse, [&]([[maybe_unused]] auto status, auto error, auto text) {
             {  // cancel
-              oms::Response response{
+              auto response = oms::Response{
                   .type = RequestType::CANCEL_ORDER,
                   .origin = Origin::EXCHANGE,
                   .status = status,
@@ -785,7 +784,7 @@ void OrderEntry::cancel_replace_order_ack(
               }
             }
             {  // create
-              oms::Response response{
+              auto response = oms::Response{
                   .type = RequestType::CREATE_ORDER,
                   .origin = Origin::EXCHANGE,
                   .status = status,
@@ -816,7 +815,7 @@ void OrderEntry::cancel_replace_order_ack(
     } catch (NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
       {  // cancel
-        oms::Response response{
+        auto response = oms::Response{
             .type = RequestType::CANCEL_ORDER,
             .origin = Origin::GATEWAY,
             .status = e.request_status(),
@@ -835,7 +834,7 @@ void OrderEntry::cancel_replace_order_ack(
         }
       }
       {  // create
-        oms::Response response{
+        auto response = oms::Response{
             .type = RequestType::CREATE_ORDER,
             .origin = Origin::GATEWAY,
             .status = e.request_status(),
@@ -887,7 +886,7 @@ void OrderEntry::operator()(
       auto time_in_force = json::map(cancel_order.time_in_force);
       auto external_order_id = fmt::format("{}"_cf, cancel_order.order_id);  // alloc
       auto order_status = json::map(cancel_order.status);
-      oms::Response response{
+      auto response = oms::Response{
           .type = RequestType::CANCEL_ORDER,
           .origin = Origin::EXCHANGE,
           .status = RequestStatus::ACCEPTED,
@@ -898,7 +897,7 @@ void OrderEntry::operator()(
           .quantity = NaN,
           .price = NaN,
       };
-      oms::OrderUpdate order_update{
+      auto order_update = oms::OrderUpdate{
           .account = security_.get_account(),
           .exchange = Flags::exchange(),
           .symbol = cancel_order.symbol,
@@ -942,7 +941,7 @@ void OrderEntry::operator()(
     case FAILURE:
     case NOT_ATTEMPTED: {
       auto &cancel_order = cancel_replace_order.cancel_response;
-      oms::Response response{
+      auto response = oms::Response{
           .type = RequestType::CANCEL_ORDER,
           .origin = Origin::EXCHANGE,
           .status = RequestStatus::REJECTED,
@@ -975,7 +974,7 @@ void OrderEntry::operator()(
       auto time_in_force = json::map(new_order.time_in_force);
       auto external_order_id = fmt::format("{}"_cf, new_order.order_id);  // alloc
       auto order_status = json::map(new_order.status);
-      oms::Response response{
+      auto response = oms::Response{
           .type = RequestType::CREATE_ORDER,
           .origin = Origin::EXCHANGE,
           .status = RequestStatus::ACCEPTED,
@@ -986,7 +985,7 @@ void OrderEntry::operator()(
           .quantity = NaN,
           .price = NaN,
       };
-      oms::OrderUpdate order_update{
+      auto order_update = oms::OrderUpdate{
           .account = security_.get_account(),
           .exchange = Flags::exchange(),
           .symbol = new_order.symbol,
@@ -1030,7 +1029,7 @@ void OrderEntry::operator()(
     case FAILURE:
     case NOT_ATTEMPTED: {
       auto &new_order = cancel_replace_order.new_order_response;
-      oms::Response response{
+      auto response = oms::Response{
           .type = RequestType::CREATE_ORDER,
           .origin = Origin::EXCHANGE,
           .status = RequestStatus::REJECTED,
@@ -1090,7 +1089,7 @@ void OrderEntry::cancel_order(
     log::debug(R"(body="{}")"sv, body);
     auto query = security_.create_query(body);
     auto headers = security_.create_headers();
-    web::rest::Request request{
+    auto request = web::rest::Request{
         .method = web::http::Method::DELETE,
         .path = "/api/v3/order"sv,
         .query = query,
@@ -1121,7 +1120,7 @@ void OrderEntry::cancel_order_ack(
       (*this)(event_2, user_id, order_id, version);
     };
     auto handle_error = [&](auto origin, auto status, auto error, auto text) {
-      oms::Response response{
+      auto response = oms::Response{
           .type = RequestType::CANCEL_ORDER,
           .origin = origin,
           .status = status,
@@ -1148,7 +1147,7 @@ void OrderEntry::operator()(
   auto time_in_force = json::map(cancel_order.time_in_force);
   auto external_order_id = fmt::format("{}"_cf, cancel_order.order_id);  // alloc
   auto order_status = json::map(cancel_order.status);
-  oms::Response response{
+  auto response = oms::Response{
       .type = RequestType::CANCEL_ORDER,
       .origin = Origin::EXCHANGE,
       .status = RequestStatus::ACCEPTED,
@@ -1159,7 +1158,7 @@ void OrderEntry::operator()(
       .quantity = NaN,
       .price = NaN,
   };
-  oms::OrderUpdate order_update{
+  auto order_update = oms::OrderUpdate{
       .account = security_.get_account(),
       .exchange = Flags::exchange(),
       .symbol = cancel_order.symbol,
@@ -1203,7 +1202,7 @@ void OrderEntry::cancel_all_open_orders(
       log::debug(R"(body="{}")"sv, body);
       auto query = security_.create_query(body);
       auto headers = security_.create_headers();
-      web::rest::Request request{
+      auto request = web::rest::Request{
           .method = web::http::Method::DELETE,
           .path = "/api/v3/openOrders"sv,
           .query = query,
@@ -1256,7 +1255,7 @@ void OrderEntry::operator()(Trace<json::CancelAllOpenOrders> const &event) {
     auto time_in_force = json::map(order.time_in_force);
     auto external_order_id = fmt::format("{}"_cf, order.order_id);  // alloc
     auto order_status = json::map(order.status);
-    oms::OrderUpdate order_update{
+    auto order_update = oms::OrderUpdate{
         .account = security_.get_account(),
         .exchange = Flags::exchange(),
         .symbol = order.symbol,
