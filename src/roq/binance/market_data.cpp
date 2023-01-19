@@ -419,8 +419,9 @@ void MarketData::operator()(Trace<json::DepthUpdate> const &event) {
       auto publish_snapshot = [&](auto &bids, auto &asks, auto sequence) {
         log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
         auto market_by_price_update = create_update(bids, asks, UpdateType::SNAPSHOT, collector.last_sequence());
+        auto apply_updates = [&](auto &market_by_price) { collector.apply(market_by_price, sequence, false); };
         Trace event{trace_info, market_by_price_update};
-        shared_(event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, false); });
+        shared_(event, true, apply_updates);
       };
       auto request_snapshot = [&](auto retries) {
         log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, symbol, retries);

@@ -420,8 +420,9 @@ void Rest::operator()(Trace<json::Depth> const &event, std::string_view const &s
           .quantity_decimals = {},
           .checksum = {},
       };
+      auto apply_updates = [&](auto &market_by_price) { collector.apply(market_by_price, sequence, false); };
       Trace event{trace_info, market_by_price_update};
-      shared_(event, true, [&](auto &market_by_price) { collector.apply(market_by_price, sequence, false); });
+      shared_(event, true, apply_updates);
     };
     auto request_snapshot = [&](auto retries) {
       log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
