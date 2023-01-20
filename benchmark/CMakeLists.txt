@@ -1,15 +1,12 @@
 set(TARGET_NAME "${PROJECT_NAME}-benchmark")
 
-set(SOURCES main.cpp)
+set(SOURCES json_cancel_order.cpp json_new_order.cpp main.cpp)
 
 roq_gitignore(OUTPUT ".gitignore" SOURCES "${TARGET_NAME}")
 
 add_executable("${TARGET_NAME}" ${SOURCES})
 
-target_link_libraries(
-  "${TARGET_NAME}"
-  # ${PROJECT_NAME}
-  benchmark::benchmark)
+target_link_libraries("${TARGET_NAME}" PRIVATE "${PROJECT_NAME}-json" benchmark::benchmark)
 
 target_compile_features("${TARGET_NAME}" PUBLIC cxx_std_20)
 
