@@ -18,20 +18,16 @@ namespace {
 auto const REQUEST_ID = "jQAB6gMAAQAAQUIp3sUSAawljiyfnylc"sv;
 auto const PREVIOUS_REQUEST_ID = "jQAB6gMAAQAAQUIp3sUSAawljiyfnylc"sv;
 auto const ACCOUNT = "A1"sv;
-auto const recv_window = 5s;
+auto const ORDER_ID = uint32_t{1234};
+auto const RECV_WINDOW = 5s;
 auto const KEY = "sSzUA6j8tGDfmLoFrOPhWHY3VeXbC3NrApp94Ci4H4XvcjuCuvOXp8gH89XzMPDe"sv;
 auto const SECRET = "tHurnNFWLFkm97xVRqoESdujAiq1ilNjnY52tDej5RilUbTVZXT2YB5eo7txFLHk"sv;
-}  // namespace
-
-// === HELPERS ===
-
-namespace {
-auto create_oms_order() {
+auto const OMS_ORDER = []() {
   oms::Order result;
-  result.price_decimals = Decimals::_2;
   result.quantity_decimals = Decimals::_5;
+  result.price_decimals = Decimals::_2;
   return result;
-}
+}();
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -44,13 +40,12 @@ void BM_json_cancel_order(benchmark::State &state) {
   for (auto _ : state) {
     auto cancel_order = CancelOrder{
         .account = ACCOUNT,
-        .order_id = 1234,
+        .order_id = ORDER_ID,
         .routing_id = {},
         .version = {},
         .conditional_on_version = {},
     };
-    auto order = create_oms_order();
-    auto body = json::cancel_order(buffer, cancel_order, order, REQUEST_ID, PREVIOUS_REQUEST_ID, recv_window);
+    auto body = json::cancel_order(buffer, cancel_order, OMS_ORDER, REQUEST_ID, PREVIOUS_REQUEST_ID, RECV_WINDOW);
     if (!std::empty(body))
       ++processed;
   }
@@ -67,13 +62,12 @@ void BM_json_cancel_order_with_signature(benchmark::State &state) {
   for (auto _ : state) {
     auto cancel_order = CancelOrder{
         .account = ACCOUNT,
-        .order_id = 1234,
+        .order_id = ORDER_ID,
         .routing_id = {},
         .version = {},
         .conditional_on_version = {},
     };
-    auto order = create_oms_order();
-    auto body = json::cancel_order(buffer, cancel_order, order, REQUEST_ID, PREVIOUS_REQUEST_ID, recv_window);
+    auto body = json::cancel_order(buffer, cancel_order, OMS_ORDER, REQUEST_ID, PREVIOUS_REQUEST_ID, RECV_WINDOW);
     auto query = hasher.create_query(body);
     if (!std::empty(query))
       ++processed;

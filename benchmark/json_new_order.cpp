@@ -19,20 +19,18 @@ auto const REQUEST_ID = "jQAB6gMAAQAAQUIp3sUSAawljiyfnylc"sv;
 auto const ACCOUNT = "A1"sv;
 auto const EXCHANGE = "binance"sv;
 auto const SYMBOL = "BTCUSDT"sv;
-auto const recv_window = 5s;
+auto const ORDER_ID = uint32_t{1234};
+auto const QUANTITY = 123.45678;
+auto const PRICE = 16833.45;
+auto const RECV_WINDOW = 5s;
 auto const KEY = "sSzUA6j8tGDfmLoFrOPhWHY3VeXbC3NrApp94Ci4H4XvcjuCuvOXp8gH89XzMPDe"sv;
 auto const SECRET = "tHurnNFWLFkm97xVRqoESdujAiq1ilNjnY52tDej5RilUbTVZXT2YB5eo7txFLHk"sv;
-}  // namespace
-
-// === HELPERS ===
-
-namespace {
-auto create_oms_order() {
+auto const OMS_ORDER = []() {
   oms::Order result;
-  result.price_decimals = Decimals::_2;
   result.quantity_decimals = Decimals::_5;
+  result.price_decimals = Decimals::_2;
   return result;
-}
+}();
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -45,7 +43,7 @@ void BM_json_new_order(benchmark::State &state) {
   for (auto _ : state) {
     auto create_order = CreateOrder{
         .account = ACCOUNT,
-        .order_id = 1234,
+        .order_id = ORDER_ID,
         .exchange = EXCHANGE,
         .symbol = SYMBOL,
         .side = Side::BUY,
@@ -55,13 +53,12 @@ void BM_json_new_order(benchmark::State &state) {
         .time_in_force = TimeInForce::GTC,
         .execution_instructions = {},
         .order_template = {},
-        .quantity = 123.45,
-        .price = 16833.45,
+        .quantity = QUANTITY,
+        .price = PRICE,
         .stop_price = NaN,
         .routing_id = {},
     };
-    auto order = create_oms_order();
-    auto body = json::new_order(buffer, create_order, order, REQUEST_ID, recv_window);
+    auto body = json::new_order(buffer, create_order, OMS_ORDER, REQUEST_ID, RECV_WINDOW);
     if (!std::empty(body))
       ++processed;
   }
@@ -78,7 +75,7 @@ void BM_json_new_order_with_signature(benchmark::State &state) {
   for (auto _ : state) {
     auto create_order = CreateOrder{
         .account = ACCOUNT,
-        .order_id = 1234,
+        .order_id = ORDER_ID,
         .exchange = EXCHANGE,
         .symbol = SYMBOL,
         .side = Side::BUY,
@@ -88,13 +85,12 @@ void BM_json_new_order_with_signature(benchmark::State &state) {
         .time_in_force = TimeInForce::GTC,
         .execution_instructions = {},
         .order_template = {},
-        .quantity = 123.45,
-        .price = 16833.45,
+        .quantity = QUANTITY,
+        .price = PRICE,
         .stop_price = NaN,
         .routing_id = {},
     };
-    auto order = create_oms_order();
-    auto body = json::new_order(buffer, create_order, order, REQUEST_ID, recv_window);
+    auto body = json::new_order(buffer, create_order, OMS_ORDER, REQUEST_ID, RECV_WINDOW);
     auto query = hasher.create_query(body);
     if (!std::empty(query))
       ++processed;
