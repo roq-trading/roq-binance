@@ -43,12 +43,9 @@ std::string_view Hasher::create_query(std::string_view const &body) {
   if (!std::empty(body))
     mac_.update(body);
   auto digest = mac_.final(digest_);
-  result_ = timestamp;
-  /*
   core::codec::Hex::encode(signature_, digest);
   result_.clear();
   fmt::format_to(std::back_inserter(result_), "?{}&signature={}"_cf, timestamp, signature_);
-  */
   return result_;
 }
 
