@@ -374,6 +374,7 @@ void OrderEntry::get_account_ack(Trace<web::rest::Response> const &event) {
     };
     auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
       log::warn(R"(error={}, text="{}")"sv, error, text);
+      request_.respond_account = clock::get_system();  // completion
       download_account_ = false;
     };
     process_response(event, handle_success, handle_error);
@@ -443,6 +444,7 @@ void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event) {
     };
     auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
       log::warn(R"(error={}, text="{}")"sv, error, text);
+      request_.respond_orders = clock::get_system();  // completion
       download_orders_ = false;
     };
     process_response(event, handle_success, handle_error);
