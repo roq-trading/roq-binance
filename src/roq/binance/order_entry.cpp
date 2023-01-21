@@ -102,8 +102,8 @@ OrderEntry::OrderEntry(
           .ping = create_metrics(name_, "ping"sv),
       },
       security_{security}, shared_{shared}, request_{request},
-      download_{Flags::rest_request_timeout(), [this](auto state) { return download(state); }}, hold_cancel_order_{
-                                                                                                    256} {
+      download_{Flags::rest_request_timeout(), [this](auto state) { return download(state); }},
+      hold_cancel_order_(256) {
 }
 
 void OrderEntry::operator()(Event<Start> const &) {
@@ -342,7 +342,8 @@ void OrderEntry::operator()(Trace<json::ListenKey> const &event) {
 
 void OrderEntry::get_account() {
   profile_.account([&]() {
-    auto query = security_.create_query();
+    auto now = clock::get_realtime<std::chrono::milliseconds>();
+    auto query = security_.create_query(now);
     auto headers = security_.create_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
@@ -402,7 +403,8 @@ void OrderEntry::operator()(Trace<json::Account> const &event) {
 
 void OrderEntry::get_open_orders() {
   profile_.open_orders([&]() {
-    auto query = security_.create_query();
+    auto now = clock::get_realtime<std::chrono::milliseconds>();
+    auto query = security_.create_query(now);
     auto headers = security_.create_headers();
     auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
     encode_buffer_.clear();
@@ -519,7 +521,8 @@ void OrderEntry::new_order(
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(Flags::rest_order_recv_window());
     auto body = json::new_order(encode_buffer_, create_order, order, request_id, recv_window);
     log::debug(R"(body="{}")"sv, body);
-    auto query = security_.create_query(body);
+    auto now = clock::get_realtime<std::chrono::milliseconds>();
+    auto query = security_.create_query(now, body);
     auto headers = security_.create_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
@@ -656,7 +659,8 @@ void OrderEntry::cancel_replace_order(
         utils::safe_cast(Flags::rest_order_recv_window()),
         flags::Flags::cancel_replace_stop_on_failure());
     log::info(R"(DEBUG body="{}")"sv, body);
-    auto query = security_.create_query(body);
+    auto now = clock::get_realtime<std::chrono::milliseconds>();
+    auto query = security_.create_query(now, body);
     auto headers = security_.create_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
@@ -1089,7 +1093,8 @@ void OrderEntry::cancel_order(
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(Flags::rest_order_recv_window());
     auto body = json::cancel_order(encode_buffer_, cancel_order, order, request_id, previous_request_id, recv_window);
     log::debug(R"(body="{}")"sv, body);
-    auto query = security_.create_query(body);
+    auto now = clock::get_realtime<std::chrono::milliseconds>();
+    auto query = security_.create_query(now, body);
     auto headers = security_.create_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::DELETE,
@@ -1202,7 +1207,8 @@ void OrderEntry::cancel_all_open_orders(
     for (auto &symbol : open_orders_symbols_) {
       auto body = json::cancel_all_open_orders(encode_buffer_, symbol, recv_window);
       log::debug(R"(body="{}")"sv, body);
-      auto query = security_.create_query(body);
+      auto now = clock::get_realtime<std::chrono::milliseconds>();
+      auto query = security_.create_query(now, body);
       auto headers = security_.create_headers();
       auto request = web::rest::Request{
           .method = web::http::Method::DELETE,

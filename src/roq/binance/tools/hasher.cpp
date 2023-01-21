@@ -20,6 +20,12 @@ namespace roq {
 namespace binance {
 namespace tools {
 
+// === VALIDATION ===
+
+namespace {
+static_assert(Hasher::QUERY_BUFFER_LENGTH % 64 == 0);
+}  // namespace
+
 // === HELPERS ===
 
 namespace {
@@ -35,8 +41,8 @@ Hasher::Hasher(std::string_view const &key, std::string_view const &secret)
   result_.reserve(64);
 }
 
-std::string_view Hasher::create_query(std::string_view const &body) {
-  auto now = clock::get_realtime<std::chrono::milliseconds>();
+std::string_view Hasher::create_query(
+    core::Message<char> &buffer, std::chrono::milliseconds now, std::string_view const &body) {
   auto timestamp = fmt::format("timestamp={}"_cf, now.count());
   mac_.clear();
   mac_.update(timestamp);

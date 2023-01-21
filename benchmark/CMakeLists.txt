@@ -6,10 +6,8 @@ roq_gitignore(OUTPUT ".gitignore" SOURCES "${TARGET_NAME}")
 
 add_executable("${TARGET_NAME}" ${SOURCES})
 
-target_link_libraries("${TARGET_NAME}" PRIVATE 
-  "${PROJECT_NAME}-json" 
-  "${PROJECT_NAME}-tools" 
-  benchmark::benchmark)
+target_link_libraries("${TARGET_NAME}" PRIVATE "${PROJECT_NAME}-json" "${PROJECT_NAME}-tools"
+                                               benchmark::benchmark)
 
 target_compile_features("${TARGET_NAME}" PUBLIC cxx_std_20)
 

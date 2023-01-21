@@ -3,8 +3,11 @@
 #pragma once
 
 #include <array>
+#include <chrono>
 #include <string>
 #include <string_view>
+
+#include "roq/core/message.hpp"
 
 #include "roq/core/mac/hmac.hpp"
 
@@ -18,9 +21,11 @@ struct Hasher final {
   Hasher(Hasher &&) = delete;
   Hasher(Hasher const &) = delete;
 
-  std::string_view create_query(std::string_view const &body);
+  std::string_view create_query(core::Message<char> &, std::chrono::milliseconds now, std::string_view const &body);
 
   std::string_view create_headers() const { return headers_; }
+
+  static constexpr auto const QUERY_BUFFER_LENGTH = size_t{128};  // note! expected length == 99
 
  private:
   using MAC = core::mac::HMAC<core::hash::SHA256>;
