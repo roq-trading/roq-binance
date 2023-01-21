@@ -10,6 +10,8 @@
 
 #include "roq/utils/safe_cast.hpp"
 
+#include "roq/core/text/writer.hpp"
+
 #include "roq/core/codec/hex.hpp"
 
 using namespace std::literals;
@@ -38,21 +40,20 @@ auto create_headers_helper(auto const &key) {
 
 Hasher::Hasher(std::string_view const &key, std::string_view const &secret)
     : key_{key}, mac_{secret}, headers_{create_headers_helper(key_)} {
-  result_.reserve(64);
 }
 
 std::string_view Hasher::create_query(
-    core::Message<char> &buffer, std::chrono::milliseconds now, std::string_view const &body) {
-  auto timestamp = fmt::format("timestamp={}"_cf, now.count());
+    std::span<std::byte> const &buffer, std::chrono::milliseconds now, std::string_view const &body) {
+  core::text::Writer writer{buffer};
+  writer.write("?timestamp="sv).write(now.count());
   mac_.clear();
-  mac_.update(timestamp);
+  auto tmp = static_cast<std::string_view>(writer).substr(1);
+  mac_.update(tmp);
   if (!std::empty(body))
     mac_.update(body);
   auto digest = mac_.final(digest_);
-  core::codec::Hex::encode(signature_, digest);
-  result_.clear();
-  fmt::format_to(std::back_inserter(result_), "?{}&signature={}"_cf, timestamp, signature_);
-  return result_;
+  writer.write("&signature="sv).write(core::codec::Hex{digest_});
+  return writer.finish();
 }
 
 }  // namespace tools

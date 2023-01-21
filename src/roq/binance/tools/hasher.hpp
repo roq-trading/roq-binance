@@ -4,10 +4,9 @@
 
 #include <array>
 #include <chrono>
+#include <span>
 #include <string>
 #include <string_view>
-
-#include "roq/core/message.hpp"
 
 #include "roq/core/mac/hmac.hpp"
 
@@ -21,7 +20,8 @@ struct Hasher final {
   Hasher(Hasher &&) = delete;
   Hasher(Hasher const &) = delete;
 
-  std::string_view create_query(core::Message<char> &, std::chrono::milliseconds now, std::string_view const &body);
+  std::string_view create_query(
+      std::span<std::byte> const &buffer, std::chrono::milliseconds now, std::string_view const &body);
 
   std::string_view create_headers() const { return headers_; }
 
@@ -35,8 +35,6 @@ struct Hasher final {
   MAC mac_;
   Digest digest_;
   std::string const headers_;
-  std::string signature_;
-  std::string result_;
 };
 
 }  // namespace tools

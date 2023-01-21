@@ -1,6 +1,7 @@
 set(TARGET_NAME "${PROJECT_NAME}-test")
 
 set(SOURCES
+    tools_hasher.cpp
     json_account.cpp
     json_cancel_all_open_orders.cpp
     json_cancel_order.cpp
@@ -22,6 +23,7 @@ add_executable("${TARGET_NAME}" ${SOURCES})
 target_link_libraries(
   "${TARGET_NAME}"
   "${PROJECT_NAME}-json"
+  "${PROJECT_NAME}-tools"
   roq-server::roq-server
   roq-core::roq-core
   roq-io::roq-io

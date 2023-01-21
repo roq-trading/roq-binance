@@ -4,6 +4,8 @@
 
 #include "roq/logging.hpp"
 
+#include "roq/core/text/writer.hpp"
+
 #include "roq/utils/number.hpp"
 
 using namespace std::literals;
@@ -157,6 +159,38 @@ std::string_view new_order(
   auto side = map(create_order.side);
   auto type = map_order_type(create_order);
   auto time_in_force = map_time_in_force(create_order);
+#if (1)
+  buffer.resize(256);
+  std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
+  core::text::Writer writer{buffer_2};
+  writer  //
+      .write("symbol="sv)
+      .write(create_order.symbol)
+      .write("&side="sv)
+      .write(side.as_raw_text())
+      .write("&type="sv)
+      .write(type.as_raw_text())
+      .write("&quantity="sv)
+      .write(utils::Number{create_order.quantity, order.quantity_decimals});
+  if (time_in_force != json::TimeInForce{})
+    writer  //
+        .write("&timeInForce="sv)
+        .write(time_in_force.as_raw_text());
+  if (!std::isnan(create_order.price))
+    writer  //
+        .write("&price="sv)
+        .write(utils::Number{create_order.price, order.price_decimals});
+  if (!std::isnan(create_order.stop_price))
+    writer  //
+        .write("&stopPrice="sv)
+        .write(utils::Number{create_order.stop_price, order.price_decimals});
+  writer  //
+      .write("&newClientOrderId="sv)
+      .write(request_id)
+      .write("&recvWindow="sv)
+      .write(recv_window.count());
+  return writer.finish();
+#else
   buffer.clear();
   fmt::format_to(
       std::back_inserter(buffer),
@@ -186,6 +220,7 @@ std::string_view new_order(
       recv_window.count());
   std::string_view result{std::data(buffer), std::size(buffer)};
   return result;
+#endif
 }
 
 // https://binance-docs.github.io/apidocs/spot/en/#cancel-an-existing-order-and-send-a-new-order-trade
@@ -245,6 +280,20 @@ std::string_view cancel_order(
     std::string_view const &request_id,
     std::string_view const &previous_request_id,
     std::chrono::milliseconds recv_window) {
+#if (1)
+  buffer.resize(128);
+  std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
+  return core::text::Writer{buffer_2}
+      .write("symbol="sv)
+      .write(order.symbol)
+      .write("&origClientOrderId="sv)
+      .write(previous_request_id)
+      .write("&newClientOrderId="sv)
+      .write(request_id)
+      .write("&recvWindow="sv)
+      .write(recv_window.count())
+      .finish();
+#else
   buffer.clear();
   fmt::format_to(
       std::back_inserter(buffer),
@@ -258,6 +307,7 @@ std::string_view cancel_order(
       recv_window.count());
   std::string_view result{std::data(buffer), std::size(buffer)};
   return result;
+#endif
 }
 
 std::string_view cancel_all_open_orders(

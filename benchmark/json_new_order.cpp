@@ -70,7 +70,7 @@ BENCHMARK(BM_json_new_order);
 
 void BM_json_new_order_with_signature(benchmark::State &state) {
   std::vector<char> buffer(4096);
-  std::vector<char> buffer_2(4096);
+  std::vector<std::byte> buffer_2(tools::Hasher::QUERY_BUFFER_LENGTH);
   tools::Hasher hasher{KEY, SECRET};
   uint64_t processed = 0;
   for (auto _ : state) {
@@ -92,9 +92,8 @@ void BM_json_new_order_with_signature(benchmark::State &state) {
         .routing_id = {},
     };
     auto body = json::new_order(buffer, create_order, OMS_ORDER, REQUEST_ID, RECV_WINDOW);
-    core::Message<char> message{buffer_2};
     auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = hasher.create_query(message, now, body);
+    auto query = hasher.create_query(buffer_2, now, body);
     if (!std::empty(query))
       ++processed;
   }
