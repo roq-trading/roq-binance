@@ -92,16 +92,17 @@ struct OrderEntry final : public web::rest::Client::Handler {
   uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id);
 
  protected:
-  void operator()(web::rest::Client::Connected const &);
-  void operator()(web::rest::Client::Disconnected const &);
-  void operator()(web::rest::Client::Latency const &);
+  void operator()(Trace<web::rest::Client::Connected> const &) override;
+  void operator()(Trace<web::rest::Client::Disconnected> const &) override;
+  void operator()(Trace<web::rest::Client::Latency> const &) override;
+  void operator()(Trace<web::rest::Response> const &, uint64_t request_id, uint64_t opaque) override;
 
   void operator()(ConnectionStatus);
 
   uint32_t download(OrderEntryState state);
 
   void get_listen_key();
-  void get_listen_key_ack(Trace<web::rest::Response> const &, uint32_t sequence);
+  void get_listen_key_ack(Trace<web::rest::Response> const &);
   void operator()(Trace<json::ListenKey> const &);
 
   void get_account();
@@ -116,6 +117,7 @@ struct OrderEntry final : public web::rest::Client::Handler {
 
   void new_order(Event<CreateOrder> const &, oms::Order const &order, std::string_view const &request_id);
   void new_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint32_t order_id, uint32_t version);
+  void new_order_ack_2(Trace<web::rest::Response> const &, uint64_t opaque);
   void operator()(Trace<json::NewOrder> const &, uint8_t user_id, uint32_t order_id, uint32_t version);
 
   void cancel_replace_order(
@@ -127,6 +129,7 @@ struct OrderEntry final : public web::rest::Client::Handler {
       uint32_t cancel_version,
       uint32_t create_order_id,
       uint32_t create_version);
+  void cancel_replace_order_ack_2(Trace<web::rest::Response> const &, uint64_t opaque);
   void operator()(
       Trace<json::CancelReplaceOrder> const &,
       uint8_t user_id,
@@ -148,6 +151,7 @@ struct OrderEntry final : public web::rest::Client::Handler {
       std::string_view const &request_id,
       std::string_view const &previous_request_id);
   void cancel_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint32_t order_id, uint32_t version);
+  void cancel_order_ack_2(Trace<web::rest::Response> const &, uint64_t opaque);
   void operator()(Trace<json::CancelOrder> const &, uint8_t user_id, uint32_t order_id, uint32_t version);
 
   void cancel_all_open_orders(Event<CancelAllOrders> const &, std::string_view const &request_id);

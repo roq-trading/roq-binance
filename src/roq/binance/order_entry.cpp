@@ -2,6 +2,7 @@
 
 #include "roq/binance/order_entry.hpp"
 
+#include <tuple>
 #include <utility>
 
 #include "roq/mask.hpp"
@@ -71,6 +72,47 @@ struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(auto const &group, auto const &function)
       : core::metrics::Factory(server::Flags::name(), group, function) {}
 };
+
+enum class Type : uint8_t {
+  UNDEFINED,
+  GET_LISTEN_KEY,
+  GET_ACCOUNT,
+  GET_OPEN_ORDERS,
+  NEW_ORDER,
+  CANCEL_REPLACE_ORDER,
+  CANCEL_ORDER,
+  CANCEL_ALL_OPEN_ORDERS,
+};
+
+constexpr auto encode_opaque(Type type) {
+  return uint64_t{static_cast<uint8_t>(type)};
+}
+
+constexpr auto encode_opaque(Type type, uint8_t user_id, uint32_t order_id, uint32_t version) {
+  auto const bitmask = (uint64_t{1} << 24) - 1;
+  return uint64_t{static_cast<uint8_t>(type)} | (uint64_t{user_id} << 8) | ((uint64_t{order_id} & bitmask) << 16) |
+         ((uint64_t{version} & bitmask) << 40);
+}
+
+constexpr auto type_from_opaque(uint64_t opaque) {
+  auto const bitmask = (uint64_t{1} << 8) - 1;
+  return Type{static_cast<uint8_t>(opaque & bitmask)};
+}
+
+constexpr std::tuple<uint8_t, uint32_t, uint32_t> order_request_from_opaque(uint64_t opaque) {
+  auto const bitmask_1 = (uint64_t{1} << 8) - 1;
+  auto const bitmask_2 = (uint64_t{1} << 24) - 1;
+  auto user_id = static_cast<uint8_t>((opaque >> 8) & bitmask_1);
+  auto order_id = static_cast<uint32_t>((opaque >> 16) & bitmask_2);
+  auto version = static_cast<uint32_t>((opaque >> 40) & bitmask_2);
+  return {user_id, order_id, version};
+}
+
+// --- test ---
+static_assert(encode_opaque(Type::GET_LISTEN_KEY) == uint64_t{1});
+static_assert(
+    encode_opaque(Type::NEW_ORDER, 1, 2, 3) ==
+    (uint64_t{4} | (uint64_t{1} << 8) | (uint64_t{2} << 16) | (uint64_t{3} << 40)));
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -208,7 +250,7 @@ uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &event, std::string
   return stream_id_;
 }
 
-void OrderEntry::operator()(web::rest::Client::Connected const &) {
+void OrderEntry::operator()(Trace<web::rest::Client::Connected> const &) {
   if (download_.downloading()) {
     download_.bump();
   } else {
@@ -217,7 +259,7 @@ void OrderEntry::operator()(web::rest::Client::Connected const &) {
   }
 }
 
-void OrderEntry::operator()(web::rest::Client::Disconnected const &) {
+void OrderEntry::operator()(Trace<web::rest::Client::Disconnected> const &) {
   ++counter_.disconnect;
   ready_ = false;
   (*this)(ConnectionStatus::DISCONNECTED);
@@ -227,8 +269,8 @@ void OrderEntry::operator()(web::rest::Client::Disconnected const &) {
   download_orders_ = false;
 }
 
-void OrderEntry::operator()(web::rest::Client::Latency const &latency) {
-  TraceInfo trace_info;
+void OrderEntry::operator()(Trace<web::rest::Client::Latency> const &event) {
+  auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
       .stream_id = stream_id_,
       .account = security_.get_account(),
@@ -236,6 +278,38 @@ void OrderEntry::operator()(web::rest::Client::Latency const &latency) {
   };
   create_trace_and_dispatch(handler_, trace_info, external_latency);
   latency_.ping.update(latency.sample);
+}
+
+void OrderEntry::operator()(
+    Trace<web::rest::Response> const &event, [[maybe_unused]] uint64_t request_id, uint64_t opaque) {
+  auto type = type_from_opaque(opaque);
+  switch (type) {
+    using enum Type;
+    case UNDEFINED:
+      break;
+    case GET_LISTEN_KEY:
+      get_listen_key_ack(event);
+      return;
+    case GET_ACCOUNT:
+      get_account_ack(event);
+      return;
+    case GET_OPEN_ORDERS:
+      get_open_orders_ack(event);
+      return;
+    case NEW_ORDER:
+      new_order_ack_2(event, opaque);
+      return;
+    case CANCEL_REPLACE_ORDER:
+      cancel_replace_order_ack_2(event, opaque);
+      return;
+    case CANCEL_ORDER:
+      cancel_order_ack_2(event, opaque);
+      return;
+    case CANCEL_ALL_OPEN_ORDERS:
+      cancel_all_open_orders_ack(event);
+      return;
+  }
+  log::fatal("Unexpected"sv);
 }
 
 void OrderEntry::operator()(ConnectionStatus status) {
@@ -290,16 +364,16 @@ void OrderEntry::get_listen_key() {
         .body = {},
         .quality_of_service = {},
     };
-    auto callback = [this, sequence = download_.sequence()]([[maybe_unused]] auto &request_id, auto &response) {
+    auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
-      get_listen_key_ack(event, sequence);
+      get_listen_key_ack(event);
     };
     (*connection_)("listen_key"sv, request, callback);
   });
 }
 
-void OrderEntry::get_listen_key_ack(Trace<web::rest::Response> const &event, [[maybe_unused]] uint32_t sequence) {
+void OrderEntry::get_listen_key_ack(Trace<web::rest::Response> const &event) {
   auto const constexpr STATE = OrderEntryState::LISTEN_KEY;
   profile_.listen_key_ack([&]() {
     auto handle_success = [&](auto &body) {
@@ -571,6 +645,11 @@ void OrderEntry::new_order_ack(
     };
     process_response(event, handle_success, handle_error);
   });
+}
+
+void OrderEntry::new_order_ack_2(Trace<web::rest::Response> const &event, uint64_t opaque) {
+  auto [user_id, order_id, version] = order_request_from_opaque(opaque);
+  new_order_ack(event, user_id, order_id, version);
 }
 
 void OrderEntry::operator()(Trace<json::NewOrder> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
@@ -862,6 +941,10 @@ void OrderEntry::cancel_replace_order_ack(
   });
 }
 
+void OrderEntry::cancel_replace_order_ack_2(Trace<web::rest::Response> const &, uint64_t opaque) {
+  log::fatal("Not implemented"sv);  // HANS
+}
+
 void OrderEntry::operator()(
     Trace<json::CancelReplaceOrder> const &event,
     uint8_t user_id,
@@ -1143,6 +1226,11 @@ void OrderEntry::cancel_order_ack(
     };
     process_response(event, handle_success, handle_error);
   });
+}
+
+void OrderEntry::cancel_order_ack_2(Trace<web::rest::Response> const &event, uint64_t opaque) {
+  auto [user_id, order_id, version] = order_request_from_opaque(opaque);
+  cancel_order_ack(event, user_id, order_id, version);
 }
 
 void OrderEntry::operator()(
