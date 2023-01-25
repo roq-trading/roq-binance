@@ -68,10 +68,12 @@ struct Rest final : public web::rest::Client::Handler {
 
   void get_exchange_info();
   void get_exchange_info_ack(Trace<web::rest::Response> const &, uint32_t sequence);
+  void get_exchange_info_ack_2(Trace<web::rest::Response> const &, uint64_t opaque);
   void operator()(Trace<json::ExchangeInfo> const &);
 
   void get_depth(std::string_view const &symbol);
   void get_depth_ack(Trace<web::rest::Response> const &, std::string_view const &symbol);
+  void get_depth_ack_2(Trace<web::rest::Response> const &, uint64_t opaque);
   void operator()(Trace<json::Depth> const &, std::string_view const &symbol);
 
   void check_request_queue(std::chrono::nanoseconds now);

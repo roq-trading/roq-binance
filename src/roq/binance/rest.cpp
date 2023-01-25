@@ -26,6 +26,8 @@ using namespace std::literals;
 
 using namespace fmt::literals;
 
+// #define TEST_REQ
+
 namespace roq {
 namespace binance {
 
@@ -62,13 +64,37 @@ auto create_connection(auto &handler, auto &context) {
       .ping_frequency = Flags::rest_ping_freq(),
       .ping_path = Flags::rest_ping_path(),
   };
+#if defined(TEST_REQ)
+  return web::rest::ClientFactory::create_2(handler, context, config);
+#else
   return web::rest::ClientFactory::create(handler, context, config);
+#endif
 }
 
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(auto const &group, auto const &function)
       : core::metrics::Factory(server::Flags::name(), group, function) {}
 };
+
+enum class Type : uint8_t {
+  UNDEFINED,
+  GET_EXCHANGE_INFO,
+  GET_DEPTH,
+};
+
+constexpr auto encode_opaque(Type type, uint32_t sequence_or_symbol) {
+  return uint64_t{static_cast<uint8_t>(type)} | (uint64_t{sequence_or_symbol} << 8);
+}
+
+constexpr auto type_from_opaque(uint64_t opaque) {
+  auto const bitmask = (uint64_t{1} << 8) - 1;
+  return Type{static_cast<uint8_t>(opaque & bitmask)};
+}
+
+constexpr auto sequence_or_symbol_from_opaque(uint64_t opaque) {
+  auto const bitmask = (uint64_t{1} << 32) - 1;
+  return static_cast<uint32_t>((opaque >> 8) & bitmask);
+}
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -148,8 +174,20 @@ void Rest::operator()(Trace<web::rest::Client::Latency> const &event) {
   latency_.ping.update(latency.sample);
 }
 
-void Rest::operator()(
-    Trace<web::rest::Response> const &, [[maybe_unused]] uint64_t request_id, [[maybe_unused]] uint64_t opaque) {
+void Rest::operator()(Trace<web::rest::Response> const &event, [[maybe_unused]] uint64_t request_id, uint64_t opaque) {
+  auto type = type_from_opaque(opaque);
+  switch (type) {
+    using enum Type;
+    case UNDEFINED:
+      break;
+    case GET_EXCHANGE_INFO:
+      get_exchange_info_ack_2(event, opaque);
+      return;
+    case GET_DEPTH:
+      get_depth_ack_2(event, opaque);
+      return;
+  }
+  log::fatal("Unexpected"sv);
 }
 
 void Rest::operator()(ConnectionStatus status) {
@@ -203,12 +241,17 @@ void Rest::get_exchange_info() {
         .body = {},
         .quality_of_service = {},
     };
+#if defined(TEST_REQ)
+    auto opaque = encode_opaque(Type::GET_EXCHANGE_INFO, download_.sequence());
+    (*connection_)(request, opaque);
+#else
     auto callback = [this, sequence = download_.sequence()]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
       get_exchange_info_ack(event, sequence);
     };
     (*connection_)("exchange_info"sv, request, callback);
+#endif
   });
 }
 
@@ -233,6 +276,11 @@ void Rest::get_exchange_info_ack(Trace<web::rest::Response> const &event, uint32
     };
     process_response(event, handle_success, handle_error);
   });
+}
+
+void Rest::get_exchange_info_ack_2(Trace<web::rest::Response> const &event, uint64_t opaque) {
+  auto sequence = sequence_or_symbol_from_opaque(opaque);
+  get_exchange_info_ack(event, sequence);
 }
 
 void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
@@ -361,12 +409,18 @@ void Rest::get_depth(std::string_view const &symbol) {
         .body = {},
         .quality_of_service = {},
     };
+#if defined(TEST_REQ)
+    auto symbol_id = shared_.get_symbol_id(flags::Flags::exchange(), symbol);
+    auto opaque = encode_opaque(Type::GET_DEPTH, symbol_id);
+    [[maybe_unused]] auto request_id = (*connection_)(request, opaque);
+#else
     auto callback = [this, symbol = std::string{symbol}]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
       get_depth_ack(event, symbol);
     };
     (*connection_)("depth"sv, request, callback);
+#endif
   });
 }
 
@@ -383,6 +437,12 @@ void Rest::get_depth_ack(Trace<web::rest::Response> const &event, std::string_vi
     };
     process_response(event, handle_success, handle_error);
   });
+}
+
+void Rest::get_depth_ack_2(Trace<web::rest::Response> const &event, uint64_t opaque) {
+  auto symbol_id = sequence_or_symbol_from_opaque(opaque);
+  auto [exchange, symbol] = shared_.get_exchange_symbol(symbol_id);
+  get_depth_ack(event, symbol);
 }
 
 void Rest::operator()(Trace<json::Depth> const &event, std::string_view const &symbol) {

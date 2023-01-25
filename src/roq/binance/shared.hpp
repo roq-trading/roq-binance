@@ -30,6 +30,11 @@ struct Shared final {
 
   auto discard_symbol(std::string_view const &name) const { return dispatcher_.discard_symbol(name); }
 
+  auto get_symbol_id(std::string_view const &exchange, std::string_view const &symbol) {
+    return dispatcher_.get_symbol_id(exchange, symbol);
+  }
+  auto get_exchange_symbol(uint32_t symbol_id) { return dispatcher_.get_exchange_symbol(symbol_id); }
+
   template <typename... Args>
   auto update_order(Args &&...args) {
     return dispatcher_.update_order(std::forward<Args>(args)...);

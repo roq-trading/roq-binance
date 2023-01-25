@@ -246,7 +246,11 @@ void MarketData::operator()(Trace<json::Error> const &event, int32_t id) {
 void MarketData::operator()(Trace<json::Result> const &event, int32_t id) {
   profile_.result([&]() {
     auto &[trace_info, result] = event;
-    log::info("error={}, id={}"sv, result, id);
+    if (std::empty(result.data)) {
+      log::info<1>("error={}, id={}"sv, result, id);
+    } else {
+      log::warn("error={}, id={}"sv, result, id);
+    }
   });
 }
 

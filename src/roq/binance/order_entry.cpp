@@ -26,6 +26,8 @@ using namespace std::literals;
 
 using namespace fmt::literals;
 
+// #define TEST_REQ
+
 namespace roq {
 namespace binance {
 
@@ -65,7 +67,11 @@ auto create_connection(auto &handler, auto &context) {
       .ping_frequency = Flags::rest_ping_freq(),
       .ping_path = Flags::rest_ping_path(),
   };
+#if defined(TEST_REQ)
+  return web::rest::ClientFactory::create_2(handler, context, config);
+#else
   return web::rest::ClientFactory::create(handler, context, config);
+#endif
 }
 
 struct create_metrics final : public core::metrics::Factory {
@@ -109,6 +115,7 @@ constexpr std::tuple<uint8_t, uint32_t, uint32_t> order_request_from_opaque(uint
 }
 
 // --- test ---
+
 static_assert(encode_opaque(Type::GET_LISTEN_KEY) == uint64_t{1});
 static_assert(
     encode_opaque(Type::NEW_ORDER, 1, 2, 3) ==
@@ -364,12 +371,17 @@ void OrderEntry::get_listen_key() {
         .body = {},
         .quality_of_service = {},
     };
+#if defined(TEST_REQ)
+    auto opaque = encode_opaque(Type::GET_LISTEN_KEY);
+    (*connection_)(request, opaque);
+#else
     auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
       get_listen_key_ack(event);
     };
     (*connection_)("listen_key"sv, request, callback);
+#endif
   });
 }
 
@@ -429,12 +441,17 @@ void OrderEntry::get_account() {
         .body = {},
         .quality_of_service = {},
     };
+#if defined(TEST_REQ)
+    auto opaque = encode_opaque(Type::GET_ACCOUNT);
+    (*connection_)(request, opaque);
+#else
     auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
       get_account_ack(event);
     };
     (*connection_)("account"sv, request, callback);
+#endif
   });
 }
 
@@ -500,12 +517,17 @@ void OrderEntry::get_open_orders() {
         .body = {},
         .quality_of_service = {},
     };
+#if defined(TEST_REQ)
+    auto opaque = encode_opaque(Type::GET_OPEN_ORDERS);
+    (*connection_)(request, opaque);
+#else
     auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
       get_open_orders_ack(event);
     };
     (*connection_)("open_orders"sv, request, callback);
+#endif
   });
 }
 
@@ -608,6 +630,10 @@ void OrderEntry::new_order(
         .body = body,
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
+#if defined(TEST_REQ)
+    auto opaque = encode_opaque(Type::NEW_ORDER, message_info.source, create_order.order_id, 1);
+    (*connection_)(request, opaque);
+#else
     auto callback = [this, user_id = message_info.source, order_id = create_order.order_id](
                         [[maybe_unused]] auto &request_id, auto &response) {
       auto version = uint32_t{1};
@@ -616,6 +642,7 @@ void OrderEntry::new_order(
       new_order_ack(event, user_id, order_id, version);
     };
     (*connection_)(request_id, request, callback);
+#endif
   });
 }
 
@@ -751,6 +778,15 @@ void OrderEntry::cancel_replace_order(
         .body = body,
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
+#if defined(TEST_REQ)
+    // XXX also encode create_order (need a cache)
+    auto opaque = encode_opaque(
+        Type::CANCEL_REPLACE_ORDER,
+        message_info.source,
+        hold_cancel_order.cancel_order.order_id,
+        hold_cancel_order.cancel_order.order_id);
+    (*connection_)(request, opaque);
+#else
     auto callback = [this,
                      user_id = message_info.source,
                      cancel_order_id = hold_cancel_order.cancel_order.order_id,
@@ -761,6 +797,7 @@ void OrderEntry::cancel_replace_order(
       cancel_replace_order_ack(event, user_id, cancel_order_id, cancel_version, create_order_id, uint32_t{1});
     };
     (*connection_)(request_id, request, callback);
+#endif
   });
 }
 
@@ -1189,6 +1226,10 @@ void OrderEntry::cancel_order(
         .body = body,
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
+#if defined(TEST_REQ)
+    auto opaque = encode_opaque(Type::CANCEL_ORDER, message_info.source, cancel_order.order_id, cancel_order.version);
+    (*connection_)(request, opaque);
+#else
     auto callback =
         [this, user_id = message_info.source, order_id = cancel_order.order_id, version = cancel_order.version](
             [[maybe_unused]] auto &request_id, auto &response) {
@@ -1197,6 +1238,7 @@ void OrderEntry::cancel_order(
           cancel_order_ack(event, user_id, order_id, version);
         };
     (*connection_)(request_id, request, callback);
+#endif
   });
 }
 
@@ -1308,12 +1350,17 @@ void OrderEntry::cancel_all_open_orders(
           .body = body,
           .quality_of_service = io::QualityOfService::IMMEDIATE,
       };
+#if defined(TEST_REQ)
+      auto opaque = encode_opaque(Type::CANCEL_ALL_OPEN_ORDERS);
+      (*connection_)(request, opaque);
+#else
       auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
         TraceInfo trace_info;
         Trace event{trace_info, response};
         cancel_all_open_orders_ack(event);
       };
       (*connection_)(request_id, request, callback);
+#endif
     }
   });
 }
