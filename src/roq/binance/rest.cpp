@@ -450,8 +450,7 @@ void Rest::operator()(Trace<json::Depth> const &event, std::string_view const &s
   auto &depth = event.value;
   log::info<4>(R"(depth={}, symbol="{}")"sv, depth, symbol);
   auto sequence = depth.last_update_id;
-  shared_.bids.clear();
-  shared_.asks.clear();
+  auto &mbp = shared_.get_mbp();
   auto emplace_back = [](auto &result, auto &value) {
     auto mbp_update = MBPUpdate{
         .price = value.price,
@@ -464,10 +463,10 @@ void Rest::operator()(Trace<json::Depth> const &event, std::string_view const &s
     result.emplace_back(std::move(mbp_update));
   };
   for (auto &item : depth.bids)
-    emplace_back(shared_.bids, item);
+    emplace_back(mbp.bids, item);
   for (auto &item : depth.asks)
-    emplace_back(shared_.asks, item);
-  auto &collector = shared_.mbp_collector[symbol];
+    emplace_back(mbp.asks, item);
+  auto &sequencer = shared_.mbp_sequencer[symbol];
   try {
     auto publish_snapshot = [&](auto &bids, auto &asks, auto sequence) {
       log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
@@ -479,12 +478,12 @@ void Rest::operator()(Trace<json::Depth> const &event, std::string_view const &s
           .asks = asks,
           .update_type = UpdateType::SNAPSHOT,
           .exchange_time_utc = {},
-          .exchange_sequence = collector.last_sequence(),
+          .exchange_sequence = sequencer.last_sequence(),
           .price_decimals = {},
           .quantity_decimals = {},
           .checksum = {},
       };
-      auto apply_updates = [&](auto &market_by_price) { collector.apply(market_by_price, sequence, false); };
+      auto apply_updates = [&](auto &market_by_price) { sequencer.apply(market_by_price, sequence, false); };
       Trace event{trace_info, market_by_price_update};
       shared_(event, true, apply_updates);
     };
@@ -495,11 +494,11 @@ void Rest::operator()(Trace<json::Depth> const &event, std::string_view const &s
       }
       shared_.depth_request_queue.emplace_back(symbol);
     };
-    collector(shared_.bids, shared_.asks, sequence, false, publish_snapshot, request_snapshot);
+    sequencer(mbp.bids, mbp.asks, sequence, false, publish_snapshot, request_snapshot);
   } catch (BadState &) {
     log::warn(R"(RESUBSCRIBE symbol="{}")"sv, symbol);
     // XXX HANS publish stale
-    collector.clear();
+    sequencer.clear();
     shared_.depth_request_queue.emplace_back(symbol);
   }
 }

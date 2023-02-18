@@ -45,10 +45,21 @@ struct Shared final {
     return dispatcher_(std::forward<Args>(args)...);
   }
 
- public:
-  std::vector<MBPUpdate> bids, asks;
+ private:
+  struct {
+    std::vector<MBPUpdate> bids, asks;
+    auto &clear() {
+      bids.clear();
+      asks.clear();
+      return *this;
+    }
+    bool empty() const { return std::empty(bids) && std::empty(asks); }
+  } mbp;
 
-  absl::flat_hash_map<Symbol, core::mbp::Sequencer> mbp_collector;
+ public:
+  auto &get_mbp() { return mbp.clear(); }
+
+  absl::flat_hash_map<Symbol, core::mbp::Sequencer> mbp_sequencer;
 
  private:
   server::Dispatcher &dispatcher_;
