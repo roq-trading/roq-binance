@@ -480,13 +480,12 @@ void MarketData::operator()(Trace<json::DepthUpdate> const &event) {
 }
 
 void MarketData::check_subscribe_queue(std::chrono::nanoseconds now) {
-  subscribe_queue_.dispatch(
-      [&](auto now) { return shared_.rate_limiter.can_request(now); },
-      [&](auto &message) {
-        log::debug(R"(Subscribe: "{}")"sv, message);
-        (*connection_).send_text(message);
-      },
-      now);
+  auto can_request = [&](auto now) { return shared_.rate_limiter.can_request(now); };
+  auto request = [&](auto &message) {
+    log::debug(R"(Subscribe: "{}")"sv, message);
+    (*connection_).send_text(message);
+  };
+  subscribe_queue_.dispatch(can_request, request, now);
 }
 
 }  // namespace binance
