@@ -32,11 +32,16 @@ namespace binance {
 namespace {
 auto const NAME = "md"sv;
 
-auto const SUPPORTS = Mask{
+auto const SUPPORTS_PRIMARY = Mask{
     SupportType::TOP_OF_BOOK,
     SupportType::MARKET_BY_PRICE,
     SupportType::TRADE_SUMMARY,
     SupportType::STATISTICS,
+};
+
+auto const SUPPORTS_SECONDARY = Mask{
+    SupportType::TOP_OF_BOOK,
+    SupportType::MARKET_BY_PRICE,
 };
 }  // namespace
 
@@ -67,12 +72,27 @@ struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(auto const &group, auto const &function)
       : core::metrics::Factory(server::Flags::name(), group, function) {}
 };
+
+auto get_supports(auto priority) {
+  switch (priority) {
+    using enum Priority;
+    case UNDEFINED:
+      std::abort();
+      break;
+    case PRIMARY:
+      break;
+    case SECONDARY:
+      return SUPPORTS_SECONDARY;
+  }
+  return SUPPORTS_PRIMARY;
+}
 }  // namespace
 
 // === IMPLEMENTATION ===
 
-MarketData::MarketData(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared, size_t index)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, index_{index},
+MarketData::MarketData(
+    Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared, Priority priority, size_t index)
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, priority_{priority}, index_{index},
       connection_{create_connection(*this, context)}, decode_buffer_{Flags::decode_buffer_size()},
       request_id_{static_cast<uint64_t>(stream_id_) * 1000000},  // scale (debugging)
       counter_{
@@ -180,11 +200,11 @@ void MarketData::operator()(ConnectionStatus status) {
     auto stream_status = StreamStatus{
         .stream_id = stream_id_,
         .account = {},
-        .supports = SUPPORTS,
+        .supports = get_supports(priority_),
         .transport = Transport::TCP,
         .protocol = Protocol::WS,
         .encoding = {Encoding::JSON},
-        .priority = Priority::PRIMARY,
+        .priority = priority_,
         .connection_status = status_,
     };
     log::info("stream_status={}"sv, stream_status);
@@ -195,11 +215,13 @@ void MarketData::operator()(ConnectionStatus status) {
 void MarketData::subscribe(std::span<Symbol const> const &symbols) {
   if (std::empty(symbols))
     return;
-  if (Flags::ws_subscribe_trade_details())
-    subscribe(symbols, "trade"sv);
-  else
-    subscribe(symbols, "aggTrade"sv);
-  subscribe(symbols, "miniTicker"sv);
+  if (priority_ == Priority::PRIMARY) {
+    if (Flags::ws_subscribe_trade_details())
+      subscribe(symbols, "trade"sv);
+    else
+      subscribe(symbols, "aggTrade"sv);
+    subscribe(symbols, "miniTicker"sv);
+  }
   subscribe(symbols, "bookTicker"sv);
   auto frequency = std::chrono::duration_cast<std::chrono::milliseconds>(Flags::ws_subscribe_depth_freq());
   auto depth = fmt::format(R"(depth@{}ms)"_cf, frequency.count());
@@ -348,6 +370,9 @@ void MarketData::operator()(Trace<json::BookTicker> const &event) {
     auto &[trace_info, book_ticker] = event;
     log::info<3>("book_ticker={}"sv, book_ticker);
     (*connection_).touch(trace_info.source_receive_time);
+    auto &instrument = shared_.instruments[book_ticker.symbol];
+    if (!instrument.tob_update(book_ticker.order_book_update_id))
+      return;
     auto top_of_book = TopOfBook{
         .stream_id = stream_id_,
         .exchange = Flags::exchange(),
@@ -380,7 +405,10 @@ void MarketData::operator()(Trace<json::DepthUpdate> const &event) {
     auto first_sequence = depth_update.first_update_id;
     auto last_sequence = depth_update.final_update_id;
     auto previous_sequence = first_sequence - 1;
-    auto &sequencer = shared_.mbp_sequencer[symbol];
+    auto &instrument = shared_.instruments[symbol];
+    if (!instrument.mbp_update(depth_update.final_update_id))
+      return;
+    auto &sequencer = instrument.sequencer;
     auto &mbp = shared_.get_mbp();
     auto emplace_back = [](auto &result, auto &value) {
       auto mbp_update = MBPUpdate{

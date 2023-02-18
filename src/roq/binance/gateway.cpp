@@ -83,13 +83,16 @@ void Gateway::operator()(Event<Start> const &event) {
   for (auto &[_, drop_copy] : drop_copy_)
     if (static_cast<bool>(drop_copy))
       (*drop_copy)(event);
-  assert(std::empty(market_data_));
+  assert(std::empty(market_data_1_));
+  assert(std::empty(market_data_2_));
   // order_entry_.download.begin();
 }
 
 void Gateway::operator()(Event<Stop> const &event) {
   log::info("Stopping..."sv);
-  for (auto &iter : market_data_)
+  for (auto &iter : market_data_2_)
+    (*iter)(event);
+  for (auto &iter : market_data_1_)
     (*iter)(event);
   for (auto &[_, drop_copy] : drop_copy_)
     if (static_cast<bool>(drop_copy))
@@ -106,7 +109,9 @@ void Gateway::operator()(Event<Timer> const &event) {
   for (auto &[_, drop_copy] : drop_copy_)
     if (static_cast<bool>(drop_copy))
       (*drop_copy)(event);
-  for (auto &iter : market_data_)
+  for (auto &iter : market_data_1_)
+    (*iter)(event);
+  for (auto &iter : market_data_2_)
     (*iter)(event);
 }
 
@@ -189,20 +194,34 @@ void Gateway::operator()(Trace<FundsUpdate> const &event, bool is_last) {
 void Gateway::operator()(Rest::SymbolsUpdate &symbols_update) {
   auto [size, start_from] = shared_.symbols(symbols_update.symbols);
   ensure_symbol_slices(size);
-  for (auto &iter : market_data_)
+  for (auto &iter : market_data_1_)
+    (*iter).subscribe(start_from);
+  for (auto &iter : market_data_2_)
     (*iter).subscribe(start_from);
 }
 
 void Gateway::ensure_symbol_slices(size_t size) {
-  while (std::size(market_data_) < size) {
+  while (std::size(market_data_1_) < size) {
     auto stream_id = ++stream_id_;
-    auto index = std::size(market_data_);
+    auto index = std::size(market_data_1_);
     log::debug("Create MarketData (stream_id={}, index={}))"sv, stream_id, index);
-    auto market_data = std::make_unique<MarketData>(*this, context_, stream_id, shared_, index);
+    auto market_data = std::make_unique<MarketData>(*this, context_, stream_id, shared_, Priority::PRIMARY, index);
     MessageInfo message_info;
     Start start;
     create_event_and_dispatch(*market_data, message_info, start);
-    market_data_.emplace_back(std::move(market_data));
+    market_data_1_.emplace_back(std::move(market_data));
+  }
+  if (!Flags::ws_enable_secondary())
+    return;
+  while (std::size(market_data_2_) < size) {
+    auto stream_id = ++stream_id_;
+    auto index = std::size(market_data_2_);
+    log::debug("Create MarketData (stream_id={}, index={}))"sv, stream_id, index);
+    auto market_data = std::make_unique<MarketData>(*this, context_, stream_id, shared_, Priority::SECONDARY, index);
+    MessageInfo message_info;
+    Start start;
+    create_event_and_dispatch(*market_data, message_info, start);
+    market_data_2_.emplace_back(std::move(market_data));
   }
 }
 
@@ -260,7 +279,9 @@ void Gateway::operator()(metrics::Writer &writer) {
   for (auto &[_, drop_copy] : drop_copy_)
     if (static_cast<bool>(drop_copy))
       (*drop_copy)(writer);
-  for (auto &iter : market_data_)
+  for (auto &iter : market_data_1_)
+    (*iter)(writer);
+  for (auto &iter : market_data_2_)
     (*iter)(writer);
 }
 

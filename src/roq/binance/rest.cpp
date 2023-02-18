@@ -466,7 +466,8 @@ void Rest::operator()(Trace<json::Depth> const &event, std::string_view const &s
     emplace_back(mbp.bids, item);
   for (auto &item : depth.asks)
     emplace_back(mbp.asks, item);
-  auto &sequencer = shared_.mbp_sequencer[symbol];
+  auto &instrument = shared_.instruments[symbol];
+  auto &sequencer = instrument.sequencer;
   try {
     auto publish_snapshot = [&](auto &bids, auto &asks, auto sequence) {
       log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
@@ -504,13 +505,12 @@ void Rest::operator()(Trace<json::Depth> const &event, std::string_view const &s
 }
 
 void Rest::check_request_queue(std::chrono::nanoseconds now) {
-  shared_.depth_request_queue.dispatch(
-      [&](auto now) { return shared_.rate_limiter.can_request(now); },
-      [&](auto &symbol) {
-        log::debug(R"(Requesting order book snapshot symbol="{}")"sv, symbol);
-        get_depth(symbol);
-      },
-      now);
+  auto can_request = [&](auto now) { return shared_.rate_limiter.can_request(now); };
+  auto request = [&](auto &symbol) {
+    log::debug(R"(Requesting order book snapshot symbol="{}")"sv, symbol);
+    get_depth(symbol);
+  };
+  shared_.depth_request_queue.dispatch(can_request, request, now);
 }
 
 template <typename SuccessHandler, typename ErrorHandler>
