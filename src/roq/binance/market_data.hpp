@@ -39,7 +39,7 @@ struct MarketData final : public web::socket::Client::Handler, public json::Mark
     virtual void operator()(Trace<StatisticsUpdate> const &, bool is_last) = 0;
   };
 
-  MarketData(Handler &, io::Context &, uint16_t stream_id, Shared &, Priority, size_t index);
+  MarketData(Handler &, io::Context &, uint16_t stream_id, Priority, Shared &, size_t index);
 
   MarketData(MarketData &&) = delete;
   MarketData(MarketData const &) = delete;
@@ -90,8 +90,8 @@ struct MarketData final : public web::socket::Client::Handler, public json::Mark
   Handler &handler_;
   // config
   uint16_t const stream_id_;
-  std::string const name_;
   Priority const priority_;
+  std::string const name_;
   size_t const index_;
   // web socket
   std::unique_ptr<web::socket::Client> connection_;

@@ -48,8 +48,20 @@ auto const SUPPORTS_SECONDARY = Mask{
 // === HELPERS ===
 
 namespace {
-auto create_name(auto stream_id) {
-  return fmt::format("{}:{}"_cf, stream_id, NAME);
+auto create_name(auto stream_id, auto priority) {
+  auto result = fmt::format("{}:{}"_cf, stream_id, NAME);
+  switch (priority) {
+    using enum Priority;
+    case UNDEFINED:
+      break;
+    case PRIMARY:
+      result.append(":1"sv);
+      break;
+    case SECONDARY:
+      result.append(":2"sv);
+      break;
+  }
+  return result;
 }
 
 auto create_connection(auto &handler, auto &context) {
@@ -91,9 +103,9 @@ auto get_supports(auto priority) {
 // === IMPLEMENTATION ===
 
 MarketData::MarketData(
-    Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared, Priority priority, size_t index)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, priority_{priority}, index_{index},
-      connection_{create_connection(*this, context)}, decode_buffer_{Flags::decode_buffer_size()},
+    Handler &handler, io::Context &context, uint16_t stream_id, Priority priority, Shared &shared, size_t index)
+    : handler_{handler}, stream_id_{stream_id}, priority_{priority}, name_{create_name(stream_id_, priority_)},
+      index_{index}, connection_{create_connection(*this, context)}, decode_buffer_{Flags::decode_buffer_size()},
       request_id_{static_cast<uint64_t>(stream_id_) * 1000000},  // scale (debugging)
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),

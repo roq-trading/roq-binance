@@ -205,7 +205,7 @@ void Gateway::ensure_symbol_slices(size_t size) {
     auto stream_id = ++stream_id_;
     auto index = std::size(market_data_1_);
     log::debug("Create MarketData (stream_id={}, index={}))"sv, stream_id, index);
-    auto market_data = std::make_unique<MarketData>(*this, context_, stream_id, shared_, Priority::PRIMARY, index);
+    auto market_data = std::make_unique<MarketData>(*this, context_, stream_id, Priority::PRIMARY, shared_, index);
     MessageInfo message_info;
     Start start;
     create_event_and_dispatch(*market_data, message_info, start);
@@ -217,7 +217,7 @@ void Gateway::ensure_symbol_slices(size_t size) {
     auto stream_id = ++stream_id_;
     auto index = std::size(market_data_2_);
     log::debug("Create MarketData (stream_id={}, index={}))"sv, stream_id, index);
-    auto market_data = std::make_unique<MarketData>(*this, context_, stream_id, shared_, Priority::SECONDARY, index);
+    auto market_data = std::make_unique<MarketData>(*this, context_, stream_id, Priority::SECONDARY, shared_, index);
     MessageInfo message_info;
     Start start;
     create_event_and_dispatch(*market_data, message_info, start);
