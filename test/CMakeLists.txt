@@ -1,7 +1,7 @@
 set(TARGET_NAME "${PROJECT_NAME}-test")
 
 set(SOURCES
-    tools_hasher.cpp
+    tools_crypto.cpp
     json_account.cpp
     json_cancel_all_open_orders.cpp
     json_cancel_order.cpp

@@ -72,11 +72,11 @@ DropCopy::DropCopy(
     Handler &handler,
     io::Context &context,
     uint16_t stream_id,
-    Security &security,
+    Authenticator &authenticator,
     Shared &shared,
     Request &request,
     std::string_view const &listen_key)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, security.get_account())},
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, authenticator.get_account())},
       connection_{create_connection(*this, context, listen_key)}, decode_buffer_{Flags::decode_buffer_size()},
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
@@ -92,8 +92,9 @@ DropCopy::DropCopy(
           .ping = create_metrics(name_, "ping"sv),
           .heartbeat = create_metrics(name_, "heartbeat"sv),
       },
-      security_{security}, shared_{shared}, request_{request}, download_{
-                                                                   {}, [this](auto state) { return download(state); }} {
+      authenticator_{authenticator}, shared_{shared}, request_{request}, download_{{}, [this](auto state) {
+                                                                                     return download(state);
+                                                                                   }} {
 }
 
 bool DropCopy::ready() const {
@@ -151,7 +152,7 @@ void DropCopy::operator()(web::socket::Client::Latency const &latency) {
   TraceInfo trace_info;
   auto external_latency = ExternalLatency{
       .stream_id = stream_id_,
-      .account = security_.get_account(),
+      .account = authenticator_.get_account(),
       .latency = latency.sample,
   };
   create_trace_and_dispatch(handler_, trace_info, external_latency);
@@ -171,7 +172,7 @@ void DropCopy::operator()(ConnectionStatus status) {
     TraceInfo trace_info;
     auto stream_status = StreamStatus{
         .stream_id = stream_id_,
-        .account = security_.get_account(),
+        .account = authenticator_.get_account(),
         .supports = SUPPORTS,
         .transport = Transport::TCP,
         .protocol = Protocol::WS,
@@ -228,7 +229,7 @@ void DropCopy::operator()(Trace<json::OutboundAccountPosition> const &event) {
     for (auto &item : outbound_account_position.balances) {
       auto funds_update = FundsUpdate{
           .stream_id = stream_id_,
-          .account = security_.get_account(),
+          .account = authenticator_.get_account(),
           .currency = item.asset,
           .balance = item.free_amount,
           .hold = item.locked_amount,
@@ -263,7 +264,7 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
                                        execution_report.cumulative_filled_quantity);
     auto last_liquidity = execution_report.is_trade_maker ? Liquidity::MAKER : Liquidity::TAKER;
     auto order_update = oms::OrderUpdate{
-        .account = security_.get_account(),
+        .account = authenticator_.get_account(),
         .exchange = Flags::exchange(),
         .symbol = execution_report.symbol,
         .side = side,

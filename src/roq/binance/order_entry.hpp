@@ -23,9 +23,9 @@
 
 #include "roq/server.hpp"
 
+#include "roq/binance/authenticator.hpp"
 #include "roq/binance/order_entry_state.hpp"
 #include "roq/binance/request.hpp"
-#include "roq/binance/security.hpp"
 #include "roq/binance/shared.hpp"
 
 #include "roq/binance/json/account.hpp"
@@ -62,7 +62,7 @@ struct OrderEntry final : public web::rest::Client::Handler {
     virtual void operator()(ListenKeyUpdate const &) = 0;
   };
 
-  OrderEntry(Handler &, io::Context &, uint16_t stream_id, Security &, Shared &, Request &);
+  OrderEntry(Handler &, io::Context &, uint16_t stream_id, Authenticator &, Shared &, Request &);
 
   OrderEntry(OrderEntry &&) = delete;
   OrderEntry(OrderEntry const &) = delete;
@@ -198,8 +198,8 @@ struct OrderEntry final : public web::rest::Client::Handler {
   struct {
     core::metrics::Latency ping;
   } latency_;
-  // security
-  Security &security_;
+  // authentication
+  Authenticator &authenticator_;
   // shared
   Shared &shared_;
   Request &request_;

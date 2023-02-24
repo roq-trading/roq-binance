@@ -14,11 +14,11 @@ namespace roq {
 namespace binance {
 namespace tools {
 
-struct Hasher final {
-  Hasher(std::string_view const &key, std::string_view const &secret);
+struct Crypto final {
+  Crypto(std::string_view const &key, std::string_view const &secret);
 
-  Hasher(Hasher &&) = delete;
-  Hasher(Hasher const &) = delete;
+  Crypto(Crypto &&) = delete;
+  Crypto(Crypto const &) = delete;
 
   std::string_view create_query(
       std::span<std::byte> const &buffer, std::chrono::milliseconds now, std::string_view const &body);

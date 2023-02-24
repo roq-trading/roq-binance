@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2023, Hans Erik Thrane */
 
-#include "roq/binance/tools/hasher.hpp"
+#include "roq/binance/tools/crypto.hpp"
 
 #include <fmt/format.h>
 
@@ -25,7 +25,7 @@ namespace tools {
 // === VALIDATION ===
 
 namespace {
-static_assert(Hasher::QUERY_BUFFER_LENGTH % 64 == 0);
+static_assert(Crypto::QUERY_BUFFER_LENGTH % 64 == 0);
 }  // namespace
 
 // === HELPERS ===
@@ -38,11 +38,11 @@ auto create_headers_helper(auto const &key) {
 
 // === IMPLEMENTATION ===
 
-Hasher::Hasher(std::string_view const &key, std::string_view const &secret)
+Crypto::Crypto(std::string_view const &key, std::string_view const &secret)
     : key_{key}, mac_{secret}, headers_{create_headers_helper(key_)} {
 }
 
-std::string_view Hasher::create_query(
+std::string_view Crypto::create_query(
     std::span<std::byte> const &buffer, std::chrono::milliseconds now, std::string_view const &body) {
   core::text::Writer writer{buffer};
   writer.write("?timestamp="sv).write(now.count());

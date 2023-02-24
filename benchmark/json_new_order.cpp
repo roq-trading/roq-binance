@@ -4,7 +4,7 @@
 
 #include "roq/binance/json/utils.hpp"
 
-#include "roq/binance/tools/hasher.hpp"
+#include "roq/binance/tools/crypto.hpp"
 
 using namespace roq;
 using namespace roq::binance;
@@ -70,8 +70,8 @@ BENCHMARK(BM_json_new_order);
 
 void BM_json_new_order_with_signature(benchmark::State &state) {
   std::vector<char> buffer(4096);
-  std::vector<std::byte> buffer_2(tools::Hasher::QUERY_BUFFER_LENGTH);
-  tools::Hasher hasher{KEY, SECRET};
+  std::vector<std::byte> buffer_2(tools::Crypto::QUERY_BUFFER_LENGTH);
+  tools::Crypto crypto{KEY, SECRET};
   uint64_t processed = 0;
   for (auto _ : state) {
     auto create_order = CreateOrder{
@@ -93,7 +93,7 @@ void BM_json_new_order_with_signature(benchmark::State &state) {
     };
     auto body = json::new_order(buffer, create_order, OMS_ORDER, REQUEST_ID, RECV_WINDOW);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = hasher.create_query(buffer_2, now, body);
+    auto query = crypto.create_query(buffer_2, now, body);
     if (!std::empty(query))
       ++processed;
   }

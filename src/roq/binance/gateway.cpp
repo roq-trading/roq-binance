@@ -26,10 +26,10 @@ namespace binance {
 
 namespace {
 template <typename R>
-auto create_security(auto const &config) {
+auto create_authenticator(auto const &config) {
   R result;
   for (auto &[_, account] : config.accounts)
-    result.try_emplace(account.name, std::make_unique<Security>(config, account.name));
+    result.try_emplace(account.name, std::make_unique<Authenticator>(config, account.name));
   return result;
 }
 
@@ -66,11 +66,11 @@ auto create_drop_copy(auto &security_by_account) {
 
 Gateway::Gateway(server::Dispatcher &dispatcher, Config const &config, io::Context &context)
     : dispatcher_{dispatcher},
-      security_(create_security<decltype(security_)>(config)), context_{context}, shared_{dispatcher},
+      authenticator_(create_authenticator<decltype(authenticator_)>(config)), context_{context}, shared_{dispatcher},
       request_{create_request<decltype(request_)>(config)}, rest_{*this, context_, ++stream_id_, shared_},
       order_entry_{
-          create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, security_, shared_, request_)},
-      drop_copy_{create_drop_copy<decltype(drop_copy_)>(security_)} {
+          create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, authenticator_, shared_, request_)},
+      drop_copy_{create_drop_copy<decltype(drop_copy_)>(authenticator_)} {
   if (Flags::rest_cancel_on_disconnect())
     log::fatal("Exchange does *NOT* support cancel on disconnect"sv);
 }
@@ -234,7 +234,13 @@ void Gateway::operator()(OrderEntry::ListenKeyUpdate const &listen_key_update) {
   } else if (!static_cast<bool>((*iter).second)) {
     log::info(R"(Create drop-copy (user-stream) for account="{}")"sv, account);
     auto drop_copy = std::make_unique<DropCopy>(
-        *this, context_, ++stream_id_, *security_[account], shared_, request_[account], listen_key_update.listen_key);
+        *this,
+        context_,
+        ++stream_id_,
+        *authenticator_[account],
+        shared_,
+        request_[account],
+        listen_key_update.listen_key);
     MessageInfo message_info;
     Start start;
     create_event_and_dispatch(*drop_copy, message_info, start);
