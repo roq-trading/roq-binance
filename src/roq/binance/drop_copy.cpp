@@ -293,11 +293,12 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
     if (shared_.update_order(execution_report.client_order_id, stream_id_, trace_info, order_update, [&](auto &order) {
           if (execution_report.current_execution_type == json::ExecutionType::TRADE) {
             auto external_trade_id = fmt::format("{}"_cf, execution_report.trade_id);
-            Fill fill{
-                .external_trade_id = {},
+            auto liquidity = execution_report.is_trade_maker ? Liquidity::MAKER : Liquidity::TAKER;
+            auto fill = Fill{
+                .external_trade_id = external_trade_id,
                 .quantity = execution_report.last_executed_quantity,
                 .price = execution_report.last_executed_price,
-                .liquidity = {},
+                .liquidity = liquidity,
             };
             auto trade_update = oms::TradeUpdate{
                 .account = order.account,
@@ -317,8 +318,34 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
           }
         })) {
     } else {
-      log::warn<1>("*** EXTERNAL ORDER ***"sv);
-      log::warn<2>("execution_report={}"sv, execution_report);
+      if (Flags::include_external_trades() && execution_report.current_execution_type == json::ExecutionType::TRADE) {
+        auto external_trade_id = fmt::format("{}"_cf, execution_report.trade_id);
+        auto liquidity = execution_report.is_trade_maker ? Liquidity::MAKER : Liquidity::TAKER;
+        auto fill = Fill{
+            .external_trade_id = external_trade_id,
+            .quantity = execution_report.last_executed_quantity,
+            .price = execution_report.last_executed_price,
+            .liquidity = liquidity,
+        };
+        auto trade_update = oms::TradeUpdate{
+            .account = authenticator_.get_account(),
+            .order_id = ORDER_ID_NONE,
+            .exchange = Flags::exchange(),
+            .symbol = execution_report.symbol,
+            .side = side,
+            .position_effect = {},
+            .create_time_utc = utils::safe_cast(execution_report.transaction_time),
+            .update_time_utc = utils::safe_cast(execution_report.transaction_time),
+            .external_account = {},
+            .external_order_id = external_order_id,
+            .fills = {&fill, 1},
+            .update_type = {},
+        };
+        create_trace_and_dispatch(handler_, trace_info, trade_update, stream_id_, true, SOURCE_SELF);
+      } else {
+        log::warn("*** EXTERNAL ORDER ***"sv);
+        log::warn("execution_report={}"sv, execution_report);
+      }
     }
   });
 }
