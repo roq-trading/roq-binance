@@ -292,14 +292,14 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
     };
     if (shared_.update_order(execution_report.client_order_id, stream_id_, trace_info, order_update, [&](auto &order) {
           if (execution_report.current_execution_type == json::ExecutionType::TRADE) {
-            auto external_trade_id = fmt::format("{}"_cf, execution_report.trade_id);
             auto liquidity = execution_report.is_trade_maker ? Liquidity::MAKER : Liquidity::TAKER;
             auto fill = Fill{
-                .external_trade_id = external_trade_id,
+                .external_trade_id = {},
                 .quantity = execution_report.last_executed_quantity,
                 .price = execution_report.last_executed_price,
                 .liquidity = liquidity,
             };
+            fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"_cf, execution_report.trade_id);
             auto trade_update = oms::TradeUpdate{
                 .account = order.account,
                 .order_id = order.order_id,
@@ -319,14 +319,14 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
         })) {
     } else {
       if (Flags::include_external_trades() && execution_report.current_execution_type == json::ExecutionType::TRADE) {
-        auto external_trade_id = fmt::format("{}"_cf, execution_report.trade_id);
         auto liquidity = execution_report.is_trade_maker ? Liquidity::MAKER : Liquidity::TAKER;
         auto fill = Fill{
-            .external_trade_id = external_trade_id,
+            .external_trade_id = {},
             .quantity = execution_report.last_executed_quantity,
             .price = execution_report.last_executed_price,
             .liquidity = liquidity,
         };
+        fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"_cf, execution_report.trade_id);
         auto trade_update = oms::TradeUpdate{
             .account = authenticator_.get_account(),
             .order_id = ORDER_ID_NONE,
