@@ -178,12 +178,6 @@
       "type": "bool",
       "default": false,
       "description": "if the cancel request fails, the replacement will not be attempted"
-    },
-    {
-      "name": "include_external_trades",
-      "type": "bool",
-      "default": false,
-      "description": "include external trades?"
     }
   ]
 }
