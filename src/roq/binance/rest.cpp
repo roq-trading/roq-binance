@@ -480,6 +480,7 @@ void Rest::operator()(Trace<json::Depth> const &event, std::string_view const &s
           .update_type = UpdateType::SNAPSHOT,
           .exchange_time_utc = {},
           .exchange_sequence = sequencer.last_sequence(),
+          .sending_time_utc = {},
           .price_decimals = {},
           .quantity_decimals = {},
           .checksum = {},

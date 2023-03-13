@@ -4,7 +4,6 @@
 
 #include "roq/mask.hpp"
 
-#include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
 #include "roq/core/metrics/factory.hpp"
@@ -311,8 +310,8 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
                 .symbol = order.symbol,
                 .side = order.side,
                 .position_effect = order.position_effect,
-                .create_time_utc = utils::safe_cast(execution_report.transaction_time),
-                .update_time_utc = utils::safe_cast(execution_report.transaction_time),
+                .create_time_utc = execution_report.transaction_time,
+                .update_time_utc = execution_report.transaction_time,
                 .external_account = order.external_account,
                 .external_order_id = order.external_order_id,
                 .fills = {&fill, 1},
@@ -331,8 +330,8 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
             .symbol = execution_report.symbol,
             .side = side,
             .position_effect = {},
-            .create_time_utc = utils::safe_cast(execution_report.transaction_time),
-            .update_time_utc = utils::safe_cast(execution_report.transaction_time),
+            .create_time_utc = execution_report.transaction_time,
+            .update_time_utc = execution_report.transaction_time,
             .external_account = {},
             .external_order_id = external_order_id,
             .fills = {&fill, 1},
