@@ -159,12 +159,12 @@ TEST_CASE("json_new_order_create_market", "[json_new_order]") {
   std::vector<char> buffer;
   auto body = json::new_order(buffer, create_order, order, "abc123"sv, 5s);
   auto expected =
-      "symbol=BTC&"
-      "side=BUY&"
-      "type=MARKET&"
-      "quantity=123.40&"
       "newClientOrderId=abc123&"
-      "recvWindow=5000"sv;
+      "quantity=123.40&"
+      "recvWindow=5000&"
+      "side=BUY&"
+      "symbol=BTC&"
+      "type=MARKET"sv;
   CHECK(body == expected);
 }
 
@@ -192,14 +192,14 @@ TEST_CASE("json_new_order_create_limit", "[json_new_order]") {
   std::vector<char> buffer;
   auto body = json::new_order(buffer, create_order, order, "abc123"sv, 5s);
   auto expected =
-      "symbol=BTC&"
-      "side=BUY&"
-      "type=LIMIT&"
-      "quantity=123.40&"
-      "timeInForce=GTC&"
-      "price=123.40&"
       "newClientOrderId=abc123&"
-      "recvWindow=5000"sv;
+      "price=123.40&"
+      "quantity=123.40&"
+      "recvWindow=5000&"
+      "side=BUY&"
+      "symbol=BTC&"
+      "timeInForce=GTC&"
+      "type=LIMIT"sv;
   CHECK(body == expected);
 }
 
@@ -227,13 +227,13 @@ TEST_CASE("json_new_order_create_limit_maker", "[json_new_order]") {
   std::vector<char> buffer;
   auto body = json::new_order(buffer, create_order, order, "abc123"sv, 5s);
   auto expected =
-      "symbol=BTC&"
-      "side=BUY&"
-      "type=LIMIT_MAKER&"
-      "quantity=123.40&"
-      "price=123.40&"
       "newClientOrderId=abc123&"
-      "recvWindow=5000"sv;
+      "price=123.40&"
+      "quantity=123.40&"
+      "recvWindow=5000&"
+      "side=BUY&"
+      "symbol=BTC&"
+      "type=LIMIT_MAKER"sv;
   CHECK(body == expected);
 }
 
@@ -261,13 +261,13 @@ TEST_CASE("json_new_order_create_stop_loss", "[json_new_order]") {
   std::vector<char> buffer;
   auto body = json::new_order(buffer, create_order, order, "abc123"sv, 5s);
   auto expected =
-      "symbol=BTC&"
-      "side=BUY&"
-      "type=STOP_LOSS&"
-      "quantity=123.40&"
-      "stopPrice=123.40&"
       "newClientOrderId=abc123&"
-      "recvWindow=5000"sv;
+      "quantity=123.40&"
+      "recvWindow=5000&"
+      "side=BUY&"
+      "stopPrice=123.40&"
+      "symbol=BTC&"
+      "type=STOP_LOSS"sv;
   CHECK(body == expected);
 }
 
@@ -295,14 +295,14 @@ TEST_CASE("json_new_order_create_stop_loss_limit", "[json_new_order]") {
   std::vector<char> buffer;
   auto body = json::new_order(buffer, create_order, order, "abc123"sv, 5s);
   auto expected =
-      "symbol=BTC&"
-      "side=BUY&"
-      "type=STOP_LOSS_LIMIT&"
-      "quantity=123.40&"
-      "timeInForce=GTC&"
-      "price=123.40&"
-      "stopPrice=123.40&"
       "newClientOrderId=abc123&"
-      "recvWindow=5000"sv;
+      "price=123.40&"
+      "quantity=123.40&"
+      "recvWindow=5000&"
+      "side=BUY&"
+      "stopPrice=123.40&"
+      "symbol=BTC&"
+      "timeInForce=GTC&"
+      "type=STOP_LOSS_LIMIT"sv;
   CHECK(body == expected);
 }
