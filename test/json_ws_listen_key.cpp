@@ -15,7 +15,7 @@ using namespace Catch::literals;
 
 TEST_CASE("simple", "[json_ws_listen_key]") {
   constexpr auto const message = R"({)"
-                                 R"("id":"123-LISTEN_KEY",)"
+                                 R"("id":"123-LISTEN_KEY_CREATE",)"
                                  R"("status":200,)"
                                  R"("result":{)"
                                  R"("listenKey":"eSWDvurLiumxeTwtGdHaLBozyJ9qzS9QcwOk3jmERrfqtf63IoQKwhD4CALz")"
@@ -38,6 +38,7 @@ TEST_CASE("simple", "[json_ws_listen_key]") {
     }
     void operator()(Trace<json::Account> const &) override { FAIL(); }
     void operator()(Trace<json::OpenOrders> const &) override { FAIL(); }
+    void operator()(Trace<json::CancelAllOpenOrders> const &) override { FAIL(); }
     size_t counter = {};
   } handler;
   core::Buffer buffer_(4096);

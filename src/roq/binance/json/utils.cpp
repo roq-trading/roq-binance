@@ -159,68 +159,93 @@ std::string_view new_order(
   auto side = map(create_order.side);
   auto type = map_order_type(create_order);
   auto time_in_force = map_time_in_force(create_order);
-#if (1)
-  buffer.resize(256);
+  buffer.resize(512);
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
   core::text::Writer writer{buffer_2};
-  writer  //
-      .write("symbol="sv)
-      .write(create_order.symbol)
-      .write("&side="sv)
-      .write(side.as_raw_text())
-      .write("&type="sv)
-      .write(type.as_raw_text())
-      .write("&quantity="sv)
-      .write(utils::Number{create_order.quantity, order.quantity_decimals});
-  if (time_in_force != json::TimeInForce{})
-    writer  //
-        .write("&timeInForce="sv)
-        .write(time_in_force.as_raw_text());
+  writer.write("newClientOrderId="sv).write(request_id);
   if (!std::isnan(create_order.price))
-    writer  //
-        .write("&price="sv)
-        .write(utils::Number{create_order.price, order.price_decimals});
+    writer.write("&price="sv).write(utils::Number{create_order.price, order.price_decimals});
+  writer.write("&quantity="sv).write(utils::Number{create_order.quantity, order.quantity_decimals});
+  writer.write("&recvWindow="sv).write(recv_window.count());
+  writer.write("&side="sv).write(side.as_raw_text());
   if (!std::isnan(create_order.stop_price))
-    writer  //
-        .write("&stopPrice="sv)
-        .write(utils::Number{create_order.stop_price, order.price_decimals});
-  writer  //
-      .write("&newClientOrderId="sv)
-      .write(request_id)
-      .write("&recvWindow="sv)
-      .write(recv_window.count());
+    writer.write("&stopPrice="sv).write(utils::Number{create_order.stop_price, order.price_decimals});
+  writer.write("&symbol="sv).write(create_order.symbol);
+  if (time_in_force != json::TimeInForce{})
+    writer.write("&timeInForce="sv).write(time_in_force.as_raw_text());
+  writer.write("&type="sv).write(type.as_raw_text());
   return writer.finish();
-#else
-  buffer.clear();
-  fmt::format_to(
-      std::back_inserter(buffer),
-      R"(symbol={}&)"
-      R"(side={}&)"
-      R"(type={}&)"
-      R"(quantity={}&)"_cf,
-      create_order.symbol,
-      side.as_raw_text(),
-      type.as_raw_text(),
-      utils::Number{create_order.quantity, order.quantity_decimals});
-  if (time_in_force != json::TimeInForce{})
-    fmt::format_to(std::back_inserter(buffer), R"(timeInForce={}&)"_cf, time_in_force.as_raw_text());
+}
+
+std::string_view new_order_ws_url(
+    std::vector<char> &buffer,
+    CreateOrder const &create_order,
+    oms::Order const &order,
+    std::string_view const &request_id,
+    std::chrono::milliseconds recv_window,
+    std::string_view const &api_key,
+    std::chrono::milliseconds now) {
+  auto side = map(create_order.side);
+  auto type = map_order_type(create_order);
+  auto time_in_force = map_time_in_force(create_order);
+  buffer.resize(512);
+  std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
+  core::text::Writer writer{buffer_2};
+  if (!std::empty(api_key))
+    writer.write("apiKey="sv).write(api_key).write("&"sv);
+  writer.write("newClientOrderId="sv).write(request_id);
   if (!std::isnan(create_order.price))
-    fmt::format_to(
-        std::back_inserter(buffer), R"(price={}&)"_cf, utils::Number{create_order.price, order.price_decimals});
+    writer.write("&price="sv).write(utils::Number{create_order.price, order.price_decimals});
+  writer.write("&quantity="sv).write(utils::Number{create_order.quantity, order.quantity_decimals});
+  writer.write("&recvWindow="sv).write(recv_window.count());
+  writer.write("&side="sv).write(side.as_raw_text());
   if (!std::isnan(create_order.stop_price))
-    fmt::format_to(
-        std::back_inserter(buffer),
-        R"(stopPrice={}&)"_cf,
-        utils::Number{create_order.stop_price, order.price_decimals});
-  fmt::format_to(
-      std::back_inserter(buffer),
-      R"(newClientOrderId={}&)"
-      R"(recvWindow={})"_cf,
-      request_id,
-      recv_window.count());
-  std::string_view result{std::data(buffer), std::size(buffer)};
-  return result;
-#endif
+    writer.write("&stopPrice="sv).write(utils::Number{create_order.stop_price, order.price_decimals});
+  writer.write("&symbol="sv).write(create_order.symbol);
+  if (time_in_force != json::TimeInForce{})
+    writer.write("&timeInForce="sv).write(time_in_force.as_raw_text());
+  writer.write("&timestamp="sv).write(now.count());
+  writer.write("&type="sv).write(type.as_raw_text());
+  return writer.finish();
+}
+
+std::string_view new_order_ws_json(
+    std::vector<char> &buffer,
+    CreateOrder const &create_order,
+    oms::Order const &order,
+    std::string_view const &request_id,
+    std::chrono::milliseconds recv_window,
+    std::string_view const &api_key,
+    std::chrono::milliseconds now,
+    std::string_view const &signature) {
+  auto side = map(create_order.side);
+  auto type = map_order_type(create_order);
+  auto time_in_force = map_time_in_force(create_order);
+  buffer.resize(512);
+  std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
+  core::text::Writer writer{buffer_2};
+  writer.write("{"sv);
+  writer.write(R"("apiKey":")"sv).write(api_key).write(R"(")"sv);
+  writer.write(R"(,"newClientOrderId":")"sv).write(request_id).write(R"(")"sv);
+  if (!std::isnan(create_order.price))
+    writer.write(R"(,"price":")"sv).write(utils::Number{create_order.price, order.price_decimals}).write(R"(")"sv);
+  writer.write(R"(,"quantity":")"sv)
+      .write(utils::Number{create_order.quantity, order.quantity_decimals})
+      .write(R"(")"sv);
+  writer.write(R"(,"recvWindow":)"sv).write(recv_window.count());
+  writer.write(R"(,"side":")"sv).write(side.as_raw_text()).write(R"(")"sv);
+  if (!std::isnan(create_order.stop_price))
+    writer.write(R"(,"stopPrice":")"sv)
+        .write(utils::Number{create_order.stop_price, order.price_decimals})
+        .write(R"(")"sv);
+  writer.write(R"(,"symbol":")"sv).write(create_order.symbol).write(R"(")"sv);
+  if (time_in_force != json::TimeInForce{})
+    writer.write(R"(,"timeInForce":")"sv).write(time_in_force.as_raw_text()).write(R"(")"sv);
+  writer.write(R"(,"timestamp":)"sv).write(now.count());
+  writer.write(R"(,"type":")"sv).write(type.as_raw_text()).write(R"(")"sv);
+  writer.write(R"(,"signature":")"sv).write(signature).write(R"(")"sv);
+  writer.write("}"sv);
+  return writer.finish();
 }
 
 // https://binance-docs.github.io/apidocs/spot/en/#cancel-an-existing-order-and-send-a-new-order-trade
@@ -280,34 +305,60 @@ std::string_view cancel_order(
     std::string_view const &request_id,
     std::string_view const &previous_request_id,
     std::chrono::milliseconds recv_window) {
-#if (1)
-  buffer.resize(128);
+  buffer.resize(512);
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
-  return core::text::Writer{buffer_2}
-      .write("symbol="sv)
-      .write(order.symbol)
-      .write("&origClientOrderId="sv)
-      .write(previous_request_id)
-      .write("&newClientOrderId="sv)
-      .write(request_id)
-      .write("&recvWindow="sv)
-      .write(recv_window.count())
-      .finish();
-#else
-  buffer.clear();
-  fmt::format_to(
-      std::back_inserter(buffer),
-      R"(symbol={}&)"
-      R"(origClientOrderId={}&)"
-      R"(newClientOrderId={}&)"
-      R"(recvWindow={})"_cf,
-      order.symbol,
-      previous_request_id,
-      request_id,
-      recv_window.count());
-  std::string_view result{std::data(buffer), std::size(buffer)};
-  return result;
-#endif
+  core::text::Writer writer{buffer_2};
+  writer.write("newClientOrderId="sv).write(request_id);
+  writer.write("&origClientOrderId="sv).write(previous_request_id);
+  writer.write("&recvWindow="sv).write(recv_window.count());
+  writer.write("&symbol="sv).write(order.symbol);
+  return writer.finish();
+}
+
+std::string_view cancel_order_ws_url(
+    std::vector<char> &buffer,
+    roq::CancelOrder const &,
+    oms::Order const &order,
+    std::string_view const &request_id,
+    std::string_view const &previous_request_id,
+    std::chrono::milliseconds recv_window,
+    std::string_view const &api_key,
+    std::chrono::milliseconds now) {
+  buffer.resize(512);
+  std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
+  core::text::Writer writer{buffer_2};
+  writer.write("apiKey="sv).write(api_key);
+  writer.write("&newClientOrderId="sv).write(request_id);
+  writer.write("&origClientOrderId="sv).write(previous_request_id);
+  writer.write("&recvWindow="sv).write(recv_window.count());
+  writer.write("&symbol="sv).write(order.symbol);
+  writer.write("&timestamp="sv).write(now.count());
+  return writer.finish();
+}
+
+std::string_view cancel_order_ws_json(
+    std::vector<char> &buffer,
+    roq::CancelOrder const &,
+    oms::Order const &order,
+    std::string_view const &request_id,
+    std::string_view const &previous_request_id,
+    std::chrono::milliseconds recv_window,
+    std::string_view const &api_key,
+    std::chrono::milliseconds now,
+    std::string_view const &signature) {
+  buffer.resize(512);
+  std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
+  core::text::Writer writer{buffer_2};
+  writer.write("{"sv);
+  writer.write(R"("apiKey":")"sv).write(api_key).write(R"(")"sv);
+  writer.write(R"(,"newClientOrderId":")"sv).write(request_id).write(R"(")"sv);
+  writer.write(R"(,"origClientOrderId":")"sv).write(previous_request_id).write(R"(")"sv);
+  writer.write(R"(,"recvWindow":)"sv).write(recv_window.count());
+  writer.write(R"(,"symbol":")"sv).write(order.symbol).write(R"(")"sv);
+  writer.write(R"(,"timestamp":)"sv).write(now.count());
+  writer.write(R"(,"signature":")"sv).write(signature).write(R"(")"sv);
+  writer.write("}"sv);
+  return writer.finish();
 }
 
 std::string_view cancel_all_open_orders(

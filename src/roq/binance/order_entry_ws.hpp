@@ -73,10 +73,18 @@ struct OrderEntryWS final : public web::socket::Client::Handler, public json::WS
   uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id);
 
  protected:
-  void get_listen_key();
+  void create_listen_key();
+  void ping_listen_key(std::chrono::nanoseconds now);
 
-  void get_account();
-  void get_open_orders();
+  void account_status();
+  void open_orders_status();
+  void open_orders_cancel_all(Event<CancelAllOrders> const &, std::string_view const &request_id);
+  void order_place(Event<CreateOrder> const &, oms::Order const &, std::string_view const &request_id);
+  void order_cancel(
+      Event<CancelOrder> const &,
+      oms::Order const &,
+      std::string_view const &request_id,
+      std::string_view const &previous_request_id);
 
   void operator()(web::socket::Client::Connected const &) override;
   void operator()(web::socket::Client::Disconnected const &) override;
@@ -95,6 +103,16 @@ struct OrderEntryWS final : public web::socket::Client::Handler, public json::WS
   void operator()(Trace<json::ListenKey> const &) override;
   void operator()(Trace<json::Account> const &) override;
   void operator()(Trace<json::OpenOrders> const &) override;
+  void operator()(Trace<json::NewOrder> const &) override;
+  void operator()(Trace<json::CancelOrder> const &) override;
+  void operator()(Trace<json::CancelAllOpenOrders> const &) override;
+
+  template <typename... Args>
+  void operator()(
+      Trace<oms::Response> const &, std::string_view const &client_order_id, oms::OrderUpdate const &, Args &&...);
+
+  template <typename... Args>
+  void operator()(Trace<oms::OrderUpdate> const &, std::string_view const &client_order_id, Args &&...);
 
  private:
   Handler &handler_;
@@ -122,8 +140,12 @@ struct OrderEntryWS final : public web::socket::Client::Handler, public json::WS
   Request &request_;
   // experimental
   uint32_t request_id_;
+  std::string listen_key_;
+  std::chrono::nanoseconds listen_key_refresh_ = {};
   bool download_account_ = false;
   bool download_orders_ = false;
+  absl::flat_hash_set<Symbol> open_orders_symbols_;
+  std::vector<char> encode_buffer_;
   // state
   bool ready_ = false;
   ConnectionStatus status_ = {};

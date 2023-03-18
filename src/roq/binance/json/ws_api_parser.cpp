@@ -51,6 +51,24 @@ bool dispatch_open_orders_status(auto &handler, auto &value, auto &buffer, auto 
   return true;
 }
 
+bool dispatch_open_orders_cancel_all(auto &handler, auto &value, auto &buffer, auto &trace_info) {
+  json::CancelAllOpenOrders cancel_all_open_orders{value, buffer};
+  create_trace_and_dispatch(handler, trace_info, cancel_all_open_orders);
+  return true;
+}
+
+bool dispatch_order_place(auto &handler, auto &value, auto &buffer, auto &trace_info) {
+  json::NewOrder new_order{value, buffer};
+  create_trace_and_dispatch(handler, trace_info, new_order);
+  return true;
+}
+
+bool dispatch_order_cancel(auto &handler, auto &value, auto &buffer, auto &trace_info) {
+  json::CancelOrder cancel_order{value, buffer};
+  create_trace_and_dispatch(handler, trace_info, cancel_order);
+  return true;
+}
+
 bool dispatch_helper(auto &handler, auto &id, auto status, auto &value, auto &buffer, auto &trace_info) {
   auto [request_id, type] = split(id);
   switch (type) {
@@ -58,12 +76,20 @@ bool dispatch_helper(auto &handler, auto &id, auto status, auto &value, auto &bu
     case UNDEFINED:
     case UNKNOWN:
       break;
-    case LISTEN_KEY:
+    case LISTEN_KEY_CREATE:
       return dispatch_listen_key(handler, value, buffer, trace_info);
+    case LISTEN_KEY_PING:
+      return true;  // note!
     case ACCOUNT_STATUS:
       return dispatch_account_status(handler, value, buffer, trace_info);
     case OPEN_ORDERS_STATUS:
       return dispatch_open_orders_status(handler, value, buffer, trace_info);
+    case OPEN_ORDERS_CANCEL_ALL:
+      return dispatch_open_orders_cancel_all(handler, value, buffer, trace_info);
+    case ORDER_PLACE:
+      return dispatch_order_place(handler, value, buffer, trace_info);
+    case ORDER_CANCEL:
+      return dispatch_order_cancel(handler, value, buffer, trace_info);
   }
   return false;
 }
