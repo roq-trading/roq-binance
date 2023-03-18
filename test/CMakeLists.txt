@@ -1,7 +1,6 @@
 set(TARGET_NAME "${PROJECT_NAME}-test")
 
 set(SOURCES
-    tools_crypto.cpp
     json_account.cpp
     json_cancel_all_open_orders.cpp
     json_cancel_order.cpp
@@ -14,6 +13,8 @@ set(SOURCES
     json_new_order.cpp
     json_open_orders.cpp
     json_outbound_account_position.cpp
+    json_ws_listen_key.cpp
+    tools_crypto.cpp
     main.cpp)
 
 roq_gitignore(OUTPUT ".gitignore" SOURCES "${TARGET_NAME}")

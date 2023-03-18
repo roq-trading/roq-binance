@@ -236,12 +236,22 @@ void OrderEntryWS::parse(std::string_view const &message) {
       TraceInfo trace_info;
       core::json::Buffer buffer{decode_buffer_};
       log::debug(R"(HERE message="{}")"sv, message);
-      // json::UserStreamParser::dispatch(*this, message, buffer, trace_info);
+      json::WSAPIParser::dispatch(*this, message, buffer, trace_info);
     } catch (...) {
       log::warn(R"(message="{}")"sv, message);
       core::tools::UnhandledException::terminate();
     }
   });
+}
+
+void OrderEntryWS::operator()(Trace<json::ListenKey> const &event) {
+  auto &[trace_info, listen_key] = event;
+  log::debug("HERE {}"sv, listen_key);
+  auto listen_key_update = ListenKeyUpdate{
+      .account = authenticator_.get_account(),
+      .listen_key = listen_key.listen_key,
+  };
+  create_trace_and_dispatch(handler_, trace_info, listen_key_update);
 }
 
 }  // namespace binance

@@ -23,10 +23,12 @@
 #include "roq/binance/request.hpp"
 #include "roq/binance/shared.hpp"
 
+#include "roq/binance/json/ws_api_parser.hpp"
+
 namespace roq {
 namespace binance {
 
-struct OrderEntryWS final : public web::socket::Client::Handler {
+struct OrderEntryWS final : public web::socket::Client::Handler, public json::WSAPIParser::Handler {
   struct ListenKeyUpdate final {
     std::string_view account;
     std::string_view listen_key;
@@ -88,6 +90,8 @@ struct OrderEntryWS final : public web::socket::Client::Handler {
   void operator()(ConnectionStatus);
 
   void parse(std::string_view const &message);
+
+  void operator()(Trace<json::ListenKey> const &) override;
 
  private:
   Handler &handler_;
