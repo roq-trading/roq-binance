@@ -20,25 +20,34 @@
 
 #include "roq/binance/authenticator.hpp"
 #include "roq/binance/drop_copy_state.hpp"
+#include "roq/binance/request.hpp"
 #include "roq/binance/shared.hpp"
 
 namespace roq {
 namespace binance {
 
 struct OrderEntryWS final : public web::socket::Client::Handler {
+  struct ListenKeyUpdate final {
+    std::string_view account;
+    std::string_view listen_key;
+  };
+
   struct Handler {
     virtual void operator()(Trace<StreamStatus> const &) = 0;
     virtual void operator()(Trace<ExternalLatency> const &) = 0;
     virtual void operator()(Trace<oms::TradeUpdate> const &, uint16_t stream_id, bool is_last, uint8_t user_id) = 0;
     virtual void operator()(Trace<FundsUpdate> const &, bool is_last) = 0;
+    // cross-communication
+    virtual void operator()(ListenKeyUpdate const &) = 0;
   };
 
-  OrderEntryWS(Handler &, io::Context &, uint16_t stream_id, Authenticator &, Shared &);
+  OrderEntryWS(Handler &, io::Context &, uint16_t stream_id, Authenticator &, Shared &, Request &);
 
   OrderEntryWS(OrderEntryWS &&) = delete;
   OrderEntryWS(OrderEntryWS const &) = delete;
 
-  bool ready() const;
+  bool ready() const { return status_ == ConnectionStatus::READY; }
+  bool downloading() const { return download_account_ || download_orders_; }
 
   void operator()(Event<Start> const &);
   void operator()(Event<Stop> const &);
@@ -62,6 +71,11 @@ struct OrderEntryWS final : public web::socket::Client::Handler {
   uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id);
 
  protected:
+  void get_listen_key();
+
+  void get_account();
+  void get_open_orders();
+
   void operator()(web::socket::Client::Connected const &) override;
   void operator()(web::socket::Client::Disconnected const &) override;
   void operator()(web::socket::Client::Ready const &) override;
@@ -98,6 +112,10 @@ struct OrderEntryWS final : public web::socket::Client::Handler {
   Authenticator &authenticator_;
   // shared
   Shared &shared_;
+  Request &request_;
+  // experimental
+  bool download_account_ = false;
+  bool download_orders_ = false;
   // state
   bool ready_ = false;
   ConnectionStatus status_ = {};

@@ -66,7 +66,12 @@ struct create_metrics final : public core::metrics::Factory {
 // === IMPLEMENTATION ===
 
 OrderEntryWS::OrderEntryWS(
-    Handler &handler, io::Context &context, uint16_t stream_id, Authenticator &authenticator, Shared &shared)
+    Handler &handler,
+    io::Context &context,
+    uint16_t stream_id,
+    Authenticator &authenticator,
+    Shared &shared,
+    Request &request)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, authenticator.get_account())},
       connection_{create_connection(*this, context)}, decode_buffer_{Flags::decode_buffer_size()},
       counter_{
@@ -83,11 +88,7 @@ OrderEntryWS::OrderEntryWS(
           .ping = create_metrics(name_, "ping"sv),
           .heartbeat = create_metrics(name_, "heartbeat"sv),
       },
-      authenticator_{authenticator}, shared_{shared} {
-}
-
-bool OrderEntryWS::ready() const {
-  return (*connection_).ready();
+      authenticator_{authenticator}, shared_{shared}, request_{request} {
 }
 
 void OrderEntryWS::operator()(Event<Start> const &) {
@@ -100,6 +101,18 @@ void OrderEntryWS::operator()(Event<Stop> const &) {
 
 void OrderEntryWS::operator()(Event<Timer> const &event) {
   (*connection_).refresh(event.value.now);
+  if (ready() && !downloading()) {
+    if (!downloading() && request_.respond_account < request_.request_account) {
+      log::info("Download account..."sv);
+      get_account();
+      download_account_ = true;
+    }
+    if (!downloading() && request_.respond_orders < request_.request_orders) {
+      log::info("Download orders..."sv);
+      get_open_orders();
+      download_orders_ = true;
+    }
+  }
 }
 
 void OrderEntryWS::operator()(metrics::Writer &writer) {
@@ -144,6 +157,25 @@ uint16_t OrderEntryWS::operator()(Event<CancelAllOrders> const &, std::string_vi
   throw oms::NotSupported{"not supported"sv};
 }
 
+void OrderEntryWS::get_listen_key() {
+  auto message = fmt::format(
+      R"({{)"
+      R"("id":"d3df8a61-98ea-4fe0-8f4e-0fcea5d418b0",)"
+      R"("method":"userDataStream.start",)"
+      R"("params":{{)"
+      R"("apiKey":"{}")"
+      R"(}})"
+      R"(}})"sv,
+      authenticator_.get_key());
+  (*connection_).send_text(message);
+}
+
+void OrderEntryWS::get_account() {
+}
+
+void OrderEntryWS::get_open_orders() {
+}
+
 void OrderEntryWS::operator()(web::socket::Client::Connected const &) {
 }
 
@@ -154,7 +186,8 @@ void OrderEntryWS::operator()(web::socket::Client::Disconnected const &) {
 }
 
 void OrderEntryWS::operator()(web::socket::Client::Ready const &) {
-  (*this)(ConnectionStatus::DOWNLOADING);
+  get_listen_key();
+  (*this)(ConnectionStatus::LOGIN_SENT);
 }
 
 void OrderEntryWS::operator()(web::socket::Client::Close const &) {

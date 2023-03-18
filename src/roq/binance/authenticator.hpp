@@ -21,6 +21,7 @@ struct Authenticator final {
   Authenticator(Authenticator const &) = delete;
 
   inline std::string_view get_account() const { return account_; }
+  inline std::string_view get_key() const { return crypto_.get_key(); }
 
   inline std::string_view create_query(std::chrono::milliseconds now, std::string_view const &body) {
     return crypto_.create_query(query_encode_buffer_, now, body);

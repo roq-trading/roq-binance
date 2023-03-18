@@ -75,6 +75,7 @@ struct Gateway final : public server::Handler,
   void ensure_symbol_slices(size_t size);
 
   void operator()(OrderEntry::ListenKeyUpdate const &) override;
+  void operator()(OrderEntryWS::ListenKeyUpdate const &) override;
 
   // utilities
 

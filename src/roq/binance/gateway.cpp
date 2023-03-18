@@ -45,19 +45,27 @@ template <typename R>
 auto create_order_entry(
     auto &gateway, auto &context, auto &stream_id, auto &security_by_account, auto &shared, auto &request_by_account) {
   R result;
-  for (auto &[account, security] : security_by_account) {
-    auto &request = request_by_account[account];
-    result.try_emplace(
-        account, std::make_unique<OrderEntry>(gateway, context, ++stream_id, *security, shared, request));
+  if (!flags::Flags::ws_api()) {
+    for (auto &[account, security] : security_by_account) {
+      auto &request = request_by_account[account];
+      result.try_emplace(
+          account, std::make_unique<OrderEntry>(gateway, context, ++stream_id, *security, shared, request));
+    }
   }
   return result;
 }
 
 template <typename R>
-auto create_order_entry_ws(auto &gateway, auto &context, auto &stream_id, auto &security_by_account, auto &shared) {
+auto create_order_entry_ws(
+    auto &gateway, auto &context, auto &stream_id, auto &security_by_account, auto &shared, auto &request_by_account) {
   R result;
-  for (auto &[account, security] : security_by_account)
-    result.try_emplace(account, std::make_unique<OrderEntryWS>(gateway, context, ++stream_id, *security, shared));
+  if (flags::Flags::ws_api()) {
+    for (auto &[account, security] : security_by_account) {
+      auto &request = request_by_account[account];
+      result.try_emplace(
+          account, std::make_unique<OrderEntryWS>(gateway, context, ++stream_id, *security, shared, request));
+    }
+  }
   return result;
 }
 
@@ -78,8 +86,8 @@ Gateway::Gateway(server::Dispatcher &dispatcher, Config const &config, io::Conte
       request_{create_request<decltype(request_)>(config)}, rest_{*this, context_, ++stream_id_, shared_},
       order_entry_{
           create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, authenticator_, shared_, request_)},
-      order_entry_ws_{
-          create_order_entry_ws<decltype(order_entry_ws_)>(*this, context_, stream_id_, authenticator_, shared_)},
+      order_entry_ws_{create_order_entry_ws<decltype(order_entry_ws_)>(
+          *this, context_, stream_id_, authenticator_, shared_, request_)},
       drop_copy_{create_drop_copy<decltype(drop_copy_)>(authenticator_)} {
   if (Flags::rest_cancel_on_disconnect())
     log::fatal("Exchange does *NOT* support cancel on disconnect"sv);
@@ -254,6 +262,29 @@ void Gateway::ensure_symbol_slices(size_t size) {
 }
 
 void Gateway::operator()(OrderEntry::ListenKeyUpdate const &listen_key_update) {
+  auto &account = listen_key_update.account;
+  assert(!std::empty(account));
+  auto iter = drop_copy_.find(account);
+  if (iter == std::end(drop_copy_)) {
+    log::fatal(R"(Unexpected: account="{}")"sv, account);
+  } else if (!static_cast<bool>((*iter).second)) {
+    log::info(R"(Create drop-copy (user-stream) for account="{}")"sv, account);
+    auto drop_copy = std::make_unique<DropCopy>(
+        *this,
+        context_,
+        ++stream_id_,
+        *authenticator_[account],
+        shared_,
+        request_[account],
+        listen_key_update.listen_key);
+    MessageInfo message_info;
+    Start start;
+    create_event_and_dispatch(*drop_copy, message_info, start);
+    (*iter).second = std::move(drop_copy);
+  }
+}
+
+void Gateway::operator()(OrderEntryWS::ListenKeyUpdate const &listen_key_update) {
   auto &account = listen_key_update.account;
   assert(!std::empty(account));
   auto iter = drop_copy_.find(account);
