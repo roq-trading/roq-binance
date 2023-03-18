@@ -13,6 +13,7 @@
 #include "roq/binance/json/listen_key.hpp"
 
 #include "roq/binance/json/account.hpp"
+#include "roq/binance/json/open_orders.hpp"
 
 namespace roq {
 namespace binance {
@@ -23,6 +24,7 @@ struct WSAPIParser final {
     virtual void operator()(Trace<Error> const &) = 0;
     virtual void operator()(Trace<ListenKey> const &) = 0;
     virtual void operator()(Trace<Account> const &) = 0;
+    virtual void operator()(Trace<OpenOrders> const &) = 0;
   };
 
   static bool dispatch(Handler &, std::string_view const &message, core::json::Buffer &, TraceInfo const &);

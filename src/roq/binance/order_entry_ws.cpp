@@ -200,6 +200,26 @@ void OrderEntryWS::get_account() {
 }
 
 void OrderEntryWS::get_open_orders() {
+  auto now = clock::get_realtime<std::chrono::milliseconds>();
+  auto message_for_signature = fmt::format("apiKey={}&timestamp={}"sv, authenticator_.get_key(), now.count());
+  auto signature = authenticator_.create_ws_api_signature(message_for_signature);
+  auto message = fmt::format(
+      R"({{)"
+      R"("id":"{}-{}",)"
+      R"("method":"openOrders.status",)"
+      R"("params":{{)"
+      R"("apiKey":"{}",)"
+      R"("signature":"{}",)"
+      R"("timestamp":"{}")"
+      R"(}})"
+      R"(}})"sv,
+      ++request_id_,
+      magic_enum::enum_name(json::WSAPIType::OPEN_ORDERS_STATUS),
+      authenticator_.get_key(),
+      signature,
+      now.count());
+  log::debug("{}"sv, message);
+  (*connection_).send_text(message);
 }
 
 void OrderEntryWS::operator()(web::socket::Client::Connected const &) {
@@ -303,6 +323,53 @@ void OrderEntryWS::operator()(Trace<json::Account> const &event) {
   }
   request_.respond_account = clock::get_system();  // completion
   download_account_ = false;
+}
+
+void OrderEntryWS::operator()(Trace<json::OpenOrders> const &event) {
+  auto &[trace_info, open_orders] = event;
+  log::debug("HERE {}"sv, open_orders);
+  for (auto &order : open_orders.data) {
+    log::info<2>("order={}"sv, order);
+    if (std::empty(order.client_order_id))
+      continue;
+    // open_orders_symbols_.emplace(order.symbol);
+    auto side = json::map(order.side);
+    auto order_type = json::map(order.type);
+    auto time_in_force = json::map(order.time_in_force);
+    auto external_order_id = fmt::format("{}"_cf, order.order_id);  // alloc
+    auto order_status = json::map(order.status);
+    auto order_update = oms::OrderUpdate{
+        .account = authenticator_.get_account(),
+        .exchange = Flags::exchange(),
+        .symbol = order.symbol,
+        .side = side,
+        .position_effect = {},
+        .max_show_quantity = NaN,
+        .order_type = order_type,
+        .time_in_force = time_in_force,
+        .execution_instructions = {},
+        .order_template = {},
+        .create_time_utc = order.time,
+        .update_time_utc = order.update_time,
+        .external_account = {},
+        .external_order_id = external_order_id,
+        .status = order_status,
+        .quantity = order.orig_qty,
+        .price = order.price,
+        .stop_price = order.stop_price,
+        .remaining_quantity = NaN,
+        .traded_quantity = order.executed_qty,
+        .average_traded_price = {},
+        .last_traded_quantity = {},
+        .last_traded_price = {},
+        .last_liquidity = {},
+        .update_type = UpdateType::SNAPSHOT,
+    };
+    // Trace event_2{trace_info, order_update};
+    // (*this)(event_2, order.client_order_id);
+  }
+  request_.respond_orders = clock::get_system();  // completion
+  download_orders_ = false;
 }
 
 }  // namespace binance

@@ -94,6 +94,7 @@ struct OrderEntryWS final : public web::socket::Client::Handler, public json::WS
   void operator()(Trace<json::Error> const &) override;
   void operator()(Trace<json::ListenKey> const &) override;
   void operator()(Trace<json::Account> const &) override;
+  void operator()(Trace<json::OpenOrders> const &) override;
 
  private:
   Handler &handler_;

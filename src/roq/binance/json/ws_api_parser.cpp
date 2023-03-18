@@ -28,20 +28,26 @@ std::pair<std::string_view, WSAPIType> split(auto &id) {
 }
 
 bool dispatch_error(auto &handler, auto &id, auto status, auto &value, auto &buffer, auto &trace_info) {
-  auto error = Error{value, buffer};
+  Error error{value, buffer};
   create_trace_and_dispatch(handler, trace_info, error);
   return true;
 }
 
 bool dispatch_listen_key(auto &handler, auto &value, auto &buffer, auto &trace_info) {
-  auto listen_key = ListenKey{value, buffer};
+  ListenKey listen_key{value, buffer};
   create_trace_and_dispatch(handler, trace_info, listen_key);
   return true;
 }
 
 bool dispatch_account_status(auto &handler, auto &value, auto &buffer, auto &trace_info) {
-  auto account = Account{value, buffer};
+  Account account{value, buffer};
   create_trace_and_dispatch(handler, trace_info, account);
+  return true;
+}
+
+bool dispatch_open_orders_status(auto &handler, auto &value, auto &buffer, auto &trace_info) {
+  json::OpenOrders open_orders{value, buffer};
+  create_trace_and_dispatch(handler, trace_info, open_orders);
   return true;
 }
 
@@ -56,6 +62,8 @@ bool dispatch_helper(auto &handler, auto &id, auto status, auto &value, auto &bu
       return dispatch_listen_key(handler, value, buffer, trace_info);
     case ACCOUNT_STATUS:
       return dispatch_account_status(handler, value, buffer, trace_info);
+    case OPEN_ORDERS_STATUS:
+      return dispatch_open_orders_status(handler, value, buffer, trace_info);
   }
   return false;
 }
