@@ -38,6 +38,8 @@ TEST_CASE("simple", "[json_ws_listen_key]") {
     }
     void operator()(Trace<json::Account> const &) override { FAIL(); }
     void operator()(Trace<json::OpenOrders> const &) override { FAIL(); }
+    void operator()(Trace<json::NewOrder> const &) override { FAIL(); }
+    void operator()(Trace<json::CancelOrder> const &) override { FAIL(); }
     void operator()(Trace<json::CancelAllOpenOrders> const &) override { FAIL(); }
     size_t counter = {};
   } handler;
