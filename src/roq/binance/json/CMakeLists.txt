@@ -48,7 +48,8 @@ set(AUTOGEN_SCHEMAS
     ticker.json
     time_in_force.json
     trade.json
-    user_stream.json)
+    user_stream.json
+    ws_api_type.json)
 
 roq_autogen(
   OUTPUT

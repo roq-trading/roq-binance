@@ -1,0 +1,12 @@
+{
+  "name": "WSAPIType",
+  "type": "enum",
+  "values": [
+    {
+      "name": "LISTEN_KEY"
+    },
+    {
+      "name": "ACCOUNT_STATUS"
+    }
+  ]
+}

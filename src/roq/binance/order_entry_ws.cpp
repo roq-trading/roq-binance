@@ -13,6 +13,7 @@
 #include "roq/binance/flags.hpp"
 
 #include "roq/binance/json/utils.hpp"
+#include "roq/binance/json/ws_api_type.hpp"
 
 using namespace std::literals;
 
@@ -32,6 +33,8 @@ auto const SUPPORTS = Mask{
     SupportType::TRADE,
     SupportType::FUNDS,
 };
+
+auto const REQUEST_ID = uint32_t{1000000};
 }  // namespace
 
 // === HELPERS ===
@@ -88,7 +91,7 @@ OrderEntryWS::OrderEntryWS(
           .ping = create_metrics(name_, "ping"sv),
           .heartbeat = create_metrics(name_, "heartbeat"sv),
       },
-      authenticator_{authenticator}, shared_{shared}, request_{request} {
+      authenticator_{authenticator}, shared_{shared}, request_{request}, request_id_{REQUEST_ID} {
 }
 
 void OrderEntryWS::operator()(Event<Start> const &) {
@@ -160,17 +163,40 @@ uint16_t OrderEntryWS::operator()(Event<CancelAllOrders> const &, std::string_vi
 void OrderEntryWS::get_listen_key() {
   auto message = fmt::format(
       R"({{)"
-      R"("id":"d3df8a61-98ea-4fe0-8f4e-0fcea5d418b0",)"
+      R"("id":"{}-{}",)"
       R"("method":"userDataStream.start",)"
       R"("params":{{)"
       R"("apiKey":"{}")"
       R"(}})"
       R"(}})"sv,
+      ++request_id_,
+      magic_enum::enum_name(json::WSAPIType::LISTEN_KEY),
       authenticator_.get_key());
+  log::debug("{}"sv, message);
   (*connection_).send_text(message);
 }
 
 void OrderEntryWS::get_account() {
+  auto now = clock::get_realtime<std::chrono::milliseconds>();
+  auto message_for_signature = fmt::format("apiKey={}&timestamp={}"sv, authenticator_.get_key(), now.count());
+  auto signature = authenticator_.create_ws_api_signature(message_for_signature);
+  auto message = fmt::format(
+      R"({{)"
+      R"("id":"{}-{}",)"
+      R"("method":"account.status",)"
+      R"("params":{{)"
+      R"("apiKey":"{}",)"
+      R"("signature":"{}",)"
+      R"("timestamp":"{}")"
+      R"(}})"
+      R"(}})"sv,
+      ++request_id_,
+      magic_enum::enum_name(json::WSAPIType::ACCOUNT_STATUS),
+      authenticator_.get_key(),
+      signature,
+      now.count());
+  log::debug("{}"sv, message);
+  (*connection_).send_text(message);
 }
 
 void OrderEntryWS::get_open_orders() {
@@ -244,6 +270,11 @@ void OrderEntryWS::parse(std::string_view const &message) {
   });
 }
 
+void OrderEntryWS::operator()(Trace<json::Error> const &event) {
+  auto &[trace_info, error] = event;
+  log::debug("HERE {}"sv, error);
+}
+
 void OrderEntryWS::operator()(Trace<json::ListenKey> const &event) {
   auto &[trace_info, listen_key] = event;
   log::debug("HERE {}"sv, listen_key);
@@ -252,6 +283,26 @@ void OrderEntryWS::operator()(Trace<json::ListenKey> const &event) {
       .listen_key = listen_key.listen_key,
   };
   create_trace_and_dispatch(handler_, trace_info, listen_key_update);
+  (*this)(ConnectionStatus::READY);
+}
+
+void OrderEntryWS::operator()(Trace<json::Account> const &event) {
+  auto &[trace_info, account] = event;
+  log::debug("HERE {}"sv, account);
+  for (auto &item : account.balances) {
+    // log::debug("item={}"sv, item);
+    auto funds_update = FundsUpdate{
+        .stream_id = stream_id_,
+        .account = authenticator_.get_account(),
+        .currency = item.asset,
+        .balance = item.free,
+        .hold = item.locked,
+        .external_account = {},
+    };
+    create_trace_and_dispatch(handler_, trace_info, funds_update, true);
+  }
+  request_.respond_account = clock::get_system();  // completion
+  download_account_ = false;
 }
 
 }  // namespace binance

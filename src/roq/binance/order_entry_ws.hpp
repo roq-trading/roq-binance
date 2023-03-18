@@ -91,7 +91,9 @@ struct OrderEntryWS final : public web::socket::Client::Handler, public json::WS
 
   void parse(std::string_view const &message);
 
+  void operator()(Trace<json::Error> const &) override;
   void operator()(Trace<json::ListenKey> const &) override;
+  void operator()(Trace<json::Account> const &) override;
 
  private:
   Handler &handler_;
@@ -118,6 +120,7 @@ struct OrderEntryWS final : public web::socket::Client::Handler, public json::WS
   Shared &shared_;
   Request &request_;
   // experimental
+  uint32_t request_id_;
   bool download_account_ = false;
   bool download_orders_ = false;
   // state

@@ -56,6 +56,15 @@ std::string_view Crypto::create_query(
   return writer.finish();
 }
 
+std::string_view Crypto::create_ws_api_signature(std::span<std::byte> const &buffer, std::string_view const &body) {
+  mac_.clear();
+  mac_.update(body);
+  auto digest = mac_.final(digest_);
+  core::text::Writer writer{buffer};
+  writer.write(core::codec::Hex{digest_});
+  return writer.finish();
+}
+
 }  // namespace tools
 }  // namespace binance
 }  // namespace roq

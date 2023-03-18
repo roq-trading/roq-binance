@@ -44,6 +44,7 @@ ticker.hpp
 time_in_force.hpp
 trade.hpp
 user_stream.hpp
+ws_api_type.hpp
 account.cpp
 agg_trade.cpp
 balance.cpp
@@ -88,3 +89,4 @@ ticker.cpp
 time_in_force.cpp
 trade.cpp
 user_stream.cpp
+ws_api_type.cpp
