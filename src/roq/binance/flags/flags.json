@@ -136,6 +136,26 @@
       "description": "create secondary market data connection? (bool)"
     },
     {
+      "name": "ws_api",
+      "type": "bool",
+      "default": false,
+      "description": "use the websocket api?"
+    },
+    {
+      "name": "ws_api_uri",
+      "type": "roq::io::web::URI",
+      "validator": "roq::core::flags::URI",
+      "default": "wss://ws-api.binance.com/ws-api/v3",
+      "description": "WebSocket API end-point (URI)"
+    },
+    {
+      "name": "ws_api_ping_freq",
+      "type": "std::chrono::nanoseconds",
+      "validator": "roq::core::flags::TimePeriod",
+      "default": "5s",
+      "description": "ping frequency"
+    },
+    {
       "name": "request_limit",
       "type": "uint32_t",
       "default": "8",

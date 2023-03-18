@@ -16,6 +16,7 @@ URI="binance.com"
 
 REST_URI="https://api.$URI"
 WS_URI="wss://stream.$URI:9443/stream"
+WS_API_URI="wss://ws-api.$URI/ws-api/v3",
 
 $PREFIX ./roq-binance \
   --name "$NAME" \
@@ -26,5 +27,6 @@ $PREFIX ./roq-binance \
   --client_listen_address "$HOME/run/$NAME.sock" \
   --service_listen_address "$HOME/run/metrics/${NAME}.sock" \
   --ws_uri "$WS_URI" \
+  --ws_api_uri "$WS_URI" \
   --rest_uri "$REST_URI" \
   $@
