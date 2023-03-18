@@ -37,6 +37,7 @@ TEST_CASE("simple", "[json_ws_listen_key]") {
       CHECK(listen_key.listen_key == "eSWDvurLiumxeTwtGdHaLBozyJ9qzS9QcwOk3jmERrfqtf63IoQKwhD4CALz"sv);
     }
     void operator()(Trace<json::Account> const &) override { FAIL(); }
+    void operator()(Trace<json::OpenOrders> const &) override { FAIL(); }
     size_t counter = {};
   } handler;
   core::Buffer buffer_(4096);
