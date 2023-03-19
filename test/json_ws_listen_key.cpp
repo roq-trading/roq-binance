@@ -15,7 +15,7 @@ using namespace Catch::literals;
 
 TEST_CASE("simple", "[json_ws_listen_key]") {
   constexpr auto const message = R"({)"
-                                 R"("id":"123-LISTEN_KEY_CREATE",)"
+                                 R"("id":"AQAAAAJ7Fc1bB7Fo3joA",)"
                                  R"("status":200,)"
                                  R"("result":{)"
                                  R"("listenKey":"eSWDvurLiumxeTwtGdHaLBozyJ9qzS9QcwOk3jmERrfqtf63IoQKwhD4CALz")"
@@ -30,17 +30,17 @@ TEST_CASE("simple", "[json_ws_listen_key]") {
                                  R"(])"
                                  R"(})";
   struct Handler final : public json::WSAPIParser::Handler {
-    void operator()(Trace<json::Error> const &) override { FAIL(); }
-    void operator()(Trace<json::ListenKey> const &event) override {
+    void operator()(Trace<json::Error> const &, json::WSAPIRequest const &) override { FAIL(); }
+    void operator()(Trace<json::ListenKey> const &event, json::WSAPIRequest const &) override {
       ++counter;
       auto &[trace_info, listen_key] = event;
       CHECK(listen_key.listen_key == "eSWDvurLiumxeTwtGdHaLBozyJ9qzS9QcwOk3jmERrfqtf63IoQKwhD4CALz"sv);
     }
-    void operator()(Trace<json::Account> const &) override { FAIL(); }
-    void operator()(Trace<json::OpenOrders> const &) override { FAIL(); }
-    void operator()(Trace<json::NewOrder> const &) override { FAIL(); }
-    void operator()(Trace<json::CancelOrder> const &) override { FAIL(); }
-    void operator()(Trace<json::CancelAllOpenOrders> const &) override { FAIL(); }
+    void operator()(Trace<json::Account> const &, json::WSAPIRequest const &) override { FAIL(); }
+    void operator()(Trace<json::OpenOrders> const &, json::WSAPIRequest const &) override { FAIL(); }
+    void operator()(Trace<json::NewOrder> const &, json::WSAPIRequest const &) override { FAIL(); }
+    void operator()(Trace<json::CancelOrder> const &, json::WSAPIRequest const &) override { FAIL(); }
+    void operator()(Trace<json::CancelAllOpenOrders> const &, json::WSAPIRequest const &) override { FAIL(); }
     size_t counter = {};
   } handler;
   core::Buffer buffer_(4096);

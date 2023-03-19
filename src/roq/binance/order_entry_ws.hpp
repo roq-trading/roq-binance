@@ -99,13 +99,13 @@ struct OrderEntryWS final : public web::socket::Client::Handler, public json::WS
 
   void parse(std::string_view const &message);
 
-  void operator()(Trace<json::Error> const &) override;
-  void operator()(Trace<json::ListenKey> const &) override;
-  void operator()(Trace<json::Account> const &) override;
-  void operator()(Trace<json::OpenOrders> const &) override;
-  void operator()(Trace<json::NewOrder> const &) override;
-  void operator()(Trace<json::CancelOrder> const &) override;
-  void operator()(Trace<json::CancelAllOpenOrders> const &) override;
+  void operator()(Trace<json::Error> const &, json::WSAPIRequest const &) override;
+  void operator()(Trace<json::ListenKey> const &, json::WSAPIRequest const &) override;
+  void operator()(Trace<json::Account> const &, json::WSAPIRequest const &) override;
+  void operator()(Trace<json::OpenOrders> const &, json::WSAPIRequest const &) override;
+  void operator()(Trace<json::NewOrder> const &, json::WSAPIRequest const &) override;
+  void operator()(Trace<json::CancelOrder> const &, json::WSAPIRequest const &) override;
+  void operator()(Trace<json::CancelAllOpenOrders> const &, json::WSAPIRequest const &) override;
 
   template <typename... Args>
   void operator()(
@@ -145,6 +145,7 @@ struct OrderEntryWS final : public web::socket::Client::Handler, public json::WS
   bool download_account_ = false;
   bool download_orders_ = false;
   absl::flat_hash_set<Symbol> open_orders_symbols_;
+  std::vector<char> request_encode_buffer_;
   std::vector<char> encode_buffer_;
   // state
   bool ready_ = false;
