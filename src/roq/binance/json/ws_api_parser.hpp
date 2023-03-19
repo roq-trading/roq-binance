@@ -26,13 +26,13 @@ namespace json {
 
 struct WSAPIParser final {
   struct Handler {
-    virtual void operator()(Trace<Error> const &, WSAPIRequest const &) = 0;
-    virtual void operator()(Trace<ListenKey> const &, WSAPIRequest const &) = 0;
-    virtual void operator()(Trace<Account> const &, WSAPIRequest const &) = 0;
-    virtual void operator()(Trace<OpenOrders> const &, WSAPIRequest const &) = 0;
-    virtual void operator()(Trace<NewOrder> const &, WSAPIRequest const &) = 0;
-    virtual void operator()(Trace<CancelOrder> const &, WSAPIRequest const &) = 0;
-    virtual void operator()(Trace<CancelAllOpenOrders> const &, WSAPIRequest const &) = 0;
+    virtual void operator()(Trace<Error> const &, WSAPIRequest const &, int32_t status) = 0;
+    virtual void operator()(Trace<ListenKey> const &, WSAPIRequest const &, int32_t status) = 0;
+    virtual void operator()(Trace<Account> const &, WSAPIRequest const &, int32_t status) = 0;
+    virtual void operator()(Trace<OpenOrders> const &, WSAPIRequest const &, int32_t status) = 0;
+    virtual void operator()(Trace<NewOrder> const &, WSAPIRequest const &, int32_t status) = 0;
+    virtual void operator()(Trace<CancelOrder> const &, WSAPIRequest const &, int32_t status) = 0;
+    virtual void operator()(Trace<CancelAllOpenOrders> const &, WSAPIRequest const &, int32_t status) = 0;
   };
 
   static bool dispatch(Handler &, std::string_view const &message, core::json::Buffer &, TraceInfo const &);

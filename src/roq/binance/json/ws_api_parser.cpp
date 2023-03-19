@@ -19,43 +19,45 @@ namespace json {
 namespace {
 bool dispatch_error(auto &handler, auto status, auto &value, auto &buffer, auto &trace_info, auto &request) {
   Error error{value, buffer};
-  create_trace_and_dispatch(handler, trace_info, error, request);
+  create_trace_and_dispatch(handler, trace_info, error, request, status);
   return true;
 }
 
-bool dispatch_listen_key(auto &handler, auto &value, auto &buffer, auto &trace_info, auto &request) {
+bool dispatch_listen_key(auto &handler, auto status, auto &value, auto &buffer, auto &trace_info, auto &request) {
   ListenKey listen_key{value, buffer};
-  create_trace_and_dispatch(handler, trace_info, listen_key, request);
+  create_trace_and_dispatch(handler, trace_info, listen_key, request, status);
   return true;
 }
 
-bool dispatch_account_status(auto &handler, auto &value, auto &buffer, auto &trace_info, auto &request) {
+bool dispatch_account_status(auto &handler, auto status, auto &value, auto &buffer, auto &trace_info, auto &request) {
   Account account{value, buffer};
-  create_trace_and_dispatch(handler, trace_info, account, request);
+  create_trace_and_dispatch(handler, trace_info, account, request, status);
   return true;
 }
 
-bool dispatch_open_orders_status(auto &handler, auto &value, auto &buffer, auto &trace_info, auto &request) {
+bool dispatch_open_orders_status(
+    auto &handler, auto status, auto &value, auto &buffer, auto &trace_info, auto &request) {
   json::OpenOrders open_orders{value, buffer};
-  create_trace_and_dispatch(handler, trace_info, open_orders, request);
+  create_trace_and_dispatch(handler, trace_info, open_orders, request, status);
   return true;
 }
 
-bool dispatch_open_orders_cancel_all(auto &handler, auto &value, auto &buffer, auto &trace_info, auto &request) {
+bool dispatch_open_orders_cancel_all(
+    auto &handler, auto status, auto &value, auto &buffer, auto &trace_info, auto &request) {
   json::CancelAllOpenOrders cancel_all_open_orders{value, buffer};
-  create_trace_and_dispatch(handler, trace_info, cancel_all_open_orders, request);
+  create_trace_and_dispatch(handler, trace_info, cancel_all_open_orders, request, status);
   return true;
 }
 
-bool dispatch_order_place(auto &handler, auto &value, auto &buffer, auto &trace_info, auto &request) {
+bool dispatch_order_place(auto &handler, auto status, auto &value, auto &buffer, auto &trace_info, auto &request) {
   json::NewOrder new_order{value, buffer};
-  create_trace_and_dispatch(handler, trace_info, new_order, request);
+  create_trace_and_dispatch(handler, trace_info, new_order, request, status);
   return true;
 }
 
-bool dispatch_order_cancel(auto &handler, auto &value, auto &buffer, auto &trace_info, auto &request) {
+bool dispatch_order_cancel(auto &handler, auto status, auto &value, auto &buffer, auto &trace_info, auto &request) {
   json::CancelOrder cancel_order{value, buffer};
-  create_trace_and_dispatch(handler, trace_info, cancel_order, request);
+  create_trace_and_dispatch(handler, trace_info, cancel_order, request, status);
   return true;
 }
 
@@ -66,19 +68,19 @@ bool dispatch_helper(auto &handler, auto status, auto &value, auto &buffer, auto
     case UNKNOWN:
       break;
     case LISTEN_KEY_CREATE:
-      return dispatch_listen_key(handler, value, buffer, trace_info, request);
+      return dispatch_listen_key(handler, status, value, buffer, trace_info, request);
     case LISTEN_KEY_PING:
       return true;  // note!
     case ACCOUNT_STATUS:
-      return dispatch_account_status(handler, value, buffer, trace_info, request);
+      return dispatch_account_status(handler, status, value, buffer, trace_info, request);
     case OPEN_ORDERS_STATUS:
-      return dispatch_open_orders_status(handler, value, buffer, trace_info, request);
+      return dispatch_open_orders_status(handler, status, value, buffer, trace_info, request);
     case OPEN_ORDERS_CANCEL_ALL:
-      return dispatch_open_orders_cancel_all(handler, value, buffer, trace_info, request);
+      return dispatch_open_orders_cancel_all(handler, status, value, buffer, trace_info, request);
     case ORDER_PLACE:
-      return dispatch_order_place(handler, value, buffer, trace_info, request);
+      return dispatch_order_place(handler, status, value, buffer, trace_info, request);
     case ORDER_CANCEL:
-      return dispatch_order_cancel(handler, value, buffer, trace_info, request);
+      return dispatch_order_cancel(handler, status, value, buffer, trace_info, request);
   }
   return false;
 }
