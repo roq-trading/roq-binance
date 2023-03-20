@@ -244,6 +244,13 @@ inline json::TimeInForce map(roq::TimeInForce time_in_force) {
 
 extern roq::Error guess_error(int32_t code);
 
+// cancel-all
+
+extern std::string_view cancel_all_open_orders(
+    std::vector<char> &buffer, std::string_view const &symbol, std::chrono::milliseconds recv_window);
+
+// new
+
 extern std::string_view new_order(
     std::vector<char> &buffer,
     CreateOrder const &,
@@ -270,15 +277,7 @@ extern std::string_view new_order_ws_json(
     std::chrono::milliseconds now,
     std::string_view const &signature);
 
-extern std::string_view cancel_replace_order(
-    std::vector<char> &buffer,
-    std::string_view const &cancel_request_id,
-    std::string_view const &cancel_previous_request_id,
-    CreateOrder const &,
-    oms::Order const &,
-    std::string_view const &create_request_id,
-    std::chrono::milliseconds recv_window,
-    bool stop_on_failure);
+// cancel
 
 extern std::string_view cancel_order(
     std::vector<char> &buffer,
@@ -309,8 +308,42 @@ extern std::string_view cancel_order_ws_json(
     std::chrono::milliseconds now,
     std::string_view const &signature);
 
-extern std::string_view cancel_all_open_orders(
-    std::vector<char> &buffer, std::string_view const &symbol, std::chrono::milliseconds recv_window);
+// cancel-replace
+
+extern std::string_view cancel_replace_order(
+    std::vector<char> &buffer,
+    std::string_view const &cancel_request_id,
+    std::string_view const &cancel_previous_request_id,
+    CreateOrder const &,
+    oms::Order const &,
+    std::string_view const &create_request_id,
+    std::chrono::milliseconds recv_window,
+    bool stop_on_failure);
+
+extern std::string_view cancel_replace_order_ws_url(
+    std::vector<char> &buffer,
+    std::string_view const &cancel_request_id,
+    std::string_view const &cancel_previous_request_id,
+    CreateOrder const &,
+    oms::Order const &,
+    std::string_view const &create_request_id,
+    std::chrono::milliseconds recv_window,
+    bool stop_on_failure,
+    std::string_view const &api_key,
+    std::chrono::milliseconds now);
+
+extern std::string_view cancel_replace_order_ws_json(
+    std::vector<char> &buffer,
+    std::string_view const &cancel_request_id,
+    std::string_view const &cancel_previous_request_id,
+    CreateOrder const &,
+    oms::Order const &,
+    std::string_view const &create_request_id,
+    std::chrono::milliseconds recv_window,
+    bool stop_on_failure,
+    std::string_view const &api_key,
+    std::chrono::milliseconds now,
+    std::string_view const &signature);
 
 }  // namespace json
 }  // namespace binance

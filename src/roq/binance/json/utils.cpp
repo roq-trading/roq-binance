@@ -149,6 +149,23 @@ json::TimeInForce map_time_in_force(auto &create_order) {
 }
 }  // namespace
 
+// cancel-all
+
+std::string_view cancel_all_open_orders(
+    std::vector<char> &buffer, std::string_view const &symbol, std::chrono::milliseconds recv_window) {
+  buffer.clear();
+  fmt::format_to(
+      std::back_inserter(buffer),
+      R"(symbol={}&)"
+      R"(recvWindow={})"_cf,
+      symbol,
+      recv_window.count());
+  std::string_view result{std::data(buffer), std::size(buffer)};
+  return result;
+}
+
+// new
+
 // https://binance-docs.github.io/apidocs/spot/en/#new-order-trade
 std::string_view new_order(
     std::vector<char> &buffer,
@@ -248,55 +265,7 @@ std::string_view new_order_ws_json(
   return writer.finish();
 }
 
-// https://binance-docs.github.io/apidocs/spot/en/#cancel-an-existing-order-and-send-a-new-order-trade
-std::string_view cancel_replace_order(
-    std::vector<char> &buffer,
-    std::string_view const &cancel_request_id,
-    std::string_view const &cancel_previous_request_id,
-    CreateOrder const &create_order,
-    oms::Order const &order,
-    std::string_view const &create_request_id,
-    std::chrono::milliseconds recv_window,
-    bool stop_on_failure) {
-  auto side = map(order.side);
-  auto type = map_order_type(order);
-  auto time_in_force = map_time_in_force(order);
-  buffer.clear();
-  fmt::format_to(
-      std::back_inserter(buffer),
-      R"(symbol={}&)"
-      R"(cancelReplaceMode={}&)"
-      R"(cancelOrigClientOrderId={}&)"
-      R"(cancelNewClientOrderId={}&)"
-      R"(side={}&)"
-      R"(type={}&)"
-      R"(quantity={}&)"_cf,
-      order.symbol,
-      stop_on_failure ? "STOP_ON_FAILURE"sv : "ALLOW_FAILURE"sv,
-      cancel_previous_request_id,
-      cancel_request_id,
-      side.as_raw_text(),
-      type.as_raw_text(),
-      utils::Number{create_order.quantity, order.quantity_decimals});
-  if (time_in_force != json::TimeInForce{})
-    fmt::format_to(std::back_inserter(buffer), R"(timeInForce={}&)"_cf, time_in_force.as_raw_text());
-  if (!std::isnan(create_order.price))
-    fmt::format_to(
-        std::back_inserter(buffer), R"(price={}&)"_cf, utils::Number{create_order.price, order.price_decimals});
-  if (!std::isnan(create_order.stop_price))
-    fmt::format_to(
-        std::back_inserter(buffer),
-        R"(stopPrice={}&)"_cf,
-        utils::Number{create_order.stop_price, order.price_decimals});
-  fmt::format_to(
-      std::back_inserter(buffer),
-      R"(newClientOrderId={}&)"
-      R"(recvWindow={})"_cf,
-      create_request_id,
-      recv_window.count());
-  std::string_view result{std::data(buffer), std::size(buffer)};
-  return result;
-}
+// cancel
 
 std::string_view cancel_order(
     std::vector<char> &buffer,
@@ -361,15 +330,127 @@ std::string_view cancel_order_ws_json(
   return writer.finish();
 }
 
-std::string_view cancel_all_open_orders(
-    std::vector<char> &buffer, std::string_view const &symbol, std::chrono::milliseconds recv_window) {
+// cancel-replace
+
+// https://binance-docs.github.io/apidocs/spot/en/#cancel-an-existing-order-and-send-a-new-order-trade
+std::string_view cancel_replace_order(
+    std::vector<char> &buffer,
+    std::string_view const &cancel_request_id,
+    std::string_view const &cancel_previous_request_id,
+    CreateOrder const &create_order,
+    oms::Order const &order,
+    std::string_view const &create_request_id,
+    std::chrono::milliseconds recv_window,
+    bool stop_on_failure) {
+  auto side = map(order.side);
+  auto type = map_order_type(order);
+  auto time_in_force = map_time_in_force(order);
+  auto cancel_replace_mode = stop_on_failure ? "STOP_ON_FAILURE"sv : "ALLOW_FAILURE"sv;
   buffer.clear();
+  fmt::format_to(std::back_inserter(buffer), "cancelNewClientOrderId={}&"sv, cancel_request_id);
+  fmt::format_to(std::back_inserter(buffer), "cancelOrigClientOrderId={}&"sv, cancel_previous_request_id);
+  fmt::format_to(std::back_inserter(buffer), "cancelReplaceMode={}&"sv, cancel_replace_mode);
+  fmt::format_to(std::back_inserter(buffer), "newClientOrderId={}&"sv, create_request_id);
+  if (!std::isnan(create_order.price))
+    fmt::format_to(std::back_inserter(buffer), "price={}&"sv, utils::Number{create_order.price, order.price_decimals});
+  fmt::format_to(
+      std::back_inserter(buffer), "quantity={}&"sv, utils::Number{create_order.quantity, order.quantity_decimals});
+  fmt::format_to(std::back_inserter(buffer), "recvWindow={}&"sv, recv_window.count());
+  fmt::format_to(std::back_inserter(buffer), "side={}&"sv, side.as_raw_text());
+  if (!std::isnan(create_order.stop_price))
+    fmt::format_to(
+        std::back_inserter(buffer), "stopPrice={}&"sv, utils::Number{create_order.stop_price, order.price_decimals});
+  fmt::format_to(std::back_inserter(buffer), "symbol={}&"sv, order.symbol);
+  if (time_in_force != json::TimeInForce{})
+    fmt::format_to(std::back_inserter(buffer), "timeInForce={}&"sv, time_in_force.as_raw_text());
+  fmt::format_to(std::back_inserter(buffer), "type={}"sv, type.as_raw_text());
+  std::string_view result{std::data(buffer), std::size(buffer)};
+  return result;
+}
+
+std::string_view cancel_replace_order_ws_url(
+    std::vector<char> &buffer,
+    std::string_view const &cancel_request_id,
+    std::string_view const &cancel_previous_request_id,
+    CreateOrder const &create_order,
+    oms::Order const &order,
+    std::string_view const &create_request_id,
+    std::chrono::milliseconds recv_window,
+    bool stop_on_failure,
+    std::string_view const &api_key,
+    std::chrono::milliseconds now) {
+  auto side = map(order.side);
+  auto type = map_order_type(order);
+  auto time_in_force = map_time_in_force(order);
+  auto cancel_replace_mode = stop_on_failure ? "STOP_ON_FAILURE"sv : "ALLOW_FAILURE"sv;
+  buffer.clear();
+  fmt::format_to(std::back_inserter(buffer), "apiKey={}&"sv, api_key);
+  fmt::format_to(std::back_inserter(buffer), "cancelNewClientOrderId={}&"sv, cancel_request_id);
+  fmt::format_to(std::back_inserter(buffer), "cancelOrigClientOrderId={}&"sv, cancel_previous_request_id);
+  fmt::format_to(std::back_inserter(buffer), "cancelReplaceMode={}&"sv, cancel_replace_mode);
+  fmt::format_to(std::back_inserter(buffer), "newClientOrderId={}&"sv, create_request_id);
+  if (!std::isnan(create_order.price))
+    fmt::format_to(std::back_inserter(buffer), "price={}&"sv, utils::Number{create_order.price, order.price_decimals});
+  fmt::format_to(
+      std::back_inserter(buffer), "quantity={}&"sv, utils::Number{create_order.quantity, order.quantity_decimals});
+  fmt::format_to(std::back_inserter(buffer), "recvWindow={}&"sv, recv_window.count());
+  fmt::format_to(std::back_inserter(buffer), "side={}&"sv, side.as_raw_text());
+  if (!std::isnan(create_order.stop_price))
+    fmt::format_to(
+        std::back_inserter(buffer), "stopPrice={}&"sv, utils::Number{create_order.stop_price, order.price_decimals});
+  fmt::format_to(std::back_inserter(buffer), "symbol={}&"sv, order.symbol);
+  if (time_in_force != json::TimeInForce{})
+    fmt::format_to(std::back_inserter(buffer), "timeInForce={}&"sv, time_in_force.as_raw_text());
+  fmt::format_to(std::back_inserter(buffer), "timestamp={}&"sv, now.count());
+  fmt::format_to(std::back_inserter(buffer), "type={}"sv, type.as_raw_text());
+  std::string_view result{std::data(buffer), std::size(buffer)};
+  return result;
+}
+
+std::string_view cancel_replace_order_ws_json(
+    std::vector<char> &buffer,
+    std::string_view const &cancel_request_id,
+    std::string_view const &cancel_previous_request_id,
+    CreateOrder const &create_order,
+    oms::Order const &order,
+    std::string_view const &create_request_id,
+    std::chrono::milliseconds recv_window,
+    bool stop_on_failure,
+    std::string_view const &api_key,
+    std::chrono::milliseconds now,
+    std::string_view const &signature) {
+  auto side = map(order.side);
+  auto type = map_order_type(order);
+  auto time_in_force = map_time_in_force(order);
+  auto cancel_replace_mode = stop_on_failure ? "STOP_ON_FAILURE"sv : "ALLOW_FAILURE"sv;
+  buffer.clear();
+  fmt::format_to(std::back_inserter(buffer), "{{"sv);
+  fmt::format_to(std::back_inserter(buffer), R"("apiKey":"{}",)"sv, api_key);
+  fmt::format_to(std::back_inserter(buffer), R"("cancelNewClientOrderId":"{}",)"sv, cancel_request_id);
+  fmt::format_to(std::back_inserter(buffer), R"("cancelOrigClientOrderId":"{}",)"sv, cancel_previous_request_id);
+  fmt::format_to(std::back_inserter(buffer), R"("cancelReplaceMode":"{}",)"sv, cancel_replace_mode);
+  fmt::format_to(std::back_inserter(buffer), R"("newClientOrderId":"{}",)"sv, create_request_id);
+  if (!std::isnan(create_order.price))
+    fmt::format_to(
+        std::back_inserter(buffer), R"("price":"{}",)"sv, utils::Number{create_order.price, order.price_decimals});
   fmt::format_to(
       std::back_inserter(buffer),
-      R"(symbol={}&)"
-      R"(recvWindow={})"_cf,
-      symbol,
-      recv_window.count());
+      R"("quantity":"{}",)"sv,
+      utils::Number{create_order.quantity, order.quantity_decimals});
+  fmt::format_to(std::back_inserter(buffer), R"("recvWindow":{},)"sv, recv_window.count());
+  fmt::format_to(std::back_inserter(buffer), R"("side":"{}",)"sv, side.as_raw_text());
+  if (!std::isnan(create_order.stop_price))
+    fmt::format_to(
+        std::back_inserter(buffer),
+        R"("stopPrice":"{}",)"sv,
+        utils::Number{create_order.stop_price, order.price_decimals});
+  fmt::format_to(std::back_inserter(buffer), R"("symbol":"{}",)"sv, order.symbol);
+  if (time_in_force != json::TimeInForce{})
+    fmt::format_to(std::back_inserter(buffer), R"("timeInForce":"{}",)"sv, time_in_force.as_raw_text());
+  fmt::format_to(std::back_inserter(buffer), R"("timestamp":{},)"sv, now.count());
+  fmt::format_to(std::back_inserter(buffer), R"("type":"{}",)"sv, type.as_raw_text());
+  fmt::format_to(std::back_inserter(buffer), R"("signature":"{}")"sv, signature);
+  fmt::format_to(std::back_inserter(buffer), "}}"sv);
   std::string_view result{std::data(buffer), std::size(buffer)};
   return result;
 }

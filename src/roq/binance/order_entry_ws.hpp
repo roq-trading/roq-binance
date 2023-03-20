@@ -4,6 +4,9 @@
 
 #include <string>
 #include <string_view>
+#include <vector>
+
+#include "roq/cache/cancel_order.hpp"
 
 #include "roq/core/buffer.hpp"
 #include "roq/core/download.hpp"
@@ -29,6 +32,13 @@ namespace roq {
 namespace binance {
 
 struct OrderEntryWS final : public web::socket::Client::Handler, public json::WSAPIParser::Handler {
+  struct HoldCancelOrder final {
+    cache::CancelOrder cancel_order;
+    RequestId request_id;
+    RequestId previous_request_id;
+    Symbol symbol;
+  };
+
   struct ListenKeyUpdate final {
     std::string_view account;
     std::string_view listen_key;
@@ -85,6 +95,8 @@ struct OrderEntryWS final : public web::socket::Client::Handler, public json::WS
       oms::Order const &,
       std::string_view const &request_id,
       std::string_view const &previous_request_id);
+  void order_cancel_replace(
+      HoldCancelOrder const &, Event<CreateOrder> const &, oms::Order const &, std::string_view const &_request_id);
 
   void operator()(web::socket::Client::Connected const &) override;
   void operator()(web::socket::Client::Disconnected const &) override;
@@ -103,9 +115,10 @@ struct OrderEntryWS final : public web::socket::Client::Handler, public json::WS
   void operator()(Trace<json::ListenKey> const &, json::WSAPIRequest const &, int32_t status) override;
   void operator()(Trace<json::Account> const &, json::WSAPIRequest const &, int32_t status) override;
   void operator()(Trace<json::OpenOrders> const &, json::WSAPIRequest const &, int32_t status) override;
+  void operator()(Trace<json::CancelAllOpenOrders> const &, json::WSAPIRequest const &, int32_t status) override;
   void operator()(Trace<json::NewOrder> const &, json::WSAPIRequest const &, int32_t status) override;
   void operator()(Trace<json::CancelOrder> const &, json::WSAPIRequest const &, int32_t status) override;
-  void operator()(Trace<json::CancelAllOpenOrders> const &, json::WSAPIRequest const &, int32_t status) override;
+  void operator()(Trace<json::CancelReplaceOrder> const &, json::WSAPIRequest const &, int32_t status) override;
 
   template <typename... Args>
   void operator()(Trace<oms::Response> const &, uint8_t user_id, uint32_t order_id, Args &&...args);
@@ -129,8 +142,8 @@ struct OrderEntryWS final : public web::socket::Client::Handler, public json::WS
   struct {
     core::metrics::Profile parse, error, user_data_stream_start, user_data_stream_start_ack, user_data_stream_ping,
         user_data_stream_ping_ack, account_status, account_status_ack, open_orders_status, open_orders_status_ack,
-        order_place, order_place_ack, order_cancel, order_cancel_ack, open_orders_cancel_all,
-        open_orders_cancel_all_ack;
+        open_orders_cancel_all, open_orders_cancel_all_ack, order_place, order_place_ack, order_cancel,
+        order_cancel_ack, order_cancel_replace, order_cancel_replace_ack;
   } profile_;
   struct {
     core::metrics::Latency ping, heartbeat;
@@ -152,6 +165,8 @@ struct OrderEntryWS final : public web::socket::Client::Handler, public json::WS
   // state
   bool ready_ = false;
   ConnectionStatus status_ = {};
+  // batch
+  std::vector<std::unique_ptr<HoldCancelOrder>> hold_cancel_order_;
 };
 
 }  // namespace binance

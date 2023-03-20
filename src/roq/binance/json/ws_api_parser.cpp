@@ -61,6 +61,13 @@ bool dispatch_order_cancel(auto &handler, auto status, auto &value, auto &buffer
   return true;
 }
 
+bool dispatch_order_cancel_replace(
+    auto &handler, auto status, auto &value, auto &buffer, auto &trace_info, auto &request) {
+  json::CancelReplaceOrder cancel_replace_order{value, buffer};
+  create_trace_and_dispatch(handler, trace_info, cancel_replace_order, request, status);
+  return true;
+}
+
 bool dispatch_helper(auto &handler, auto status, auto &value, auto &buffer, auto &trace_info, auto &request) {
   switch (request.type) {
     using enum WSAPIType::type_t;
@@ -81,6 +88,8 @@ bool dispatch_helper(auto &handler, auto status, auto &value, auto &buffer, auto
       return dispatch_order_place(handler, status, value, buffer, trace_info, request);
     case ORDER_CANCEL:
       return dispatch_order_cancel(handler, status, value, buffer, trace_info, request);
+    case ORDER_CANCEL_REPLACE:
+      return dispatch_order_cancel_replace(handler, status, value, buffer, trace_info, request);
   }
   return false;
 }

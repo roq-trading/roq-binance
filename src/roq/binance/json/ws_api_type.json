@@ -22,6 +22,9 @@
     },
     {
       "name": "ORDER_CANCEL"
+    },
+    {
+      "name": "ORDER_CANCEL_REPLACE"
     }
   ]
 }

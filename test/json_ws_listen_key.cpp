@@ -15,7 +15,7 @@ using namespace Catch::literals;
 
 TEST_CASE("simple", "[json_ws_listen_key]") {
   constexpr auto const message = R"({)"
-                                 R"("id":"AQAAAAJ7Fc1bB7Fo3joA",)"
+                                 R"("id":"AQAAAAJ7Fc1bB7Fo3jpZd34L",)"
                                  R"("status":200,)"
                                  R"("result":{)"
                                  R"("listenKey":"eSWDvurLiumxeTwtGdHaLBozyJ9qzS9QcwOk3jmERrfqtf63IoQKwhD4CALz")"
@@ -48,6 +48,12 @@ TEST_CASE("simple", "[json_ws_listen_key]") {
       FAIL();
     }
     void operator()(
+        Trace<json::CancelAllOpenOrders> const &,
+        json::WSAPIRequest const &,
+        [[maybe_unused]] int32_t status) override {
+      FAIL();
+    }
+    void operator()(
         Trace<json::NewOrder> const &, json::WSAPIRequest const &, [[maybe_unused]] int32_t status) override {
       FAIL();
     }
@@ -56,9 +62,7 @@ TEST_CASE("simple", "[json_ws_listen_key]") {
       FAIL();
     }
     void operator()(
-        Trace<json::CancelAllOpenOrders> const &,
-        json::WSAPIRequest const &,
-        [[maybe_unused]] int32_t status) override {
+        Trace<json::CancelReplaceOrder> const &, json::WSAPIRequest const &, [[maybe_unused]] int32_t status) override {
       FAIL();
     }
     size_t counter = {};

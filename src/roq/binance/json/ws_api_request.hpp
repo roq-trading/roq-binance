@@ -19,6 +19,7 @@ struct WSAPIRequest final {
   uint8_t user_id = {};
   uint32_t order_id = {};
   uint32_t version = {};
+  uint32_t order_id_2 = {};
 
   static std::string_view encode(std::vector<char> &buffer, WSAPIRequest const &);
   static WSAPIRequest decode(std::string_view const &buffer);
@@ -45,12 +46,14 @@ struct fmt::formatter<roq::binance::json::WSAPIRequest> {
         R"(type={}, )"
         R"(user_id={}, )"
         R"(order_id={}, )"
-        R"(version={})"
+        R"(version={}, )"
+        R"(order_id_2={})"
         R"(}})"_cf,
         value.sequence,
         value.type,
         value.user_id,
         value.order_id,
-        value.version);
+        value.version,
+        value.order_id_2);
   }
 };
