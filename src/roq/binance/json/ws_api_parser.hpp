@@ -18,6 +18,7 @@
 #include "roq/binance/json/cancel_all_open_orders.hpp"
 #include "roq/binance/json/cancel_order.hpp"
 #include "roq/binance/json/cancel_replace_order.hpp"
+#include "roq/binance/json/cancel_replace_order_error.hpp"
 #include "roq/binance/json/new_order.hpp"
 #include "roq/binance/json/open_orders.hpp"
 
@@ -35,6 +36,7 @@ struct WSAPIParser final {
     virtual void operator()(Trace<NewOrder> const &, WSAPIRequest const &, int32_t status) = 0;
     virtual void operator()(Trace<CancelOrder> const &, WSAPIRequest const &, int32_t status) = 0;
     virtual void operator()(Trace<CancelReplaceOrder> const &, WSAPIRequest const &, int32_t status) = 0;
+    virtual void operator()(Trace<CancelReplaceOrderError> const &, WSAPIRequest const &, int32_t status) = 0;
   };
 
   static bool dispatch(Handler &, std::string_view const &message, core::json::Buffer &, TraceInfo const &);

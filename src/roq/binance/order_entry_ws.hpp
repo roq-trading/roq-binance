@@ -119,6 +119,7 @@ struct OrderEntryWS final : public web::socket::Client::Handler, public json::WS
   void operator()(Trace<json::NewOrder> const &, json::WSAPIRequest const &, int32_t status) override;
   void operator()(Trace<json::CancelOrder> const &, json::WSAPIRequest const &, int32_t status) override;
   void operator()(Trace<json::CancelReplaceOrder> const &, json::WSAPIRequest const &, int32_t status) override;
+  void operator()(Trace<json::CancelReplaceOrderError> const &, json::WSAPIRequest const &, int32_t status) override;
 
   template <typename... Args>
   void operator()(Trace<oms::Response> const &, uint8_t user_id, uint32_t order_id, Args &&...args);
@@ -143,7 +144,7 @@ struct OrderEntryWS final : public web::socket::Client::Handler, public json::WS
     core::metrics::Profile parse, error, user_data_stream_start, user_data_stream_start_ack, user_data_stream_ping,
         user_data_stream_ping_ack, account_status, account_status_ack, open_orders_status, open_orders_status_ack,
         open_orders_cancel_all, open_orders_cancel_all_ack, order_place, order_place_ack, order_cancel,
-        order_cancel_ack, order_cancel_replace, order_cancel_replace_ack;
+        order_cancel_ack, order_cancel_replace, order_cancel_replace_ack, order_cancel_replace_error;
   } profile_;
   struct {
     core::metrics::Latency ping, heartbeat;

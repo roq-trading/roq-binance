@@ -65,6 +65,12 @@ TEST_CASE("simple", "[json_ws_listen_key]") {
         Trace<json::CancelReplaceOrder> const &, json::WSAPIRequest const &, [[maybe_unused]] int32_t status) override {
       FAIL();
     }
+    void operator()(
+        Trace<json::CancelReplaceOrderError> const &,
+        json::WSAPIRequest const &,
+        [[maybe_unused]] int32_t status) override {
+      FAIL();
+    }
     size_t counter = {};
   } handler;
   core::Buffer buffer_(4096);

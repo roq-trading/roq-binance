@@ -23,6 +23,13 @@ bool dispatch_error(auto &handler, auto status, auto &value, auto &buffer, auto 
   return true;
 }
 
+bool dispatch_cancel_replace_order_error(
+    auto &handler, auto status, auto &value, auto &buffer, auto &trace_info, auto &request) {
+  CancelReplaceOrderError cancel_replace_order_error{value, buffer};
+  create_trace_and_dispatch(handler, trace_info, cancel_replace_order_error, request, status);
+  return true;
+}
+
 bool dispatch_listen_key(auto &handler, auto status, auto &value, auto &buffer, auto &trace_info, auto &request) {
   ListenKey listen_key{value, buffer};
   create_trace_and_dispatch(handler, trace_info, listen_key, request, status);
@@ -116,8 +123,13 @@ bool WSAPIParser::dispatch(
         if (!std::empty(id) && status != 0)
           return dispatch_helper(handler, status, value, buffer, trace_info, request);
       } else if (key.compare("error"sv) == 0) {
-        if (!std::empty(id) && status != 0)
-          return dispatch_error(handler, status, value, buffer, trace_info, request);
+        if (!std::empty(id) && status != 0) {
+          if (request.type != WSAPIType::ORDER_CANCEL_REPLACE) {
+            return dispatch_cancel_replace_order_error(handler, status, value, buffer, trace_info, request);
+          } else {
+            return dispatch_error(handler, status, value, buffer, trace_info, request);
+          }
+        }
       } else if (key.compare("rateLimits"sv) == 0) {
         // drop
       }

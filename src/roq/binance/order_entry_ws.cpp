@@ -104,6 +104,7 @@ OrderEntryWS::OrderEntryWS(
           .order_cancel_ack = create_metrics(name_, "order_cancel_ack"sv),
           .order_cancel_replace = create_metrics(name_, "order_cancel_replace"sv),
           .order_cancel_replace_ack = create_metrics(name_, "order_cancel_replace_ack"sv),
+          .order_cancel_replace_error = create_metrics(name_, "order_cancel_replace_error"sv),
       },
       latency_{
           .ping = create_metrics(name_, "ping"sv),
@@ -164,6 +165,7 @@ void OrderEntryWS::operator()(metrics::Writer &writer) {
       .write(profile_.order_cancel_ack, metrics::PROFILE)
       .write(profile_.order_cancel_replace, metrics::PROFILE)
       .write(profile_.order_cancel_replace_ack, metrics::PROFILE)
+      .write(profile_.order_cancel_replace_error, metrics::PROFILE)
       // latency
       .write(latency_.ping, metrics::LATENCY)
       .write(latency_.heartbeat, metrics::LATENCY);
@@ -1083,6 +1085,10 @@ void OrderEntryWS::operator()(
       break;
     }
   }
+}
+
+void OrderEntryWS::operator()(
+    Trace<json::CancelReplaceOrderError> const &, json::WSAPIRequest const &, int32_t status) {
 }
 
 template <typename... Args>

@@ -113,6 +113,12 @@ TEST_CASE("simple", "[json_ws_order_cancel_replace]") {
       ++counter;
       auto &[trace_info, cancel_replace_order] = event;
     }
+    void operator()(
+        Trace<json::CancelReplaceOrderError> const &,
+        json::WSAPIRequest const &,
+        [[maybe_unused]] int32_t status) override {
+      FAIL();
+    }
     size_t counter = {};
   } handler;
   core::Buffer buffer_(4096);
