@@ -2,6 +2,7 @@
 
 #include "roq/binance/order_entry_ws.hpp"
 
+#include <algorithm>
 #include <memory>
 #include <utility>
 
@@ -338,8 +339,10 @@ void OrderEntryWS::open_orders_status() {
 void OrderEntryWS::open_orders_cancel_all(
     Event<CancelAllOrders> const &event, [[maybe_unused]] std::string_view const &request_id) {
   profile_.open_orders_cancel_all([&]() {
-    if (!ready())
-      throw oms::NotReady{"not ready"sv};
+    if (!ready()) {
+      log::warn("Unable to cancel open orders (reason: NOT READY)"sv);
+      return;
+    }
     auto &[message_info, cancel_all_orders] = event;
     for (auto &symbol : open_orders_symbols_) {
       auto now = clock::get_realtime<std::chrono::milliseconds>();
@@ -898,7 +901,7 @@ void OrderEntryWS::operator()(
     Trace<json::CancelReplaceOrder> const &event, json::WSAPIRequest const &request, int32_t status) {
   auto &[trace_info, cancel_replace_order] = event;
   log::info<2>("cancel_replace_order={}, request={}, status={}"sv, cancel_replace_order, request, status);
-  update_helper(event, request, status);
+  update_helper(event, request, status, {}, {});
 }
 
 void OrderEntryWS::operator()(
@@ -907,15 +910,46 @@ void OrderEntryWS::operator()(
   log::info<2>("cancel_replace_order_error={}, request={}, status={}"sv, cancel_replace_order_error, request, status);
   assert(cancel_replace_order_error.code != 0);
   Trace event_2{trace_info, cancel_replace_order_error.data};
-  update_helper(event_2, request, status);
+  update_helper(event_2, request, status, cancel_replace_order_error.code, cancel_replace_order_error.msg);
 }
 
 void OrderEntryWS::update_helper(
-    Trace<json::CancelReplaceOrder> const &event, json::WSAPIRequest const &request, [[maybe_unused]] int32_t status) {
+    Trace<json::CancelReplaceOrder> const &event,
+    json::WSAPIRequest const &request,
+    [[maybe_unused]] int32_t status,
+    int32_t error_code,
+    std::string_view const &error_msg) {
   auto &[trace_info, cancel_replace_order] = event;
+  // cancel
+  auto dispatch_cancel_error = [&]() {
+    auto &cancel_order = cancel_replace_order.cancel_response;
+    auto response = oms::Response{
+        .type = RequestType::CANCEL_ORDER,
+        .origin = Origin::EXCHANGE,
+        .status = RequestStatus::REJECTED,
+        .error = json::guess_error(std::max(error_code, cancel_order.code)),
+        .text = std::empty(cancel_order.msg) ? error_msg : cancel_order.msg,
+        .version = request.version,
+        .request_id = {},
+        .quantity = NaN,
+        .price = NaN,
+    };
+    log::debug("response={}, user_id={}, order_id={}"sv, response, request.user_id, request.order_id);
+    if (shared_.update_order(
+            request.user_id, request.order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
+    } else {
+      log::warn(
+          "Did not find order: user_id={}, order_id={}, version={}"sv,
+          request.user_id,
+          request.order_id,
+          request.version);
+    }
+  };
   switch (cancel_replace_order.cancel_result) {
     using enum json::SuccessOrFailure::type_t;
     case UNDEFINED:
+      dispatch_cancel_error();
+      break;
     case UNKNOWN:
       log::warn("Unexpected"sv);
       break;
@@ -982,35 +1016,41 @@ void OrderEntryWS::update_helper(
       break;
     }
     case FAILURE:
-    case NOT_ATTEMPTED: {
-      auto &cancel_order = cancel_replace_order.cancel_response;
-      auto response = oms::Response{
-          .type = RequestType::CANCEL_ORDER,
-          .origin = Origin::EXCHANGE,
-          .status = RequestStatus::REJECTED,
-          .error = json::guess_error(cancel_order.code),
-          .text = cancel_order.msg,
-          .version = request.version,
-          .request_id = {},
-          .quantity = NaN,
-          .price = NaN,
-      };
-      if (shared_.update_order(
-              request.user_id, request.order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {
-              })) {
-      } else {
-        log::warn(
-            "Did not find order: user_id={}, order_id={}, version={}"sv,
-            request.user_id,
-            request.order_id,
-            request.version);
-      }
+    case NOT_ATTEMPTED:
+      dispatch_cancel_error();
       break;
-    }
   }
-  switch (cancel_replace_order.cancel_result) {
+  // new order
+  auto dispatch_create_error = [&]() {
+    auto &new_order = cancel_replace_order.new_order_response;
+    auto response = oms::Response{
+        .type = RequestType::CREATE_ORDER,
+        .origin = Origin::EXCHANGE,
+        .status = RequestStatus::REJECTED,
+        .error = json::guess_error(std::max(error_code, new_order.code)),
+        .text = std::empty(new_order.msg) ? error_msg : new_order.msg,
+        .version = 1,  // note!
+        .request_id = {},
+        .quantity = NaN,
+        .price = NaN,
+    };
+    log::debug("response={}, user_id={}, order_id={}"sv, response, request.user_id, request.order_id_2);
+    if (shared_.update_order(
+            request.user_id, request.order_id_2, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {
+            })) {
+    } else {
+      log::warn(
+          "Did not find order: request.user_id={}, request.order_id={}, version={}"sv,
+          request.user_id,
+          request.order_id_2,
+          1);
+    }
+  };
+  switch (cancel_replace_order.new_order_result) {
     using enum json::SuccessOrFailure::type_t;
     case UNDEFINED:
+      dispatch_create_error();
+      break;
     case UNKNOWN:
       log::warn("Unexpected"sv);
       break;
@@ -1073,31 +1113,9 @@ void OrderEntryWS::update_helper(
       break;
     }
     case FAILURE:
-    case NOT_ATTEMPTED: {
-      auto &new_order = cancel_replace_order.new_order_response;
-      auto response = oms::Response{
-          .type = RequestType::CREATE_ORDER,
-          .origin = Origin::EXCHANGE,
-          .status = RequestStatus::REJECTED,
-          .error = json::guess_error(new_order.code),
-          .text = new_order.msg,
-          .version = 1,  // note!
-          .request_id = {},
-          .quantity = NaN,
-          .price = NaN,
-      };
-      if (shared_.update_order(
-              request.user_id, request.order_id_2, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {
-              })) {
-      } else {
-        log::warn(
-            "Did not find order: request.user_id={}, request.order_id={}, version={}"sv,
-            request.user_id,
-            request.order_id_2,
-            1);
-      }
+    case NOT_ATTEMPTED:
+      dispatch_create_error();
       break;
-    }
   }
 }
 

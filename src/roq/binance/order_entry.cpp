@@ -1092,7 +1092,7 @@ void OrderEntry::operator()(
       break;
     }
   }
-  switch (cancel_replace_order.cancel_result) {
+  switch (cancel_replace_order.new_order_result) {
     using enum json::SuccessOrFailure::type_t;
     case UNDEFINED:
     case UNKNOWN:
