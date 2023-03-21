@@ -899,6 +899,21 @@ void OrderEntryWS::operator()(
     Trace<json::CancelReplaceOrder> const &event, json::WSAPIRequest const &request, int32_t status) {
   auto &[trace_info, cancel_replace_order] = event;
   log::info<2>("cancel_replace_order={}, request={}, status={}"sv, cancel_replace_order, request, status);
+  update_helper(event, request, status);
+}
+
+void OrderEntryWS::operator()(
+    Trace<json::CancelReplaceOrderError> const &event, json::WSAPIRequest const &request, int32_t status) {
+  auto &[trace_info, cancel_replace_order_error] = event;
+  log::info<2>("cancel_replace_order_error={}, request={}, status={}"sv, cancel_replace_order_error, request, status);
+  assert(cancel_replace_order_error.code != 0);
+  Trace event_2{trace_info, cancel_replace_order_error.data};
+  update_helper(event_2, request, status);
+}
+
+void OrderEntryWS::update_helper(
+    Trace<json::CancelReplaceOrder> const &event, json::WSAPIRequest const &request, [[maybe_unused]] int32_t status) {
+  auto &[trace_info, cancel_replace_order] = event;
   switch (cancel_replace_order.cancel_result) {
     using enum json::SuccessOrFailure::type_t;
     case UNDEFINED:
@@ -1085,10 +1100,6 @@ void OrderEntryWS::operator()(
       break;
     }
   }
-}
-
-void OrderEntryWS::operator()(
-    Trace<json::CancelReplaceOrderError> const &, json::WSAPIRequest const &, int32_t status) {
 }
 
 template <typename... Args>

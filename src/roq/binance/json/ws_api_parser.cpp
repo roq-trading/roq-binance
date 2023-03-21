@@ -124,7 +124,7 @@ bool WSAPIParser::dispatch(
           return dispatch_helper(handler, status, value, buffer, trace_info, request);
       } else if (key.compare("error"sv) == 0) {
         if (!std::empty(id) && status != 0) {
-          if (request.type != WSAPIType::ORDER_CANCEL_REPLACE) {
+          if (request.type == WSAPIType::ORDER_CANCEL_REPLACE) {
             return dispatch_cancel_replace_order_error(handler, status, value, buffer, trace_info, request);
           } else {
             return dispatch_error(handler, status, value, buffer, trace_info, request);

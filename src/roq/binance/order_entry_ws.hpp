@@ -121,6 +121,8 @@ struct OrderEntryWS final : public web::socket::Client::Handler, public json::WS
   void operator()(Trace<json::CancelReplaceOrder> const &, json::WSAPIRequest const &, int32_t status) override;
   void operator()(Trace<json::CancelReplaceOrderError> const &, json::WSAPIRequest const &, int32_t status) override;
 
+  void update_helper(Trace<json::CancelReplaceOrder> const &, json::WSAPIRequest const &, int32_t status);
+
   template <typename... Args>
   void operator()(Trace<oms::Response> const &, uint8_t user_id, uint32_t order_id, Args &&...args);
 
