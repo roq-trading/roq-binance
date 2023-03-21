@@ -919,7 +919,8 @@ void OrderEntryWS::update_helper(
     [[maybe_unused]] int32_t status,
     int32_t error_code,
     std::string_view const &error_msg) {
-  auto &[trace_info, cancel_replace_order] = event;
+  auto &trace_info = event.trace_info;
+  auto &cancel_replace_order = event.value;
   // cancel
   auto dispatch_cancel_error = [&]() {
     auto &cancel_order = cancel_replace_order.cancel_response;
