@@ -635,8 +635,7 @@ void OrderEntryWS::operator()(Trace<json::Error> const &event, json::WSAPIReques
         dispatch_oms_error(RequestType::CANCEL_ORDER);
         break;
       case ORDER_CANCEL_REPLACE:
-        // XXX HANS
-        dispatch_oms_error(RequestType::CANCEL_ORDER);
+        log::warn("Unexpected"sv);
         break;
     }
   });
