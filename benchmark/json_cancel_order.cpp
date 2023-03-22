@@ -19,6 +19,7 @@ auto const REQUEST_ID = "jQAB6gMAAQAAQUIp3sUSAawljiyfnylc"sv;
 auto const PREVIOUS_REQUEST_ID = "jQAB6gMAAQAAQUIp3sUSAawljiyfnylc"sv;
 auto const ACCOUNT = "A1"sv;
 auto const ORDER_ID = uint32_t{1234};
+auto const CANCEL_ORDER_TEMPLATE = json::CancelOrderTemplate{};
 auto const RECV_WINDOW = 5s;
 auto const KEY = "sSzUA6j8tGDfmLoFrOPhWHY3VeXbC3NrApp94Ci4H4XvcjuCuvOXp8gH89XzMPDe"sv;
 auto const SECRET = "tHurnNFWLFkm97xVRqoESdujAiq1ilNjnY52tDej5RilUbTVZXT2YB5eo7txFLHk"sv;
@@ -46,7 +47,8 @@ void BM_json_cancel_order(benchmark::State &state) {
         .version = {},
         .conditional_on_version = {},
     };
-    auto body = json::cancel_order(buffer, cancel_order, OMS_ORDER, REQUEST_ID, PREVIOUS_REQUEST_ID, RECV_WINDOW);
+    auto body = json::cancel_order(
+        buffer, cancel_order, OMS_ORDER, REQUEST_ID, PREVIOUS_REQUEST_ID, CANCEL_ORDER_TEMPLATE, RECV_WINDOW);
     if (!std::empty(body))
       ++processed;
   }
@@ -70,7 +72,8 @@ void BM_json_cancel_order_with_signature(benchmark::State &state) {
         .version = {},
         .conditional_on_version = {},
     };
-    auto body = json::cancel_order(buffer, cancel_order, OMS_ORDER, REQUEST_ID, PREVIOUS_REQUEST_ID, RECV_WINDOW);
+    auto body = json::cancel_order(
+        buffer, cancel_order, OMS_ORDER, REQUEST_ID, PREVIOUS_REQUEST_ID, CANCEL_ORDER_TEMPLATE, RECV_WINDOW);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = crypto.create_query(buffer_2, now, body);
     if (!std::empty(query))
