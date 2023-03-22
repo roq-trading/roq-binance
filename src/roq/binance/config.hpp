@@ -17,6 +17,8 @@
 
 #include "roq/binance/flags.hpp"
 
+#include "roq/binance/json/cancel_order_template.hpp"
+
 namespace roq {
 namespace binance {
 
@@ -45,6 +47,7 @@ struct Config final : public server::Config, public server::ConfigReader::Handle
   void operator()(server::Account &&) override;
   void operator()(server::User &&) override;
   void operator()(server::RateLimit &&) override;
+  void operator()(server::RequestTemplate, std::string_view const &label, toml::table &) override;
   void operator()(std::string_view const &key, toml::node &) override;
 
  private:
@@ -59,6 +62,7 @@ struct Config final : public server::Config, public server::ConfigReader::Handle
   server::Accounts accounts;
   Account master_account_;
   server::RateLimits rate_limits;
+  absl::flat_hash_map<std::string, json::CancelOrderTemplate> cancel_order_templates;
 };
 
 /*

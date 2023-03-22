@@ -11,6 +11,27 @@ symbols = [ "BTCUSDT" ]
 #  secret = "FAqRRoU4YZDJntUwB1qA9KO3mjjdwNBXBpAlQmyQcEJjv17ypK2aRthUgTrUk6nL"
   symbols = ".*"
 
+[templates]
+
+  [templates.create_order]
+
+    [templates.create_order.ET]
+    self_trade_prevention_mode = "EXPIRE_TAKER"
+
+    [templates.create_order.EM]
+    self_trade_prevention_mode = "EXPIRE_MAKER"
+
+    [templates.create_order.EB]
+    self_trade_prevention_mode = "EXPIRE_BOTH"
+  
+  [templates.cancel_order]
+
+    [templates.cancel_order.ON]
+    cancel_restrictions = "ONLY_NEW"
+
+    [templates.cancel_order.OPF]
+    cancel_restrictions = "ONLY_PARTIALLY_FILLED"
+  
 [users]
 
   [users.test]

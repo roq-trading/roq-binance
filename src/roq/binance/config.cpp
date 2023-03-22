@@ -6,6 +6,8 @@
 
 #include "roq/logging.hpp"
 
+#include "roq/binance/json/cancel_restrictions.hpp"
+
 using namespace std::literals;
 
 namespace roq {
@@ -80,7 +82,7 @@ void Config::dispatch(server::Config::Handler &handler) const {
     handler(iter.second);
   for (auto &user : users)
     handler(user);
-  GatewaySettings gateway_settings{
+  auto gateway_settings = GatewaySettings{
       .supports = SUPPORTS,
       .mbp_max_depth = mbp_max_depth_,
       .mbp_tick_size_multiplier = NaN,
@@ -113,6 +115,43 @@ void Config::operator()(server::User &&user) {
 
 void Config::operator()(server::RateLimit &&rate_limit) {
   rate_limits.emplace(rate_limit.name, std::move(rate_limit));
+}
+
+void Config::operator()(server::RequestTemplate request_template, std::string_view const &label, toml::table &table) {
+  switch (request_template) {
+    using enum server::RequestTemplate;
+    case CREATE_ORDER: {
+      for (auto &[key, value] : table) {
+        auto value_2 = *value.template value<std::string_view>();
+        log::warn(
+            "{} {} {} {}"sv,
+            magic_enum::enum_name(request_template),
+            label,
+            static_cast<std::string_view>(key),
+            static_cast<std::string_view>(value_2));
+      }
+      break;
+    }
+    case MODIFY_ORDER:
+      break;
+    case CANCEL_ORDER: {
+      json::CancelOrderTemplate cancel_order_template;
+      for (auto &[k, v] : table) {
+        auto key = static_cast<std::string_view>(k);
+        if (key.compare("cancel_restrictions"sv) == 0) {
+          auto value = *v.template value<std::string_view>();
+          cancel_order_template.cancel_restrictions = value;
+          if (cancel_order_template.cancel_restrictions == json::CancelRestrictions ::UNKNOWN)
+            log::fatal(R"(Unknown: value="{}")"sv, value);
+        } else {
+          log::fatal(R"(Unexpected: key="{}")"sv, key);
+        }
+      }
+      log::warn(R"(label="{}", cancel_order_template={})"sv, label, cancel_order_template);
+      cancel_order_templates.try_emplace(label, std::move(cancel_order_template));
+      break;
+    }
+  }
 }
 
 void Config::operator()(std::string_view const &key, toml::node &) {

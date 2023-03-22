@@ -41,6 +41,7 @@ void BM_json_cancel_order(benchmark::State &state) {
     auto cancel_order = CancelOrder{
         .account = ACCOUNT,
         .order_id = ORDER_ID,
+        .request_template = {},
         .routing_id = {},
         .version = {},
         .conditional_on_version = {},
@@ -64,6 +65,7 @@ void BM_json_cancel_order_with_signature(benchmark::State &state) {
     auto cancel_order = CancelOrder{
         .account = ACCOUNT,
         .order_id = ORDER_ID,
+        .request_template = {},
         .routing_id = {},
         .version = {},
         .conditional_on_version = {},

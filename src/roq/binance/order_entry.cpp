@@ -760,6 +760,7 @@ void OrderEntry::cancel_replace_order(
     if (!ready())
       throw oms::NotReady{"not ready"sv};
     auto &[message_info, create_order] = event;
+    auto &cancel_order_template = shared_.get_cancel_order_template(hold_cancel_order.cancel_order.request_template);
     auto body = json::cancel_replace_order(
         encode_buffer_,
         hold_cancel_order.request_id,
@@ -767,6 +768,7 @@ void OrderEntry::cancel_replace_order(
         create_order,
         order,
         request_id,
+        cancel_order_template,
         utils::safe_cast(Flags::rest_order_recv_window()),
         flags::Flags::cancel_replace_stop_on_failure());
     log::info(R"(DEBUG body="{}")"sv, body);
@@ -1215,8 +1217,10 @@ void OrderEntry::cancel_order(
     if (!ready())
       throw oms::NotReady{"not ready"sv};
     auto &[message_info, cancel_order] = event;
+    auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(Flags::rest_order_recv_window());
-    auto body = json::cancel_order(encode_buffer_, cancel_order, order, request_id, previous_request_id, recv_window);
+    auto body = json::cancel_order(
+        encode_buffer_, cancel_order, order, request_id, previous_request_id, cancel_order_template, recv_window);
     log::debug(R"(body="{}")"sv, body);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = authenticator_.create_query(now, body);

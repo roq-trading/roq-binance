@@ -19,11 +19,15 @@
 
 #include "roq/core/mbp/sequencer.hpp"
 
+#include "roq/binance/config.hpp"
+
+#include "roq/binance/json/cancel_order_template.hpp"
+
 namespace roq {
 namespace binance {
 
 struct Shared final {
-  explicit Shared(server::Dispatcher &);
+  Shared(server::Dispatcher &, Config const &);
 
   Shared(Shared &&) = default;
   Shared(Shared const &) = delete;
@@ -79,6 +83,10 @@ struct Shared final {
     }
   };
   absl::flat_hash_map<Symbol, Instrument> instruments;
+
+ public:
+  absl::flat_hash_map<std::string, json::CancelOrderTemplate> cancel_order_templates;
+  json::CancelOrderTemplate const &get_cancel_order_template(std::string_view const &name);
 
  private:
   server::Dispatcher &dispatcher_;

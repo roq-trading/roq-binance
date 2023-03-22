@@ -82,8 +82,9 @@ auto create_drop_copy(auto &security_by_account) {
 
 Gateway::Gateway(server::Dispatcher &dispatcher, Config const &config, io::Context &context)
     : dispatcher_{dispatcher}, ws_api_{flags::Flags::ws_api()},
-      authenticator_(create_authenticator<decltype(authenticator_)>(config)), context_{context}, shared_{dispatcher},
-      request_{create_request<decltype(request_)>(config)}, rest_{*this, context_, ++stream_id_, shared_},
+      authenticator_(create_authenticator<decltype(authenticator_)>(config)), context_{context},
+      shared_{dispatcher, config}, request_{create_request<decltype(request_)>(config)},
+      rest_{*this, context_, ++stream_id_, shared_},
       order_entry_{
           create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, authenticator_, shared_, request_)},
       order_entry_ws_{create_order_entry_ws<decltype(order_entry_ws_)>(

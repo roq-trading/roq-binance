@@ -4,14 +4,28 @@
 
 #include "roq/binance/flags.hpp"
 
+using namespace std::literals;
+
 namespace roq {
 namespace binance {
 
 // === IMPLEMENTATION ===
 
-Shared::Shared(server::Dispatcher &dispatcher)
+Shared::Shared(server::Dispatcher &dispatcher, Config const &config)
     : dispatcher_{dispatcher}, rate_limiter{Flags::request_limit(), Flags::request_limit_interval()},
-      symbols{Flags::ws_max_subscriptions_per_stream()}, depth_request_queue{Flags::ws_mbp_request_delay()} {
+      symbols{Flags::ws_max_subscriptions_per_stream()}, depth_request_queue{Flags::ws_mbp_request_delay()},
+      cancel_order_templates{config.cancel_order_templates} {
+}
+
+json::CancelOrderTemplate const &Shared::get_cancel_order_template(std::string_view const &name) {
+  if (std::empty(name)) {
+    static auto const empty = json::CancelOrderTemplate{};
+    return empty;
+  }
+  auto iter = cancel_order_templates.find(name);
+  if (iter != std::end(cancel_order_templates))
+    return (*iter).second;
+  throw oms::NotSupported{"not supported"sv};
 }
 
 }  // namespace binance

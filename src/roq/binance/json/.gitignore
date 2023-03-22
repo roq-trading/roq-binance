@@ -8,8 +8,9 @@ balance_update.hpp
 book_ticker.hpp
 cancel_all_open_orders.hpp
 cancel_order.hpp
-cancel_replace_order.hpp
 cancel_replace_order_error.hpp
+cancel_replace_order.hpp
+cancel_restrictions.hpp
 depth_item.hpp
 depth.hpp
 depth_update.hpp
@@ -53,8 +54,9 @@ balance_update.cpp
 book_ticker.cpp
 cancel_all_open_orders.cpp
 cancel_order.cpp
-cancel_replace_order.cpp
 cancel_replace_order_error.cpp
+cancel_replace_order.cpp
+cancel_restrictions.cpp
 depth_item.cpp
 depth.cpp
 depth_update.cpp

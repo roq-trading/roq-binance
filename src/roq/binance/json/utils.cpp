@@ -273,11 +273,14 @@ std::string_view cancel_order(
     oms::Order const &order,
     std::string_view const &request_id,
     std::string_view const &previous_request_id,
+    CancelOrderTemplate const &cancel_order_template,
     std::chrono::milliseconds recv_window) {
   buffer.resize(512);
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
   core::text::Writer writer{buffer_2};
   writer.write("newClientOrderId="sv).write(request_id);
+  if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
+    writer.write("&cancelRestrictions="sv).write(cancel_order_template.cancel_restrictions.as_raw_text());
   writer.write("&origClientOrderId="sv).write(previous_request_id);
   writer.write("&recvWindow="sv).write(recv_window.count());
   writer.write("&symbol="sv).write(order.symbol);
@@ -290,6 +293,7 @@ std::string_view cancel_order_ws_url(
     oms::Order const &order,
     std::string_view const &request_id,
     std::string_view const &previous_request_id,
+    CancelOrderTemplate const &cancel_order_template,
     std::chrono::milliseconds recv_window,
     std::string_view const &api_key,
     std::chrono::milliseconds now) {
@@ -297,6 +301,8 @@ std::string_view cancel_order_ws_url(
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
   core::text::Writer writer{buffer_2};
   writer.write("apiKey="sv).write(api_key);
+  if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
+    writer.write("&cancelRestrictions="sv).write(cancel_order_template.cancel_restrictions.as_raw_text());
   writer.write("&newClientOrderId="sv).write(request_id);
   writer.write("&origClientOrderId="sv).write(previous_request_id);
   writer.write("&recvWindow="sv).write(recv_window.count());
@@ -311,6 +317,7 @@ std::string_view cancel_order_ws_json(
     oms::Order const &order,
     std::string_view const &request_id,
     std::string_view const &previous_request_id,
+    CancelOrderTemplate const &cancel_order_template,
     std::chrono::milliseconds recv_window,
     std::string_view const &api_key,
     std::chrono::milliseconds now,
@@ -320,6 +327,10 @@ std::string_view cancel_order_ws_json(
   core::text::Writer writer{buffer_2};
   writer.write("{"sv);
   writer.write(R"("apiKey":")"sv).write(api_key).write(R"(")"sv);
+  if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
+    writer.write(R"(,"cancelRestrictions":")"sv)
+        .write(cancel_order_template.cancel_restrictions.as_raw_text())
+        .write(R"(")"sv);
   writer.write(R"(,"newClientOrderId":")"sv).write(request_id).write(R"(")"sv);
   writer.write(R"(,"origClientOrderId":")"sv).write(previous_request_id).write(R"(")"sv);
   writer.write(R"(,"recvWindow":)"sv).write(recv_window.count());
@@ -340,6 +351,7 @@ std::string_view cancel_replace_order(
     CreateOrder const &create_order,
     oms::Order const &order,
     std::string_view const &create_request_id,
+    CancelOrderTemplate const &cancel_order_template,
     std::chrono::milliseconds recv_window,
     bool stop_on_failure) {
   auto side = map(order.side);
@@ -350,6 +362,11 @@ std::string_view cancel_replace_order(
   fmt::format_to(std::back_inserter(buffer), "cancelNewClientOrderId={}&"sv, cancel_request_id);
   fmt::format_to(std::back_inserter(buffer), "cancelOrigClientOrderId={}&"sv, cancel_previous_request_id);
   fmt::format_to(std::back_inserter(buffer), "cancelReplaceMode={}&"sv, cancel_replace_mode);
+  if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
+    fmt::format_to(
+        std::back_inserter(buffer),
+        "cancelRestrictions={}&"sv,
+        cancel_order_template.cancel_restrictions.as_raw_text());
   fmt::format_to(std::back_inserter(buffer), "newClientOrderId={}&"sv, create_request_id);
   if (!std::isnan(create_order.price))
     fmt::format_to(std::back_inserter(buffer), "price={}&"sv, utils::Number{create_order.price, order.price_decimals});
@@ -375,6 +392,7 @@ std::string_view cancel_replace_order_ws_url(
     CreateOrder const &create_order,
     oms::Order const &order,
     std::string_view const &create_request_id,
+    CancelOrderTemplate const &cancel_order_template,
     std::chrono::milliseconds recv_window,
     bool stop_on_failure,
     std::string_view const &api_key,
@@ -388,6 +406,11 @@ std::string_view cancel_replace_order_ws_url(
   fmt::format_to(std::back_inserter(buffer), "cancelNewClientOrderId={}&"sv, cancel_request_id);
   fmt::format_to(std::back_inserter(buffer), "cancelOrigClientOrderId={}&"sv, cancel_previous_request_id);
   fmt::format_to(std::back_inserter(buffer), "cancelReplaceMode={}&"sv, cancel_replace_mode);
+  if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
+    fmt::format_to(
+        std::back_inserter(buffer),
+        "cancelRestrictions={}&"sv,
+        cancel_order_template.cancel_restrictions.as_raw_text());
   fmt::format_to(std::back_inserter(buffer), "newClientOrderId={}&"sv, create_request_id);
   if (!std::isnan(create_order.price))
     fmt::format_to(std::back_inserter(buffer), "price={}&"sv, utils::Number{create_order.price, order.price_decimals});
@@ -414,6 +437,7 @@ std::string_view cancel_replace_order_ws_json(
     CreateOrder const &create_order,
     oms::Order const &order,
     std::string_view const &create_request_id,
+    CancelOrderTemplate const &cancel_order_template,
     std::chrono::milliseconds recv_window,
     bool stop_on_failure,
     std::string_view const &api_key,
@@ -429,6 +453,11 @@ std::string_view cancel_replace_order_ws_json(
   fmt::format_to(std::back_inserter(buffer), R"("cancelNewClientOrderId":"{}",)"sv, cancel_request_id);
   fmt::format_to(std::back_inserter(buffer), R"("cancelOrigClientOrderId":"{}",)"sv, cancel_previous_request_id);
   fmt::format_to(std::back_inserter(buffer), R"("cancelReplaceMode":"{}",)"sv, cancel_replace_mode);
+  if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
+    fmt::format_to(
+        std::back_inserter(buffer),
+        R"("cancelRestrictions":"{}",)"sv,
+        cancel_order_template.cancel_restrictions.as_raw_text());
   fmt::format_to(std::back_inserter(buffer), R"("newClientOrderId":"{}",)"sv, create_request_id);
   if (!std::isnan(create_order.price))
     fmt::format_to(

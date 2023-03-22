@@ -421,6 +421,7 @@ void OrderEntryWS::order_cancel(
     if (!ready())
       throw oms::NotReady{"not ready"sv};
     auto &[message_info, cancel_order] = event;
+    auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(Flags::rest_order_recv_window());
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto message_for_signature = json::cancel_order_ws_url(
@@ -429,6 +430,7 @@ void OrderEntryWS::order_cancel(
         order,
         request_id,
         previous_request_id,
+        cancel_order_template,
         recv_window,
         authenticator_.get_key(),
         now);
@@ -439,6 +441,7 @@ void OrderEntryWS::order_cancel(
         order,
         request_id,
         previous_request_id,
+        cancel_order_template,
         recv_window,
         authenticator_.get_key(),
         now,
@@ -473,6 +476,7 @@ void OrderEntryWS::order_cancel_replace(
     if (!ready())
       throw oms::NotReady{"not ready"sv};
     auto &[message_info, create_order] = event;
+    auto &cancel_order_template = shared_.get_cancel_order_template(hold_cancel_order.cancel_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(Flags::rest_order_recv_window());
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto message_for_signature = json::cancel_replace_order_ws_url(
@@ -482,6 +486,7 @@ void OrderEntryWS::order_cancel_replace(
         create_order,
         order,
         request_id,
+        cancel_order_template,
         utils::safe_cast(Flags::rest_order_recv_window()),
         flags::Flags::cancel_replace_stop_on_failure(),
         authenticator_.get_key(),
@@ -494,6 +499,7 @@ void OrderEntryWS::order_cancel_replace(
         create_order,
         order,
         request_id,
+        cancel_order_template,
         utils::safe_cast(Flags::rest_order_recv_window()),
         flags::Flags::cancel_replace_stop_on_failure(),
         authenticator_.get_key(),

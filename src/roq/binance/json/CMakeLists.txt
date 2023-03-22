@@ -1,7 +1,7 @@
 set(TARGET_NAME "${PROJECT_NAME}-json")
 
-set(SOURCES market_stream_parser.cpp user_stream_parser.cpp utils.cpp ws_api_parser.cpp
-            ws_api_request.cpp)
+set(SOURCES market_stream_parser.cpp user_stream_parser.cpp utils.cpp
+            ws_api_parser.cpp ws_api_request.cpp)
 
 include(RoqAutogen)
 
@@ -14,8 +14,9 @@ set(AUTOGEN_SCHEMAS
     book_ticker.json
     cancel_all_open_orders.json
     cancel_order.json
-    cancel_replace_order.json
     cancel_replace_order_error.json
+    cancel_replace_order.json
+    cancel_restrictions.json
     depth_item.json
     depth.json
     depth_update.json
