@@ -185,6 +185,8 @@ std::string_view new_order(
     writer.write("&price="sv).write(utils::Number{create_order.price, order.price_decimals});
   writer.write("&quantity="sv).write(utils::Number{create_order.quantity, order.quantity_decimals});
   writer.write("&recvWindow="sv).write(recv_window.count());
+  if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{})
+    writer.write("&selfTradePreventionMode="sv).write(create_order_template.self_trade_prevention_mode.as_raw_text());
   writer.write("&side="sv).write(side.as_raw_text());
   if (!std::isnan(create_order.stop_price))
     writer.write("&stopPrice="sv).write(utils::Number{create_order.stop_price, order.price_decimals});
@@ -217,6 +219,8 @@ std::string_view new_order_ws_url(
     writer.write("&price="sv).write(utils::Number{create_order.price, order.price_decimals});
   writer.write("&quantity="sv).write(utils::Number{create_order.quantity, order.quantity_decimals});
   writer.write("&recvWindow="sv).write(recv_window.count());
+  if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{})
+    writer.write("&selfTradePreventionMode="sv).write(create_order_template.self_trade_prevention_mode.as_raw_text());
   writer.write("&side="sv).write(side.as_raw_text());
   if (!std::isnan(create_order.stop_price))
     writer.write("&stopPrice="sv).write(utils::Number{create_order.stop_price, order.price_decimals});
@@ -253,6 +257,10 @@ std::string_view new_order_ws_json(
       .write(utils::Number{create_order.quantity, order.quantity_decimals})
       .write(R"(")"sv);
   writer.write(R"(,"recvWindow":)"sv).write(recv_window.count());
+  if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{})
+    writer.write(R"(,"selfTradePreventionMode":")"sv)
+        .write(create_order_template.self_trade_prevention_mode.as_raw_text())
+        .write(R"(")"sv);
   writer.write(R"(,"side":")"sv).write(side.as_raw_text()).write(R"(")"sv);
   if (!std::isnan(create_order.stop_price))
     writer.write(R"(,"stopPrice":")"sv)
@@ -394,6 +402,11 @@ std::string_view cancel_replace_order(
   fmt::format_to(
       std::back_inserter(buffer), "quantity={}&"sv, utils::Number{create_order.quantity, order.quantity_decimals});
   fmt::format_to(std::back_inserter(buffer), "recvWindow={}&"sv, recv_window.count());
+  if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{})
+    fmt::format_to(
+        std::back_inserter(buffer),
+        "selfTradePreventionMode={}&"sv,
+        create_order_template.self_trade_prevention_mode.as_raw_text());
   fmt::format_to(std::back_inserter(buffer), "side={}&"sv, side.as_raw_text());
   if (!std::isnan(create_order.stop_price))
     fmt::format_to(
@@ -439,6 +452,11 @@ std::string_view cancel_replace_order_ws_url(
   fmt::format_to(
       std::back_inserter(buffer), "quantity={}&"sv, utils::Number{create_order.quantity, order.quantity_decimals});
   fmt::format_to(std::back_inserter(buffer), "recvWindow={}&"sv, recv_window.count());
+  if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{})
+    fmt::format_to(
+        std::back_inserter(buffer),
+        "selfTradePreventionMode={}&"sv,
+        create_order_template.self_trade_prevention_mode.as_raw_text());
   fmt::format_to(std::back_inserter(buffer), "side={}&"sv, side.as_raw_text());
   if (!std::isnan(create_order.stop_price))
     fmt::format_to(
@@ -490,6 +508,11 @@ std::string_view cancel_replace_order_ws_json(
       R"("quantity":"{}",)"sv,
       utils::Number{create_order.quantity, order.quantity_decimals});
   fmt::format_to(std::back_inserter(buffer), R"("recvWindow":{},)"sv, recv_window.count());
+  if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{})
+    fmt::format_to(
+        std::back_inserter(buffer),
+        R"("selfTradePreventionMode":"{}",)"sv,
+        create_order_template.self_trade_prevention_mode.as_raw_text());
   fmt::format_to(std::back_inserter(buffer), R"("side":"{}",)"sv, side.as_raw_text());
   if (!std::isnan(create_order.stop_price))
     fmt::format_to(
