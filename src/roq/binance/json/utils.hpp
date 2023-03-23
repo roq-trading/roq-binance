@@ -20,6 +20,7 @@
 #include "roq/binance/json/time_in_force.hpp"
 
 #include "roq/binance/json/cancel_order_template.hpp"
+#include "roq/binance/json/create_order_template.hpp"
 
 namespace roq {
 namespace binance {
@@ -258,6 +259,7 @@ extern std::string_view new_order(
     CreateOrder const &,
     oms::Order const &,
     std::string_view const &request_id,
+    CreateOrderTemplate const &,
     std::chrono::milliseconds recv_window);
 
 extern std::string_view new_order_ws_url(
@@ -265,6 +267,7 @@ extern std::string_view new_order_ws_url(
     CreateOrder const &,
     oms::Order const &,
     std::string_view const &request_id,
+    CreateOrderTemplate const &,
     std::chrono::milliseconds recv_window,
     std::string_view const &api_key,
     std::chrono::milliseconds now);
@@ -274,6 +277,7 @@ extern std::string_view new_order_ws_json(
     CreateOrder const &,
     oms::Order const &,
     std::string_view const &request_id,
+    CreateOrderTemplate const &,
     std::chrono::milliseconds recv_window,
     std::string_view const &api_key,
     std::chrono::milliseconds now,
@@ -323,6 +327,7 @@ extern std::string_view cancel_replace_order(
     oms::Order const &,
     std::string_view const &create_request_id,
     CancelOrderTemplate const &,
+    CreateOrderTemplate const &,
     std::chrono::milliseconds recv_window,
     bool stop_on_failure);
 
@@ -334,6 +339,7 @@ extern std::string_view cancel_replace_order_ws_url(
     oms::Order const &,
     std::string_view const &create_request_id,
     CancelOrderTemplate const &,
+    CreateOrderTemplate const &,
     std::chrono::milliseconds recv_window,
     bool stop_on_failure,
     std::string_view const &api_key,
@@ -347,6 +353,7 @@ extern std::string_view cancel_replace_order_ws_json(
     oms::Order const &,
     std::string_view const &create_request_id,
     CancelOrderTemplate const &,
+    CreateOrderTemplate const &,
     std::chrono::milliseconds recv_window,
     bool stop_on_failure,
     std::string_view const &api_key,

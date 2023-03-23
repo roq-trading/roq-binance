@@ -172,6 +172,7 @@ std::string_view new_order(
     CreateOrder const &create_order,
     oms::Order const &order,
     std::string_view const &request_id,
+    CreateOrderTemplate const &create_order_template,
     std::chrono::milliseconds recv_window) {
   auto side = map(create_order.side);
   auto type = map_order_type(create_order);
@@ -199,6 +200,7 @@ std::string_view new_order_ws_url(
     CreateOrder const &create_order,
     oms::Order const &order,
     std::string_view const &request_id,
+    CreateOrderTemplate const &create_order_template,
     std::chrono::milliseconds recv_window,
     std::string_view const &api_key,
     std::chrono::milliseconds now) {
@@ -231,6 +233,7 @@ std::string_view new_order_ws_json(
     CreateOrder const &create_order,
     oms::Order const &order,
     std::string_view const &request_id,
+    CreateOrderTemplate const &create_order_template,
     std::chrono::milliseconds recv_window,
     std::string_view const &api_key,
     std::chrono::milliseconds now,
@@ -343,6 +346,23 @@ std::string_view cancel_order_ws_json(
 
 // cancel-replace
 
+namespace {
+auto get_cancel_replace_mode(auto &cancel_order_template, bool stop_on_failure) {
+  switch (cancel_order_template.cancel_replace_mode) {
+    using enum CancelReplaceMode::type_t;
+    case UNDEFINED:
+      break;
+    case UNKNOWN:
+      log::fatal("Unexpected"sv);
+      break;
+    case STOP_ON_FAILURE:
+    case ALLOW_FAILURE:
+      return cancel_order_template.cancel_replace_mode.as_raw_text();
+  }
+  return stop_on_failure ? "STOP_ON_FAILURE"sv : "ALLOW_FAILURE"sv;
+}
+}  // namespace
+
 // https://binance-docs.github.io/apidocs/spot/en/#cancel-an-existing-order-and-send-a-new-order-trade
 std::string_view cancel_replace_order(
     std::vector<char> &buffer,
@@ -352,12 +372,13 @@ std::string_view cancel_replace_order(
     oms::Order const &order,
     std::string_view const &create_request_id,
     CancelOrderTemplate const &cancel_order_template,
+    CreateOrderTemplate const &create_order_template,
     std::chrono::milliseconds recv_window,
     bool stop_on_failure) {
   auto side = map(order.side);
   auto type = map_order_type(order);
   auto time_in_force = map_time_in_force(order);
-  auto cancel_replace_mode = stop_on_failure ? "STOP_ON_FAILURE"sv : "ALLOW_FAILURE"sv;
+  auto cancel_replace_mode = get_cancel_replace_mode(cancel_order_template, stop_on_failure);
   buffer.clear();
   fmt::format_to(std::back_inserter(buffer), "cancelNewClientOrderId={}&"sv, cancel_request_id);
   fmt::format_to(std::back_inserter(buffer), "cancelOrigClientOrderId={}&"sv, cancel_previous_request_id);
@@ -393,6 +414,7 @@ std::string_view cancel_replace_order_ws_url(
     oms::Order const &order,
     std::string_view const &create_request_id,
     CancelOrderTemplate const &cancel_order_template,
+    CreateOrderTemplate const &create_order_template,
     std::chrono::milliseconds recv_window,
     bool stop_on_failure,
     std::string_view const &api_key,
@@ -400,7 +422,7 @@ std::string_view cancel_replace_order_ws_url(
   auto side = map(order.side);
   auto type = map_order_type(order);
   auto time_in_force = map_time_in_force(order);
-  auto cancel_replace_mode = stop_on_failure ? "STOP_ON_FAILURE"sv : "ALLOW_FAILURE"sv;
+  auto cancel_replace_mode = get_cancel_replace_mode(cancel_order_template, stop_on_failure);
   buffer.clear();
   fmt::format_to(std::back_inserter(buffer), "apiKey={}&"sv, api_key);
   fmt::format_to(std::back_inserter(buffer), "cancelNewClientOrderId={}&"sv, cancel_request_id);
@@ -438,6 +460,7 @@ std::string_view cancel_replace_order_ws_json(
     oms::Order const &order,
     std::string_view const &create_request_id,
     CancelOrderTemplate const &cancel_order_template,
+    CreateOrderTemplate const &create_order_template,
     std::chrono::milliseconds recv_window,
     bool stop_on_failure,
     std::string_view const &api_key,
@@ -446,7 +469,7 @@ std::string_view cancel_replace_order_ws_json(
   auto side = map(order.side);
   auto type = map_order_type(order);
   auto time_in_force = map_time_in_force(order);
-  auto cancel_replace_mode = stop_on_failure ? "STOP_ON_FAILURE"sv : "ALLOW_FAILURE"sv;
+  auto cancel_replace_mode = get_cancel_replace_mode(cancel_order_template, stop_on_failure);
   buffer.clear();
   fmt::format_to(std::back_inserter(buffer), "{{"sv);
   fmt::format_to(std::back_inserter(buffer), R"("apiKey":"{}",)"sv, api_key);
