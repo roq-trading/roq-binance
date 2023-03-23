@@ -121,15 +121,20 @@ void Config::operator()(server::RequestTemplate request_template, std::string_vi
   switch (request_template) {
     using enum server::RequestTemplate;
     case CREATE_ORDER: {
-      for (auto &[key, value] : table) {
-        auto value_2 = *value.template value<std::string_view>();
-        log::warn(
-            "{} {} {} {}"sv,
-            magic_enum::enum_name(request_template),
-            label,
-            static_cast<std::string_view>(key),
-            static_cast<std::string_view>(value_2));
+      json::CreateOrderTemplate create_order_template;
+      for (auto &[k, v] : table) {
+        auto key = static_cast<std::string_view>(k);
+        if (key.compare("self_trade_prevention_mode"sv) == 0) {
+          auto value = *v.template value<std::string_view>();
+          create_order_template.self_trade_prevention_mode = value;
+          if (create_order_template.self_trade_prevention_mode == json::SelfTradePreventionMode::UNKNOWN)
+            log::fatal(R"(Unknown: value="{}")"sv, value);
+        } else {
+          log::fatal(R"(Unexpected: key="{}")"sv, key);
+        }
       }
+      log::warn(R"(label="{}", create_order_template={})"sv, label, create_order_template);
+      create_order_templates.try_emplace(label, std::move(create_order_template));
       break;
     }
     case MODIFY_ORDER:
@@ -141,7 +146,12 @@ void Config::operator()(server::RequestTemplate request_template, std::string_vi
         if (key.compare("cancel_restrictions"sv) == 0) {
           auto value = *v.template value<std::string_view>();
           cancel_order_template.cancel_restrictions = value;
-          if (cancel_order_template.cancel_restrictions == json::CancelRestrictions ::UNKNOWN)
+          if (cancel_order_template.cancel_restrictions == json::CancelRestrictions::UNKNOWN)
+            log::fatal(R"(Unknown: value="{}")"sv, value);
+        } else if (key.compare("cancel_replace_mode"sv) == 0) {
+          auto value = *v.template value<std::string_view>();
+          cancel_order_template.cancel_replace_mode = value;
+          if (cancel_order_template.cancel_replace_mode == json::CancelReplaceMode::UNKNOWN)
             log::fatal(R"(Unknown: value="{}")"sv, value);
         } else {
           log::fatal(R"(Unexpected: key="{}")"sv, key);

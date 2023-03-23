@@ -22,6 +22,7 @@
 #include "roq/binance/config.hpp"
 
 #include "roq/binance/json/cancel_order_template.hpp"
+#include "roq/binance/json/create_order_template.hpp"
 
 namespace roq {
 namespace binance {
@@ -84,10 +85,6 @@ struct Shared final {
   };
   absl::flat_hash_map<Symbol, Instrument> instruments;
 
- public:
-  absl::flat_hash_map<std::string, json::CancelOrderTemplate> cancel_order_templates;
-  json::CancelOrderTemplate const &get_cancel_order_template(std::string_view const &name);
-
  private:
   server::Dispatcher &dispatcher_;
 
@@ -95,6 +92,14 @@ struct Shared final {
   core::limit::RateLimiter rate_limiter;
   core::Symbols symbols;
   core::TimerQueue depth_request_queue;
+
+ private:
+  absl::flat_hash_map<std::string, json::CreateOrderTemplate> const &create_order_templates;
+  absl::flat_hash_map<std::string, json::CancelOrderTemplate> const &cancel_order_templates;
+
+ public:
+  json::CreateOrderTemplate const &get_create_order_template(std::string_view const &name);
+  json::CancelOrderTemplate const &get_cancel_order_template(std::string_view const &name);
 };
 
 }  // namespace binance

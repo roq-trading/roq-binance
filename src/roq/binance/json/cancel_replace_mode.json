@@ -1,0 +1,12 @@
+{
+  "name": "CancelReplaceMode",
+  "type": "enum",
+  "values": [
+    {
+      "name": "STOP_ON_FAILURE"
+    },
+    {
+      "name": "ALLOW_FAILURE"
+    }
+  ]
+}

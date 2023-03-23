@@ -8,6 +8,7 @@ balance_update.hpp
 book_ticker.hpp
 cancel_all_open_orders.hpp
 cancel_order.hpp
+cancel_replace_mode.hpp
 cancel_replace_order_error.hpp
 cancel_replace_order.hpp
 cancel_restrictions.hpp
@@ -36,6 +37,7 @@ order_status.hpp
 order_type.hpp
 outbound_account_position.hpp
 result.hpp
+self_trade_prevention_mode.hpp
 side.hpp
 stream.hpp
 success_or_failure.hpp
@@ -54,6 +56,7 @@ balance_update.cpp
 book_ticker.cpp
 cancel_all_open_orders.cpp
 cancel_order.cpp
+cancel_replace_mode.cpp
 cancel_replace_order_error.cpp
 cancel_replace_order.cpp
 cancel_restrictions.cpp
@@ -82,6 +85,7 @@ order_status.cpp
 order_type.cpp
 outbound_account_position.cpp
 result.cpp
+self_trade_prevention_mode.cpp
 side.cpp
 stream.cpp
 success_or_failure.cpp

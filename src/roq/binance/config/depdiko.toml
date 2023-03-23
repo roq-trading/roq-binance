@@ -28,9 +28,11 @@ symbols = [ "BTCUSDT" ]
 
     [templates.cancel_order.ON]
     cancel_restrictions = "ONLY_NEW"
+    cancel_replace_mode = "STOP_ON_FAILURE"
 
     [templates.cancel_order.OPF]
     cancel_restrictions = "ONLY_PARTIALLY_FILLED"
+    cancel_replace_mode = "ALLOW_FAILURE"
   
 [users]
 

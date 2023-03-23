@@ -18,6 +18,7 @@
 #include "roq/binance/flags.hpp"
 
 #include "roq/binance/json/cancel_order_template.hpp"
+#include "roq/binance/json/create_order_template.hpp"
 
 namespace roq {
 namespace binance {
@@ -62,6 +63,7 @@ struct Config final : public server::Config, public server::ConfigReader::Handle
   server::Accounts accounts;
   Account master_account_;
   server::RateLimits rate_limits;
+  absl::flat_hash_map<std::string, json::CreateOrderTemplate> create_order_templates;
   absl::flat_hash_map<std::string, json::CancelOrderTemplate> cancel_order_templates;
 };
 
@@ -96,12 +98,16 @@ struct fmt::formatter<roq::binance::Config> {
         R"(accounts=[{}], )"
         R"(master_account="{}", )"
         R"(users=[{}], )"
-        R"(rate_limits=[{}])"
+        R"(rate_limits=[{}], )"
+        R"(create_order_templates=[{}], )"
+        R"(cancel_order_templates=[{}])"
         R"(}})"_cf,
         value.symbols,
         fmt::join(value.accounts, ", "sv),
         value.master_account_,
         fmt::join(value.users, ", "sv),
-        fmt::join(value.rate_limits, ", "sv));
+        fmt::join(value.rate_limits, ", "sv),
+        fmt::join(value.create_order_templates, ", "sv),
+        fmt::join(value.cancel_order_templates, ", "sv));
   }
 };

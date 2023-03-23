@@ -14,6 +14,7 @@ set(AUTOGEN_SCHEMAS
     book_ticker.json
     cancel_all_open_orders.json
     cancel_order.json
+    cancel_replace_mode.json
     cancel_replace_order_error.json
     cancel_replace_order.json
     cancel_restrictions.json
@@ -42,6 +43,7 @@ set(AUTOGEN_SCHEMAS
     order_type.json
     outbound_account_position.json
     result.json
+    self_trade_prevention_mode.json
     side.json
     stream.json
     success_or_failure.json

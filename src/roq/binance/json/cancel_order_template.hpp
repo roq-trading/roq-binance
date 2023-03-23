@@ -4,6 +4,7 @@
 
 #include <fmt/format.h>
 
+#include "roq/binance/json/cancel_replace_mode.hpp"
 #include "roq/binance/json/cancel_restrictions.hpp"
 
 namespace roq {
@@ -12,6 +13,7 @@ namespace json {
 
 struct CancelOrderTemplate final {
   CancelRestrictions cancel_restrictions = {};
+  CancelReplaceMode cancel_replace_mode = {};
 };
 
 }  // namespace json
@@ -31,8 +33,10 @@ struct fmt::formatter<roq::binance::json::CancelOrderTemplate> {
     return fmt::format_to(
         context.out(),
         R"({{)"
-        R"(cancel_restrictions={})"
+        R"(cancel_restrictions={}, )"
+        R"(cancel_replace_mode={})"
         R"(}})"_cf,
-        value.cancel_restrictions);
+        value.cancel_restrictions,
+        value.cancel_replace_mode);
   }
 };
