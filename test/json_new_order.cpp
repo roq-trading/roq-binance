@@ -15,6 +15,10 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
+namespace {
+auto const CREATE_ORDER_TEMPLATE = json::CreateOrderTemplate{};
+}
+
 TEST_CASE("json_new_order_simple", "[json_new_order]") {
   auto message = R"({)"
                  R"("symbol":"LTCBTC",)"
@@ -157,7 +161,7 @@ TEST_CASE("json_new_order_create_market", "[json_new_order]") {
   order.price_decimals = Decimals::_2;
   order.quantity_decimals = Decimals::_2;
   std::vector<char> buffer;
-  auto body = json::new_order(buffer, create_order, order, "abc123"sv, 5s);
+  auto body = json::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s);
   auto expected =
       "newClientOrderId=abc123&"
       "quantity=123.40&"
@@ -190,7 +194,7 @@ TEST_CASE("json_new_order_create_limit", "[json_new_order]") {
   order.price_decimals = Decimals::_2;
   order.quantity_decimals = Decimals::_2;
   std::vector<char> buffer;
-  auto body = json::new_order(buffer, create_order, order, "abc123"sv, 5s);
+  auto body = json::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s);
   auto expected =
       "newClientOrderId=abc123&"
       "price=123.40&"
@@ -225,7 +229,7 @@ TEST_CASE("json_new_order_create_limit_maker", "[json_new_order]") {
   order.price_decimals = Decimals::_2;
   order.quantity_decimals = Decimals::_2;
   std::vector<char> buffer;
-  auto body = json::new_order(buffer, create_order, order, "abc123"sv, 5s);
+  auto body = json::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s);
   auto expected =
       "newClientOrderId=abc123&"
       "price=123.40&"
@@ -259,7 +263,7 @@ TEST_CASE("json_new_order_create_stop_loss", "[json_new_order]") {
   order.price_decimals = Decimals::_2;
   order.quantity_decimals = Decimals::_2;
   std::vector<char> buffer;
-  auto body = json::new_order(buffer, create_order, order, "abc123"sv, 5s);
+  auto body = json::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s);
   auto expected =
       "newClientOrderId=abc123&"
       "quantity=123.40&"
@@ -293,7 +297,7 @@ TEST_CASE("json_new_order_create_stop_loss_limit", "[json_new_order]") {
   order.price_decimals = Decimals::_2;
   order.quantity_decimals = Decimals::_2;
   std::vector<char> buffer;
-  auto body = json::new_order(buffer, create_order, order, "abc123"sv, 5s);
+  auto body = json::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s);
   auto expected =
       "newClientOrderId=abc123&"
       "price=123.40&"

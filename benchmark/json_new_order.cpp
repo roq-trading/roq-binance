@@ -32,6 +32,7 @@ auto const OMS_ORDER = []() {
   return result;
 }();
 }  // namespace
+auto const CREATE_ORDER_TEMPLATE = json::CreateOrderTemplate{};
 
 // === IMPLEMENTATION ===
 
@@ -58,7 +59,7 @@ void BM_json_new_order(benchmark::State &state) {
         .stop_price = NaN,
         .routing_id = {},
     };
-    auto body = json::new_order(buffer, create_order, OMS_ORDER, REQUEST_ID, RECV_WINDOW);
+    auto body = json::new_order(buffer, create_order, OMS_ORDER, REQUEST_ID, CREATE_ORDER_TEMPLATE, RECV_WINDOW);
     if (!std::empty(body))
       ++processed;
   }
@@ -91,7 +92,7 @@ void BM_json_new_order_with_signature(benchmark::State &state) {
         .stop_price = NaN,
         .routing_id = {},
     };
-    auto body = json::new_order(buffer, create_order, OMS_ORDER, REQUEST_ID, RECV_WINDOW);
+    auto body = json::new_order(buffer, create_order, OMS_ORDER, REQUEST_ID, CREATE_ORDER_TEMPLATE, RECV_WINDOW);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = crypto.create_query(buffer_2, now, body);
     if (!std::empty(query))
