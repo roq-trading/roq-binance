@@ -292,6 +292,8 @@ std::string_view cancel_order(
   writer.write("newClientOrderId="sv).write(request_id);
   if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
     writer.write("&cancelRestrictions="sv).write(cancel_order_template.cancel_restrictions.as_raw_text());
+  if (!std::empty(order.external_order_id))
+    writer.write("&orderId="sv).write(order.external_order_id);
   writer.write("&origClientOrderId="sv).write(previous_request_id);
   writer.write("&recvWindow="sv).write(recv_window.count());
   writer.write("&symbol="sv).write(order.symbol);
@@ -315,6 +317,8 @@ std::string_view cancel_order_ws_url(
   if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
     writer.write("&cancelRestrictions="sv).write(cancel_order_template.cancel_restrictions.as_raw_text());
   writer.write("&newClientOrderId="sv).write(request_id);
+  if (!std::empty(order.external_order_id))
+    writer.write("&orderId="sv).write(order.external_order_id);
   writer.write("&origClientOrderId="sv).write(previous_request_id);
   writer.write("&recvWindow="sv).write(recv_window.count());
   writer.write("&symbol="sv).write(order.symbol);
@@ -343,6 +347,8 @@ std::string_view cancel_order_ws_json(
         .write(cancel_order_template.cancel_restrictions.as_raw_text())
         .write(R"(")"sv);
   writer.write(R"(,"newClientOrderId":")"sv).write(request_id).write(R"(")"sv);
+  if (!std::empty(order.external_order_id))
+    writer.write(R"(,"orderId":)"sv).write(order.external_order_id);  // note! integer
   writer.write(R"(,"origClientOrderId":")"sv).write(previous_request_id).write(R"(")"sv);
   writer.write(R"(,"recvWindow":)"sv).write(recv_window.count());
   writer.write(R"(,"symbol":")"sv).write(order.symbol).write(R"(")"sv);
@@ -376,6 +382,7 @@ std::string_view cancel_replace_order(
     std::vector<char> &buffer,
     std::string_view const &cancel_request_id,
     std::string_view const &cancel_previous_request_id,
+    std::string_view const &cancel_external_order_id,
     CreateOrder const &create_order,
     oms::Order const &order,
     std::string_view const &create_request_id,
@@ -389,6 +396,8 @@ std::string_view cancel_replace_order(
   auto cancel_replace_mode = get_cancel_replace_mode(cancel_order_template, stop_on_failure);
   buffer.clear();
   fmt::format_to(std::back_inserter(buffer), "cancelNewClientOrderId={}&"sv, cancel_request_id);
+  if (!std::empty(cancel_external_order_id))
+    fmt::format_to(std::back_inserter(buffer), "cancelOrderId={}&"sv, cancel_external_order_id);
   fmt::format_to(std::back_inserter(buffer), "cancelOrigClientOrderId={}&"sv, cancel_previous_request_id);
   fmt::format_to(std::back_inserter(buffer), "cancelReplaceMode={}&"sv, cancel_replace_mode);
   if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
@@ -423,6 +432,7 @@ std::string_view cancel_replace_order_ws_url(
     std::vector<char> &buffer,
     std::string_view const &cancel_request_id,
     std::string_view const &cancel_previous_request_id,
+    std::string_view const &cancel_external_order_id,
     CreateOrder const &create_order,
     oms::Order const &order,
     std::string_view const &create_request_id,
@@ -439,6 +449,8 @@ std::string_view cancel_replace_order_ws_url(
   buffer.clear();
   fmt::format_to(std::back_inserter(buffer), "apiKey={}&"sv, api_key);
   fmt::format_to(std::back_inserter(buffer), "cancelNewClientOrderId={}&"sv, cancel_request_id);
+  if (!std::empty(cancel_external_order_id))
+    fmt::format_to(std::back_inserter(buffer), "cancelOrderId={}&"sv, cancel_external_order_id);
   fmt::format_to(std::back_inserter(buffer), "cancelOrigClientOrderId={}&"sv, cancel_previous_request_id);
   fmt::format_to(std::back_inserter(buffer), "cancelReplaceMode={}&"sv, cancel_replace_mode);
   if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
@@ -474,6 +486,7 @@ std::string_view cancel_replace_order_ws_json(
     std::vector<char> &buffer,
     std::string_view const &cancel_request_id,
     std::string_view const &cancel_previous_request_id,
+    std::string_view const &cancel_external_order_id,
     CreateOrder const &create_order,
     oms::Order const &order,
     std::string_view const &create_request_id,
@@ -492,6 +505,8 @@ std::string_view cancel_replace_order_ws_json(
   fmt::format_to(std::back_inserter(buffer), "{{"sv);
   fmt::format_to(std::back_inserter(buffer), R"("apiKey":"{}",)"sv, api_key);
   fmt::format_to(std::back_inserter(buffer), R"("cancelNewClientOrderId":"{}",)"sv, cancel_request_id);
+  if (!std::empty(cancel_external_order_id))
+    fmt::format_to(std::back_inserter(buffer), R"("cancelOrderId":{},)"sv, cancel_external_order_id);
   fmt::format_to(std::back_inserter(buffer), R"("cancelOrigClientOrderId":"{}",)"sv, cancel_previous_request_id);
   fmt::format_to(std::back_inserter(buffer), R"("cancelReplaceMode":"{}",)"sv, cancel_replace_mode);
   if (cancel_order_template.cancel_restrictions != CancelRestrictions{})

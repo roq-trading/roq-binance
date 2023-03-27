@@ -36,6 +36,7 @@ struct OrderEntryWS final : public web::socket::Client::Handler, public json::WS
     cache::CancelOrder cancel_order;
     RequestId request_id;
     RequestId previous_request_id;
+    ExternalOrderId external_order_id;
     Symbol symbol;
   };
 

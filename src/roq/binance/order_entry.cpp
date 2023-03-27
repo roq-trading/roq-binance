@@ -251,7 +251,13 @@ uint16_t OrderEntry::operator()(
     (*this).cancel_order(event, order, request_id, previous_request_id);
   } else {
     // cancel + replace
-    HoldCancelOrder hold{cancel_order, request_id, previous_request_id, order.symbol};
+    auto hold = HoldCancelOrder{
+        .cancel_order = cancel_order,
+        .request_id = request_id,
+        .previous_request_id = previous_request_id,
+        .external_order_id = order.external_order_id,
+        .symbol = order.symbol,
+    };
     tmp = std::make_unique<HoldCancelOrder>(std::move(hold));
   }
   return stream_id_;
@@ -765,6 +771,7 @@ void OrderEntry::cancel_replace_order(
         encode_buffer_,
         hold_cancel_order.request_id,
         hold_cancel_order.previous_request_id,
+        hold_cancel_order.external_order_id,
         create_order,
         order,
         request_id,

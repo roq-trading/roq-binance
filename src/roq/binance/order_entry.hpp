@@ -45,6 +45,7 @@ struct OrderEntry final : public web::rest::Client::Handler {
     cache::CancelOrder cancel_order;
     RequestId request_id;
     RequestId previous_request_id;
+    ExternalOrderId external_order_id;
     Symbol symbol;
   };
 

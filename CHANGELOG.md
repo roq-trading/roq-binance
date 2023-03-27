@@ -8,6 +8,10 @@ All notable changes will be documented in this file.
 
 * Support `cancelRestrictions` (#328)
 
+### Fixed
+
+* Possible `CancelOrder` race-condition (#333)
+
 ## 0.9.3 &ndash; 2023-03-20
 
 ### Added
