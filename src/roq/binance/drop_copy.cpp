@@ -46,17 +46,23 @@ auto create_connection(auto &handler, auto &context, auto const &listen_key) {
   auto uri = Flags::ws_uri();
   auto query = fmt::format("?streams={}"_cf, listen_key);
   auto config = web::socket::Client::Config{
-      .always_reconnect = true,
+      // connection
+      .interface = {},
+      .uris = {&uri, 1},
+      .validate_certificate = server::Flags::net_tls_validate_certificate(),
+      // connection manager
       .connection_timeout = server::Flags::net_connection_timeout(),
       .disconnect_on_idle_timeout = {},
-      .validate_certificate = server::Flags::net_tls_validate_certificate(),
-      .interface = {},
+      .always_reconnect = true,
+      // proxy
       .proxy = {},
-      .uris = {&uri, 1},
+      // http
       .query = query,
       .user_agent = ROQ_PACKAGE_NAME,
+      .request_timeout = {},
       .ping_frequency = Flags::ws_ping_freq(),
-      .read_buffer_size = Flags::decode_buffer_size(),
+      // implementation
+      .decode_buffer_size = Flags::decode_buffer_size(),
       .encode_buffer_size = Flags::encode_buffer_size(),
   };
   return web::socket::ClientFactory::create(handler, context, config, []() -> std::string { return {}; });
@@ -94,9 +100,8 @@ DropCopy::DropCopy(
           .ping = create_metrics(name_, "ping"sv),
           .heartbeat = create_metrics(name_, "heartbeat"sv),
       },
-      authenticator_{authenticator}, shared_{shared}, request_{request}, download_{{}, [this](auto state) {
-                                                                                     return download(state);
-                                                                                   }} {
+      authenticator_{authenticator}, shared_{shared}, request_{request},
+      download_{{}, [this](auto state) { return download(state); }} {
 }
 
 bool DropCopy::ready() const {
