@@ -830,7 +830,7 @@ void OrderEntry::cancel_replace_order(
 #endif
             })) {
     } else {
-      throw oms::Rejected{Origin::GATEWAY, Error::CONDITIONAL_REQUEST_HAS_FAILED, , "internal error"sv};
+      throw oms::Rejected{Origin::GATEWAY, Error::CONDITIONAL_REQUEST_HAS_FAILED, "internal error"sv};
     }
   });
 }
