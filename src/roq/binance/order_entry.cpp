@@ -166,7 +166,7 @@ OrderEntry::OrderEntry(
       },
       authenticator_{authenticator}, shared_{shared}, request_{request},
       download_{Flags::rest_request_timeout(), [this](auto state) { return download(state); }},
-      hold_cancel_order_(256) {
+      cancel_order_request_buffer_(256) {
 }
 
 void OrderEntry::operator()(Event<Start> const &) {
@@ -220,19 +220,20 @@ void OrderEntry::operator()(metrics::Writer &writer) {
 
 void OrderEntry::operator()(Event<Disconnected> const &event) {
   auto user_id = event.message_info.source;
-  hold_cancel_order_[user_id].reset();
+  cancel_order_request_buffer_[user_id].reset();
 }
 
 uint16_t OrderEntry::operator()(
     Event<CreateOrder> const &event, oms::Order const &order, std::string_view const &request_id) {
   auto &message_info = event.message_info;
-  auto &tmp = hold_cancel_order_[message_info.source];
+  auto &tmp = cancel_order_request_buffer_[message_info.source];
   if (!tmp) {
     new_order(event, order, request_id);
   } else {
     // cancel + replace
     typename std::remove_cvref<decltype(tmp)>::type tmp2;
     tmp.swap(tmp2);
+    // XXX HANS do we get error on cancel if we can't send?
     cancel_replace_order(*tmp2, event, order, request_id);
   }
   return stream_id_;
@@ -253,21 +254,19 @@ uint16_t OrderEntry::operator()(
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
   auto &[message_info, cancel_order] = event;
-  auto &tmp = hold_cancel_order_[message_info.source];
+  auto &tmp = cancel_order_request_buffer_[message_info.source];
   if (tmp)
     throw oms::NotSupported{"not supported"sv};
   if (message_info.is_last) {
     (*this).cancel_order(event, order, request_id, previous_request_id);
   } else {
     // cancel + replace
-    auto hold = HoldCancelOrder{
+    auto cancel_order_request = server::cache::CancelOrderRequest{
         .cancel_order = cancel_order,
         .request_id = request_id,
         .previous_request_id = previous_request_id,
-        .external_order_id = order.external_order_id,
-        .symbol = order.symbol,
     };
-    tmp = std::make_unique<HoldCancelOrder>(std::move(hold));
+    tmp = std::make_unique<server::cache::CancelOrderRequest>(std::move(cancel_order_request));
   }
   return stream_id_;
 }
@@ -770,62 +769,69 @@ void OrderEntry::operator()(Trace<json::NewOrder> const &event, uint8_t user_id,
 // cancel-replace-order
 
 void OrderEntry::cancel_replace_order(
-    HoldCancelOrder const &hold_cancel_order,
+    server::cache::CancelOrderRequest const &cancel_order_request,
     Event<CreateOrder> const &event,
     oms::Order const &order,
     std::string_view const &request_id) {
   profile_.cancel_replace_order([&]() {
     if (!ready())
       throw oms::NotReady{"not ready"sv};
-    auto &[message_info, create_order] = event;
-    auto &cancel_order_template = shared_.get_cancel_order_template(hold_cancel_order.cancel_order.request_template);
-    auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
-    auto body = json::cancel_replace_order(
-        encode_buffer_,
-        hold_cancel_order.request_id,
-        hold_cancel_order.previous_request_id,
-        hold_cancel_order.external_order_id,
-        create_order,
-        order,
-        request_id,
-        cancel_order_template,
-        create_order_template,
-        utils::safe_cast(Flags::rest_order_recv_window()),
-        flags::Flags::cancel_replace_stop_on_failure());
-    log::info(R"(DEBUG body="{}")"sv, body);
-    auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = authenticator_.create_query(now, body);
-    auto headers = authenticator_.create_headers();
-    auto request = web::rest::Request{
-        .method = web::http::Method::POST,
-        .path = "/api/v3/order/cancelReplace"sv,
-        .query = query,
-        .accept = web::http::Accept::APPLICATION_JSON,
-        .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
-        .headers = headers,
-        .body = body,
-        .quality_of_service = io::QualityOfService::IMMEDIATE,
-    };
+    if (shared_.find_order(
+            event.message_info.source, cancel_order_request.cancel_order.order_id, [&](auto &cancel_order) {
+              auto &[message_info, create_order] = event;
+              auto &cancel_order_template =
+                  shared_.get_cancel_order_template(cancel_order_request.cancel_order.request_template);
+              auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
+              auto body = json::cancel_replace_order(
+                  encode_buffer_,
+                  cancel_order_request.request_id,
+                  cancel_order_request.previous_request_id,
+                  cancel_order.external_order_id,
+                  create_order,
+                  order,
+                  request_id,
+                  cancel_order_template,
+                  create_order_template,
+                  utils::safe_cast(Flags::rest_order_recv_window()),
+                  flags::Flags::cancel_replace_stop_on_failure());
+              log::info(R"(DEBUG body="{}")"sv, body);
+              auto now = clock::get_realtime<std::chrono::milliseconds>();
+              auto query = authenticator_.create_query(now, body);
+              auto headers = authenticator_.create_headers();
+              auto request = web::rest::Request{
+                  .method = web::http::Method::POST,
+                  .path = "/api/v3/order/cancelReplace"sv,
+                  .query = query,
+                  .accept = web::http::Accept::APPLICATION_JSON,
+                  .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
+                  .headers = headers,
+                  .body = body,
+                  .quality_of_service = io::QualityOfService::IMMEDIATE,
+              };
 #if defined(TEST_REQ)
-    // XXX also encode create_order (need a cache)
-    auto opaque = encode_opaque(
-        Type::CANCEL_REPLACE_ORDER,
-        message_info.source,
-        hold_cancel_order.cancel_order.order_id,
-        hold_cancel_order.cancel_order.order_id);
-    (*connection_)(request, opaque);
+              // XXX also encode create_order (need a cache)
+              auto opaque = encode_opaque(
+                  Type::CANCEL_REPLACE_ORDER,
+                  message_info.source,
+                  cancel_order_request.cancel_order.order_id,
+                  cancel_order_request.cancel_order.order_id);
+              (*connection_)(request, opaque);
 #else
-    auto callback = [this,
-                     user_id = message_info.source,
-                     cancel_order_id = hold_cancel_order.cancel_order.order_id,
-                     cancel_version = hold_cancel_order.cancel_order.version,
-                     create_order_id = create_order.order_id]([[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
-      cancel_replace_order_ack(event, user_id, cancel_order_id, cancel_version, create_order_id, uint32_t{1});
-    };
-    (*connection_)(request_id, request, callback);
+              auto callback = [this,
+                               user_id = message_info.source,
+                               cancel_order_id = cancel_order_request.cancel_order.order_id,
+                               cancel_version = cancel_order_request.cancel_order.version,
+                               create_order_id = create_order.order_id]([[maybe_unused]] auto &request_id, auto &response) {
+                TraceInfo trace_info;
+                Trace event{trace_info, response};
+                cancel_replace_order_ack(event, user_id, cancel_order_id, cancel_version, create_order_id, uint32_t{1});
+              };
+              (*connection_)(request_id, request, callback);
 #endif
+            })) {
+    } else {
+      throw oms::Rejected{Origin::GATEWAY, Error::CONDITIONAL_REQUEST_HAS_FAILED, , "internal error"sv};
+    }
   });
 }
 

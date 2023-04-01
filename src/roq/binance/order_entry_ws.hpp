@@ -6,8 +6,6 @@
 #include <string_view>
 #include <vector>
 
-#include "roq/cache/cancel_order.hpp"
-
 #include "roq/core/buffer.hpp"
 #include "roq/core/download.hpp"
 
@@ -21,6 +19,8 @@
 
 #include "roq/server.hpp"
 
+#include "roq/server/cache/cancel_order_request.hpp"
+
 #include "roq/binance/authenticator.hpp"
 #include "roq/binance/drop_copy_state.hpp"
 #include "roq/binance/request.hpp"
@@ -32,14 +32,6 @@ namespace roq {
 namespace binance {
 
 struct OrderEntryWS final : public web::socket::Client::Handler, public json::WSAPIParser::Handler {
-  struct HoldCancelOrder final {
-    cache::CancelOrder cancel_order;
-    RequestId request_id;
-    RequestId previous_request_id;
-    ExternalOrderId external_order_id;
-    Symbol symbol;
-  };
-
   struct ListenKeyUpdate final {
     std::string_view account;
     std::string_view listen_key;
@@ -97,7 +89,10 @@ struct OrderEntryWS final : public web::socket::Client::Handler, public json::WS
       std::string_view const &request_id,
       std::string_view const &previous_request_id);
   void order_cancel_replace(
-      HoldCancelOrder const &, Event<CreateOrder> const &, oms::Order const &, std::string_view const &_request_id);
+      server::cache::CancelOrderRequest const &,
+      Event<CreateOrder> const &,
+      oms::Order const &,
+      std::string_view const &_request_id);
 
   void operator()(web::socket::Client::Connected const &) override;
   void operator()(web::socket::Client::Disconnected const &) override;
@@ -175,7 +170,7 @@ struct OrderEntryWS final : public web::socket::Client::Handler, public json::WS
   bool ready_ = false;
   ConnectionStatus status_ = {};
   // batch
-  std::vector<std::unique_ptr<HoldCancelOrder>> hold_cancel_order_;
+  std::vector<std::unique_ptr<server::cache::CancelOrderRequest>> cancel_order_request_buffer_;
 };
 
 }  // namespace binance

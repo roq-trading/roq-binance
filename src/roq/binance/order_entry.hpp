@@ -8,8 +8,6 @@
 #include <string>
 #include <string_view>
 
-#include "roq/cache/cancel_order.hpp"
-
 #include "roq/core/buffer.hpp"
 #include "roq/core/download.hpp"
 
@@ -22,6 +20,8 @@
 #include "roq/web/rest/client.hpp"
 
 #include "roq/server.hpp"
+
+#include "roq/server/cache/cancel_order_request.hpp"
 
 #include "roq/binance/authenticator.hpp"
 #include "roq/binance/order_entry_state.hpp"
@@ -41,15 +41,6 @@ namespace roq {
 namespace binance {
 
 struct OrderEntry final : public web::rest::Client::Handler {
-  struct HoldCancelOrder final {
-    cache::CancelOrder cancel_order;
-    RequestId request_id;
-    RequestId previous_request_id;
-    ExternalOrderId external_order_id;
-    Symbol symbol;
-  };
-
- public:
   struct ListenKeyUpdate final {
     std::string_view account;
     std::string_view listen_key;
@@ -122,7 +113,10 @@ struct OrderEntry final : public web::rest::Client::Handler {
   void operator()(Trace<json::NewOrder> const &, uint8_t user_id, uint32_t order_id, uint32_t version);
 
   void cancel_replace_order(
-      HoldCancelOrder const &, Event<CreateOrder> const &, oms::Order const &, std::string_view const &_request_id);
+      server::cache::CancelOrderRequest const &,
+      Event<CreateOrder> const &,
+      oms::Order const &,
+      std::string_view const &_request_id);
   void cancel_replace_order_ack(
       Trace<web::rest::Response> const &,
       uint8_t user_id,
@@ -216,7 +210,7 @@ struct OrderEntry final : public web::rest::Client::Handler {
   bool download_orders_ = false;
   std::vector<char> encode_buffer_;
   // batch
-  std::vector<std::unique_ptr<HoldCancelOrder>> hold_cancel_order_;
+  std::vector<std::unique_ptr<server::cache::CancelOrderRequest>> cancel_order_request_buffer_;
 };
 
 }  // namespace binance
