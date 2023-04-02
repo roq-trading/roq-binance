@@ -44,10 +44,16 @@ namespace binance {
 
 struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handler {
   OrderEntryREST(
-      OrderEntry::Handler &, io::Context &, uint16_t stream_id, Authenticator &, Shared &, Request &, bool master);
+      OrderEntry::Handler &,
+      io::Context &,
+      uint16_t stream_id,
+      Authenticator &,
+      Shared &,
+      Request &,
+      bool master = true,
+      std::string_view const &interface = {});
 
   bool ready() const override { return status_ == ConnectionStatus::READY; }
-  bool downloading() const { return download_account_ || download_orders_; }
 
   void operator()(Event<Start> const &) override;
   void operator()(Event<Stop> const &) override;
@@ -71,6 +77,8 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
   uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id) override;
 
  protected:
+  bool downloading() const { return download_account_ || download_orders_; }
+
   void operator()(Trace<web::rest::Client::Connected> const &) override;
   void operator()(Trace<web::rest::Client::Disconnected> const &) override;
   void operator()(Trace<web::rest::Client::Latency> const &) override;

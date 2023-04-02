@@ -52,11 +52,11 @@ auto create_name(auto stream_id, auto const &account) {
   return fmt::format("{}:{}:{}"_cf, stream_id, NAME, account);
 }
 
-auto create_connection(auto &handler, auto &context) {
+auto create_connection(auto &handler, auto &context, auto &interface) {
   auto uri = Flags::rest_uri();
   auto config = web::rest::Client::Config{
       // connection
-      .interface = {},
+      .interface = interface,
       .uris = {&uri, 1},
       .validate_certificate = server::Flags::net_tls_validate_certificate(),
       // connection manager
@@ -140,9 +140,11 @@ OrderEntryREST::OrderEntryREST(
     Authenticator &authenticator,
     Shared &shared,
     Request &request,
-    bool master)
+    bool master,
+    std::string_view const &interface)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, authenticator.get_account())},
-      master_{master}, connection_{create_connection(*this, context)}, decode_buffer_{Flags::decode_buffer_size()},
+      master_{master}, connection_{create_connection(*this, context, interface)},
+      decode_buffer_{Flags::decode_buffer_size()},
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },

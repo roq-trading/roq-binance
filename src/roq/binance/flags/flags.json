@@ -10,6 +10,11 @@
       "description": "exchange identifier (string)"
     },
     {
+      "name": "rest_network_interfaces",
+      "type": "std::vector<std::string>",
+      "description": "REST network interfaces"
+    },
+    {
       "name": "rest_uri",
       "type": "roq::io::web::URI",
       "validator": "roq::core::flags::URI",
@@ -140,6 +145,11 @@
       "type": "bool",
       "default": false,
       "description": "use the websocket api?"
+    },
+    {
+      "name": "ws_api_network_interfaces",
+      "type": "std::vector<std::string>",
+      "description": "WebSocket API network interfaces"
     },
     {
       "name": "ws_api_uri",

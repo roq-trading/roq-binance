@@ -50,11 +50,11 @@ auto create_name(auto stream_id, auto const &account) {
   return fmt::format("{}:{}:{}"_cf, stream_id, NAME, account);
 }
 
-auto create_connection(auto &handler, auto &context) {
+auto create_connection(auto &handler, auto &context, auto &interface) {
   auto uri = Flags::ws_api_uri();
   auto config = web::socket::Client::Config{
       // connection
-      .interface = {},
+      .interface = interface,
       .uris = {&uri, 1},
       .validate_certificate = server::Flags::net_tls_validate_certificate(),
       // connection manager
@@ -90,9 +90,11 @@ OrderEntryWS::OrderEntryWS(
     Authenticator &authenticator,
     Shared &shared,
     Request &request,
-    bool master)
+    bool master,
+    std::string_view const &interface)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, authenticator.get_account())},
-      master_{master}, connection_{create_connection(*this, context)}, decode_buffer_{Flags::decode_buffer_size()},
+      master_{master}, connection_{create_connection(*this, context, interface)},
+      decode_buffer_{Flags::decode_buffer_size()},
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
@@ -680,6 +682,10 @@ void OrderEntryWS::operator()(Trace<json::Error> const &event, json::WSAPIReques
       case UNKNOWN:
         break;
       case LISTEN_KEY_CREATE:
+        switch (error.code) {
+          case -2015:  // invalid key
+            log::fatal("Unexpected: error={}"sv, error);
+        }
         break;
       case LISTEN_KEY_PING:
         break;

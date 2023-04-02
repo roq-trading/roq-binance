@@ -7,7 +7,6 @@ set(SOURCES
     authenticator.cpp
     config.cpp
     drop_copy.cpp
-    flags.cpp
     gateway.cpp
     market_data.cpp
     order_entry_rest.cpp

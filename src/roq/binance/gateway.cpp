@@ -49,15 +49,36 @@ auto create_order_entry(
     auto &gateway, auto &context, auto &stream_id, auto &security_by_account, auto &shared, auto &request_by_account) {
   R result;
   auto ws_api = flags::Flags::ws_api();
+  auto &rest_interfaces = flags::Flags::rest_network_interfaces();
+  auto &ws_interfaces = flags::Flags::ws_api_network_interfaces();
   for (auto &[account, security] : security_by_account) {
     auto &request = request_by_account[account];
     std::vector<std::unique_ptr<OrderEntry>> order_entry;
-    if (ws_api)
-      order_entry.emplace_back(
-          std::make_unique<OrderEntryWS>(gateway, context, ++stream_id, *security, shared, request, true));
-    else
-      order_entry.emplace_back(
-          std::make_unique<OrderEntryREST>(gateway, context, ++stream_id, *security, shared, request, true));
+    if (ws_api) {
+      if (std::empty(ws_interfaces)) {
+        order_entry.emplace_back(
+            std::make_unique<OrderEntryWS>(gateway, context, ++stream_id, *security, shared, request));
+      } else {
+        for (size_t i = 0; i < std::size(ws_interfaces); ++i) {
+          auto &interface = ws_interfaces[i];
+          auto master = i == 0;
+          order_entry.emplace_back(std::make_unique<OrderEntryWS>(
+              gateway, context, ++stream_id, *security, shared, request, master, interface));
+        }
+      }
+    } else {
+      if (std::empty(rest_interfaces)) {
+        order_entry.emplace_back(
+            std::make_unique<OrderEntryREST>(gateway, context, ++stream_id, *security, shared, request));
+      } else {
+        for (size_t i = 0; i < std::size(rest_interfaces); ++i) {
+          auto &interface = rest_interfaces[i];
+          auto master = i == 0;
+          order_entry.emplace_back(std::make_unique<OrderEntryWS>(
+              gateway, context, ++stream_id, *security, shared, request, master, interface));
+        }
+      }
+    }
     result.try_emplace(account, std::move(order_entry));
   }
   return result;
