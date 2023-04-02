@@ -84,7 +84,7 @@ struct create_metrics final : public core::metrics::Factory {
 // === IMPLEMENTATION ===
 
 OrderEntryWS::OrderEntryWS(
-    Handler &handler,
+    OrderEntry::Handler &handler,
     io::Context &context,
     uint16_t stream_id,
     Authenticator &authenticator,
@@ -120,8 +120,7 @@ OrderEntryWS::OrderEntryWS(
           .ping = create_metrics(name_, "ping"sv),
           .heartbeat = create_metrics(name_, "heartbeat"sv),
       },
-      authenticator_{authenticator}, shared_{shared}, request_{request}, request_id_{REQUEST_ID},
-      cancel_order_request_buffer_(256) {
+      authenticator_{authenticator}, shared_{shared}, request_{request}, request_id_{REQUEST_ID} {
   // DEBUG
   open_orders_symbols_.emplace("BTCUSDT"sv);
 }
@@ -183,13 +182,13 @@ void OrderEntryWS::operator()(metrics::Writer &writer) {
 
 void OrderEntryWS::operator()(Event<Disconnected> const &event) {
   auto user_id = event.message_info.source;
-  cancel_order_request_buffer_[user_id].reset();
+  authenticator_.cancel_order_request_buffer_[user_id].reset();
 }
 
 uint16_t OrderEntryWS::operator()(
     Event<CreateOrder> const &event, oms::Order const &order, std::string_view const &request_id) {
   auto &message_info = event.message_info;
-  auto &tmp = cancel_order_request_buffer_[message_info.source];
+  auto &tmp = authenticator_.cancel_order_request_buffer_[message_info.source];
   if (!tmp) {
     order_place(event, order, request_id);
   } else {
@@ -216,7 +215,7 @@ uint16_t OrderEntryWS::operator()(
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
   auto &[message_info, cancel_order] = event;
-  auto &tmp = cancel_order_request_buffer_[message_info.source];
+  auto &tmp = authenticator_.cancel_order_request_buffer_[message_info.source];
   if (tmp)
     throw oms::NotSupported{"not supported"sv};
   if (message_info.is_last) {

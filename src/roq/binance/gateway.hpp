@@ -18,7 +18,6 @@
 #include "roq/binance/drop_copy.hpp"
 #include "roq/binance/market_data.hpp"
 #include "roq/binance/order_entry.hpp"
-#include "roq/binance/order_entry_ws.hpp"
 #include "roq/binance/request.hpp"
 #include "roq/binance/rest.hpp"
 #include "roq/binance/shared.hpp"
@@ -30,7 +29,6 @@ struct Gateway final : public server::Handler,
                        public Rest::Handler,
                        public MarketData::Handler,
                        public OrderEntry::Handler,
-                       public OrderEntryWS::Handler,
                        public DropCopy::Handler {
   Gateway(server::Dispatcher &, Config const &, io::Context &);
 
@@ -75,17 +73,13 @@ struct Gateway final : public server::Handler,
   void ensure_symbol_slices(size_t size);
 
   void operator()(OrderEntry::ListenKeyUpdate const &) override;
-  void operator()(OrderEntryWS::ListenKeyUpdate const &) override;
 
   // utilities
 
   OrderEntry &get_order_entry(std::string_view const &account);
-  OrderEntryWS &get_order_entry_ws(std::string_view const &account);
 
  private:
   server::Dispatcher &dispatcher_;
-  // config
-  bool const ws_api_;
   // authentication
   absl::flat_hash_map<Account, std::unique_ptr<Authenticator>> authenticator_;
   // io
@@ -98,7 +92,6 @@ struct Gateway final : public server::Handler,
   // streams
   Rest rest_;
   absl::flat_hash_map<Account, std::unique_ptr<OrderEntry>> order_entry_;
-  absl::flat_hash_map<Account, std::unique_ptr<OrderEntryWS>> order_entry_ws_;
   absl::flat_hash_map<Account, std::unique_ptr<DropCopy>> drop_copy_;
   std::vector<std::unique_ptr<MarketData>> market_data_1_, market_data_2_;
   // cache

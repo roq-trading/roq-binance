@@ -15,7 +15,7 @@ static_assert(tools::Crypto::QUERY_BUFFER_LENGTH % 64 == 0);
 
 Authenticator::Authenticator(Config const &config, std::string_view const &account)
     : account_{account}, crypto_{config.get_api_key(account_), config.get_secret(account_)},
-      query_encode_buffer_(tools::Crypto::QUERY_BUFFER_LENGTH) {
+      query_encode_buffer_(tools::Crypto::QUERY_BUFFER_LENGTH), cancel_order_request_buffer_(256) {
 }
 
 }  // namespace binance

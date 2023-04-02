@@ -21,6 +21,8 @@
 
 #include "roq/server/cache/cancel_order_request.hpp"
 
+#include "roq/binance/order_entry.hpp"
+
 #include "roq/binance/authenticator.hpp"
 #include "roq/binance/drop_copy_state.hpp"
 #include "roq/binance/request.hpp"
@@ -31,49 +33,32 @@
 namespace roq {
 namespace binance {
 
-struct OrderEntryWS final : public web::socket::Client::Handler, public json::WSAPIParser::Handler {
-  struct ListenKeyUpdate final {
-    std::string_view account;
-    std::string_view listen_key;
-  };
-
-  struct Handler {
-    virtual void operator()(Trace<StreamStatus> const &) = 0;
-    virtual void operator()(Trace<ExternalLatency> const &) = 0;
-    virtual void operator()(Trace<oms::TradeUpdate> const &, uint16_t stream_id, bool is_last, uint8_t user_id) = 0;
-    virtual void operator()(Trace<FundsUpdate> const &, bool is_last) = 0;
-    // cross-communication
-    virtual void operator()(ListenKeyUpdate const &) = 0;
-  };
-
-  OrderEntryWS(Handler &, io::Context &, uint16_t stream_id, Authenticator &, Shared &, Request &);
-
-  OrderEntryWS(OrderEntryWS &&) = delete;
-  OrderEntryWS(OrderEntryWS const &) = delete;
+struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handler, public json::WSAPIParser::Handler {
+  OrderEntryWS(OrderEntry::Handler &, io::Context &, uint16_t stream_id, Authenticator &, Shared &, Request &);
 
   bool ready() const { return status_ == ConnectionStatus::READY; }
   bool downloading() const { return download_account_ || download_orders_; }
 
-  void operator()(Event<Start> const &);
-  void operator()(Event<Stop> const &);
-  void operator()(Event<Timer> const &);
+  void operator()(Event<Start> const &) override;
+  void operator()(Event<Stop> const &) override;
+  void operator()(Event<Timer> const &) override;
 
-  void operator()(metrics::Writer &);
+  void operator()(metrics::Writer &) override;
 
-  void operator()(Event<Disconnected> const &);
+  void operator()(Event<Disconnected> const &) override;
 
-  uint16_t operator()(Event<CreateOrder> const &, oms::Order const &, std::string_view const &request_id);
+  uint16_t operator()(Event<CreateOrder> const &, oms::Order const &, std::string_view const &request_id) override;
   uint16_t operator()(
       Event<ModifyOrder> const &,
       oms::Order const &,
       std::string_view const &request_id,
-      std::string_view const &previous_request_id);
+      std::string_view const &previous_request_id) override;
   uint16_t operator()(
       Event<CancelOrder> const &,
       oms::Order const &,
       std::string_view const &request_id,
-      std::string_view const &previous_request_id);
-  uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id);
+      std::string_view const &previous_request_id) override;
+  uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id) override;
 
  protected:
   void user_data_stream_start();
@@ -131,7 +116,7 @@ struct OrderEntryWS final : public web::socket::Client::Handler, public json::WS
   void operator()(Trace<oms::OrderUpdate> const &, std::string_view const &client_order_id, Args &&...);
 
  private:
-  Handler &handler_;
+  OrderEntry::Handler &handler_;
   // config
   const uint16_t stream_id_;
   const std::string name_;
@@ -169,8 +154,6 @@ struct OrderEntryWS final : public web::socket::Client::Handler, public json::WS
   // state
   bool ready_ = false;
   ConnectionStatus status_ = {};
-  // batch
-  std::vector<std::unique_ptr<server::cache::CancelOrderRequest>> cancel_order_request_buffer_;
 };
 
 }  // namespace binance

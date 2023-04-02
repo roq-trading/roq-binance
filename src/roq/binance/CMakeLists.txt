@@ -10,7 +10,7 @@ set(SOURCES
     flags.cpp
     gateway.cpp
     market_data.cpp
-    order_entry.cpp
+    order_entry_rest.cpp
     order_entry_ws.cpp
     rest.cpp
     shared.cpp

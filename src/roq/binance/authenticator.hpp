@@ -6,6 +6,9 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
+
+#include "roq/server/cache/cancel_order_request.hpp"
 
 #include "roq/binance/config.hpp"
 
@@ -38,6 +41,9 @@ struct Authenticator final {
   std::string const account_;
   tools::Crypto crypto_;
   std::vector<std::byte> query_encode_buffer_;
+
+ public:
+  std::vector<std::unique_ptr<server::cache::CancelOrderRequest>> cancel_order_request_buffer_;
 };
 
 }  // namespace binance

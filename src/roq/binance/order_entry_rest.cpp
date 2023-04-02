@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2023, Hans Erik Thrane */
 
-#include "roq/binance/order_entry.hpp"
+#include "roq/binance/order_entry_rest.hpp"
 
 #include <tuple>
 #include <utility>
@@ -133,8 +133,8 @@ static_assert(
 
 // === IMPLEMENTATION ===
 
-OrderEntry::OrderEntry(
-    Handler &handler,
+OrderEntryREST::OrderEntryREST(
+    OrderEntry::Handler &handler,
     io::Context &context,
     uint16_t stream_id,
     Authenticator &authenticator,
@@ -165,19 +165,18 @@ OrderEntry::OrderEntry(
           .ping = create_metrics(name_, "ping"sv),
       },
       authenticator_{authenticator}, shared_{shared}, request_{request},
-      download_{Flags::rest_request_timeout(), [this](auto state) { return download(state); }},
-      cancel_order_request_buffer_(256) {
+      download_{Flags::rest_request_timeout(), [this](auto state) { return download(state); }} {
 }
 
-void OrderEntry::operator()(Event<Start> const &) {
+void OrderEntryREST::operator()(Event<Start> const &) {
   (*connection_).start();
 }
 
-void OrderEntry::operator()(Event<Stop> const &) {
+void OrderEntryREST::operator()(Event<Stop> const &) {
   (*connection_).stop();
 }
 
-void OrderEntry::operator()(Event<Timer> const &event) {
+void OrderEntryREST::operator()(Event<Timer> const &event) {
   auto now = event.value.now;
   (*connection_).refresh(now);
   refresh_listen_key(now);
@@ -195,7 +194,7 @@ void OrderEntry::operator()(Event<Timer> const &event) {
   }
 }
 
-void OrderEntry::operator()(metrics::Writer &writer) {
+void OrderEntryREST::operator()(metrics::Writer &writer) {
   writer
       // counter
       .write(counter_.disconnect, metrics::COUNTER)
@@ -218,15 +217,15 @@ void OrderEntry::operator()(metrics::Writer &writer) {
       .write(latency_.ping, metrics::LATENCY);
 }
 
-void OrderEntry::operator()(Event<Disconnected> const &event) {
+void OrderEntryREST::operator()(Event<Disconnected> const &event) {
   auto user_id = event.message_info.source;
-  cancel_order_request_buffer_[user_id].reset();
+  authenticator_.cancel_order_request_buffer_[user_id].reset();
 }
 
-uint16_t OrderEntry::operator()(
+uint16_t OrderEntryREST::operator()(
     Event<CreateOrder> const &event, oms::Order const &order, std::string_view const &request_id) {
   auto &message_info = event.message_info;
-  auto &tmp = cancel_order_request_buffer_[message_info.source];
+  auto &tmp = authenticator_.cancel_order_request_buffer_[message_info.source];
   if (!tmp) {
     new_order(event, order, request_id);
   } else {
@@ -239,7 +238,7 @@ uint16_t OrderEntry::operator()(
   return stream_id_;
 }
 
-uint16_t OrderEntry::operator()(
+uint16_t OrderEntryREST::operator()(
     Event<ModifyOrder> const &,
     oms::Order const &,
     [[maybe_unused]] std::string_view const &request_id,
@@ -248,13 +247,13 @@ uint16_t OrderEntry::operator()(
   return stream_id_;
 }
 
-uint16_t OrderEntry::operator()(
+uint16_t OrderEntryREST::operator()(
     Event<CancelOrder> const &event,
     oms::Order const &order,
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
   auto &[message_info, cancel_order] = event;
-  auto &tmp = cancel_order_request_buffer_[message_info.source];
+  auto &tmp = authenticator_.cancel_order_request_buffer_[message_info.source];
   if (tmp)
     throw oms::NotSupported{"not supported"sv};
   if (message_info.is_last) {
@@ -271,12 +270,12 @@ uint16_t OrderEntry::operator()(
   return stream_id_;
 }
 
-uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
+uint16_t OrderEntryREST::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
   cancel_all_open_orders(event, request_id);
   return stream_id_;
 }
 
-void OrderEntry::operator()(Trace<web::rest::Client::Connected> const &) {
+void OrderEntryREST::operator()(Trace<web::rest::Client::Connected> const &) {
   if (download_.downloading()) {
     download_.bump();
   } else {
@@ -285,7 +284,7 @@ void OrderEntry::operator()(Trace<web::rest::Client::Connected> const &) {
   }
 }
 
-void OrderEntry::operator()(Trace<web::rest::Client::Disconnected> const &) {
+void OrderEntryREST::operator()(Trace<web::rest::Client::Disconnected> const &) {
   ++counter_.disconnect;
   ready_ = false;
   (*this)(ConnectionStatus::DISCONNECTED);
@@ -295,7 +294,7 @@ void OrderEntry::operator()(Trace<web::rest::Client::Disconnected> const &) {
   download_orders_ = false;
 }
 
-void OrderEntry::operator()(Trace<web::rest::Client::Latency> const &event) {
+void OrderEntryREST::operator()(Trace<web::rest::Client::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
       .stream_id = stream_id_,
@@ -306,7 +305,7 @@ void OrderEntry::operator()(Trace<web::rest::Client::Latency> const &event) {
   latency_.ping.update(latency.sample);
 }
 
-void OrderEntry::operator()(
+void OrderEntryREST::operator()(
     Trace<web::rest::Response> const &event, [[maybe_unused]] uint64_t request_id, uint64_t opaque) {
   auto type = type_from_opaque(opaque);
   switch (type) {
@@ -338,7 +337,7 @@ void OrderEntry::operator()(
   log::fatal("Unexpected"sv);
 }
 
-void OrderEntry::operator()(ConnectionStatus status) {
+void OrderEntryREST::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     TraceInfo trace_info;
     auto stream_status = StreamStatus{
@@ -360,7 +359,7 @@ void OrderEntry::operator()(ConnectionStatus status) {
   }
 }
 
-uint32_t OrderEntry::download(OrderEntryState state) {
+uint32_t OrderEntryREST::download(OrderEntryState state) {
   switch (state) {
     using enum OrderEntryState;
     case UNDEFINED:
@@ -381,7 +380,7 @@ uint32_t OrderEntry::download(OrderEntryState state) {
 
 // listen-key
 
-void OrderEntry::get_listen_key() {
+void OrderEntryREST::get_listen_key() {
   profile_.listen_key([&]() {
     auto headers = authenticator_.create_headers();
     auto request = web::rest::Request{
@@ -408,7 +407,7 @@ void OrderEntry::get_listen_key() {
   });
 }
 
-void OrderEntry::get_listen_key_ack(Trace<web::rest::Response> const &event) {
+void OrderEntryREST::get_listen_key_ack(Trace<web::rest::Response> const &event) {
   auto const constexpr STATE = OrderEntryState::LISTEN_KEY;
   profile_.listen_key_ack([&]() {
     auto handle_success = [&](auto &body) {
@@ -427,7 +426,7 @@ void OrderEntry::get_listen_key_ack(Trace<web::rest::Response> const &event) {
   });
 }
 
-void OrderEntry::operator()(Trace<json::ListenKey> const &event) {
+void OrderEntryREST::operator()(Trace<json::ListenKey> const &event) {
   auto &[trace_info, listen_key] = event;
   log::info<2>("listen_key={}"sv, listen_key);
   bool initial = std::empty(listen_key_);
@@ -449,7 +448,7 @@ void OrderEntry::operator()(Trace<json::ListenKey> const &event) {
 
 // account
 
-void OrderEntry::get_account() {
+void OrderEntryREST::get_account() {
   profile_.account([&]() {
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = authenticator_.create_query(now);
@@ -478,7 +477,7 @@ void OrderEntry::get_account() {
   });
 }
 
-void OrderEntry::get_account_ack(Trace<web::rest::Response> const &event) {
+void OrderEntryREST::get_account_ack(Trace<web::rest::Response> const &event) {
   profile_.account_ack([&]() {
     auto handle_success = [&](auto &body) {
       json::Account account{body, decode_buffer_};
@@ -496,7 +495,7 @@ void OrderEntry::get_account_ack(Trace<web::rest::Response> const &event) {
   });
 }
 
-void OrderEntry::operator()(Trace<json::Account> const &event) {
+void OrderEntryREST::operator()(Trace<json::Account> const &event) {
   auto &[trace_info, account] = event;
   log::info<2>("account={}"sv, account);
   for (auto &item : account.balances) {
@@ -515,7 +514,7 @@ void OrderEntry::operator()(Trace<json::Account> const &event) {
 
 // orders
 
-void OrderEntry::get_open_orders() {
+void OrderEntryREST::get_open_orders() {
   profile_.open_orders([&]() {
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = authenticator_.create_query(now);
@@ -554,7 +553,7 @@ void OrderEntry::get_open_orders() {
   });
 }
 
-void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event) {
+void OrderEntryREST::get_open_orders_ack(Trace<web::rest::Response> const &event) {
   profile_.open_orders_ack([&]() {
     auto handle_success = [&](auto &body) {
       json::OpenOrders open_orders{body, decode_buffer_};
@@ -572,7 +571,7 @@ void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event) {
   });
 }
 
-void OrderEntry::operator()(Trace<json::OpenOrders> const &event) {
+void OrderEntryREST::operator()(Trace<json::OpenOrders> const &event) {
   auto &[trace_info, open_orders] = event;
   for (auto &order : open_orders.data) {
     log::info<2>("order={}"sv, order);
@@ -617,7 +616,7 @@ void OrderEntry::operator()(Trace<json::OpenOrders> const &event) {
 
 // ...
 
-void OrderEntry::refresh_listen_key(std::chrono::nanoseconds now) {
+void OrderEntryREST::refresh_listen_key(std::chrono::nanoseconds now) {
   if (!ready_)
     return;
   if (listen_key_refresh_ == listen_key_refresh_.zero() || now < listen_key_refresh_)
@@ -629,7 +628,7 @@ void OrderEntry::refresh_listen_key(std::chrono::nanoseconds now) {
 
 // new-order
 
-void OrderEntry::new_order(
+void OrderEntryREST::new_order(
     Event<CreateOrder> const &event, oms::Order const &order, std::string_view const &request_id) {
   profile_.new_order([&]() {
     if (!ready())
@@ -669,7 +668,7 @@ void OrderEntry::new_order(
   });
 }
 
-void OrderEntry::new_order_ack(
+void OrderEntryREST::new_order_ack(
     Trace<web::rest::Response> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
   profile_.new_order_ack([&]() {
     auto handle_success = [&](auto &body) {
@@ -697,12 +696,13 @@ void OrderEntry::new_order_ack(
   });
 }
 
-void OrderEntry::new_order_ack_2(Trace<web::rest::Response> const &event, uint64_t opaque) {
+void OrderEntryREST::new_order_ack_2(Trace<web::rest::Response> const &event, uint64_t opaque) {
   auto [user_id, order_id, version] = order_request_from_opaque(opaque);
   new_order_ack(event, user_id, order_id, version);
 }
 
-void OrderEntry::operator()(Trace<json::NewOrder> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
+void OrderEntryREST::operator()(
+    Trace<json::NewOrder> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
   auto &[trace_info, new_order] = event;
   log::info<2>("new_order={}, user_id={}, order_id={}, version={}"sv, new_order, user_id, order_id, version);
   auto side = json::map(new_order.side);
@@ -768,7 +768,7 @@ void OrderEntry::operator()(Trace<json::NewOrder> const &event, uint8_t user_id,
 
 // cancel-replace-order
 
-void OrderEntry::cancel_replace_order(
+void OrderEntryREST::cancel_replace_order(
     server::cache::CancelOrderRequest const &cancel_order_request,
     Event<CreateOrder> const &event,
     oms::Order const &order,
@@ -878,7 +878,7 @@ symbol=BTCUSDT&side=BUY&type=LIMIT&cancelReplaceMode=STOP_ON_FAILURE&timeInForce
 }
 }
 */
-void OrderEntry::cancel_replace_order_ack(
+void OrderEntryREST::cancel_replace_order_ack(
     Trace<web::rest::Response> const &event,
     uint8_t user_id,
     uint32_t cancel_order_id,
@@ -1012,11 +1012,11 @@ void OrderEntry::cancel_replace_order_ack(
   });
 }
 
-void OrderEntry::cancel_replace_order_ack_2(Trace<web::rest::Response> const &, uint64_t opaque) {
+void OrderEntryREST::cancel_replace_order_ack_2(Trace<web::rest::Response> const &, uint64_t opaque) {
   log::fatal("Not implemented"sv);  // HANS
 }
 
-void OrderEntry::operator()(
+void OrderEntryREST::operator()(
     Trace<json::CancelReplaceOrder> const &event,
     uint8_t user_id,
     uint32_t cancel_order_id,
@@ -1209,7 +1209,7 @@ void OrderEntry::operator()(
   }
 }
 
-void OrderEntry::operator()(
+void OrderEntryREST::operator()(
     Trace<json::CancelReplaceOrderError> const &event,
     uint8_t user_id,
     uint32_t cancel_order_id,
@@ -1233,7 +1233,7 @@ void OrderEntry::operator()(
 
 // cancel-order
 
-void OrderEntry::cancel_order(
+void OrderEntryREST::cancel_order(
     Event<CancelOrder> const &event,
     oms::Order const &order,
     std::string_view const &request_id,
@@ -1276,7 +1276,7 @@ void OrderEntry::cancel_order(
   });
 }
 
-void OrderEntry::cancel_order_ack(
+void OrderEntryREST::cancel_order_ack(
     Trace<web::rest::Response> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
   profile_.cancel_order_ack([&]() {
     auto handle_success = [&](auto &body) {
@@ -1304,12 +1304,12 @@ void OrderEntry::cancel_order_ack(
   });
 }
 
-void OrderEntry::cancel_order_ack_2(Trace<web::rest::Response> const &event, uint64_t opaque) {
+void OrderEntryREST::cancel_order_ack_2(Trace<web::rest::Response> const &event, uint64_t opaque) {
   auto [user_id, order_id, version] = order_request_from_opaque(opaque);
   cancel_order_ack(event, user_id, order_id, version);
 }
 
-void OrderEntry::operator()(
+void OrderEntryREST::operator()(
     Trace<json::CancelOrder> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
   auto &[trace_info, cancel_order] = event;
   log::info<2>("cancel_order={}, user_id={}, order_id={}, version={}"sv, cancel_order, user_id, order_id, version);
@@ -1359,7 +1359,7 @@ void OrderEntry::operator()(
   (*this)(event_2, user_id, order_id, order_update);
 }
 
-void OrderEntry::cancel_all_open_orders(
+void OrderEntryREST::cancel_all_open_orders(
     Event<CancelAllOrders> const &, [[maybe_unused]] std::string_view const &request_id) {
   profile_.cancel_all_open_orders([&]() {
     if (!ready()) {
@@ -1398,7 +1398,7 @@ void OrderEntry::cancel_all_open_orders(
   });
 }
 
-void OrderEntry::cancel_all_open_orders_ack(Trace<web::rest::Response> const &event) {
+void OrderEntryREST::cancel_all_open_orders_ack(Trace<web::rest::Response> const &event) {
   profile_.cancel_all_open_orders_ack([&]() {
     auto handle_success = [&](auto &body) {
       json::CancelAllOpenOrders cancel_all_open_orders{body, decode_buffer_};
@@ -1419,7 +1419,7 @@ void OrderEntry::cancel_all_open_orders_ack(Trace<web::rest::Response> const &ev
   });
 }
 
-void OrderEntry::operator()(Trace<json::CancelAllOpenOrders> const &event) {
+void OrderEntryREST::operator()(Trace<json::CancelAllOpenOrders> const &event) {
   auto &[trace_info, cancel_all_open_orders] = event;
   log::info<2>("cancel_all_open_orders={}"sv, cancel_all_open_orders);
   for (auto &order : cancel_all_open_orders.data) {
@@ -1463,7 +1463,7 @@ void OrderEntry::operator()(Trace<json::CancelAllOpenOrders> const &event) {
 }
 
 template <typename SuccessHandler, typename ErrorHandler>
-void OrderEntry::process_response(
+void OrderEntryREST::process_response(
     web::rest::Response const &response, SuccessHandler success_handler, ErrorHandler error_handler) {
   try {
     auto [status, category, body] = response.result();
@@ -1515,7 +1515,7 @@ void OrderEntry::process_response(
 }
 
 template <typename... Args>
-void OrderEntry::operator()(Trace<oms::Response> const &event, uint8_t user_id, uint32_t order_id, Args &&...args) {
+void OrderEntryREST::operator()(Trace<oms::Response> const &event, uint8_t user_id, uint32_t order_id, Args &&...args) {
   auto &[trace_info, response] = event;
   if (shared_.update_order(
           user_id,
@@ -1531,7 +1531,7 @@ void OrderEntry::operator()(Trace<oms::Response> const &event, uint8_t user_id, 
 }
 
 template <typename... Args>
-void OrderEntry::operator()(
+void OrderEntryREST::operator()(
     Trace<oms::OrderUpdate> const &event, std::string_view const &client_order_id, Args &&...args) {
   auto &[trace_info, order_update] = event;
   if (shared_.update_order(
@@ -1543,7 +1543,7 @@ void OrderEntry::operator()(
 
 // note! used by cancel-replace
 template <typename Parse, typename Callback>
-void OrderEntry::dispatch_error_2(
+void OrderEntryREST::dispatch_error_2(
     web::http::Category category, web::http::Status status, Parse parse, Callback callback) {
   switch (category) {
     using enum web::http::Category;
@@ -1593,13 +1593,13 @@ void OrderEntry::dispatch_error_2(
   }
 }
 
-void OrderEntry::test(web::http::Status status) {
+void OrderEntryREST::test(web::http::Status status) {
   if (status != web::http::Status::FORBIDDEN) [[likely]]
     return;
   waf_limit_violation();
 }
 
-void OrderEntry::waf_limit_violation() {
+void OrderEntryREST::waf_limit_violation() {
   if (Flags::rest_terminate_on_403()) {
     log::fatal("WAF limit violation"sv);
   } else {
