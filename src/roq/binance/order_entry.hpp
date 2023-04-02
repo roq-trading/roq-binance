@@ -36,8 +36,7 @@ struct OrderEntry {
   OrderEntry(OrderEntry &&) = delete;
   OrderEntry(OrderEntry const &) = delete;
 
-  // bool ready() const { return status_ == ConnectionStatus::READY; }
-  // bool downloading() const { return download_account_ || download_orders_; }
+  virtual bool ready() const = 0;
 
   virtual void operator()(Event<Start> const &) = 0;
   virtual void operator()(Event<Stop> const &) = 0;

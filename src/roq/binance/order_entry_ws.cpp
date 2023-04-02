@@ -89,9 +89,10 @@ OrderEntryWS::OrderEntryWS(
     uint16_t stream_id,
     Authenticator &authenticator,
     Shared &shared,
-    Request &request)
+    Request &request,
+    bool master)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, authenticator.get_account())},
-      connection_{create_connection(*this, context)}, decode_buffer_{Flags::decode_buffer_size()},
+      master_{master}, connection_{create_connection(*this, context)}, decode_buffer_{Flags::decode_buffer_size()},
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
@@ -137,7 +138,7 @@ void OrderEntryWS::operator()(Event<Timer> const &event) {
   auto now = event.value.now;
   (*connection_).refresh(now);
   user_data_stream_ping(now);
-  if (ready() && !downloading()) {
+  if (master_ && ready() && !downloading()) {
     if (!downloading() && request_.respond_account < request_.request_account) {
       log::info("Download account..."sv);
       account_status();
@@ -584,8 +585,12 @@ void OrderEntryWS::operator()(web::socket::Client::Disconnected const &) {
 }
 
 void OrderEntryWS::operator()(web::socket::Client::Ready const &) {
-  user_data_stream_start();
-  (*this)(ConnectionStatus::LOGIN_SENT);
+  if (master_) {
+    user_data_stream_start();
+    (*this)(ConnectionStatus::LOGIN_SENT);
+  } else {
+    (*this)(ConnectionStatus::READY);
+  }
 }
 
 void OrderEntryWS::operator()(web::socket::Client::Close const &) {

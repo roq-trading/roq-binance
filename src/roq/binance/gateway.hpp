@@ -89,9 +89,25 @@ struct Gateway final : public server::Handler,
   absl::flat_hash_map<Account, Request> request_;
   // seed
   uint16_t stream_id_ = {};
+  // EXPERIMENTAL
+  struct OrderEntryRR final {
+    OrderEntryRR(std::vector<std::unique_ptr<OrderEntry>> &&order_entry) : order_entry_{std::move(order_entry)} {}
+
+    template <typename... Args>
+    void operator()(Args &&...args) {
+      for (auto &item : order_entry_)
+        (*item)(std::forward<Args>(args)...);
+    }
+
+    OrderEntry &get_next();
+
+   private:
+    std::vector<std::unique_ptr<OrderEntry>> order_entry_;
+    size_t index_ = {};
+  };
   // streams
   Rest rest_;
-  absl::flat_hash_map<Account, std::unique_ptr<OrderEntry>> order_entry_;
+  absl::flat_hash_map<Account, OrderEntryRR> order_entry_;
   absl::flat_hash_map<Account, std::unique_ptr<DropCopy>> drop_copy_;
   std::vector<std::unique_ptr<MarketData>> market_data_1_, market_data_2_;
   // cache

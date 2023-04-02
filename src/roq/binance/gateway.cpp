@@ -51,12 +51,14 @@ auto create_order_entry(
   auto ws_api = flags::Flags::ws_api();
   for (auto &[account, security] : security_by_account) {
     auto &request = request_by_account[account];
+    std::vector<std::unique_ptr<OrderEntry>> order_entry;
     if (ws_api)
-      result.try_emplace(
-          account, std::make_unique<OrderEntryWS>(gateway, context, ++stream_id, *security, shared, request));
+      order_entry.emplace_back(
+          std::make_unique<OrderEntryWS>(gateway, context, ++stream_id, *security, shared, request, true));
     else
-      result.try_emplace(
-          account, std::make_unique<OrderEntryREST>(gateway, context, ++stream_id, *security, shared, request));
+      order_entry.emplace_back(
+          std::make_unique<OrderEntryREST>(gateway, context, ++stream_id, *security, shared, request, true));
+    result.try_emplace(account, std::move(order_entry));
   }
   return result;
 }
@@ -87,7 +89,7 @@ void Gateway::operator()(Event<Start> const &event) {
   log::info("Starting..."sv);
   rest_(event);
   for (auto &[_, iter] : order_entry_)
-    (*iter)(event);
+    iter(event);
   for (auto &[_, iter] : drop_copy_)
     if (static_cast<bool>(iter))
       (*iter)(event);
@@ -106,14 +108,14 @@ void Gateway::operator()(Event<Stop> const &event) {
     if (static_cast<bool>(iter))
       (*iter)(event);
   for (auto &[_, iter] : order_entry_)
-    (*iter)(event);
+    iter(event);
   rest_(event);
 }
 
 void Gateway::operator()(Event<Timer> const &event) {
   rest_(event);
   for (auto &[_, iter] : order_entry_)
-    (*iter)(event);
+    iter(event);
   for (auto &[_, iter] : drop_copy_)
     if (static_cast<bool>(iter))
       (*iter)(event);
@@ -133,7 +135,7 @@ void Gateway::operator()(Event<Disconnected> const &event) {
       message_info.source_name,
       disconnected.order_cancel_policy);
   for (auto &[_, iter] : order_entry_)
-    (*iter)(event);
+    iter(event);
   switch (disconnected.order_cancel_policy) {
     using enum OrderCancelPolicy;
     case UNDEFINED:
@@ -150,12 +152,13 @@ void Gateway::operator()(Event<Disconnected> const &event) {
               .account = account,
           };
           Event event{message_info, cancel_all_orders};
-          (*order_entry)(event, {});
+          order_entry.get_next()(event, {});
         }
       }
   }
-  for (auto &[account, order_entry] : order_entry_)
-    (*order_entry)(event);
+  // XXX HANS again ???
+  for (auto &[account, round_robin] : order_entry_)
+    round_robin(event);
 }
 
 void Gateway::operator()(Trace<StreamStatus> const &event) {
@@ -289,7 +292,7 @@ uint16_t Gateway::operator()(Event<CancelAllOrders> const &event, std::string_vi
 
 void Gateway::operator()(metrics::Writer &writer) {
   for (auto &[_, iter] : order_entry_)
-    (*iter)(writer);
+    iter(writer);
   for (auto &[_, iter] : drop_copy_)
     if (static_cast<bool>(iter))
       (*iter)(writer);
@@ -301,9 +304,22 @@ void Gateway::operator()(metrics::Writer &writer) {
 
 OrderEntry &Gateway::get_order_entry(std::string_view const &account) {
   auto iter = order_entry_.find(account);
-  if (iter != std::end(order_entry_))
-    return *(*iter).second;
-  throw RuntimeError{R"(Unknown account="{}")"sv, account};
+  if (iter == std::end(order_entry_)) [[unlikely]]
+    throw RuntimeError{R"(Unknown account="{}")"sv, account};
+  return (*iter).second.get_next();
+}
+
+OrderEntry &Gateway::OrderEntryRR::get_next() {
+  auto length = std::size(order_entry_);
+  for (size_t offset = 0; offset < length; ++offset) {
+    auto index = (index_ + 1 + offset) % length;
+    auto &order_entry = *(order_entry_[index]);
+    if (!order_entry.ready())
+      continue;
+    index_ = index;
+    return order_entry;
+  }
+  throw oms::NotReady{"get_next"sv};
 }
 
 }  // namespace binance

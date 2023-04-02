@@ -43,9 +43,10 @@ namespace roq {
 namespace binance {
 
 struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handler {
-  OrderEntryREST(OrderEntry::Handler &, io::Context &, uint16_t stream_id, Authenticator &, Shared &, Request &);
+  OrderEntryREST(
+      OrderEntry::Handler &, io::Context &, uint16_t stream_id, Authenticator &, Shared &, Request &, bool master);
 
-  bool ready() const { return status_ == ConnectionStatus::READY; }
+  bool ready() const override { return status_ == ConnectionStatus::READY; }
   bool downloading() const { return download_account_ || download_orders_; }
 
   void operator()(Event<Start> const &) override;
@@ -157,8 +158,9 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
  private:
   OrderEntry::Handler &handler_;
   // config
-  const uint16_t stream_id_;
-  const std::string name_;
+  uint16_t const stream_id_;
+  std::string const name_;
+  bool const master_;
   // connection
   std::unique_ptr<web::rest::Client> connection_;
   // buffers

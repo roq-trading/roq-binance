@@ -139,9 +139,10 @@ OrderEntryREST::OrderEntryREST(
     uint16_t stream_id,
     Authenticator &authenticator,
     Shared &shared,
-    Request &request)
+    Request &request,
+    bool master)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, authenticator.get_account())},
-      connection_{create_connection(*this, context)}, decode_buffer_{Flags::decode_buffer_size()},
+      master_{master}, connection_{create_connection(*this, context)}, decode_buffer_{Flags::decode_buffer_size()},
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
@@ -180,7 +181,7 @@ void OrderEntryREST::operator()(Event<Timer> const &event) {
   auto now = event.value.now;
   (*connection_).refresh(now);
   refresh_listen_key(now);
-  if (ready() && !downloading()) {
+  if (master_ && ready() && !downloading()) {
     if (!downloading() && request_.respond_account < request_.request_account) {
       log::info("Download account..."sv);
       get_account();
@@ -366,8 +367,12 @@ uint32_t OrderEntryREST::download(OrderEntryState state) {
       assert(false);
       break;
     case LISTEN_KEY:
-      get_listen_key();
-      return 1;
+      if (master_) {
+        get_listen_key();
+        return 1;
+      } else {
+        return 0;
+      }
     case DONE:
       (*this)(ConnectionStatus::READY);
       assert(!ready_);

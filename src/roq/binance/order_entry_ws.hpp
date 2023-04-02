@@ -24,7 +24,6 @@
 #include "roq/binance/order_entry.hpp"
 
 #include "roq/binance/authenticator.hpp"
-#include "roq/binance/drop_copy_state.hpp"
 #include "roq/binance/request.hpp"
 #include "roq/binance/shared.hpp"
 
@@ -34,9 +33,10 @@ namespace roq {
 namespace binance {
 
 struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handler, public json::WSAPIParser::Handler {
-  OrderEntryWS(OrderEntry::Handler &, io::Context &, uint16_t stream_id, Authenticator &, Shared &, Request &);
+  OrderEntryWS(
+      OrderEntry::Handler &, io::Context &, uint16_t stream_id, Authenticator &, Shared &, Request &, bool master);
 
-  bool ready() const { return status_ == ConnectionStatus::READY; }
+  bool ready() const override { return status_ == ConnectionStatus::READY; }
   bool downloading() const { return download_account_ || download_orders_; }
 
   void operator()(Event<Start> const &) override;
@@ -118,8 +118,9 @@ struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handl
  private:
   OrderEntry::Handler &handler_;
   // config
-  const uint16_t stream_id_;
-  const std::string name_;
+  uint16_t const stream_id_;
+  std::string const name_;
+  bool master_;
   // web socket
   std::unique_ptr<web::socket::Client> connection_;
   // buffers
