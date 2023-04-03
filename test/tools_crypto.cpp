@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2023, Hans Erik Thrane */
 
-#include <chrono>  // IWYU pragma: keep
+#include <chrono>
 #include <cstddef>
 #include <string>
 #include <string_view>
