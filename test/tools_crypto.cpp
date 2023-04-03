@@ -1,6 +1,15 @@
 /* Copyright (c) 2017-2023, Hans Erik Thrane */
 
-#include <catch2/catch_all.hpp>
+#include <chrono>  // IWYU pragma: keep
+#include <cstddef>
+#include <string>
+#include <string_view>
+#include <vector>
+
+#include <catch2/catch_approx.hpp>
+#include <catch2/catch_test_macros.hpp>
+
+#include <roq/core/hash/sha256.hpp>
 
 #include "roq/binance/tools/crypto.hpp"
 
