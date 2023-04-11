@@ -245,6 +245,9 @@ void DropCopy::operator()(Trace<json::OutboundAccountPosition> const &event) {
           .balance = item.free_amount,
           .hold = item.locked_amount,
           .external_account = {},
+          .update_type = UpdateType::INCREMENTAL,
+          .exchange_time_utc = outbound_account_position.time_of_last_account_update,
+          .sending_time_utc = outbound_account_position.event_time,
       };
       create_trace_and_dispatch(handler_, trace_info, funds_update, true);
     }
@@ -299,6 +302,7 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
         .last_traded_price = execution_report.last_executed_price,
         .last_liquidity = last_liquidity,
         .update_type = UpdateType::INCREMENTAL,
+        .sending_time_utc = execution_report.event_time,
     };
     auto create_fill = [&](auto &execution_report) {
       auto result = Fill{
@@ -327,6 +331,7 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
                 .external_order_id = order.external_order_id,
                 .fills = {&fill, 1},
                 .update_type = {},
+                .sending_time_utc = execution_report.event_time,
             };
             create_trace_and_dispatch(handler_, trace_info, trade_update, stream_id_, true, order.user_id);
           }
@@ -347,6 +352,7 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
             .external_order_id = external_order_id,
             .fills = {&fill, 1},
             .update_type = {},
+            .sending_time_utc = execution_report.event_time,
         };
         create_trace_and_dispatch(handler_, trace_info, trade_update, stream_id_, true, SOURCE_SELF);
       } else {

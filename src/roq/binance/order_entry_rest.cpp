@@ -514,6 +514,9 @@ void OrderEntryREST::operator()(Trace<json::Account> const &event) {
         .balance = item.free,
         .hold = item.locked,
         .external_account = {},
+        .update_type = UpdateType::SNAPSHOT,
+        .exchange_time_utc = account.update_time,
+        .sending_time_utc = account.update_time,
     };
     create_trace_and_dispatch(handler_, trace_info, funds_update, true);
   }
@@ -615,6 +618,7 @@ void OrderEntryREST::operator()(Trace<json::OpenOrders> const &event) {
         .last_traded_price = {},
         .last_liquidity = {},
         .update_type = UpdateType::SNAPSHOT,
+        .sending_time_utc = {},
     };
     Trace event_2{trace_info, order_update};
     (*this)(event_2, order.client_order_id);
@@ -768,6 +772,7 @@ void OrderEntryREST::operator()(
       .last_traded_price = last_traded_price,
       .last_liquidity = {},
       .update_type = UpdateType::INCREMENTAL,
+      .sending_time_utc = {},
   };
   Trace event_2{trace_info, response};
   (*this)(event_2, user_id, order_id, order_update);
@@ -1089,6 +1094,7 @@ void OrderEntryREST::operator()(
           .last_traded_price = NaN,
           .last_liquidity = {},
           .update_type = UpdateType::INCREMENTAL,
+          .sending_time_utc = {},
       };
       if (shared_.update_order(
               user_id,
@@ -1176,6 +1182,7 @@ void OrderEntryREST::operator()(
           .last_traded_price = NaN,
           .last_liquidity = {},
           .update_type = UpdateType::INCREMENTAL,
+          .sending_time_utc = {},
       };
       if (shared_.update_order(
               user_id,
@@ -1361,6 +1368,7 @@ void OrderEntryREST::operator()(
       .last_traded_price = NaN,
       .last_liquidity = {},
       .update_type = UpdateType::INCREMENTAL,
+      .sending_time_utc = {},
   };
   Trace event_2{trace_info, response};
   (*this)(event_2, user_id, order_id, order_update);
@@ -1463,6 +1471,7 @@ void OrderEntryREST::operator()(Trace<json::CancelAllOpenOrders> const &event) {
         .last_traded_price = {},
         .last_liquidity = {},
         .update_type = UpdateType::INCREMENTAL,
+        .sending_time_utc = {},
     };
     shared_.update_order(
         order.client_order_id, stream_id_, trace_info, order_update, []([[maybe_unused]] auto &order) {});
