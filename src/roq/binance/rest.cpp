@@ -351,6 +351,8 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
           break;
         case PERCENT_PRICE_BY_SIDE:
           break;
+        case NOTIONAL:
+          break;
       }
     }
     auto reference_data = ReferenceData{

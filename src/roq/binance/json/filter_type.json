@@ -43,6 +43,9 @@
     },
     {
       "name": "PERCENT_PRICE_BY_SIDE"
+    },
+    {
+      "name": "NOTIONAL"
     }
   ]
 }

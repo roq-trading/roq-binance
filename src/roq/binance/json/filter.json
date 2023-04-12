@@ -120,6 +120,21 @@
       "name": "askMultiplierDown",
       "type": "double",
       "comment": "PERCENT_PRICE_BY_SIDE?"
+    },
+    {
+      "name": "maxNotional",
+      "type": "double",
+      "comment": "NOTIONAL"
+    },
+    {
+      "name": "applyMinToMarket",
+      "type": "bool",
+      "comment": "NOTIONAL?"
+    },
+    {
+      "name": "applyMaxToMarket",
+      "type": "bool",
+      "comment": "NOTIONAL?"
     }
   ]
 }
