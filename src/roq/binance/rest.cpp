@@ -360,7 +360,7 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
         .exchange = Flags::exchange(),
         .symbol = item.symbol,
         .description = {},
-        .security_type = {},
+        .security_type = SecurityType::SPOT,
         .base_currency = item.base_asset,
         .quote_currency = item.quote_asset,
         .margin_currency = {},

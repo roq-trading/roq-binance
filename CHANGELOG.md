@@ -12,6 +12,10 @@ All notable changes will be documented in this file.
 
 * Possible `CancelOrder` race-condition (#333)
 
+### Changed
+
+* `ReferenceData.security_type` now populated (#342)
+
 ## 0.9.3 &ndash; 2023-03-20
 
 ### Added
