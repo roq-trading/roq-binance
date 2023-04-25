@@ -314,9 +314,9 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
     for (auto &filter : filters.data) {
       switch (filter.filter_type) {
         using enum json::FilterType::type_t;
-        case UNDEFINED:
+        case UNDEFINED__:
           break;
-        case UNKNOWN:
+        case UNKNOWN__:
           break;
         case PRICE_FILTER:
           tick_size = filter.tick_size;

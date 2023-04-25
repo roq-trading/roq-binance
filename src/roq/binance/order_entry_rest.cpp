@@ -1047,8 +1047,8 @@ void OrderEntryREST::operator()(
       create_version);
   switch (cancel_replace_order.cancel_result) {
     using enum json::SuccessOrFailure::type_t;
-    case UNDEFINED:
-    case UNKNOWN:
+    case UNDEFINED__:
+    case UNKNOWN__:
       log::warn("Unexpected"sv);
       break;
     case SUCCESS: {
@@ -1135,8 +1135,8 @@ void OrderEntryREST::operator()(
   }
   switch (cancel_replace_order.new_order_result) {
     using enum json::SuccessOrFailure::type_t;
-    case UNDEFINED:
-    case UNKNOWN:
+    case UNDEFINED__:
+    case UNKNOWN__:
       log::warn("Unexpected"sv);
       break;
     case SUCCESS: {

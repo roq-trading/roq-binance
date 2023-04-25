@@ -8,6 +8,8 @@
 
 #include "roq/compat.hpp"
 
+#include "roq/core/json/parser.hpp"
+
 #include "roq/binance/json/field.hpp"
 #include "roq/binance/json/stream.hpp"
 
@@ -26,19 +28,19 @@ void MarketStreamParser::dispatch(
     TraceInfo const &trace_info) {
   int64_t id = -1;
   std::string symbol;  // allocating because we need uppercase
-  auto stream = Stream::UNDEFINED;
+  auto stream = Stream::UNDEFINED__;
   bool dispatched = false;
   for (int i = 0; i < 2 && !dispatched; ++i) {
-    core::json::Parser parser(message);
+    core::json::Parser parser{message};
     auto root = parser.root();
     for (auto [key, value] : std::get<core::json::Object>(root)) {
-      auto field = Field(key);
+      auto field = Field{key};
       switch (field) {
         using enum Field::type_t;
-        case UNDEFINED:
+        case UNDEFINED__:
           log::fatal("Unexpected"sv);
           break;
-        case UNKNOWN:
+        case UNKNOWN__:
 #ifndef NDEBUG
           log::fatal(R"(Unknown key="{}")"sv, key);
 #endif
@@ -46,16 +48,16 @@ void MarketStreamParser::dispatch(
           break;
         case ERROR:
           if (id >= 0) {
-            const Error error(value);
-            Trace event(trace_info, error);
+            Error error{value};
+            Trace event{trace_info, error};
             dispatched = true;
             handler(event, id);
           }
           break;
         case RESULT:
           if (id >= 0) {
-            const Result result(value, buffer);
-            Trace event(trace_info, result);
+            Result result{value, buffer};
+            Trace event{trace_info, result};
             dispatched = true;
             handler(event, id);
           }
@@ -69,52 +71,52 @@ void MarketStreamParser::dispatch(
           auto idx0 = full_name.find('@');  // <symbol>@<stream>
           if (idx0 == full_name.npos) [[unlikely]]
             log::fatal(R"(Unexpected: name="{}")"sv, full_name);
-          symbol = std::string_view(std::begin(full_name), idx0);
+          symbol = std::string_view{std::begin(full_name), idx0};
           // note! convert to uppercase
           std::transform(
               std::begin(symbol), std::end(symbol), std::begin(symbol), [](auto c) { return std::toupper(c); });
           auto idx1 = full_name.find('@', idx0 + 1);
-          auto name = std::string_view(
+          auto name = std::string_view{
               std::begin(full_name) + idx0 + 1,
-              (idx1 == full_name.npos) ? std::size(full_name) - idx0 - 1 : idx1 - idx0 - 1);
-          stream = Stream(name);
+              (idx1 == full_name.npos) ? std::size(full_name) - idx0 - 1 : idx1 - idx0 - 1};
+          stream = Stream{name};
           break;
         }
         case DATA:
           switch (stream) {
             using enum Stream::type_t;
-            case UNDEFINED:
+            case UNDEFINED__:
               break;  // wait
-            case UNKNOWN:
+            case UNKNOWN__:
 #ifndef NDEBUG
               log::fatal("Unexpected (unknown stream)"sv);
 #endif
               return;
             case AGG_TRADE: {
-              const AggTrade agg_trade(value);
+              AggTrade agg_trade{value};
               dispatched = true;
-              Trace event(trace_info, agg_trade);
+              Trace event{trace_info, agg_trade};
               handler(event);
               break;
             }
             case TRADE: {
-              const Trade trade(value);
+              Trade trade{value};
               dispatched = true;
-              Trace event(trace_info, trade);
+              Trace event{trace_info, trade};
               handler(event);
               break;
             }
             case MINI_TICKER: {
-              const MiniTicker mini_ticker(value);
+              MiniTicker mini_ticker{value};
               dispatched = true;
-              Trace event(trace_info, mini_ticker);
+              Trace event{trace_info, mini_ticker};
               handler(event);
               break;
             }
             case BOOK_TICKER: {
-              const BookTicker book_ticker(value);
+              BookTicker book_ticker{value};
               dispatched = true;
-              Trace event(trace_info, book_ticker);
+              Trace event{trace_info, book_ticker};
               handler(event);
               break;
             }
@@ -122,17 +124,17 @@ void MarketStreamParser::dispatch(
             case DEPTH10:
             case DEPTH20: {
               assert(!std::empty(symbol));
-              const Depth depth(value, buffer);
+              Depth depth{value, buffer};
               dispatched = true;
-              Trace event(trace_info, depth);
+              Trace event{trace_info, depth};
               handler(event, symbol);
               break;
             }
             case DEPTH: {
               assert(!std::empty(symbol));
-              const DepthUpdate depth_update(value, buffer);
+              DepthUpdate depth_update{value, buffer};
               dispatched = true;
-              Trace event(trace_info, depth_update);
+              Trace event{trace_info, depth_update};
               handler(event);
               break;
             }

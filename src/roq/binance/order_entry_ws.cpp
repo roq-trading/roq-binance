@@ -678,8 +678,8 @@ void OrderEntryWS::operator()(Trace<json::Error> const &event, json::WSAPIReques
     };
     switch (request.type) {
       using enum json::WSAPIType::type_t;
-      case UNDEFINED:
-      case UNKNOWN:
+      case UNDEFINED__:
+      case UNKNOWN__:
         break;
       case LISTEN_KEY_CREATE:
         switch (error.code) {
@@ -1019,10 +1019,10 @@ void OrderEntryWS::update_helper(
   };
   switch (cancel_replace_order.cancel_result) {
     using enum json::SuccessOrFailure::type_t;
-    case UNDEFINED:
+    case UNDEFINED__:
       dispatch_cancel_error();
       break;
-    case UNKNOWN:
+    case UNKNOWN__:
       log::warn("Unexpected"sv);
       break;
     case SUCCESS: {
@@ -1120,10 +1120,10 @@ void OrderEntryWS::update_helper(
   };
   switch (cancel_replace_order.new_order_result) {
     using enum json::SuccessOrFailure::type_t;
-    case UNDEFINED:
+    case UNDEFINED__:
       dispatch_create_error();
       break;
-    case UNKNOWN:
+    case UNKNOWN__:
       log::warn("Unexpected"sv);
       break;
     case SUCCESS: {

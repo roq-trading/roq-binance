@@ -78,8 +78,8 @@ bool dispatch_order_cancel_replace(
 bool dispatch_helper(auto &handler, auto status, auto &value, auto &buffer, auto &trace_info, auto &request) {
   switch (request.type) {
     using enum WSAPIType::type_t;
-    case UNDEFINED:
-    case UNKNOWN:
+    case UNDEFINED__:
+    case UNKNOWN__:
       break;
     case LISTEN_KEY_CREATE:
       return dispatch_listen_key(handler, status, value, buffer, trace_info, request);
