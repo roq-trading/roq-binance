@@ -75,7 +75,7 @@ std::string const &Config::get_secret(Account const &account) const {
   return (*iter).second.secret;
 }
 
-void Config::dispatch(server::config::Dispatcher::Handler &handler) const {
+void Config::dispatch(server::config::Handler &handler) const {
   handler(exchange_);
   handler(symbols);
   for (auto &iter : accounts)
