@@ -114,7 +114,7 @@ struct MarketData final : public web::socket::Client::Handler, public json::Mark
   // state
   ConnectionStatus status_ = {};
   // queue
-  core::TimerQueue subscribe_queue_;
+  core::TimerQueue<std::string> subscribe_queue_;
 };
 
 }  // namespace binance

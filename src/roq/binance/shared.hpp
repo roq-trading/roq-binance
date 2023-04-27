@@ -96,7 +96,7 @@ struct Shared final {
  public:
   core::limit::RateLimiter rate_limiter;
   core::Symbols symbols;
-  core::TimerQueue depth_request_queue;
+  core::TimerQueue<std::string> depth_request_queue;
 
  private:
   absl::flat_hash_map<std::string, json::CreateOrderTemplate> const &create_order_templates;

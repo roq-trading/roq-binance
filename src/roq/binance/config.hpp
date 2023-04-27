@@ -15,6 +15,9 @@
 #include "roq/logging.hpp"
 #include "roq/server.hpp"
 
+#include "roq/server/config/dispatcher.hpp"
+#include "roq/server/config/reader.hpp"
+
 #include "roq/binance/flags.hpp"
 
 #include "roq/binance/json/cancel_order_template.hpp"
@@ -23,7 +26,7 @@
 namespace roq {
 namespace binance {
 
-struct Config final : public server::Config, public server::ConfigReader::Handler {
+struct Config final : public server::config::Dispatcher, public server::config::Reader::Handler {
   struct Options final {
     std::string_view exchange;
     uint16_t mbp_max_depth = {};
@@ -40,15 +43,15 @@ struct Config final : public server::Config, public server::ConfigReader::Handle
   std::string const &get_secret(Account const &) const;
 
  protected:
-  // server::Config
-  void dispatch(server::Config::Handler &) const override;
+  // server::config::Dispatcher
+  void dispatch(server::config::Dispatcher::Handler &) const override;
 
-  // server::ConfigReader::Handler
-  void operator()(server::Symbols &&) override;
-  void operator()(server::Account &&) override;
-  void operator()(server::User &&) override;
-  void operator()(server::RateLimit &&) override;
-  void operator()(server::RequestTemplate, std::string_view const &label, toml::table &) override;
+  // server::config::Reader::Handler
+  void operator()(server::config::Symbols &&) override;
+  void operator()(server::config::Account &&) override;
+  void operator()(server::config::User &&) override;
+  void operator()(server::config::RateLimit &&) override;
+  void operator()(server::config::RequestTemplate, std::string_view const &label, toml::table &) override;
   void operator()(std::string_view const &key, toml::node &) override;
 
  private:
@@ -58,11 +61,11 @@ struct Config final : public server::Config, public server::ConfigReader::Handle
   bool const mbp_checksum_;
 
  public:
-  server::Users users;
-  server::Symbols symbols;
-  server::Accounts accounts;
+  server::config::Users users;
+  server::config::Symbols symbols;
+  server::config::Accounts accounts;
   Account master_account_;
-  server::RateLimits rate_limits;
+  server::config::RateLimits rate_limits;
   absl::flat_hash_map<std::string, json::CreateOrderTemplate> create_order_templates;
   absl::flat_hash_map<std::string, json::CancelOrderTemplate> cancel_order_templates;
 };
