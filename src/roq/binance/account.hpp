@@ -17,13 +17,13 @@
 namespace roq {
 namespace binance {
 
-struct Authenticator final {
-  Authenticator(Config const &, std::string_view const &account);
+struct Account final {
+  Account(Config const &, std::string_view const &name);
 
-  Authenticator(Authenticator &&) = delete;
-  Authenticator(Authenticator const &) = delete;
+  Account(Account &&) = delete;
+  Account(Account const &) = delete;
 
-  inline std::string_view get_account() const { return account_; }
+  inline std::string_view get_name() const { return name_; }
   inline std::string_view get_key() const { return crypto_.get_key(); }
 
   inline std::string_view create_query(std::chrono::milliseconds now, std::string_view const &body) {
@@ -38,7 +38,7 @@ struct Authenticator final {
   }
 
  private:
-  std::string const account_;
+  std::string const name_;
   tools::Crypto crypto_;
   std::vector<std::byte> query_encode_buffer_;
 

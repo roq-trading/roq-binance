@@ -137,14 +137,13 @@ OrderEntryREST::OrderEntryREST(
     OrderEntry::Handler &handler,
     io::Context &context,
     uint16_t stream_id,
-    Authenticator &authenticator,
+    Account &account,
     Shared &shared,
     Request &request,
     bool master,
     std::string_view const &interface)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, authenticator.get_account())},
-      master_{master}, connection_{create_connection(*this, context, interface)},
-      decode_buffer_{Flags::decode_buffer_size()},
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.get_name())}, master_{master},
+      connection_{create_connection(*this, context, interface)}, decode_buffer_{Flags::decode_buffer_size()},
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
@@ -167,7 +166,7 @@ OrderEntryREST::OrderEntryREST(
       latency_{
           .ping = create_metrics(name_, "ping"sv),
       },
-      authenticator_{authenticator}, shared_{shared}, request_{request},
+      account_{account}, shared_{shared}, request_{request},
       download_{Flags::rest_request_timeout(), [this](auto state) { return download(state); }} {
 }
 
@@ -222,13 +221,13 @@ void OrderEntryREST::operator()(metrics::Writer &writer) {
 
 void OrderEntryREST::operator()(Event<Disconnected> const &event) {
   auto user_id = event.message_info.source;
-  authenticator_.cancel_order_request_buffer_[user_id].reset();
+  account_.cancel_order_request_buffer_[user_id].reset();
 }
 
 uint16_t OrderEntryREST::operator()(
     Event<CreateOrder> const &event, oms::Order const &order, std::string_view const &request_id) {
   auto &message_info = event.message_info;
-  auto &tmp = authenticator_.cancel_order_request_buffer_[message_info.source];
+  auto &tmp = account_.cancel_order_request_buffer_[message_info.source];
   if (!tmp) {
     new_order(event, order, request_id);
   } else {
@@ -256,7 +255,7 @@ uint16_t OrderEntryREST::operator()(
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
   auto &[message_info, cancel_order] = event;
-  auto &tmp = authenticator_.cancel_order_request_buffer_[message_info.source];
+  auto &tmp = account_.cancel_order_request_buffer_[message_info.source];
   if (tmp)
     throw oms::NotSupported{"not supported"sv};
   if (message_info.is_last) {
@@ -301,7 +300,7 @@ void OrderEntryREST::operator()(Trace<web::rest::Client::Latency> const &event) 
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
       .stream_id = stream_id_,
-      .account = authenticator_.get_account(),
+      .account = account_.get_name(),
       .latency = latency.sample,
   };
   create_trace_and_dispatch(handler_, trace_info, external_latency);
@@ -345,7 +344,7 @@ void OrderEntryREST::operator()(ConnectionStatus status) {
     TraceInfo trace_info;
     auto stream_status = StreamStatus{
         .stream_id = stream_id_,
-        .account = authenticator_.get_account(),
+        .account = account_.get_name(),
         .supports = SUPPORTS,
         .transport = Transport::TCP,
         .protocol = Protocol::HTTP,
@@ -389,7 +388,7 @@ uint32_t OrderEntryREST::download(OrderEntryState state) {
 
 void OrderEntryREST::get_listen_key() {
   profile_.listen_key([&]() {
-    auto headers = authenticator_.create_headers();
+    auto headers = account_.create_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
         .path = "/api/v3/userDataStream"sv,
@@ -441,7 +440,7 @@ void OrderEntryREST::operator()(Trace<json::ListenKey> const &event) {
     if (initial) {
       log::info<1>(R"(Listen key has been acquired (value="{}"))"sv, listen_key_);
       auto listen_key_update = ListenKeyUpdate{
-          .account = authenticator_.get_account(),
+          .account = account_.get_name(),
           .listen_key = listen_key.listen_key,
       };
       create_trace_and_dispatch(handler_, trace_info, listen_key_update);
@@ -458,8 +457,8 @@ void OrderEntryREST::operator()(Trace<json::ListenKey> const &event) {
 void OrderEntryREST::get_account() {
   profile_.account([&]() {
     auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = authenticator_.create_query(now);
-    auto headers = authenticator_.create_headers();
+    auto query = account_.create_query(now);
+    auto headers = account_.create_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
         .path = "/api/v3/account"sv,
@@ -509,7 +508,7 @@ void OrderEntryREST::operator()(Trace<json::Account> const &event) {
     // log::debug("item={}"sv, item);
     auto funds_update = FundsUpdate{
         .stream_id = stream_id_,
-        .account = authenticator_.get_account(),
+        .account = account_.get_name(),
         .currency = item.asset,
         .balance = item.free,
         .hold = item.locked,
@@ -527,8 +526,8 @@ void OrderEntryREST::operator()(Trace<json::Account> const &event) {
 void OrderEntryREST::get_open_orders() {
   profile_.open_orders([&]() {
     auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = authenticator_.create_query(now);
-    auto headers = authenticator_.create_headers();
+    auto query = account_.create_query(now);
+    auto headers = account_.create_headers();
     auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
     encode_buffer_.clear();
     fmt::format_to(
@@ -594,7 +593,7 @@ void OrderEntryREST::operator()(Trace<json::OpenOrders> const &event) {
     auto external_order_id = fmt::format("{}"_cf, order.order_id);  // alloc
     auto order_status = json::map(order.status);
     auto order_update = oms::OrderUpdate{
-        .account = authenticator_.get_account(),
+        .account = account_.get_name(),
         .exchange = Flags::exchange(),
         .symbol = order.symbol,
         .side = side,
@@ -651,8 +650,8 @@ void OrderEntryREST::new_order(
     auto body = json::new_order(encode_buffer_, create_order, order, request_id, create_order_template, recv_window);
     log::debug(R"(body="{}")"sv, body);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = authenticator_.create_query(now, body);
-    auto headers = authenticator_.create_headers();
+    auto query = account_.create_query(now, body);
+    auto headers = account_.create_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
         .path = "/api/v3/order"sv,
@@ -748,7 +747,7 @@ void OrderEntryREST::operator()(
       .price = NaN,
   };
   auto order_update = oms::OrderUpdate{
-      .account = authenticator_.get_account(),
+      .account = account_.get_name(),
       .exchange = Flags::exchange(),
       .symbol = new_order.symbol,
       .side = side,
@@ -808,8 +807,8 @@ void OrderEntryREST::cancel_replace_order(
                   flags::Flags::cancel_replace_stop_on_failure());
               log::info(R"(DEBUG body="{}")"sv, body);
               auto now = clock::get_realtime<std::chrono::milliseconds>();
-              auto query = authenticator_.create_query(now, body);
-              auto headers = authenticator_.create_headers();
+              auto query = account_.create_query(now, body);
+              auto headers = account_.create_headers();
               auto request = web::rest::Request{
                   .method = web::http::Method::POST,
                   .path = "/api/v3/order/cancelReplace"sv,
@@ -1070,7 +1069,7 @@ void OrderEntryREST::operator()(
           .price = NaN,
       };
       auto order_update = oms::OrderUpdate{
-          .account = authenticator_.get_account(),
+          .account = account_.get_name(),
           .exchange = Flags::exchange(),
           .symbol = cancel_order.symbol,
           .side = side,
@@ -1158,7 +1157,7 @@ void OrderEntryREST::operator()(
           .price = NaN,
       };
       auto order_update = oms::OrderUpdate{
-          .account = authenticator_.get_account(),
+          .account = account_.get_name(),
           .exchange = Flags::exchange(),
           .symbol = new_order.symbol,
           .side = side,
@@ -1262,8 +1261,8 @@ void OrderEntryREST::cancel_order(
         encode_buffer_, cancel_order, order, request_id, previous_request_id, cancel_order_template, recv_window);
     log::debug(R"(body="{}")"sv, body);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = authenticator_.create_query(now, body);
-    auto headers = authenticator_.create_headers();
+    auto query = account_.create_query(now, body);
+    auto headers = account_.create_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::DELETE,
         .path = "/api/v3/order"sv,
@@ -1344,7 +1343,7 @@ void OrderEntryREST::operator()(
       .price = NaN,
   };
   auto order_update = oms::OrderUpdate{
-      .account = authenticator_.get_account(),
+      .account = account_.get_name(),
       .exchange = Flags::exchange(),
       .symbol = cancel_order.symbol,
       .side = side,
@@ -1386,8 +1385,8 @@ void OrderEntryREST::cancel_all_open_orders(
       auto body = json::cancel_all_open_orders(encode_buffer_, symbol, recv_window);
       log::debug(R"(body="{}")"sv, body);
       auto now = clock::get_realtime<std::chrono::milliseconds>();
-      auto query = authenticator_.create_query(now, body);
-      auto headers = authenticator_.create_headers();
+      auto query = account_.create_query(now, body);
+      auto headers = account_.create_headers();
       auto request = web::rest::Request{
           .method = web::http::Method::DELETE,
           .path = "/api/v3/openOrders"sv,
@@ -1447,7 +1446,7 @@ void OrderEntryREST::operator()(Trace<json::CancelAllOpenOrders> const &event) {
     auto external_order_id = fmt::format("{}"_cf, order.order_id);  // alloc
     auto order_status = json::map(order.status);
     auto order_update = oms::OrderUpdate{
-        .account = authenticator_.get_account(),
+        .account = account_.get_name(),
         .exchange = Flags::exchange(),
         .symbol = order.symbol,
         .side = side,

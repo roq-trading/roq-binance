@@ -87,14 +87,13 @@ OrderEntryWS::OrderEntryWS(
     OrderEntry::Handler &handler,
     io::Context &context,
     uint16_t stream_id,
-    Authenticator &authenticator,
+    Account &account,
     Shared &shared,
     Request &request,
     bool master,
     std::string_view const &interface)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, authenticator.get_account())},
-      master_{master}, connection_{create_connection(*this, context, interface)},
-      decode_buffer_{Flags::decode_buffer_size()},
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.get_name())}, master_{master},
+      connection_{create_connection(*this, context, interface)}, decode_buffer_{Flags::decode_buffer_size()},
       counter_{
           .disconnect = create_metrics(name_, "disconnect"sv),
       },
@@ -123,7 +122,7 @@ OrderEntryWS::OrderEntryWS(
           .ping = create_metrics(name_, "ping"sv),
           .heartbeat = create_metrics(name_, "heartbeat"sv),
       },
-      authenticator_{authenticator}, shared_{shared}, request_{request}, request_id_{REQUEST_ID} {
+      account_{account}, shared_{shared}, request_{request}, request_id_{REQUEST_ID} {
   // DEBUG
   open_orders_symbols_.emplace("BTCUSDT"sv);
 }
@@ -185,13 +184,13 @@ void OrderEntryWS::operator()(metrics::Writer &writer) {
 
 void OrderEntryWS::operator()(Event<Disconnected> const &event) {
   auto user_id = event.message_info.source;
-  authenticator_.cancel_order_request_buffer_[user_id].reset();
+  account_.cancel_order_request_buffer_[user_id].reset();
 }
 
 uint16_t OrderEntryWS::operator()(
     Event<CreateOrder> const &event, oms::Order const &order, std::string_view const &request_id) {
   auto &message_info = event.message_info;
-  auto &tmp = authenticator_.cancel_order_request_buffer_[message_info.source];
+  auto &tmp = account_.cancel_order_request_buffer_[message_info.source];
   if (!tmp) {
     order_place(event, order, request_id);
   } else {
@@ -218,7 +217,7 @@ uint16_t OrderEntryWS::operator()(
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
   auto &[message_info, cancel_order] = event;
-  auto &tmp = authenticator_.cancel_order_request_buffer_[message_info.source];
+  auto &tmp = account_.cancel_order_request_buffer_[message_info.source];
   if (tmp)
     throw oms::NotSupported{"not supported"sv};
   if (message_info.is_last) {
@@ -256,7 +255,7 @@ void OrderEntryWS::user_data_stream_start() {
         R"(}})"
         R"(}})"sv,
         request_id,
-        authenticator_.get_key());
+        account_.get_key());
     log::debug("{}"sv, message);
     (*connection_).send_text(message);
   });
@@ -287,7 +286,7 @@ void OrderEntryWS::user_data_stream_ping(std::chrono::nanoseconds now) {
         R"(}})"
         R"(}})"sv,
         request_id,
-        authenticator_.get_key(),
+        account_.get_key(),
         listen_key_);
     log::debug("{}"sv, message);
     (*connection_).send_text(message);
@@ -297,8 +296,8 @@ void OrderEntryWS::user_data_stream_ping(std::chrono::nanoseconds now) {
 void OrderEntryWS::account_status() {
   profile_.account_status([&]() {
     auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto message_for_signature = fmt::format("apiKey={}&timestamp={}"sv, authenticator_.get_key(), now.count());
-    auto signature = authenticator_.create_ws_api_signature(message_for_signature);
+    auto message_for_signature = fmt::format("apiKey={}&timestamp={}"sv, account_.get_key(), now.count());
+    auto signature = account_.create_ws_api_signature(message_for_signature);
     auto request = json::WSAPIRequest{
         .sequence = ++request_id_,
         .type = json::WSAPIType::ACCOUNT_STATUS,
@@ -315,7 +314,7 @@ void OrderEntryWS::account_status() {
         R"(}})"
         R"(}})"sv,
         request_id,
-        authenticator_.get_key(),
+        account_.get_key(),
         now.count(),
         signature);
     log::debug("{}"sv, message);
@@ -326,8 +325,8 @@ void OrderEntryWS::account_status() {
 void OrderEntryWS::open_orders_status() {
   profile_.open_orders_status([&]() {
     auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto message_for_signature = fmt::format("apiKey={}&timestamp={}"sv, authenticator_.get_key(), now.count());
-    auto signature = authenticator_.create_ws_api_signature(message_for_signature);
+    auto message_for_signature = fmt::format("apiKey={}&timestamp={}"sv, account_.get_key(), now.count());
+    auto signature = account_.create_ws_api_signature(message_for_signature);
     auto request = json::WSAPIRequest{
         .sequence = ++request_id_,
         .type = json::WSAPIType::OPEN_ORDERS_STATUS,
@@ -344,7 +343,7 @@ void OrderEntryWS::open_orders_status() {
         R"(}})"
         R"(}})"sv,
         request_id,
-        authenticator_.get_key(),
+        account_.get_key(),
         now.count(),
         signature);
     log::debug("{}"sv, message);
@@ -363,8 +362,8 @@ void OrderEntryWS::open_orders_cancel_all(
     for (auto &symbol : open_orders_symbols_) {
       auto now = clock::get_realtime<std::chrono::milliseconds>();
       auto message_for_signature =
-          fmt::format("apiKey={}&symbol={}&timestamp={}"sv, authenticator_.get_key(), symbol, now.count());
-      auto signature = authenticator_.create_ws_api_signature(message_for_signature);
+          fmt::format("apiKey={}&symbol={}&timestamp={}"sv, account_.get_key(), symbol, now.count());
+      auto signature = account_.create_ws_api_signature(message_for_signature);
       auto request = json::WSAPIRequest{
           .sequence = ++request_id_,
           .type = json::WSAPIType::OPEN_ORDERS_CANCEL_ALL,
@@ -383,7 +382,7 @@ void OrderEntryWS::open_orders_cancel_all(
           R"(}})"
           R"(}})"sv,
           request_id_2,
-          authenticator_.get_key(),
+          account_.get_key(),
           symbol,
           now.count(),
           signature);
@@ -404,16 +403,9 @@ void OrderEntryWS::order_place(
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(Flags::rest_order_recv_window());
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto message_for_signature = json::new_order_ws_url(
-        encode_buffer_,
-        create_order,
-        order,
-        request_id,
-        create_order_template,
-        recv_window,
-        authenticator_.get_key(),
-        now);
+        encode_buffer_, create_order, order, request_id, create_order_template, recv_window, account_.get_key(), now);
     log::debug(R"(message_for_signature="{}")"sv, message_for_signature);
-    auto signature = authenticator_.create_ws_api_signature(message_for_signature);
+    auto signature = account_.create_ws_api_signature(message_for_signature);
     auto params = json::new_order_ws_json(
         encode_buffer_,
         create_order,
@@ -421,7 +413,7 @@ void OrderEntryWS::order_place(
         request_id,
         create_order_template,
         recv_window,
-        authenticator_.get_key(),
+        account_.get_key(),
         now,
         signature);
     log::debug(R"(params="{}")"sv, params);
@@ -466,10 +458,10 @@ void OrderEntryWS::order_cancel(
         previous_request_id,
         cancel_order_template,
         recv_window,
-        authenticator_.get_key(),
+        account_.get_key(),
         now);
     log::debug(R"(message_for_signature="{}")"sv, message_for_signature);
-    auto signature = authenticator_.create_ws_api_signature(message_for_signature);
+    auto signature = account_.create_ws_api_signature(message_for_signature);
     auto params = json::cancel_order_ws_json(
         encode_buffer_,
         cancel_order,
@@ -478,7 +470,7 @@ void OrderEntryWS::order_cancel(
         previous_request_id,
         cancel_order_template,
         recv_window,
-        authenticator_.get_key(),
+        account_.get_key(),
         now,
         signature);
     log::debug(R"(params="{}")"sv, params);
@@ -531,10 +523,10 @@ void OrderEntryWS::order_cancel_replace(
                   create_order_template,
                   utils::safe_cast(Flags::rest_order_recv_window()),
                   flags::Flags::cancel_replace_stop_on_failure(),
-                  authenticator_.get_key(),
+                  account_.get_key(),
                   now);
               log::debug(R"(message_for_signature="{}")"sv, message_for_signature);
-              auto signature = authenticator_.create_ws_api_signature(message_for_signature);
+              auto signature = account_.create_ws_api_signature(message_for_signature);
               auto params = json::cancel_replace_order_ws_json(
                   encode_buffer_,
                   cancel_order_request.request_id,
@@ -547,7 +539,7 @@ void OrderEntryWS::order_cancel_replace(
                   create_order_template,
                   utils::safe_cast(Flags::rest_order_recv_window()),
                   flags::Flags::cancel_replace_stop_on_failure(),
-                  authenticator_.get_key(),
+                  account_.get_key(),
                   now,
                   signature);
               log::debug(R"(params="{}")"sv, params);
@@ -602,7 +594,7 @@ void OrderEntryWS::operator()(web::socket::Client::Latency const &latency) {
   TraceInfo trace_info;
   auto external_latency = ExternalLatency{
       .stream_id = stream_id_,
-      .account = authenticator_.get_account(),
+      .account = account_.get_name(),
       .latency = latency.sample,
   };
   create_trace_and_dispatch(handler_, trace_info, external_latency);
@@ -622,7 +614,7 @@ void OrderEntryWS::operator()(ConnectionStatus status) {
     TraceInfo trace_info;
     auto stream_status = StreamStatus{
         .stream_id = stream_id_,
-        .account = authenticator_.get_account(),
+        .account = account_.get_name(),
         .supports = SUPPORTS,
         .transport = Transport::TCP,
         .protocol = Protocol::WS,
@@ -718,7 +710,7 @@ void OrderEntryWS::operator()(Trace<json::ListenKey> const &event, json::WSAPIRe
     log::info<2>("listen_key={}, request={}, status={}"sv, listen_key, request, status);
     listen_key_ = listen_key.listen_key;
     auto listen_key_update = ListenKeyUpdate{
-        .account = authenticator_.get_account(),
+        .account = account_.get_name(),
         .listen_key = listen_key_,
     };
     create_trace_and_dispatch(handler_, trace_info, listen_key_update);
@@ -736,7 +728,7 @@ void OrderEntryWS::operator()(Trace<json::Account> const &event, json::WSAPIRequ
       // log::debug("item={}"sv, item);
       auto funds_update = FundsUpdate{
           .stream_id = stream_id_,
-          .account = authenticator_.get_account(),
+          .account = account_.get_name(),
           .currency = item.asset,
           .balance = item.free,
           .hold = item.locked,
@@ -767,7 +759,7 @@ void OrderEntryWS::operator()(Trace<json::OpenOrders> const &event, json::WSAPIR
       auto external_order_id = fmt::format("{}"_cf, order.order_id);  // alloc
       auto order_status = json::map(order.status);
       auto order_update = oms::OrderUpdate{
-          .account = authenticator_.get_account(),
+          .account = account_.get_name(),
           .exchange = Flags::exchange(),
           .symbol = order.symbol,
           .side = side,
@@ -816,7 +808,7 @@ void OrderEntryWS::operator()(
       auto external_order_id = fmt::format("{}"_cf, order.order_id);  // alloc
       auto order_status = json::map(order.status);
       auto order_update = oms::OrderUpdate{
-          .account = authenticator_.get_account(),
+          .account = account_.get_name(),
           .exchange = Flags::exchange(),
           .symbol = order.symbol,
           .side = side,
@@ -884,7 +876,7 @@ void OrderEntryWS::operator()(Trace<json::NewOrder> const &event, json::WSAPIReq
         .price = NaN,
     };
     auto order_update = oms::OrderUpdate{
-        .account = authenticator_.get_account(),
+        .account = account_.get_name(),
         .exchange = Flags::exchange(),
         .symbol = new_order.symbol,
         .side = side,
@@ -937,7 +929,7 @@ void OrderEntryWS::operator()(
         .price = NaN,
     };
     auto order_update = oms::OrderUpdate{
-        .account = authenticator_.get_account(),
+        .account = account_.get_name(),
         .exchange = Flags::exchange(),
         .symbol = cancel_order.symbol,
         .side = side,
@@ -1044,7 +1036,7 @@ void OrderEntryWS::update_helper(
           .price = NaN,
       };
       auto order_update = oms::OrderUpdate{
-          .account = authenticator_.get_account(),
+          .account = account_.get_name(),
           .exchange = Flags::exchange(),
           .symbol = cancel_order.symbol,
           .side = side,
@@ -1145,7 +1137,7 @@ void OrderEntryWS::update_helper(
           .price = NaN,
       };
       auto order_update = oms::OrderUpdate{
-          .account = authenticator_.get_account(),
+          .account = account_.get_name(),
           .exchange = Flags::exchange(),
           .symbol = new_order.symbol,
           .side = side,

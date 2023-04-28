@@ -29,66 +29,70 @@ namespace binance {
 
 namespace {
 template <typename R>
-auto create_authenticator(auto const &config) {
-  R result;
+R create_accounts(auto &config) {
+  using result_type = std::remove_cvref<R>::type;
+  result_type result;
   for (auto &[_, account] : config.accounts)
-    result.try_emplace(account.name, std::make_unique<Authenticator>(config, account.name));
+    result.try_emplace(account.name, std::make_unique<Account>(config, account.name));
   return result;
 }
 
 template <typename R>
-auto create_request(auto const &config) {
-  R result;
+R create_request(auto &config) {
+  using result_type = std::remove_cvref<R>::type;
+  result_type result;
   for (auto &[_, account] : config.accounts)
     result.try_emplace(account.name, Request{});
   return result;
 }
 
 template <typename R>
-auto create_order_entry(
-    auto &gateway, auto &context, auto &stream_id, auto &security_by_account, auto &shared, auto &request_by_account) {
-  R result;
+R create_order_entry(
+    auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared, auto &request_by_account) {
+  using result_type = std::remove_cvref<R>::type;
+  result_type result;
   auto ws_api = flags::Flags::ws_api();
   auto &rest_interfaces = flags::Flags::rest_network_interfaces();
   auto &ws_interfaces = flags::Flags::ws_api_network_interfaces();
-  for (auto &[account, security] : security_by_account) {
-    auto &request = request_by_account[account];
+  for (auto &[name, account] : accounts) {
+    auto &request = request_by_account.at(name);
     std::vector<std::unique_ptr<OrderEntry>> order_entry;
     if (ws_api) {
       if (std::empty(ws_interfaces)) {
         order_entry.emplace_back(
-            std::make_unique<OrderEntryWS>(gateway, context, ++stream_id, *security, shared, request));
+            std::make_unique<OrderEntryWS>(gateway, context, ++stream_id, *account, shared, request));
       } else {
         for (size_t i = 0; i < std::size(ws_interfaces); ++i) {
           auto &interface = ws_interfaces[i];
           auto master = i == 0;
           order_entry.emplace_back(std::make_unique<OrderEntryWS>(
-              gateway, context, ++stream_id, *security, shared, request, master, interface));
+              gateway, context, ++stream_id, *account, shared, request, master, interface));
         }
       }
     } else {
       if (std::empty(rest_interfaces)) {
         order_entry.emplace_back(
-            std::make_unique<OrderEntryREST>(gateway, context, ++stream_id, *security, shared, request));
+            std::make_unique<OrderEntryREST>(gateway, context, ++stream_id, *account, shared, request));
       } else {
         for (size_t i = 0; i < std::size(rest_interfaces); ++i) {
           auto &interface = rest_interfaces[i];
           auto master = i == 0;
           order_entry.emplace_back(std::make_unique<OrderEntryWS>(
-              gateway, context, ++stream_id, *security, shared, request, master, interface));
+              gateway, context, ++stream_id, *account, shared, request, master, interface));
         }
       }
     }
-    result.try_emplace(account, std::move(order_entry));
+    result.try_emplace(name, std::move(order_entry));
   }
   return result;
 }
 
 template <typename R>
-auto create_drop_copy(auto &security_by_account) {
-  R result;
-  for (auto &[account, security] : security_by_account)
-    result.try_emplace(account, nullptr);
+R create_drop_copy(auto &accounts) {
+  using result_type = std::remove_cvref<R>::type;
+  result_type result;
+  for (auto &[name, account] : accounts)
+    result.try_emplace(name, nullptr);
   return result;
 }
 }  // namespace
@@ -96,12 +100,11 @@ auto create_drop_copy(auto &security_by_account) {
 // === IMPLEMENTATION ===
 
 Gateway::Gateway(server::Dispatcher &dispatcher, Config const &config, io::Context &context)
-    : dispatcher_{dispatcher}, authenticator_(create_authenticator<decltype(authenticator_)>(config)),
-      context_{context}, shared_{dispatcher, config}, request_{create_request<decltype(request_)>(config)},
-      rest_{*this, context_, ++stream_id_, shared_},
-      order_entry_{
-          create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, authenticator_, shared_, request_)},
-      drop_copy_{create_drop_copy<decltype(drop_copy_)>(authenticator_)} {
+    : dispatcher_{dispatcher}, accounts_(create_accounts<decltype(accounts_)>(config)), context_{context},
+      shared_{dispatcher, config}, request_{create_request<decltype(request_)>(config)},
+      rest_{*this, context_, ++stream_id_, shared_}, order_entry_{create_order_entry<decltype(order_entry_)>(
+                                                         *this, context_, stream_id_, accounts_, shared_, request_)},
+      drop_copy_{create_drop_copy<decltype(drop_copy_)>(accounts_)} {
   if (Flags::rest_cancel_on_disconnect())
     log::fatal("Exchange does *NOT* support cancel on disconnect"sv);
 }
@@ -245,9 +248,9 @@ void Gateway::operator()(OrderEntry::ListenKeyUpdate const &listen_key_update) {
         *this,
         context_,
         ++stream_id_,
-        *authenticator_[account],
+        *accounts_.at(account),
         shared_,
-        request_[account],
+        request_.at(account),
         listen_key_update.listen_key);
     MessageInfo message_info;
     Start start;
@@ -293,16 +296,17 @@ void Gateway::operator()(metrics::Writer &writer) {
 
 template <typename... Args>
 void Gateway::dispatch(Args &&...args) {
-  rest_(std::forward<Args>(args)...);
+  auto helper = [&](auto &target) { target(std::forward<Args>(args)...); };
+  helper(rest_);
   for (auto &[_, item] : order_entry_)
-    item(std::forward<Args>(args)...);
+    helper(item);
   for (auto &[_, item] : drop_copy_)
     if (static_cast<bool>(item))
-      (*item)(std::forward<Args>(args)...);
+      helper(*item);
   for (auto &item : market_data_1_)
-    (*item)(std::forward<Args>(args)...);
+    helper(*item);
   for (auto &item : market_data_2_)
-    (*item)(std::forward<Args>(args)...);
+    helper(*item);
 }
 
 OrderEntry &Gateway::get_order_entry(std::string_view const &account) {

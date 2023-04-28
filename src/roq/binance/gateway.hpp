@@ -13,7 +13,7 @@
 
 #include "roq/io/context.hpp"
 
-#include "roq/binance/authenticator.hpp"
+#include "roq/binance/account.hpp"
 #include "roq/binance/config.hpp"
 #include "roq/binance/drop_copy.hpp"
 #include "roq/binance/market_data.hpp"
@@ -83,13 +83,13 @@ struct Gateway final : public server::Handler,
 
  private:
   server::Dispatcher &dispatcher_;
-  // authentication
-  absl::flat_hash_map<Account, std::unique_ptr<Authenticator>> authenticator_;
+  // accounts
+  absl::flat_hash_map<std::string, std::unique_ptr<Account>> const accounts_;
   // io
   io::Context &context_;
   // shared
   Shared shared_;
-  absl::flat_hash_map<Account, Request> request_;
+  absl::flat_hash_map<std::string, Request> request_;
   // seed
   uint16_t stream_id_ = {};
   // EXPERIMENTAL
@@ -110,8 +110,8 @@ struct Gateway final : public server::Handler,
   };
   // streams
   Rest rest_;
-  absl::flat_hash_map<Account, OrderEntryRR> order_entry_;
-  absl::flat_hash_map<Account, std::unique_ptr<DropCopy>> drop_copy_;
+  absl::flat_hash_map<std::string, OrderEntryRR> order_entry_;
+  absl::flat_hash_map<std::string, std::unique_ptr<DropCopy>> drop_copy_;
   std::vector<std::unique_ptr<MarketData>> market_data_1_, market_data_2_;
   // cache
   std::vector<MBPUpdate> bids_, asks_;

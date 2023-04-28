@@ -25,7 +25,7 @@
 
 #include "roq/binance/order_entry.hpp"
 
-#include "roq/binance/authenticator.hpp"
+#include "roq/binance/account.hpp"
 #include "roq/binance/order_entry_state.hpp"
 #include "roq/binance/request.hpp"
 #include "roq/binance/shared.hpp"
@@ -47,7 +47,7 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
       OrderEntry::Handler &,
       io::Context &,
       uint16_t stream_id,
-      Authenticator &,
+      Account &,
       Shared &,
       Request &,
       bool master = true,
@@ -190,7 +190,7 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
     core::metrics::Latency ping;
   } latency_;
   // authentication
-  Authenticator &authenticator_;
+  Account &account_;
   // shared
   Shared &shared_;
   Request &request_;
