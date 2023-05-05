@@ -304,62 +304,44 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
         .update_type = UpdateType::INCREMENTAL,
         .sending_time_utc = execution_report.event_time,
     };
-    auto create_fill = [&](auto &execution_report) {
-      auto result = Fill{
-          .external_trade_id = {},
-          .quantity = execution_report.last_executed_quantity,
-          .price = execution_report.last_executed_price,
-          .liquidity = last_liquidity,
-      };
-      fmt::format_to(std::back_inserter(result.external_trade_id), "{}"_cf, execution_report.trade_id);
-      return result;
-    };
-    auto is_trade = execution_report.current_execution_type == json::ExecutionType::TRADE;
+    auto order_id = ORDER_ID_NONE;
+    auto user_id = SOURCE_NONE;
     if (shared_.update_order(execution_report.client_order_id, stream_id_, trace_info, order_update, [&](auto &order) {
-          if (is_trade) {
-            auto fill = create_fill(execution_report);
-            auto trade_update = oms::TradeUpdate{
-                .account = order.account,
-                .order_id = order.order_id,
-                .exchange = order.exchange,
-                .symbol = order.symbol,
-                .side = order.side,
-                .position_effect = order.position_effect,
-                .create_time_utc = execution_report.transaction_time,
-                .update_time_utc = execution_report.transaction_time,
-                .external_account = order.external_account,
-                .external_order_id = order.external_order_id,
-                .fills = {&fill, 1},
-                .update_type = {},
-                .sending_time_utc = execution_report.event_time,
-            };
-            create_trace_and_dispatch(handler_, trace_info, trade_update, stream_id_, true, order.user_id);
-          }
+          order_id = order.order_id;
+          user_id = order.user_id;
         })) {
     } else {
-      if (is_trade) {
-        auto fill = create_fill(execution_report);
-        auto trade_update = oms::TradeUpdate{
-            .account = account_.get_name(),
-            .order_id = ORDER_ID_NONE,
-            .exchange = Flags::exchange(),
-            .symbol = execution_report.symbol,
-            .side = side,
-            .position_effect = {},
-            .create_time_utc = execution_report.transaction_time,
-            .update_time_utc = execution_report.transaction_time,
-            .external_account = {},
-            .external_order_id = external_order_id,
-            .fills = {&fill, 1},
-            .update_type = {},
-            .sending_time_utc = execution_report.event_time,
-        };
-        create_trace_and_dispatch(handler_, trace_info, trade_update, stream_id_, true, SOURCE_SELF);
-      } else {
-        log::warn("*** EXTERNAL ORDER ***"sv);
-        log::warn("execution_report={}"sv, execution_report);
-      }
+      log::warn("*** EXTERNAL ORDER ***"sv);
+      log::warn("execution_report={}"sv, execution_report);
     }
+    if (execution_report.current_execution_type != json::ExecutionType::TRADE)
+      return;
+    auto fill = Fill{
+        .external_trade_id = {},
+        .quantity = execution_report.last_executed_quantity,
+        .price = execution_report.last_executed_price,
+        .liquidity = last_liquidity,
+    };
+    fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"_cf, execution_report.trade_id);
+    auto trade_update = TradeUpdate{
+        .stream_id = stream_id_,
+        .account = account_.get_name(),
+        .order_id = order_id,
+        .exchange = Flags::exchange(),
+        .symbol = execution_report.symbol,
+        .side = side,
+        .position_effect = {},
+        .create_time_utc = execution_report.transaction_time,
+        .update_time_utc = execution_report.transaction_time,
+        .external_account = {},
+        .external_order_id = external_order_id,
+        .fills = {&fill, 1},
+        .routing_id = {},
+        .update_type = UpdateType::INCREMENTAL,
+        .sending_time_utc = execution_report.event_time,
+        .user = {},
+    };
+    create_trace_and_dispatch(handler_, trace_info, trade_update, true, user_id, execution_report.client_order_id);
   });
 }
 
