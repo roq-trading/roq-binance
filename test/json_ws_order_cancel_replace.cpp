@@ -107,11 +107,9 @@ TEST_CASE("simple", "[json_ws_order_cancel_replace]") {
       FAIL();
     }
     void operator()(
-        Trace<json::CancelReplaceOrder> const &event,
-        json::WSAPIRequest const &,
-        [[maybe_unused]] int32_t status) override {
+        Trace<json::CancelReplaceOrder> const &, json::WSAPIRequest const &, [[maybe_unused]] int32_t status) override {
       ++counter;
-      auto &[trace_info, cancel_replace_order] = event;
+      // auto &[trace_info, cancel_replace_order] = event;
     }
     void operator()(
         Trace<json::CancelReplaceOrderError> const &,

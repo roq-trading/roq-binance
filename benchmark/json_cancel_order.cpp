@@ -37,7 +37,6 @@ auto const OMS_ORDER = []() {
 
 void BM_json_cancel_order(benchmark::State &state) {
   std::vector<char> buffer(4096);
-  uint64_t processed = 0;
   for (auto _ : state) {
     auto cancel_order = CancelOrder{
         .account = ACCOUNT,
@@ -47,10 +46,8 @@ void BM_json_cancel_order(benchmark::State &state) {
         .version = {},
         .conditional_on_version = {},
     };
-    auto body = json::cancel_order(
+    json::cancel_order(
         buffer, cancel_order, OMS_ORDER, REQUEST_ID, PREVIOUS_REQUEST_ID, CANCEL_ORDER_TEMPLATE, RECV_WINDOW);
-    if (!std::empty(body))
-      ++processed;
   }
 }
 
@@ -62,7 +59,6 @@ void BM_json_cancel_order_with_signature(benchmark::State &state) {
   std::vector<char> buffer(4096);
   std::vector<std::byte> buffer_2(tools::Crypto::QUERY_BUFFER_LENGTH);
   tools::Crypto crypto{KEY, SECRET};
-  uint64_t processed = 0;
   for (auto _ : state) {
     auto cancel_order = CancelOrder{
         .account = ACCOUNT,
@@ -75,9 +71,7 @@ void BM_json_cancel_order_with_signature(benchmark::State &state) {
     auto body = json::cancel_order(
         buffer, cancel_order, OMS_ORDER, REQUEST_ID, PREVIOUS_REQUEST_ID, CANCEL_ORDER_TEMPLATE, RECV_WINDOW);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = crypto.create_query(buffer_2, now, body);
-    if (!std::empty(query))
-      ++processed;
+    crypto.create_query(buffer_2, now, body);
   }
 }
 

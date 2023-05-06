@@ -509,7 +509,6 @@ void OrderEntryWS::order_cancel_replace(
               auto &cancel_order_template =
                   shared_.get_cancel_order_template(cancel_order_request.cancel_order.request_template);
               auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
-              auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(Flags::rest_order_recv_window());
               auto now = clock::get_realtime<std::chrono::milliseconds>();
               auto message_for_signature = json::cancel_replace_order_ws_url(
                   encode_buffer_,
@@ -1199,9 +1198,7 @@ void OrderEntryWS::operator()(Trace<oms::Response> const &event, uint8_t user_id
   }
 }
 
-template <typename... Args>
-void OrderEntryWS::operator()(
-    Trace<oms::OrderUpdate> const &event, std::string_view const &client_order_id, Args &&...args) {
+void OrderEntryWS::operator()(Trace<oms::OrderUpdate> const &event, std::string_view const &client_order_id) {
   auto &[trace_info, order_update] = event;
   if (shared_.update_order(
           client_order_id, stream_id_, trace_info, order_update, [&]([[maybe_unused]] auto &order) {})) {

@@ -40,7 +40,6 @@ auto const CREATE_ORDER_TEMPLATE = json::CreateOrderTemplate{};
 
 void BM_json_new_order(benchmark::State &state) {
   std::vector<char> buffer(4096);
-  uint64_t processed = 0;
   for (auto _ : state) {
     auto create_order = CreateOrder{
         .account = ACCOUNT,
@@ -59,9 +58,7 @@ void BM_json_new_order(benchmark::State &state) {
         .stop_price = NaN,
         .routing_id = {},
     };
-    auto body = json::new_order(buffer, create_order, OMS_ORDER, REQUEST_ID, CREATE_ORDER_TEMPLATE, RECV_WINDOW);
-    if (!std::empty(body))
-      ++processed;
+    json::new_order(buffer, create_order, OMS_ORDER, REQUEST_ID, CREATE_ORDER_TEMPLATE, RECV_WINDOW);
   }
 }
 
@@ -73,7 +70,6 @@ void BM_json_new_order_with_signature(benchmark::State &state) {
   std::vector<char> buffer(4096);
   std::vector<std::byte> buffer_2(tools::Crypto::QUERY_BUFFER_LENGTH);
   tools::Crypto crypto{KEY, SECRET};
-  uint64_t processed = 0;
   for (auto _ : state) {
     auto create_order = CreateOrder{
         .account = ACCOUNT,
@@ -94,9 +90,7 @@ void BM_json_new_order_with_signature(benchmark::State &state) {
     };
     auto body = json::new_order(buffer, create_order, OMS_ORDER, REQUEST_ID, CREATE_ORDER_TEMPLATE, RECV_WINDOW);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = crypto.create_query(buffer_2, now, body);
-    if (!std::empty(query))
-      ++processed;
+    crypto.create_query(buffer_2, now, body);
   }
 }
 

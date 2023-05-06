@@ -1023,7 +1023,7 @@ void OrderEntryREST::cancel_replace_order_ack(
   });
 }
 
-void OrderEntryREST::cancel_replace_order_ack_2(Trace<web::rest::Response> const &, uint64_t opaque) {
+void OrderEntryREST::cancel_replace_order_ack_2(Trace<web::rest::Response> const &, [[maybe_unused]] uint64_t opaque) {
   log::fatal("Not implemented"sv);  // HANS
 }
 
@@ -1545,9 +1545,7 @@ void OrderEntryREST::operator()(Trace<oms::Response> const &event, uint8_t user_
   }
 }
 
-template <typename... Args>
-void OrderEntryREST::operator()(
-    Trace<oms::OrderUpdate> const &event, std::string_view const &client_order_id, Args &&...args) {
+void OrderEntryREST::operator()(Trace<oms::OrderUpdate> const &event, std::string_view const &client_order_id) {
   auto &[trace_info, order_update] = event;
   if (shared_.update_order(
           client_order_id, stream_id_, trace_info, order_update, [&]([[maybe_unused]] auto &order) {})) {

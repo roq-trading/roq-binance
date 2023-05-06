@@ -52,7 +52,7 @@ std::string_view Crypto::create_query(
   if (!std::empty(body))
     mac_.update(body);
   auto digest = mac_.final(digest_);
-  writer.write("&signature="sv).write(core::codec::Hex{digest_});
+  writer.write("&signature="sv).write(core::codec::Hex{digest});
   return writer.finish();
 }
 
@@ -61,7 +61,7 @@ std::string_view Crypto::create_ws_api_signature(std::span<std::byte> const &buf
   mac_.update(body);
   auto digest = mac_.final(digest_);
   core::text::Writer writer{buffer};
-  writer.write(core::codec::Hex{digest_});
+  writer.write(core::codec::Hex{digest});
   return writer.finish();
 }
 

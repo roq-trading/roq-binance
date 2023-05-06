@@ -91,9 +91,11 @@ enum class Type : uint8_t {
   GET_DEPTH,
 };
 
+#if defined(TEST_REQ)
 constexpr auto encode_opaque(Type type, uint32_t sequence_or_symbol) {
   return uint64_t{static_cast<uint8_t>(type)} | (uint64_t{sequence_or_symbol} << 8);
 }
+#endif
 
 constexpr auto type_from_opaque(uint64_t opaque) {
   auto const bitmask = (uint64_t{1} << 8) - 1;
