@@ -99,7 +99,7 @@ R create_drop_copy(auto &accounts) {
 
 // === IMPLEMENTATION ===
 
-Gateway::Gateway(server::Dispatcher &dispatcher, Config const &config, io::Context &context)
+Gateway::Gateway(server::Dispatcher &dispatcher, Settings const &, Config const &config, io::Context &context)
     : dispatcher_{dispatcher}, accounts_(create_accounts<decltype(accounts_)>(config)), context_{context},
       shared_{dispatcher, config}, request_{create_request<decltype(request_)>(config)},
       rest_{*this, context_, ++stream_id_, shared_}, order_entry_{create_order_entry<decltype(order_entry_)>(

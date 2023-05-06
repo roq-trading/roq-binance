@@ -12,6 +12,7 @@ set(SOURCES
     order_entry_rest.cpp
     order_entry_ws.cpp
     rest.cpp
+    settings.cpp
     shared.cpp
     main.cpp)
 

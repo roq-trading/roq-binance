@@ -20,6 +20,7 @@
 #include "roq/binance/order_entry.hpp"
 #include "roq/binance/request.hpp"
 #include "roq/binance/rest.hpp"
+#include "roq/binance/settings.hpp"
 #include "roq/binance/shared.hpp"
 
 namespace roq {
@@ -30,7 +31,7 @@ struct Gateway final : public server::Handler,
                        public MarketData::Handler,
                        public OrderEntry::Handler,
                        public DropCopy::Handler {
-  Gateway(server::Dispatcher &, Config const &, io::Context &);
+  Gateway(server::Dispatcher &, Settings const &, Config const &, io::Context &);
 
  protected:
   void operator()(Event<Start> const &) override;
