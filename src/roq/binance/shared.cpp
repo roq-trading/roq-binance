@@ -11,8 +11,9 @@ namespace binance {
 
 // === IMPLEMENTATION ===
 
-Shared::Shared(server::Dispatcher &dispatcher, Config const &config)
-    : dispatcher_{dispatcher}, rate_limiter{Flags::request_limit(), Flags::request_limit_interval()},
+Shared::Shared(server::Dispatcher &dispatcher, Settings const &settings, Config const &config)
+    : dispatcher_{dispatcher}, settings{settings},
+      rate_limiter{Flags::request_limit(), Flags::request_limit_interval()},
       symbols{Flags::ws_max_subscriptions_per_stream()}, depth_request_queue{Flags::ws_mbp_request_delay()},
       create_order_templates{config.create_order_templates}, cancel_order_templates{config.cancel_order_templates} {
 }

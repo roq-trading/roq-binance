@@ -49,13 +49,13 @@ auto create_name(auto stream_id) {
   return fmt::format("{}:{}"_cf, stream_id, NAME);
 }
 
-auto create_connection(auto &handler, auto &context) {
+auto create_connection(auto &handler, auto &settings, auto &context) {
   auto uri = Flags::rest_uri();
   auto config = web::rest::Client::Config{
       // connection
       .interface = {},
       .uris = {&uri, 1},
-      .validate_certificate = server::Flags::net_tls_validate_certificate(),
+      .validate_certificate = settings.net.tls_validate_certificate,
       // connection manager
       .connection_timeout = {},
       .disconnect_on_idle_timeout = {},
@@ -81,8 +81,8 @@ auto create_connection(auto &handler, auto &context) {
 }
 
 struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(auto const &group, auto const &function)
-      : core::metrics::Factory(server::Flags::name(), group, function) {}
+  explicit create_metrics(auto &settings, auto const &group, auto const &function)
+      : core::metrics::Factory(settings.app.name, group, function) {}
 };
 
 enum class Type : uint8_t {
@@ -112,19 +112,19 @@ constexpr auto sequence_or_symbol_from_opaque(uint64_t opaque) {
 
 Rest::Rest(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)},
-      connection_{create_connection(*this, context)}, decode_buffer_{Flags::decode_buffer_size()},
+      connection_{create_connection(*this, shared.settings, context)}, decode_buffer_{Flags::decode_buffer_size()},
       decode_buffer_2_{Flags::decode_buffer_size()},
       counter_{
-          .disconnect = create_metrics(name_, "disconnect"sv),
+          .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
       profile_{
-          .exchange_info = create_metrics(name_, "exchange_info"sv),
-          .exchange_info_ack = create_metrics(name_, "exchange_info_ack"sv),
-          .depth = create_metrics(name_, "depth"sv),
-          .depth_ack = create_metrics(name_, "depth_ack"sv),
+          .exchange_info = create_metrics(shared.settings, name_, "exchange_info"sv),
+          .exchange_info_ack = create_metrics(shared.settings, name_, "exchange_info_ack"sv),
+          .depth = create_metrics(shared.settings, name_, "depth"sv),
+          .depth_ack = create_metrics(shared.settings, name_, "depth_ack"sv),
       },
       latency_{
-          .ping = create_metrics(name_, "ping"sv),
+          .ping = create_metrics(shared.settings, name_, "ping"sv),
       },
       shared_{shared}, download_{Flags::rest_request_timeout(), [this](auto state) { return download(state); }} {
 }

@@ -18,7 +18,7 @@
 #include "roq/server/config/dispatcher.hpp"
 #include "roq/server/config/reader.hpp"
 
-#include "roq/binance/flags.hpp"
+#include "roq/binance/settings.hpp"
 
 #include "roq/binance/json/cancel_order_template.hpp"
 #include "roq/binance/json/create_order_template.hpp"
@@ -27,15 +27,7 @@ namespace roq {
 namespace binance {
 
 struct Config final : public server::config::Dispatcher, public server::config::Reader::Handler {
-  struct Options final {
-    std::string_view exchange;
-    uint16_t mbp_max_depth = {};
-    bool mbp_allow_price_inversion = {};
-    bool mbp_checksum = {};
-  };
-
-  explicit Config(Options const &);
-  explicit Config(Flags2 const &);
+  explicit Config(Settings const &);
 
   Account const &get_master_account() const;
 
@@ -55,10 +47,8 @@ struct Config final : public server::config::Dispatcher, public server::config::
   void operator()(std::string_view const &key, toml::node &) override;
 
  private:
+  GatewaySettings const gateway_settings_;
   std::string const exchange_;
-  uint16_t const mbp_max_depth_;
-  bool const mbp_allow_price_inversion_;
-  bool const mbp_checksum_;
 
  public:
   server::config::Users users;

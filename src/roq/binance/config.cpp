@@ -6,6 +6,8 @@
 
 #include "roq/logging.hpp"
 
+#include "roq/binance/flags.hpp"
+
 #include "roq/binance/json/cancel_restrictions.hpp"
 
 using namespace std::literals;
@@ -35,26 +37,28 @@ auto const OMS_REQUEST_ID_TYPE = RequestIdType::BASE64;
 // === HELPERS ===
 
 namespace {
-auto create_options(auto &flags) {
-  return Config::Options{
-      .exchange = flags.exchange,
-      .mbp_max_depth = flags.mbp_max_depth,
-      .mbp_allow_price_inversion = flags.mbp_allow_price_inversion,
-      .mbp_checksum = server::Flags::cache_mbp_checksum(),  // note!
+auto create_gateway_settings(auto &settings) -> GatewaySettings {
+  return {
+      .supports = SUPPORTS,
+      .mbp_max_depth = flags::Flags::mbp_max_depth(),
+      .mbp_tick_size_multiplier = NaN,
+      .mbp_min_trade_vol_multiplier = NaN,
+      .mbp_allow_remove_non_existing = MBP_ALLOW_REMOVE_NON_EXISTING,
+      .mbp_allow_price_inversion = flags::Flags::mbp_allow_price_inversion(),
+      .mbp_checksum = settings.cache.mbp_checksum,
+      .oms_download_has_state = {},
+      .oms_download_has_routing_id = {},
+      .oms_request_id_type = OMS_REQUEST_ID_TYPE,
   };
 }
 }  // namespace
 
 // === IMPLEMENTATION ===
 
-Config::Config(Options const &options)
-    : exchange_{options.exchange}, mbp_max_depth_{options.mbp_max_depth},
-      mbp_allow_price_inversion_{options.mbp_allow_price_inversion}, mbp_checksum_{options.mbp_checksum} {
-  server::config::Reader::parse_file(*this);
+Config::Config(Settings const &settings)
+    : gateway_settings_{create_gateway_settings(settings)}, exchange_{flags::Flags::exchange()} {
+  server::config::Reader::parse_file(*this, settings);
   log::info<1>("config={}"sv, *this);
-}
-
-Config::Config(Flags2 const &flags) : Config{create_options(flags)} {
 }
 
 Account const &Config::get_master_account() const {
@@ -82,19 +86,7 @@ void Config::dispatch(server::config::Handler &handler) const {
     handler(iter.second);
   for (auto &user : users)
     handler(user);
-  auto gateway_settings = GatewaySettings{
-      .supports = SUPPORTS,
-      .mbp_max_depth = mbp_max_depth_,
-      .mbp_tick_size_multiplier = NaN,
-      .mbp_min_trade_vol_multiplier = NaN,
-      .mbp_allow_remove_non_existing = MBP_ALLOW_REMOVE_NON_EXISTING,
-      .mbp_allow_price_inversion = mbp_allow_price_inversion_,
-      .mbp_checksum = mbp_checksum_,
-      .oms_download_has_state = {},
-      .oms_download_has_routing_id = {},
-      .oms_request_id_type = OMS_REQUEST_ID_TYPE,
-  };
-  handler(gateway_settings);
+  handler(gateway_settings_);
   for (auto &iter : rate_limits)
     handler(iter.second);
 }

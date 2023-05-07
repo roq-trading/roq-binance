@@ -20,6 +20,7 @@
 #include "roq/core/mbp/sequencer.hpp"
 
 #include "roq/binance/config.hpp"
+#include "roq/binance/settings.hpp"
 
 #include "roq/binance/json/cancel_order_template.hpp"
 #include "roq/binance/json/create_order_template.hpp"
@@ -28,7 +29,7 @@ namespace roq {
 namespace binance {
 
 struct Shared final {
-  Shared(server::Dispatcher &, Config const &);
+  Shared(server::Dispatcher &, Settings const &, Config const &);
 
   Shared(Shared &&) = default;
   Shared(Shared const &) = delete;
@@ -92,6 +93,9 @@ struct Shared final {
 
  private:
   server::Dispatcher &dispatcher_;
+
+ public:
+  Settings const &settings;
 
  public:
   core::limit::RateLimiter rate_limiter;

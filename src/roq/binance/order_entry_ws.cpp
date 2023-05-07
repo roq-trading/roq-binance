@@ -50,15 +50,15 @@ auto create_name(auto stream_id, auto const &account) {
   return fmt::format("{}:{}:{}"_cf, stream_id, NAME, account);
 }
 
-auto create_connection(auto &handler, auto &context, auto &interface) {
+auto create_connection(auto &handler, auto &settings, auto &context, auto &interface) {
   auto uri = Flags::ws_api_uri();
   auto config = web::socket::Client::Config{
       // connection
       .interface = interface,
       .uris = {&uri, 1},
-      .validate_certificate = server::Flags::net_tls_validate_certificate(),
+      .validate_certificate = settings.net.tls_validate_certificate,
       // connection manager
-      .connection_timeout = server::Flags::net_connection_timeout(),
+      .connection_timeout = settings.net.connection_timeout,
       .disconnect_on_idle_timeout = {},
       .always_reconnect = true,
       // proxy
@@ -76,8 +76,8 @@ auto create_connection(auto &handler, auto &context, auto &interface) {
 }
 
 struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(auto const &group, auto const &function)
-      : core::metrics::Factory(server::Flags::name(), group, function) {}
+  explicit create_metrics(auto &settings, auto const &group, auto const &function)
+      : core::metrics::Factory(settings.app.name, group, function) {}
 };
 }  // namespace
 
@@ -93,34 +93,35 @@ OrderEntryWS::OrderEntryWS(
     bool master,
     std::string_view const &interface)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.get_name())}, master_{master},
-      connection_{create_connection(*this, context, interface)}, decode_buffer_{Flags::decode_buffer_size()},
+      connection_{create_connection(*this, shared.settings, context, interface)},
+      decode_buffer_{Flags::decode_buffer_size()},
       counter_{
-          .disconnect = create_metrics(name_, "disconnect"sv),
+          .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
       profile_{
-          .parse = create_metrics(name_, "parse"sv),
-          .error = create_metrics(name_, "error"sv),
-          .user_data_stream_start = create_metrics(name_, "user_data_stream_start"sv),
-          .user_data_stream_start_ack = create_metrics(name_, "user_data_stream_start_ack"sv),
-          .user_data_stream_ping = create_metrics(name_, "user_data_stream_ping"sv),
-          .user_data_stream_ping_ack = create_metrics(name_, "user_data_stream_ping_ack"sv),
-          .account_status = create_metrics(name_, "account_status"sv),
-          .account_status_ack = create_metrics(name_, "account_status_ack"sv),
-          .open_orders_status = create_metrics(name_, "open_orders_status"sv),
-          .open_orders_status_ack = create_metrics(name_, "open_orders_status_ack"sv),
-          .open_orders_cancel_all = create_metrics(name_, "open_orders_cancel_all"sv),
-          .open_orders_cancel_all_ack = create_metrics(name_, "open_orders_cancel_all_ack"sv),
-          .order_place = create_metrics(name_, "order_place"sv),
-          .order_place_ack = create_metrics(name_, "order_place_ack"sv),
-          .order_cancel = create_metrics(name_, "order_cancel"sv),
-          .order_cancel_ack = create_metrics(name_, "order_cancel_ack"sv),
-          .order_cancel_replace = create_metrics(name_, "order_cancel_replace"sv),
-          .order_cancel_replace_ack = create_metrics(name_, "order_cancel_replace_ack"sv),
-          .order_cancel_replace_error = create_metrics(name_, "order_cancel_replace_error"sv),
+          .parse = create_metrics(shared.settings, name_, "parse"sv),
+          .error = create_metrics(shared.settings, name_, "error"sv),
+          .user_data_stream_start = create_metrics(shared.settings, name_, "user_data_stream_start"sv),
+          .user_data_stream_start_ack = create_metrics(shared.settings, name_, "user_data_stream_start_ack"sv),
+          .user_data_stream_ping = create_metrics(shared.settings, name_, "user_data_stream_ping"sv),
+          .user_data_stream_ping_ack = create_metrics(shared.settings, name_, "user_data_stream_ping_ack"sv),
+          .account_status = create_metrics(shared.settings, name_, "account_status"sv),
+          .account_status_ack = create_metrics(shared.settings, name_, "account_status_ack"sv),
+          .open_orders_status = create_metrics(shared.settings, name_, "open_orders_status"sv),
+          .open_orders_status_ack = create_metrics(shared.settings, name_, "open_orders_status_ack"sv),
+          .open_orders_cancel_all = create_metrics(shared.settings, name_, "open_orders_cancel_all"sv),
+          .open_orders_cancel_all_ack = create_metrics(shared.settings, name_, "open_orders_cancel_all_ack"sv),
+          .order_place = create_metrics(shared.settings, name_, "order_place"sv),
+          .order_place_ack = create_metrics(shared.settings, name_, "order_place_ack"sv),
+          .order_cancel = create_metrics(shared.settings, name_, "order_cancel"sv),
+          .order_cancel_ack = create_metrics(shared.settings, name_, "order_cancel_ack"sv),
+          .order_cancel_replace = create_metrics(shared.settings, name_, "order_cancel_replace"sv),
+          .order_cancel_replace_ack = create_metrics(shared.settings, name_, "order_cancel_replace_ack"sv),
+          .order_cancel_replace_error = create_metrics(shared.settings, name_, "order_cancel_replace_error"sv),
       },
       latency_{
-          .ping = create_metrics(name_, "ping"sv),
-          .heartbeat = create_metrics(name_, "heartbeat"sv),
+          .ping = create_metrics(shared.settings, name_, "ping"sv),
+          .heartbeat = create_metrics(shared.settings, name_, "heartbeat"sv),
       },
       account_{account}, shared_{shared}, request_{request}, request_id_{REQUEST_ID} {
   // DEBUG
