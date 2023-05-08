@@ -49,7 +49,7 @@ R create_order_entry(
     auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared, auto &request_by_account) {
   using result_type = std::remove_cvref<R>::type;
   result_type result;
-  auto ws_api = shared.settings.ws_api.enable;
+  auto ws_api = shared.settings.use_ws_api;
   auto &rest_interfaces = shared.settings.rest.network_interfaces;
   auto &ws_interfaces = shared.settings.ws_api.network_interfaces;
   for (auto &[name, account] : accounts) {

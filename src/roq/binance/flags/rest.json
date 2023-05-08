@@ -1,0 +1,79 @@
+{
+  "name": "REST",
+  "type": "flags",
+  "prefix": "rest_",
+  "values": [
+    {
+      "name": "network_interfaces",
+      "type": "std::vector<std::string>",
+      "description": "REST network interfaces"
+    },
+    {
+      "name": "uri",
+      "type": "roq::io::web::URI",
+      "validator": "roq::core::flags::URI",
+      "default": "https://testnet.binance.com",
+      "description": "REST end-point (URI)"
+    },
+    {
+      "name": "proxy",
+      "type": "roq::io::web::URI",
+      "validator": "roq::core::flags::URI",
+      "description": "REST proxy end-point (URI)"
+    },
+    {
+      "name": "ping_freq",
+      "type": "std::chrono::nanoseconds",
+      "validator": "roq::core::flags::TimePeriod",
+      "default": "5s",
+      "description": "ping frequency"
+    },
+    {
+      "name": "ping_path",
+      "type": "std::string",
+      "validator": "roq::core::flags::Path",
+      "default": "/api/v3/time",
+      "description": "URI path used for REST connection keep-alive messages"
+    },
+    {
+      "name": "request_timeout",
+      "type": "std::chrono::nanoseconds",
+      "validator": "roq::core::flags::TimePeriod",
+      "default": "30s",
+      "description": "request: timeout"
+    },
+    {
+      "name": "terminate_on_403",
+      "type": "bool",
+      "default": false,
+      "description": "terminate when getting a 403 response code"
+    },
+    {
+      "name": "back_off_delay",
+      "type": "std::chrono::nanoseconds",
+      "validator": "roq::core::flags::TimePeriod",
+      "default": "300s",
+      "description": "time to wait before retrying a rejected request"
+    },
+    {
+      "name": "listen_key_refresh",
+      "type": "std::chrono::nanoseconds",
+      "validator": "roq::core::flags::TimePeriod",
+      "default": "1800s",
+      "description": "listen key refresh period"
+    },
+    {
+      "name": "order_recv_window",
+      "type": "std::chrono::nanoseconds",
+      "validator": "roq::core::flags::TimePeriod",
+      "default": "5000ms",
+      "description": "receive window, please refer to Binance documentation!"
+    },
+    {
+      "name": "cancel_on_disconnect",
+      "type": "bool",
+      "default": false,
+      "description": "cancel orders on disconnect? (bool)"
+    }
+  ]
+}

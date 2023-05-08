@@ -1,4 +1,12 @@
 !!! THIS FILE HAS BEEN AUTO-GENERATED !!!
 roq-binance-flags
+common.hpp
+rest.hpp
+ws.hpp
+ws_api.hpp
 flags.hpp
+common.cpp
+rest.cpp
+ws.cpp
+ws_api.cpp
 flags.cpp
