@@ -15,8 +15,6 @@
 
 #include "roq/web/socket/client_factory.hpp"
 
-#include "roq/binance/flags.hpp"
-
 #include "roq/binance/json/utils.hpp"
 #include "roq/binance/json/ws_api_type.hpp"
 
@@ -51,7 +49,7 @@ auto create_name(auto stream_id, auto const &account) {
 }
 
 auto create_connection(auto &handler, auto &settings, auto &context, auto &interface) {
-  auto uri = Flags::ws_api_uri();
+  auto uri = settings.ws_api.uri;
   auto config = web::socket::Client::Config{
       // connection
       .interface = interface,
@@ -67,10 +65,10 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &inter
       .query = {},
       .user_agent = ROQ_PACKAGE_NAME,
       .request_timeout = {},
-      .ping_frequency = Flags::ws_api_ping_freq(),
+      .ping_frequency = settings.ws_api.ping_freq,
       // implementation
-      .decode_buffer_size = Flags::decode_buffer_size(),
-      .encode_buffer_size = Flags::encode_buffer_size(),
+      .decode_buffer_size = settings.common.decode_buffer_size,
+      .encode_buffer_size = settings.common.encode_buffer_size,
   };
   return web::socket::ClientFactory::create(handler, context, config, []() -> std::string { return {}; });
 }
@@ -94,7 +92,7 @@ OrderEntryWS::OrderEntryWS(
     std::string_view const &interface)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.get_name())}, master_{master},
       connection_{create_connection(*this, shared.settings, context, interface)},
-      decode_buffer_{Flags::decode_buffer_size()},
+      decode_buffer_{shared.settings.common.decode_buffer_size},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -271,7 +269,7 @@ void OrderEntryWS::user_data_stream_ping(std::chrono::nanoseconds now) {
     if (listen_key_refresh_ == listen_key_refresh_.zero() || now < listen_key_refresh_)
       return;
     log::info<1>("Refreshing listen key..."sv);
-    listen_key_refresh_ = now + Flags::rest_listen_key_refresh();
+    listen_key_refresh_ = now + shared_.settings.rest.listen_key_refresh;
     auto request = json::WSAPIRequest{
         .sequence = ++request_id_,
         .type = json::WSAPIType::LISTEN_KEY_PING,
@@ -401,7 +399,7 @@ void OrderEntryWS::order_place(
     auto &[message_info, create_order] = event;
     open_orders_symbols_.emplace(create_order.symbol);
     auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
-    auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(Flags::rest_order_recv_window());
+    auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto message_for_signature = json::new_order_ws_url(
         encode_buffer_, create_order, order, request_id, create_order_template, recv_window, account_.get_key(), now);
@@ -449,7 +447,7 @@ void OrderEntryWS::order_cancel(
       throw oms::NotReady{"not ready"sv};
     auto &[message_info, cancel_order] = event;
     auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
-    auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(Flags::rest_order_recv_window());
+    auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto message_for_signature = json::cancel_order_ws_url(
         encode_buffer_,
@@ -521,8 +519,8 @@ void OrderEntryWS::order_cancel_replace(
                   request_id,
                   cancel_order_template,
                   create_order_template,
-                  utils::safe_cast(Flags::rest_order_recv_window()),
-                  flags::Flags::cancel_replace_stop_on_failure(),
+                  utils::safe_cast(shared_.settings.rest.order_recv_window),
+                  shared_.settings.common.cancel_replace_stop_on_failure,
                   account_.get_key(),
                   now);
               log::debug(R"(message_for_signature="{}")"sv, message_for_signature);
@@ -537,8 +535,8 @@ void OrderEntryWS::order_cancel_replace(
                   request_id,
                   cancel_order_template,
                   create_order_template,
-                  utils::safe_cast(Flags::rest_order_recv_window()),
-                  flags::Flags::cancel_replace_stop_on_failure(),
+                  utils::safe_cast(shared_.settings.rest.order_recv_window),
+                  shared_.settings.common.cancel_replace_stop_on_failure,
                   account_.get_key(),
                   now,
                   signature);
@@ -716,7 +714,7 @@ void OrderEntryWS::operator()(Trace<json::ListenKey> const &event, json::WSAPIRe
     create_trace_and_dispatch(handler_, trace_info, listen_key_update);
     (*this)(ConnectionStatus::READY);
     auto now = clock::get_system();
-    listen_key_refresh_ = now + Flags::rest_listen_key_refresh();
+    listen_key_refresh_ = now + shared_.settings.rest.listen_key_refresh;
   });
 }
 
@@ -760,7 +758,7 @@ void OrderEntryWS::operator()(Trace<json::OpenOrders> const &event, json::WSAPIR
       auto order_status = json::map(order.status);
       auto order_update = oms::OrderUpdate{
           .account = account_.get_name(),
-          .exchange = Flags::exchange(),
+          .exchange = shared_.settings.exchange,
           .symbol = order.symbol,
           .side = side,
           .position_effect = {},
@@ -809,7 +807,7 @@ void OrderEntryWS::operator()(
       auto order_status = json::map(order.status);
       auto order_update = oms::OrderUpdate{
           .account = account_.get_name(),
-          .exchange = Flags::exchange(),
+          .exchange = shared_.settings.exchange,
           .symbol = order.symbol,
           .side = side,
           .position_effect = {},
@@ -877,7 +875,7 @@ void OrderEntryWS::operator()(Trace<json::NewOrder> const &event, json::WSAPIReq
     };
     auto order_update = oms::OrderUpdate{
         .account = account_.get_name(),
-        .exchange = Flags::exchange(),
+        .exchange = shared_.settings.exchange,
         .symbol = new_order.symbol,
         .side = side,
         .position_effect = {},
@@ -930,7 +928,7 @@ void OrderEntryWS::operator()(
     };
     auto order_update = oms::OrderUpdate{
         .account = account_.get_name(),
-        .exchange = Flags::exchange(),
+        .exchange = shared_.settings.exchange,
         .symbol = cancel_order.symbol,
         .side = side,
         .position_effect = {},
@@ -1037,7 +1035,7 @@ void OrderEntryWS::update_helper(
       };
       auto order_update = oms::OrderUpdate{
           .account = account_.get_name(),
-          .exchange = Flags::exchange(),
+          .exchange = shared_.settings.exchange,
           .symbol = cancel_order.symbol,
           .side = side,
           .position_effect = {},
@@ -1138,7 +1136,7 @@ void OrderEntryWS::update_helper(
       };
       auto order_update = oms::OrderUpdate{
           .account = account_.get_name(),
-          .exchange = Flags::exchange(),
+          .exchange = shared_.settings.exchange,
           .symbol = new_order.symbol,
           .side = side,
           .position_effect = {},

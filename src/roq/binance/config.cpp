@@ -6,8 +6,6 @@
 
 #include "roq/logging.hpp"
 
-#include "roq/binance/flags.hpp"
-
 #include "roq/binance/json/cancel_restrictions.hpp"
 
 using namespace std::literals;
@@ -40,11 +38,11 @@ namespace {
 auto create_gateway_settings(auto &settings) -> GatewaySettings {
   return {
       .supports = SUPPORTS,
-      .mbp_max_depth = flags::Flags::mbp_max_depth(),
+      .mbp_max_depth = settings.common.mbp_max_depth,
       .mbp_tick_size_multiplier = NaN,
       .mbp_min_trade_vol_multiplier = NaN,
       .mbp_allow_remove_non_existing = MBP_ALLOW_REMOVE_NON_EXISTING,
-      .mbp_allow_price_inversion = flags::Flags::mbp_allow_price_inversion(),
+      .mbp_allow_price_inversion = settings.common.mbp_allow_price_inversion,
       .mbp_checksum = settings.cache.mbp_checksum,
       .oms_download_has_state = {},
       .oms_download_has_routing_id = {},
@@ -56,7 +54,7 @@ auto create_gateway_settings(auto &settings) -> GatewaySettings {
 // === IMPLEMENTATION ===
 
 Config::Config(Settings const &settings)
-    : gateway_settings_{create_gateway_settings(settings)}, exchange_{flags::Flags::exchange()} {
+    : exchange_{settings.exchange}, gateway_settings_{create_gateway_settings(settings)} {
   server::config::Reader::parse_file(*this, settings);
   log::info<1>("config={}"sv, *this);
 }

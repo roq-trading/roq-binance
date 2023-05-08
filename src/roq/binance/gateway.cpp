@@ -13,8 +13,6 @@
 #include "roq/core/charconv.hpp"
 #include "roq/core/utils.hpp"
 
-#include "roq/binance/flags.hpp"
-
 #include "roq/binance/order_entry_rest.hpp"
 #include "roq/binance/order_entry_ws.hpp"
 
@@ -51,9 +49,9 @@ R create_order_entry(
     auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared, auto &request_by_account) {
   using result_type = std::remove_cvref<R>::type;
   result_type result;
-  auto ws_api = flags::Flags::ws_api();
-  auto &rest_interfaces = flags::Flags::rest_network_interfaces();
-  auto &ws_interfaces = flags::Flags::ws_api_network_interfaces();
+  auto ws_api = shared.settings.ws_api.enable;
+  auto &rest_interfaces = shared.settings.rest.network_interfaces;
+  auto &ws_interfaces = shared.settings.ws_api.network_interfaces;
   for (auto &[name, account] : accounts) {
     auto &request = request_by_account.at(name);
     std::vector<std::unique_ptr<OrderEntry>> order_entry;
@@ -105,7 +103,7 @@ Gateway::Gateway(server::Dispatcher &dispatcher, Settings const &settings, Confi
       rest_{*this, context_, ++stream_id_, shared_}, order_entry_{create_order_entry<decltype(order_entry_)>(
                                                          *this, context_, stream_id_, accounts_, shared_, request_)},
       drop_copy_{create_drop_copy<decltype(drop_copy_)>(accounts_)} {
-  if (Flags::rest_cancel_on_disconnect())
+  if (settings.rest.cancel_on_disconnect)
     log::fatal("Exchange does *NOT* support cancel on disconnect"sv);
 }
 
@@ -223,7 +221,7 @@ void Gateway::ensure_symbol_slices(size_t size) {
     create_event_and_dispatch(*market_data, message_info, start);
     market_data_1_.emplace_back(std::move(market_data));
   }
-  if (!Flags::ws_enable_secondary())
+  if (!shared_.settings.ws.enable_secondary)
     return;
   while (std::size(market_data_2_) < size) {
     auto stream_id = ++stream_id_;

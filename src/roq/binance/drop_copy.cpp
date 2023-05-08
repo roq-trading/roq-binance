@@ -10,8 +10,6 @@
 
 #include "roq/web/socket/client_factory.hpp"
 
-#include "roq/binance/flags.hpp"
-
 #include "roq/binance/json/utils.hpp"
 
 using namespace std::literals;
@@ -43,7 +41,7 @@ auto create_name(auto stream_id, auto const &account) {
 
 auto create_connection(auto &handler, auto &settings, auto &context, auto const &listen_key) {
   assert(!std::empty(listen_key));
-  auto uri = Flags::ws_uri();
+  auto uri = settings.ws.uri;
   auto query = fmt::format("?streams={}"_cf, listen_key);
   auto config = web::socket::Client::Config{
       // connection
@@ -60,10 +58,10 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto const 
       .query = query,
       .user_agent = ROQ_PACKAGE_NAME,
       .request_timeout = {},
-      .ping_frequency = Flags::ws_ping_freq(),
+      .ping_frequency = settings.ws.ping_freq,
       // implementation
-      .decode_buffer_size = Flags::decode_buffer_size(),
-      .encode_buffer_size = Flags::encode_buffer_size(),
+      .decode_buffer_size = settings.common.decode_buffer_size,
+      .encode_buffer_size = settings.common.encode_buffer_size,
   };
   return web::socket::ClientFactory::create(handler, context, config, []() -> std::string { return {}; });
 }
@@ -86,7 +84,7 @@ DropCopy::DropCopy(
     std::string_view const &listen_key)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.get_name())},
       connection_{create_connection(*this, shared.settings, context, listen_key)},
-      decode_buffer_{Flags::decode_buffer_size()},
+      decode_buffer_{shared.settings.common.decode_buffer_size},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -280,7 +278,7 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
     auto last_liquidity = execution_report.is_trade_maker ? Liquidity::MAKER : Liquidity::TAKER;
     auto order_update = oms::OrderUpdate{
         .account = account_.get_name(),
-        .exchange = Flags::exchange(),
+        .exchange = shared_.settings.exchange,
         .symbol = execution_report.symbol,
         .side = side,
         .position_effect = {},
@@ -328,7 +326,7 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
         .stream_id = stream_id_,
         .account = account_.get_name(),
         .order_id = order_id,
-        .exchange = Flags::exchange(),
+        .exchange = shared_.settings.exchange,
         .symbol = execution_report.symbol,
         .side = side,
         .position_effect = {},

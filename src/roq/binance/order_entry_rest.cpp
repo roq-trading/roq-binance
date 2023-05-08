@@ -17,8 +17,6 @@
 
 #include "roq/web/rest/client_factory.hpp"
 
-#include "roq/binance/flags.hpp"
-
 #include "roq/binance/json/error.hpp"
 #include "roq/binance/json/utils.hpp"
 
@@ -53,7 +51,7 @@ auto create_name(auto stream_id, auto const &account) {
 }
 
 auto create_connection(auto &handler, auto &settings, auto &context, auto &interface) {
-  auto uri = Flags::rest_uri();
+  auto uri = settings.rest.uri;
   auto config = web::rest::Client::Config{
       // connection
       .interface = interface,
@@ -64,16 +62,16 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &inter
       .disconnect_on_idle_timeout = {},
       .connection = web::http::Connection::KEEP_ALIVE,
       // proxy
-      .proxy = Flags::rest_proxy(),
+      .proxy = settings.rest.proxy,
       // http
       .query = {},
       .user_agent = ROQ_PACKAGE_NAME,
-      .request_timeout = Flags::rest_request_timeout(),
-      .ping_frequency = Flags::rest_ping_freq(),
-      .ping_path = Flags::rest_ping_path(),
+      .request_timeout = settings.rest.request_timeout,
+      .ping_frequency = settings.rest.ping_freq,
+      .ping_path = settings.rest.ping_path,
       // implementation
-      .decode_buffer_size = Flags::decode_buffer_size(),
-      .encode_buffer_size = Flags::encode_buffer_size(),
+      .decode_buffer_size = settings.common.decode_buffer_size,
+      .encode_buffer_size = settings.common.encode_buffer_size,
       .allow_pipelining = true,
   };
 #if defined(TEST_REQ)
@@ -144,7 +142,7 @@ OrderEntryREST::OrderEntryREST(
     std::string_view const &interface)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.get_name())}, master_{master},
       connection_{create_connection(*this, shared.settings, context, interface)},
-      decode_buffer_{Flags::decode_buffer_size()},
+      decode_buffer_{shared.settings.common.decode_buffer_size},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -168,7 +166,7 @@ OrderEntryREST::OrderEntryREST(
           .ping = create_metrics(shared.settings, name_, "ping"sv),
       },
       account_{account}, shared_{shared}, request_{request},
-      download_{Flags::rest_request_timeout(), [this](auto state) { return download(state); }} {
+      download_{shared.settings.rest.request_timeout, [this](auto state) { return download(state); }} {
 }
 
 void OrderEntryREST::operator()(Event<Start> const &) {
@@ -450,7 +448,7 @@ void OrderEntryREST::operator()(Trace<json::ListenKey> const &event) {
     }
   }
   auto now = clock::get_system();
-  listen_key_refresh_ = now + Flags::rest_listen_key_refresh();
+  listen_key_refresh_ = now + shared_.settings.rest.listen_key_refresh;
 }
 
 // account
@@ -595,7 +593,7 @@ void OrderEntryREST::operator()(Trace<json::OpenOrders> const &event) {
     auto order_status = json::map(order.status);
     auto order_update = oms::OrderUpdate{
         .account = account_.get_name(),
-        .exchange = Flags::exchange(),
+        .exchange = shared_.settings.exchange,
         .symbol = order.symbol,
         .side = side,
         .position_effect = {},
@@ -633,7 +631,7 @@ void OrderEntryREST::refresh_listen_key(std::chrono::nanoseconds now) {
   if (listen_key_refresh_ == listen_key_refresh_.zero() || now < listen_key_refresh_)
     return;
   log::info<1>("Refreshing listen key..."sv);
-  listen_key_refresh_ = now + Flags::rest_listen_key_refresh();
+  listen_key_refresh_ = now + shared_.settings.rest.listen_key_refresh;
   get_listen_key();
 }
 
@@ -647,7 +645,7 @@ void OrderEntryREST::new_order(
     auto &[message_info, create_order] = event;
     open_orders_symbols_.emplace(create_order.symbol);
     auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
-    auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(Flags::rest_order_recv_window());
+    auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto body = json::new_order(encode_buffer_, create_order, order, request_id, create_order_template, recv_window);
     log::debug(R"(body="{}")"sv, body);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
@@ -749,7 +747,7 @@ void OrderEntryREST::operator()(
   };
   auto order_update = oms::OrderUpdate{
       .account = account_.get_name(),
-      .exchange = Flags::exchange(),
+      .exchange = shared_.settings.exchange,
       .symbol = new_order.symbol,
       .side = side,
       .position_effect = {},
@@ -804,8 +802,8 @@ void OrderEntryREST::cancel_replace_order(
                   request_id,
                   cancel_order_template,
                   create_order_template,
-                  utils::safe_cast(Flags::rest_order_recv_window()),
-                  flags::Flags::cancel_replace_stop_on_failure());
+                  utils::safe_cast(shared_.settings.rest.order_recv_window),
+                  shared_.settings.common.cancel_replace_stop_on_failure);
               log::info(R"(DEBUG body="{}")"sv, body);
               auto now = clock::get_realtime<std::chrono::milliseconds>();
               auto query = account_.create_query(now, body);
@@ -1071,7 +1069,7 @@ void OrderEntryREST::operator()(
       };
       auto order_update = oms::OrderUpdate{
           .account = account_.get_name(),
-          .exchange = Flags::exchange(),
+          .exchange = shared_.settings.exchange,
           .symbol = cancel_order.symbol,
           .side = side,
           .position_effect = {},
@@ -1159,7 +1157,7 @@ void OrderEntryREST::operator()(
       };
       auto order_update = oms::OrderUpdate{
           .account = account_.get_name(),
-          .exchange = Flags::exchange(),
+          .exchange = shared_.settings.exchange,
           .symbol = new_order.symbol,
           .side = side,
           .position_effect = {},
@@ -1257,7 +1255,7 @@ void OrderEntryREST::cancel_order(
       throw oms::NotReady{"not ready"sv};
     auto &[message_info, cancel_order] = event;
     auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
-    auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(Flags::rest_order_recv_window());
+    auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto body = json::cancel_order(
         encode_buffer_, cancel_order, order, request_id, previous_request_id, cancel_order_template, recv_window);
     log::debug(R"(body="{}")"sv, body);
@@ -1345,7 +1343,7 @@ void OrderEntryREST::operator()(
   };
   auto order_update = oms::OrderUpdate{
       .account = account_.get_name(),
-      .exchange = Flags::exchange(),
+      .exchange = shared_.settings.exchange,
       .symbol = cancel_order.symbol,
       .side = side,
       .position_effect = {},
@@ -1381,7 +1379,7 @@ void OrderEntryREST::cancel_all_open_orders(
       log::warn("*** NOT POSSIBLE TO CANCEL ALL OPEN ORDERS (NOT READY) ***"sv);
       return;
     }
-    auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(Flags::rest_order_recv_window());
+    auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     for (auto &symbol : open_orders_symbols_) {
       auto body = json::cancel_all_open_orders(encode_buffer_, symbol, recv_window);
       log::debug(R"(body="{}")"sv, body);
@@ -1448,7 +1446,7 @@ void OrderEntryREST::operator()(Trace<json::CancelAllOpenOrders> const &event) {
     auto order_status = json::map(order.status);
     auto order_update = oms::OrderUpdate{
         .account = account_.get_name(),
-        .exchange = Flags::exchange(),
+        .exchange = shared_.settings.exchange,
         .symbol = order.symbol,
         .side = side,
         .position_effect = {},
@@ -1614,11 +1612,11 @@ void OrderEntryREST::test(web::http::Status status) {
 }
 
 void OrderEntryREST::waf_limit_violation() {
-  if (Flags::rest_terminate_on_403()) {
+  if (shared_.settings.rest.terminate_on_403) {
     log::fatal("WAF limit violation"sv);
   } else {
     log::warn("WAF limit violation"sv);
-    (*connection_).suspend(Flags::rest_back_off_delay());
+    (*connection_).suspend(shared_.settings.rest.back_off_delay);
   }
 }
 

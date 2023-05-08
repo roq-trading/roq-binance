@@ -47,8 +47,8 @@ struct Config final : public server::config::Dispatcher, public server::config::
   void operator()(std::string_view const &key, toml::node &) override;
 
  private:
-  GatewaySettings const gateway_settings_;
   std::string const exchange_;
+  GatewaySettings const gateway_settings_;
 
  public:
   server::config::Users users;

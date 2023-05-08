@@ -2,8 +2,6 @@
 
 #include "roq/binance/shared.hpp"
 
-#include "roq/binance/flags.hpp"
-
 using namespace std::literals;
 
 namespace roq {
@@ -13,8 +11,8 @@ namespace binance {
 
 Shared::Shared(server::Dispatcher &dispatcher, Settings const &settings, Config const &config)
     : dispatcher_{dispatcher}, settings{settings},
-      rate_limiter{Flags::request_limit(), Flags::request_limit_interval()},
-      symbols{Flags::ws_max_subscriptions_per_stream()}, depth_request_queue{Flags::ws_mbp_request_delay()},
+      rate_limiter{settings.common.request_limit, settings.common.request_limit_interval},
+      symbols{settings.ws.max_subscriptions_per_stream}, depth_request_queue{settings.ws.mbp_request_delay},
       create_order_templates{config.create_order_templates}, cancel_order_templates{config.cancel_order_templates} {
 }
 
