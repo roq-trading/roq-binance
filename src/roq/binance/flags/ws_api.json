@@ -1,7 +1,7 @@
 {
   "name": "WS_API",
   "type": "flags",
-  "prefix": "ws_api",
+  "prefix": "ws_api_",
   "values": [
     {
       "name": "network_interfaces",
