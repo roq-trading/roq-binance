@@ -56,7 +56,7 @@
     },
     {
       "name": "fills",
-      "type": "std::span<Fill>"
+      "type": "std::span<Fill const>"
     },
     {
       "name": "code",

@@ -20,7 +20,7 @@
     {
       "raw": "B",
       "name": "balances",
-      "type": "std::span<BalancesItem>"
+      "type": "std::span<BalancesItem const>"
     },
     {
       "raw": "P",

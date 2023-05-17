@@ -40,7 +40,7 @@
     },
     {
       "name": "balances",
-      "type": "std::span<Balance>"
+      "type": "std::span<Balance const>"
     },
     {
       "name": "permissions"

@@ -4,7 +4,7 @@
   "values": [
     {
       "name": "data",
-      "type": "std::span<std::string_view>"
+      "type": "std::span<std::string_view const>"
     }
   ]
 }

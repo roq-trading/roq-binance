@@ -8,11 +8,11 @@
     },
     {
       "name": "bids",
-      "type": "std::span<DepthItem>"
+      "type": "std::span<DepthItem const>"
     },
     {
       "name": "asks",
-      "type": "std::span<DepthItem>"
+      "type": "std::span<DepthItem const>"
     }
   ]
 }

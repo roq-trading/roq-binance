@@ -15,11 +15,11 @@
     },
     {
       "name": "exchangeFilters",
-      "type": "std::span<ExchangeFilter>"
+      "type": "std::span<ExchangeFilter const>"
     },
     {
       "name": "symbols",
-      "type": "std::span<Symbol>"
+      "type": "std::span<Symbol const>"
     }
   ]
 }

@@ -55,7 +55,7 @@
     {
       "raw": "O",
       "name": "objects",
-      "type": "std::span<ListStatusItem>"
+      "type": "std::span<ListStatusItem const>"
     }
   ]
 }
