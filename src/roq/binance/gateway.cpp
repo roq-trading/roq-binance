@@ -49,33 +49,34 @@ R create_order_entry(
     auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared, auto &request_by_account) {
   using result_type = std::remove_cvref<R>::type;
   result_type result;
-  auto ws_api = shared.settings.use_ws_api;
-  auto &rest_interfaces = shared.settings.rest.network_interfaces;
-  auto &ws_interfaces = shared.settings.ws_api.network_interfaces;
   for (auto &[name, account] : accounts) {
     auto &request = request_by_account.at(name);
     std::vector<std::unique_ptr<OrderEntry>> order_entry;
-    if (ws_api) {
-      if (std::empty(ws_interfaces)) {
+    if (shared.settings.use_ws_api) {
+      auto &interfaces = shared.settings.ws_api.network_interfaces;
+      log::error("DEBUG length={}"sv, std::size(interfaces));
+      if (std::empty(interfaces)) {
         order_entry.emplace_back(
             std::make_unique<OrderEntryWS>(gateway, context, ++stream_id, *account, shared, request));
       } else {
-        for (size_t i = 0; i < std::size(ws_interfaces); ++i) {
-          auto &interface = ws_interfaces[i];
+        for (size_t i = 0; i < std::size(interfaces); ++i) {
           auto master = i == 0;
+          auto &interface = interfaces[i];
           order_entry.emplace_back(std::make_unique<OrderEntryWS>(
               gateway, context, ++stream_id, *account, shared, request, master, interface));
         }
       }
     } else {
-      if (std::empty(rest_interfaces)) {
+      auto &interfaces = shared.settings.rest.network_interfaces;
+      log::error("DEBUG length={}"sv, std::size(interfaces));
+      if (std::empty(interfaces)) {
         order_entry.emplace_back(
             std::make_unique<OrderEntryREST>(gateway, context, ++stream_id, *account, shared, request));
       } else {
-        for (size_t i = 0; i < std::size(rest_interfaces); ++i) {
-          auto &interface = rest_interfaces[i];
+        for (size_t i = 0; i < std::size(interfaces); ++i) {
           auto master = i == 0;
-          order_entry.emplace_back(std::make_unique<OrderEntryWS>(
+          auto &interface = interfaces[i];
+          order_entry.emplace_back(std::make_unique<OrderEntryREST>(
               gateway, context, ++stream_id, *account, shared, request, master, interface));
         }
       }
@@ -315,16 +316,37 @@ OrderEntry &Gateway::get_order_entry(std::string_view const &account) {
   return (*iter).second.get_next();
 }
 
+Gateway::OrderEntryRR::OrderEntryRR(std::vector<std::unique_ptr<OrderEntry>> &&order_entry)
+    : order_entry_{std::move(order_entry)} {
+  log::error("DEBUG length={}"sv, std::size(order_entry_));
+  for (auto &item : order_entry_)
+    if (item.get() == nullptr)
+      log::fatal("HERE"sv);
+  log::error("DEBUG ok"sv);
+}
+
+template <typename... Args>
+void Gateway::OrderEntryRR::operator()(Args &&...args) {
+  for (auto &item : order_entry_)
+    (*item)(std::forward<Args>(args)...);
+}
+
 OrderEntry &Gateway::OrderEntryRR::get_next() {
   auto length = std::size(order_entry_);
   for (size_t offset = 0; offset < length; ++offset) {
-    auto index = (index_ + 1 + offset) % length;
+    auto index = (index_ + offset) % length;
+    log::error("DEBUG index={}/{}"sv, index, length);
     auto &order_entry = *(order_entry_[index]);
-    if (!order_entry.ready())
+    if (!order_entry.ready()) {
+      log::error("DEBUG index={} not ready... trying next"sv, index);
       continue;
-    index_ = index;
+    }
+    log::error("DEBUG index={} ready"sv, index);
+    index_ = (index + 1) % length;
+    log::error("DEBUG next_index={}"sv, index_);
     return order_entry;
   }
+  log::error("DEBUG failed"sv);
   throw oms::NotReady{"get_next"sv};
 }
 

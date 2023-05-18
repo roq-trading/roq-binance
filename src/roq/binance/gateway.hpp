@@ -96,13 +96,10 @@ struct Gateway final : public server::Handler,
   uint16_t stream_id_ = {};
   // EXPERIMENTAL
   struct OrderEntryRR final {
-    OrderEntryRR(std::vector<std::unique_ptr<OrderEntry>> &&order_entry) : order_entry_{std::move(order_entry)} {}
+    OrderEntryRR(std::vector<std::unique_ptr<OrderEntry>> &&);
 
     template <typename... Args>
-    void operator()(Args &&...args) {
-      for (auto &item : order_entry_)
-        (*item)(std::forward<Args>(args)...);
-    }
+    void operator()(Args &&...);
 
     OrderEntry &get_next();
 

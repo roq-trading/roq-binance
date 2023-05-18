@@ -674,7 +674,7 @@ void OrderEntryWS::operator()(Trace<json::Error> const &event, json::WSAPIReques
       case LISTEN_KEY_CREATE:
         switch (error.code) {
           case -2015:  // invalid key
-            log::fatal("Unexpected: error={}"sv, error);
+            log::error("Unexpected: error={}"sv, error);
         }
         break;
       case LISTEN_KEY_PING:
