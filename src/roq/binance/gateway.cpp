@@ -150,8 +150,12 @@ void Gateway::operator()(Event<Disconnected> const &event) {
           auto cancel_all_orders = CancelAllOrders{
               .account = account,
           };
-          Event event{message_info, cancel_all_orders};
-          order_entry.get_next()(event, {});
+          try {
+            Event event{message_info, cancel_all_orders};
+            order_entry.get_next()(event, {});
+          } catch (oms::Exception &e) {
+            log::warn("Unexpected: {}"sv, e);
+          }
         }
       }
   }

@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Fixed
+
+* Uncaught exception when client disconnects (#363)
+
 ## 0.9.4 &ndash; 2023-05-04
 
 ### Added
