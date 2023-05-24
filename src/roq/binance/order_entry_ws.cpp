@@ -92,7 +92,7 @@ OrderEntryWS::OrderEntryWS(
     std::string_view const &interface)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.get_name())}, master_{master},
       connection_{create_connection(*this, shared.settings, context, interface)},
-      decode_buffer_{shared.settings.common.decode_buffer_size},
+      decode_buffer_(shared.settings.common.decode_buffer_size),
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -634,8 +634,7 @@ void OrderEntryWS::parse(std::string_view const &message) {
     try {
       log::debug(R"(message="{}")"sv, message);
       TraceInfo trace_info;
-      core::json::Buffer buffer{decode_buffer_};
-      auto res = json::WSAPIParser::dispatch(*this, message, buffer, trace_info);
+      auto res = json::WSAPIParser::dispatch(*this, message, decode_buffer_, trace_info);
       if (!res) [[unlikely]] {
         log::warn(R"(message="{}")"sv, message);
       }

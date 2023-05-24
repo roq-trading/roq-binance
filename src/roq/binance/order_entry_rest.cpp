@@ -142,7 +142,7 @@ OrderEntryREST::OrderEntryREST(
     std::string_view const &interface)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.get_name())}, master_{master},
       connection_{create_connection(*this, shared.settings, context, interface)},
-      decode_buffer_{shared.settings.common.decode_buffer_size},
+      decode_buffer_(shared.settings.common.decode_buffer_size),
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -485,7 +485,7 @@ void OrderEntryREST::get_account() {
 void OrderEntryREST::get_account_ack(Trace<web::rest::Response> const &event) {
   profile_.account_ack([&]() {
     auto handle_success = [&](auto &body) {
-      json::Account account{body, decode_buffer_};
+      auto account = json::Account::create(body, decode_buffer_);
       Trace event_2{event, account};
       (*this)(event_2);
       request_.respond_account = clock::get_system();  // completion
@@ -564,7 +564,7 @@ void OrderEntryREST::get_open_orders() {
 void OrderEntryREST::get_open_orders_ack(Trace<web::rest::Response> const &event) {
   profile_.open_orders_ack([&]() {
     auto handle_success = [&](auto &body) {
-      json::OpenOrders open_orders{body, decode_buffer_};
+      auto open_orders = json::OpenOrders::create(body, decode_buffer_);
       Trace event_2{event, open_orders};
       (*this)(event_2);
       request_.respond_orders = clock::get_system();  // completion
@@ -681,7 +681,7 @@ void OrderEntryREST::new_order_ack(
     Trace<web::rest::Response> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
   profile_.new_order_ack([&]() {
     auto handle_success = [&](auto &body) {
-      json::NewOrder new_order{body, decode_buffer_};
+      auto new_order = json::NewOrder::create(body, decode_buffer_);
       log::debug("new_order={}"sv, new_order);
       Trace event_2{event, new_order};
       (*this)(event_2, user_id, order_id, version);
@@ -913,7 +913,7 @@ void OrderEntryREST::cancel_replace_order_ack(
       switch (category) {
         using enum web::http::Category;
         case SUCCESS: {  // 2xx
-          json::CancelReplaceOrder cancel_replace_order{body, decode_buffer_};
+          auto cancel_replace_order = json::CancelReplaceOrder::create(body, decode_buffer_);
           Trace event{trace_info, cancel_replace_order};
           (*this)(event, user_id, cancel_order_id, cancel_version, create_order_id, create_version);
           break;
@@ -921,7 +921,7 @@ void OrderEntryREST::cancel_replace_order_ack(
         case CLIENT_ERROR:    // 4xx
         case SERVER_ERROR: {  // 5xx
           auto parse = [&]() {
-            json::CancelReplaceOrderError cancel_replace_order_error{body, decode_buffer_};
+            auto cancel_replace_order_error = json::CancelReplaceOrderError::create(body, decode_buffer_);
             Trace event{trace_info, cancel_replace_order_error};
             (*this)(event, user_id, cancel_order_id, cancel_version, create_order_id, create_version);
           };
@@ -1414,7 +1414,7 @@ void OrderEntryREST::cancel_all_open_orders(
 void OrderEntryREST::cancel_all_open_orders_ack(Trace<web::rest::Response> const &event) {
   profile_.cancel_all_open_orders_ack([&]() {
     auto handle_success = [&](auto &body) {
-      json::CancelAllOpenOrders cancel_all_open_orders{body, decode_buffer_};
+      auto cancel_all_open_orders = json::CancelAllOpenOrders::create(body, decode_buffer_);
       log::debug("cancel_all_open_orders={}"sv, cancel_all_open_orders);
       Trace event_2{event, cancel_all_open_orders};
       (*this)(event_2);

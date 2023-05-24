@@ -34,9 +34,8 @@ TEST_CASE("json_outbound_account_position_simple", "[json_outbound_account_posit
                  R"(})"
                  R"(])"
                  R"(})";
-  core::Buffer buffer_(65536);
-  core::json::Buffer buffer(buffer_);
-  auto obj = core::json::Parser::create<json::OutboundAccountPosition>(message, buffer);
+  std::vector<std::byte> buffer(8192);
+  auto obj = json::OutboundAccountPosition::create(message, buffer);
   CHECK(obj.event_type == json::EventType::OUTBOUND_ACCOUNT_POSITION);
   CHECK(obj.event_time == 1634285425303ms);
   CHECK(obj.time_of_last_account_update == 1634285425302ms);
@@ -79,8 +78,7 @@ TEST_CASE("json_outbound_account_position_stream", "[json_outbound_account_posit
                  R"(])"
                  R"(})"
                  R"(})";
-  core::Buffer buffer_(65536);
-  core::json::Buffer buffer(buffer_);
+  std::vector<std::byte> buffer(8192);
   TraceInfo trace_info;
   struct MyHandler final : public json::UserStreamParser::Handler {
     void operator()(Trace<json::OutboundAccountPosition> const &) override { found_ = true; }
@@ -119,8 +117,7 @@ TEST_CASE("json_outbound_account_position_stream_maker_new", "[json_outbound_acc
                  R"(])"
                  R"(})"
                  R"(})";
-  core::Buffer buffer_(65536);
-  core::json::Buffer buffer(buffer_);
+  std::vector<std::byte> buffer(8192);
   TraceInfo trace_info;
   struct MyHandler final : public json::UserStreamParser::Handler {
     void operator()(Trace<json::OutboundAccountPosition> const &event) override {
@@ -180,8 +177,7 @@ TEST_CASE("json_outbound_account_position_stream_maker_filled", "[json_outbound_
                  R"(])"
                  R"(})"
                  R"(})";
-  core::Buffer buffer_(65536);
-  core::json::Buffer buffer(buffer_);
+  std::vector<std::byte> buffer(8192);
   TraceInfo trace_info;
   struct MyHandler final : public json::UserStreamParser::Handler {
     void operator()(Trace<json::OutboundAccountPosition> const &event) override {

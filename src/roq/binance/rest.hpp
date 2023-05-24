@@ -87,13 +87,13 @@ struct Rest final : public web::rest::Client::Handler {
  private:
   Handler &handler_;
   // config
-  const uint16_t stream_id_;
-  const std::string name_;
+  uint16_t const stream_id_;
+  std::string const name_;
   // connection
   std::unique_ptr<web::rest::Client> connection_;
   // buffers
-  core::Buffer decode_buffer_;
-  core::Buffer decode_buffer_2_;  // note! decode nested arrays (ExchangeInfo)
+  std::vector<std::byte> decode_buffer_;
+  std::vector<std::byte> decode_buffer_2_;  // note! decode nested arrays (ExchangeInfo)
   // metrics
   struct {
     core::metrics::Counter disconnect;

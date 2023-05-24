@@ -30,9 +30,8 @@ TEST_CASE("json_cancel_order_simple", "[json_cancel_order]") {
                  R"("type":"LIMIT",)"
                  R"("side":"BUY")"
                  R"(})";
-  core::Buffer buffer_(65536);
-  core::json::Buffer buffer(buffer_);
-  auto obj = core::json::Parser::create<json::CancelOrder>(message, buffer);
+  std::vector<std::byte> buffer(8192);
+  auto obj = json::CancelOrder::create(message, buffer);
   CHECK(obj.symbol == "LTCBTC"sv);
   CHECK(obj.orig_client_order_id == "OgAC6QMAAQAACt7PDZQW"sv);
   CHECK(obj.order_id == 779219002);

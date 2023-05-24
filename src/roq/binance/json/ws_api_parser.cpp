@@ -105,12 +105,13 @@ bool dispatch_helper(auto &handler, auto status, auto &value, auto &buffer, auto
 bool WSAPIParser::dispatch(
     WSAPIParser::Handler &handler,
     std::string_view const &message,
-    core::json::Buffer &buffer,
+    std::span<std::byte> const &buffer,
     TraceInfo const &trace_info) {
   std::string_view id;
   WSAPIRequest request;
   int32_t status = {};
   for (size_t i = 0; i < 2; ++i) {
+    core::json::Buffer buffer_2{buffer};
     core::json::Parser parser(message);
     auto root = parser.root();
     for (auto [key, value] : std::get<core::json::Object>(root)) {
@@ -121,13 +122,13 @@ bool WSAPIParser::dispatch(
         status = core::json::get<int32_t>(value);
       } else if (key.compare("result"sv) == 0) {
         if (!std::empty(id) && status != 0)
-          return dispatch_helper(handler, status, value, buffer, trace_info, request);
+          return dispatch_helper(handler, status, value, buffer_2, trace_info, request);
       } else if (key.compare("error"sv) == 0) {
         if (!std::empty(id) && status != 0) {
           if (request.type == WSAPIType::ORDER_CANCEL_REPLACE) {
-            return dispatch_cancel_replace_order_error(handler, status, value, buffer, trace_info, request);
+            return dispatch_cancel_replace_order_error(handler, status, value, buffer_2, trace_info, request);
           } else {
-            return dispatch_error(handler, status, value, buffer, trace_info, request);
+            return dispatch_error(handler, status, value, buffer_2, trace_info, request);
           }
         }
       } else if (key.compare("rateLimits"sv) == 0) {

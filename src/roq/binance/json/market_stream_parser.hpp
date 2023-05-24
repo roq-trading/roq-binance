@@ -4,9 +4,7 @@
 
 #include <string_view>
 
-#include "roq/core/json/buffer.hpp"
-
-#include "roq/server.hpp"
+#include "roq/trace_info.hpp"
 
 #include "roq/binance/json/error.hpp"
 #include "roq/binance/json/result.hpp"
@@ -36,7 +34,7 @@ struct MarketStreamParser final {
     virtual void operator()(Trace<DepthUpdate> const &) = 0;
   };
 
-  static void dispatch(Handler &, std::string_view const &message, core::json::Buffer &, TraceInfo const &);
+  static void dispatch(Handler &, std::string_view const &message, std::span<std::byte> const &, TraceInfo const &);
 };
 
 }  // namespace json

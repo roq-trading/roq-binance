@@ -75,8 +75,7 @@ TEST_CASE("json_depth_update_simple", "[json_depth_update]") {
                  R"(])"
                  R"(})"
                  R"(})";
-  core::Buffer buffer_(65536);
-  core::json::Buffer buffer(buffer_);
+  std::vector<std::byte> buffer(65536);
   struct Handler : public json::MarketStreamParser::Handler {
     size_t counter = 0;
     void operator()(Trace<json::Error> const &, [[maybe_unused]] int32_t id) override { FAIL(); }

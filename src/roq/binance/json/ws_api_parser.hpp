@@ -6,8 +6,6 @@
 
 #include "roq/api.hpp"
 
-#include "roq/core/json/buffer.hpp"
-
 #include "roq/binance/json/ws_api_request.hpp"
 
 #include "roq/binance/json/error.hpp"
@@ -39,7 +37,7 @@ struct WSAPIParser final {
     virtual void operator()(Trace<CancelReplaceOrderError> const &, WSAPIRequest const &, int32_t status) = 0;
   };
 
-  static bool dispatch(Handler &, std::string_view const &message, core::json::Buffer &, TraceInfo const &);
+  static bool dispatch(Handler &, std::string_view const &message, std::span<std::byte> const &, TraceInfo const &);
 };
 
 }  // namespace json

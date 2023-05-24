@@ -73,8 +73,7 @@ TEST_CASE("simple", "[json_ws_listen_key]") {
     }
     size_t counter = {};
   } handler;
-  core::Buffer buffer_(4096);
-  core::json::Buffer buffer(buffer_);
+  std::vector<std::byte> buffer(8192);
   TraceInfo trace_info;
   auto result = json::WSAPIParser::dispatch(handler, message, buffer, trace_info);
   CHECK(result == true);

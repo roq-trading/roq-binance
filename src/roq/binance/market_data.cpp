@@ -112,7 +112,7 @@ MarketData::MarketData(
     Handler &handler, io::Context &context, uint16_t stream_id, Priority priority, Shared &shared, size_t index)
     : handler_{handler}, stream_id_{stream_id}, priority_{priority}, name_{create_name(stream_id_, priority_)},
       index_{index}, connection_{create_connection(*this, shared.settings, context)},
-      decode_buffer_{shared.settings.common.decode_buffer_size},
+      decode_buffer_(shared.settings.common.decode_buffer_size),
       request_id_{static_cast<uint64_t>(stream_id_) * 1000000},  // scale (debugging)
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -272,8 +272,7 @@ void MarketData::parse(std::string_view const &message) {
   profile_.parse([&]() {
     try {
       TraceInfo trace_info;
-      core::json::Buffer buffer{decode_buffer_};
-      json::MarketStreamParser::dispatch(*this, message, buffer, trace_info);
+      json::MarketStreamParser::dispatch(*this, message, decode_buffer_, trace_info);
     } catch (...) {
       log::warn(R"(message="{}")"sv, message);
       core::tools::UnhandledException::terminate();

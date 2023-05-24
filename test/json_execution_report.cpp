@@ -49,9 +49,8 @@ TEST_CASE("json_execution_report_simple", "[json_execution_report]") {
                  R"("Y":"0.00000000",)"
                  R"("Q":"0.00000000")"
                  R"(})";
-  core::Buffer buffer_(65536);
-  core::json::Buffer buffer(buffer_);
-  auto obj = core::json::Parser::create<json::ExecutionReport>(message, buffer);
+  std::vector<std::byte> buffer(8192);
+  auto obj = json::ExecutionReport::create(message, buffer);
   CHECK(obj.event_type == json::EventType::EXECUTION_REPORT);
   CHECK(obj.event_time == 1634211568285ms);
   CHECK(obj.symbol == "BTCBUSD"sv);
@@ -119,9 +118,8 @@ TEST_CASE("json_execution_report_canceled", "[json_execution_report]") {
                  R"("Y":"0.00000000",)"
                  R"("Q":"0.00000000")"
                  R"(})";
-  core::Buffer buffer_(65536);
-  core::json::Buffer buffer(buffer_);
-  auto obj = core::json::Parser::create<json::ExecutionReport>(message, buffer);
+  std::vector<std::byte> buffer(8192);
+  auto obj = json::ExecutionReport::create(message, buffer);
   CHECK(obj.event_type == json::EventType::EXECUTION_REPORT);
   CHECK(obj.event_time == 1634215338588ms);
   CHECK(obj.symbol == "LTCBTC"sv);
@@ -192,8 +190,7 @@ TEST_CASE("json_execution_report_stream", "[json_execution_report]") {
                  R"("Q":"0.00000000")"
                  R"(})"
                  R"(})";
-  core::Buffer buffer_(65536);
-  core::json::Buffer buffer(buffer_);
+  std::vector<std::byte> buffer(8192);
   TraceInfo trace_info;
   struct MyHandler final : public json::UserStreamParser::Handler {
     void operator()(Trace<json::OutboundAccountPosition> const &) override { FAIL(); }
@@ -248,8 +245,7 @@ TEST_CASE("json_execution_report_stream_maker_new", "[json_execution_report]") {
                  R"("Q":"0.00000000")"
                  R"(})"
                  R"(})";
-  core::Buffer buffer_(65536);
-  core::json::Buffer buffer(buffer_);
+  std::vector<std::byte> buffer(8192);
   TraceInfo trace_info;
   struct MyHandler final : public json::UserStreamParser::Handler {
     void operator()(Trace<json::OutboundAccountPosition> const &) override { FAIL(); }
@@ -337,8 +333,7 @@ TEST_CASE("json_execution_report_stream_maker_filled", "[json_execution_report]"
                  R"("Q":"0.00000000")"
                  R"(})"
                  R"(})";
-  core::Buffer buffer_(65536);
-  core::json::Buffer buffer(buffer_);
+  std::vector<std::byte> buffer(8192);
   TraceInfo trace_info;
   struct MyHandler final : public json::UserStreamParser::Handler {
     void operator()(Trace<json::OutboundAccountPosition> const &) override { FAIL(); }

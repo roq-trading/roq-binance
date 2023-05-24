@@ -37,19 +37,18 @@ TEST_CASE("json_account_simple", "[json_account]") {
                  R"(})"
                  R"(])"
                  R"(})";
-  core::Buffer buffer_(8192);
-  core::json::Buffer buffer(buffer_);
-  auto obj = core::json::Parser::create<json::Account>(message, buffer);
-  CHECK(obj.maker_commission == 10.0_a);
-  CHECK(obj.taker_commission == 10.0_a);
-  CHECK(obj.buyer_commission == 0.0_a);
-  CHECK(obj.seller_commission == 0.0_a);
-  CHECK(obj.can_trade == true);
-  CHECK(obj.can_withdraw == true);
-  CHECK(obj.can_deposit == true);
-  CHECK(obj.update_time == 1620467758218ms);
-  CHECK(obj.account_type == "MARGIN"sv);
-  auto &balances = obj.balances;
+  std::vector<std::byte> buffer(8192);
+  auto account = json::Account::create(message, buffer);
+  CHECK(account.maker_commission == 10.0_a);
+  CHECK(account.taker_commission == 10.0_a);
+  CHECK(account.buyer_commission == 0.0_a);
+  CHECK(account.seller_commission == 0.0_a);
+  CHECK(account.can_trade == true);
+  CHECK(account.can_withdraw == true);
+  CHECK(account.can_deposit == true);
+  CHECK(account.update_time == 1620467758218ms);
+  CHECK(account.account_type == "MARGIN"sv);
+  auto &balances = account.balances;
   REQUIRE(std::size(balances) == 2);
   auto &b0 = balances[0];
   CHECK(b0.asset == "BTC"sv);

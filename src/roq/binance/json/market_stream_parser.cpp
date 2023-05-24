@@ -24,7 +24,7 @@ namespace json {
 void MarketStreamParser::dispatch(
     MarketStreamParser::Handler &handler,
     std::string_view const &message,
-    core::json::Buffer &buffer,
+    std::span<std::byte> const &buffer,
     TraceInfo const &trace_info) {
   int64_t id = -1;
   std::string symbol;  // allocating because we need uppercase
@@ -56,7 +56,8 @@ void MarketStreamParser::dispatch(
           break;
         case RESULT:
           if (id >= 0) {
-            Result result{value, buffer};
+            core::json::Buffer buffer_2{buffer};
+            Result result{value, buffer_2};
             Trace event{trace_info, result};
             dispatched = true;
             handler(event, id);
@@ -124,7 +125,8 @@ void MarketStreamParser::dispatch(
             case DEPTH10:
             case DEPTH20: {
               assert(!std::empty(symbol));
-              Depth depth{value, buffer};
+              core::json::Buffer buffer_2{buffer};
+              Depth depth{value, buffer_2};
               dispatched = true;
               Trace event{trace_info, depth};
               handler(event, symbol);
@@ -132,7 +134,8 @@ void MarketStreamParser::dispatch(
             }
             case DEPTH: {
               assert(!std::empty(symbol));
-              DepthUpdate depth_update{value, buffer};
+              core::json::Buffer buffer_2{buffer};
+              DepthUpdate depth_update{value, buffer_2};
               dispatched = true;
               Trace event{trace_info, depth_update};
               handler(event);

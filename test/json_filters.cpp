@@ -51,9 +51,8 @@ TEST_CASE("json_filters_simple_1", "[json_filters]") {
                  R"("maxNumAlgoOrders":5)"
                  R"(})"
                  R"(])";
-  core::Buffer buffer_(65536);
-  core::json::Buffer buffer(buffer_);
-  auto obj = core::json::Parser::create<json::Filters>(message, buffer);
+  std::vector<std::byte> buffer(8192);
+  auto obj = json::Filters::create(message, buffer);
   auto &data = obj.data;
   REQUIRE(std::size(data) == 8);
   auto &d0 = data[0];
@@ -132,9 +131,8 @@ TEST_CASE("json_filters_simple_2", "[json_filters]") {
                  R"("maxNumAlgoOrders":5)"
                  R"(})"
                  R"(])";
-  core::Buffer buffer_(65536);
-  core::json::Buffer buffer(buffer_);
-  auto obj = core::json::Parser::create<json::Filters>(message, buffer);
+  std::vector<std::byte> buffer(8192);
+  auto obj = json::Filters::create(message, buffer);
   auto &data = obj.data;
   REQUIRE(std::size(data) == 9);
   auto &d0 = data[0];

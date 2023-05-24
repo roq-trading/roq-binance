@@ -50,9 +50,8 @@ TEST_CASE("json_cancel_replace_order_simple", "[json_cancel_replace_order]") {
                  R"("fills":[])"
                  R"(})"
                  R"(})";
-  core::Buffer buffer_(65536);
-  core::json::Buffer buffer(buffer_);
-  auto obj = core::json::Parser::create<json::CancelReplaceOrder>(message, buffer);
+  std::vector<std::byte> buffer(8192);
+  auto obj = json::CancelReplaceOrder::create(message, buffer);
   CHECK(obj.cancel_result == json::SuccessOrFailure::SUCCESS);
   CHECK(obj.new_order_result == json::SuccessOrFailure::SUCCESS);
   // cancel order

@@ -80,12 +80,12 @@ struct DropCopy final : public web::socket::Client::Handler, public json::UserSt
  private:
   Handler &handler_;
   // config
-  const uint16_t stream_id_;
-  const std::string name_;
+  uint16_t const stream_id_;
+  std::string const name_;
   // web socket
   std::unique_ptr<web::socket::Client> connection_;
   // buffers
-  core::Buffer decode_buffer_;
+  std::vector<std::byte> decode_buffer_;
   // metrics
   struct {
     core::metrics::Counter disconnect;

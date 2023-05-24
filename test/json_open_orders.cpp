@@ -16,9 +16,8 @@ using namespace Catch::literals;
 
 TEST_CASE("json_open_orders_simple_empty", "[json_open_orders]") {
   auto message = R"([])";
-  core::Buffer buffer_(8192);
-  core::json::Buffer buffer(buffer_);
-  auto obj = core::json::Parser::create<json::OpenOrders>(message, buffer);
+  std::vector<std::byte> buffer(8192);
+  auto obj = json::OpenOrders::create(message, buffer);
   REQUIRE(std::size(obj.data) == 0);
 }
 
@@ -44,9 +43,8 @@ TEST_CASE("json_open_orders_simple", "[json_open_orders]") {
                  R"("origQuoteOrderQty":"0.00000000")"
                  R"(})"
                  R"(])";
-  core::Buffer buffer_(8192);
-  core::json::Buffer buffer(buffer_);
-  auto obj = core::json::Parser::create<json::OpenOrders>(message, buffer);
+  std::vector<std::byte> buffer(8192);
+  auto obj = json::OpenOrders::create(message, buffer);
   auto &data = obj.data;
   REQUIRE(std::size(data) == 1);
   auto &d0 = data[0];
