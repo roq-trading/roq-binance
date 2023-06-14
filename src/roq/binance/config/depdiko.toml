@@ -4,8 +4,8 @@ symbols = [ "BTCUSDT" ]
 
   [accounts.A1]
   master = true
-  login = "ETfQB2zz61HTAA8t8rCnBflKsqANIKaYyzq8Hn6ItDqL1fiu38FZldHsqgQ1Mqu4"
-  secret = "0hjyeGUGfRGqfyG86VuEXweSmmD2nUvjxY4bEeII0b6iCerAjI3pmUQIJNW6VDsH"
+  login = "aBg3OZ7HKjVpIvWYBvGWGNy9g75csK5zY6dyQoP5nKT2TWaomCOVRlRjsDJZeHQx"
+  secret = "AgcO85ua8QPC95CWnOF5P9Cshndw59Md0PAPvX8pLiZorbN1PidaH8JQaWn2Ci16"
 # drop-copy
 #  login = "mtWq5uoH427w3v6uOBfPl3SGtdIPl1swj4XXht83nrGvHeYsJlUdup8HJ9gRwtHs"
 #  secret = "FAqRRoU4YZDJntUwB1qA9KO3mjjdwNBXBpAlQmyQcEJjv17ypK2aRthUgTrUk6nL"
