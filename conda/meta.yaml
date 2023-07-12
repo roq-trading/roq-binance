@@ -27,6 +27,7 @@ requirements:
     - catch2  # [linux]
     - fmt
     - roq-core
+    - roq-flags
     - roq-io
     - roq-oss-base64
     - roq-oss-benchmark
