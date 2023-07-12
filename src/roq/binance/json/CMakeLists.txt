@@ -1,4 +1,4 @@
-set(TARGET_NAME "${PROJECT_NAME}-json")
+set(TARGET_NAME ${PROJECT_NAME}-json)
 
 set(SOURCES market_stream_parser.cpp user_stream_parser.cpp utils.cpp ws_api_parser.cpp
             ws_api_request.cpp)
@@ -81,10 +81,10 @@ roq_autogen(
   SOURCES
   ${AUTOGEN_SCHEMAS})
 
-roq_gitignore(OUTPUT ".gitignore" SOURCES "${TARGET_NAME}" ${AUTOGEN_HEADERS} ${AUTOGEN_SOURCES})
+roq_gitignore(OUTPUT .gitignore SOURCES ${TARGET_NAME} ${AUTOGEN_HEADERS} ${AUTOGEN_SOURCES})
 
-add_library("${TARGET_NAME}" OBJECT ${SOURCES} ${AUTOGEN_SOURCES})
+add_library(${TARGET_NAME} OBJECT ${SOURCES} ${AUTOGEN_SOURCES})
 
-add_dependencies("${TARGET_NAME}" autogen-json-headers)
+add_dependencies(${TARGET_NAME} autogen-json-headers)
 
-target_link_libraries("${TARGET_NAME}" roq-core::roq-core roq-logging::roq-logging fmt::fmt)
+target_link_libraries(${TARGET_NAME} roq-core::roq-core roq-logging::roq-logging fmt::fmt)
