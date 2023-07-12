@@ -11,8 +11,8 @@ using namespace std::literals;
 namespace roq {
 namespace binance {
 
-Settings::Settings(args::Parser const &args, server::Type type)
-    : server::flags::Settings{args, type, ROQ_PACKAGE_NAME, ROQ_BUILD_NUMBER}, exchange{flags::Flags::exchange()},
+Settings::Settings(args::Parser const &args)
+    : server::flags::Settings{args, ROQ_PACKAGE_NAME, ROQ_BUILD_NUMBER}, exchange{flags::Flags::exchange()},
       use_ws_api{flags::Flags::ws_api()} {
   log::debug("settings={}"sv, *this);
 }
