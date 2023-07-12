@@ -4,8 +4,6 @@
 
 #include "roq/logging.hpp"
 
-#include "roq/server/flags/settings.hpp"
-
 #include "roq/binance/flags/flags.hpp"
 
 using namespace std::literals;
@@ -13,9 +11,9 @@ using namespace std::literals;
 namespace roq {
 namespace binance {
 
-Settings::Settings(server::Type type)
-    : server::Settings{server::flags::create_settings(type, ROQ_PACKAGE_NAME, ROQ_BUILD_NUMBER)},
-      exchange{flags::Flags::exchange()}, use_ws_api{flags::Flags::ws_api()} {
+Settings::Settings(args::Parser const &args, server::Type type)
+    : server::flags::Settings{args, type, ROQ_PACKAGE_NAME, ROQ_BUILD_NUMBER}, exchange{flags::Flags::exchange()},
+      use_ws_api{flags::Flags::ws_api()} {
   log::debug("settings={}"sv, *this);
 }
 
