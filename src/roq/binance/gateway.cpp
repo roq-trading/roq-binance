@@ -52,9 +52,9 @@ R create_order_entry(
   for (auto &[name, account] : accounts) {
     auto &request = request_by_account.at(name);
     std::vector<std::unique_ptr<OrderEntry>> order_entry;
-    if (shared.settings.use_ws_api) {
-      auto &interfaces = shared.settings.ws_api.network_interfaces;
-      log::error("DEBUG length={}"sv, std::size(interfaces));
+    if (shared.settings.ws_api) {
+      auto &interfaces = shared.settings.ws_api_2.network_interfaces;
+      // log::error("DEBUG length={}"sv, std::size(interfaces));
       if (std::empty(interfaces)) {
         order_entry.emplace_back(
             std::make_unique<OrderEntryWS>(gateway, context, ++stream_id, *account, shared, request));
@@ -68,7 +68,7 @@ R create_order_entry(
       }
     } else {
       auto &interfaces = shared.settings.rest.network_interfaces;
-      log::error("DEBUG length={}"sv, std::size(interfaces));
+      // log::error("DEBUG length={}"sv, std::size(interfaces));
       if (std::empty(interfaces)) {
         order_entry.emplace_back(
             std::make_unique<OrderEntryREST>(gateway, context, ++stream_id, *account, shared, request));
@@ -322,11 +322,11 @@ OrderEntry &Gateway::get_order_entry(std::string_view const &account) {
 
 Gateway::OrderEntryRR::OrderEntryRR(std::vector<std::unique_ptr<OrderEntry>> &&order_entry)
     : order_entry_{std::move(order_entry)} {
-  log::error("DEBUG length={}"sv, std::size(order_entry_));
+  // log::error("DEBUG length={}"sv, std::size(order_entry_));
   for (auto &item : order_entry_)
     if (item.get() == nullptr)
       log::fatal("HERE"sv);
-  log::error("DEBUG ok"sv);
+  // log::error("DEBUG ok"sv);
 }
 
 template <typename... Args>
@@ -339,18 +339,18 @@ OrderEntry &Gateway::OrderEntryRR::get_next() {
   auto length = std::size(order_entry_);
   for (size_t offset = 0; offset < length; ++offset) {
     auto index = (index_ + offset) % length;
-    log::error("DEBUG index={}/{}"sv, index, length);
+    // log::error("DEBUG index={}/{}"sv, index, length);
     auto &order_entry = *(order_entry_[index]);
     if (!order_entry.ready()) {
-      log::error("DEBUG index={} not ready... trying next"sv, index);
+      // log::error("DEBUG index={} not ready... trying next"sv, index);
       continue;
     }
-    log::error("DEBUG index={} ready"sv, index);
+    // log::error("DEBUG index={} ready"sv, index);
     index_ = (index + 1) % length;
-    log::error("DEBUG next_index={}"sv, index_);
+    // log::error("DEBUG next_index={}"sv, index_);
     return order_entry;
   }
-  log::error("DEBUG failed"sv);
+  // log::error("DEBUG failed"sv);
   throw oms::NotReady{"get_next"sv};
 }
 

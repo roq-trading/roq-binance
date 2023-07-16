@@ -16,16 +16,13 @@
 namespace roq {
 namespace binance {
 
-struct Settings final : public server::flags::Settings {
+struct Settings final : public server::flags::Settings, public flags::Flags {
   explicit Settings(args::Parser const &);
 
-  std::string_view exchange;
-  bool use_ws_api = {};
-
-  flags::Common__flags common;
-  flags::REST__flags rest;
-  flags::WS__flags ws;
-  flags::WS_API__flags ws_api;
+  flags::Common common;
+  flags::REST rest;
+  flags::WS ws;
+  flags::WS_API ws_api_2;  // note! overlapping with flags::Flags
 };
 
 }  // namespace binance
@@ -52,11 +49,11 @@ struct fmt::formatter<roq::binance::Settings> {
         R"(server={})"
         R"(}})"_cf,
         value.exchange,
-        value.use_ws_api,
+        value.ws_api,
         value.common,
         value.rest,
         value.ws,
-        value.ws_api,
+        value.ws_api_2,
         static_cast<roq::server::Settings const &>(value));
   }
 };

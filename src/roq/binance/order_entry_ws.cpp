@@ -49,7 +49,7 @@ auto create_name(auto stream_id, auto const &account) {
 }
 
 auto create_connection(auto &handler, auto &settings, auto &context, auto &interface) {
-  auto uri = settings.ws_api.uri;
+  auto uri = settings.ws_api_2.uri;
   auto config = web::socket::Client::Config{
       // connection
       .interface = interface,
@@ -65,7 +65,7 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &inter
       .query = {},
       .user_agent = ROQ_PACKAGE_NAME,
       .request_timeout = {},
-      .ping_frequency = settings.ws_api.ping_freq,
+      .ping_frequency = settings.ws_api_2.ping_freq,
       // implementation
       .decode_buffer_size = settings.common.decode_buffer_size,
       .encode_buffer_size = settings.common.encode_buffer_size,
