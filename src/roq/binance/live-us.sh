@@ -10,7 +10,7 @@ NAME="binance-us"
 
 CONFIG="${CONFIG:-$NAME}"
 
-CONFIG_FILE="$ROQ_CONFIG/roq-binance/$CONFIG.toml"
+CONFIG_FILE="$ROQ_CONFIG_PATH/roq-binance/$CONFIG.toml"
 
 URI="binance.us"
 
