@@ -117,7 +117,7 @@ struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handl
       std::string_view const &error_msg);
 
   template <typename... Args>
-  void operator()(Trace<oms::Response> const &, uint8_t user_id, uint32_t order_id, Args &&...args);
+  void operator()(Trace<oms::Response> const &, uint8_t user_id, uint64_t order_id, Args &&...args);
 
   void operator()(Trace<oms::OrderUpdate> const &, std::string_view const &client_order_id);
 

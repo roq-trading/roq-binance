@@ -101,7 +101,7 @@ constexpr auto encode_opaque(Type type) {
   return uint64_t{static_cast<uint8_t>(type)};
 }
 
-constexpr auto encode_opaque(Type type, uint8_t user_id, uint32_t order_id, uint32_t version) {
+constexpr auto encode_opaque(Type type, uint8_t user_id, uint64_t order_id, uint32_t version) {
   auto const bitmask = (uint64_t{1} << 24) - 1;
   return uint64_t{static_cast<uint8_t>(type)} | (uint64_t{user_id} << 8) | ((uint64_t{order_id} & bitmask) << 16) |
          ((uint64_t{version} & bitmask) << 40);
@@ -112,11 +112,11 @@ constexpr auto type_from_opaque(uint64_t opaque) {
   return Type{static_cast<uint8_t>(opaque & bitmask)};
 }
 
-constexpr std::tuple<uint8_t, uint32_t, uint32_t> order_request_from_opaque(uint64_t opaque) {
+constexpr std::tuple<uint8_t, uint64_t, uint32_t> order_request_from_opaque(uint64_t opaque) {
   auto const bitmask_1 = (uint64_t{1} << 8) - 1;
   auto const bitmask_2 = (uint64_t{1} << 24) - 1;
   auto user_id = static_cast<uint8_t>((opaque >> 8) & bitmask_1);
-  auto order_id = static_cast<uint32_t>((opaque >> 16) & bitmask_2);
+  auto order_id = static_cast<uint32_t>((opaque >> 16) & bitmask_2);  // XXX TODO uint32_t -> uint64_t order_id
   auto version = static_cast<uint32_t>((opaque >> 40) & bitmask_2);
   return {user_id, order_id, version};
 }
@@ -679,7 +679,7 @@ void OrderEntryREST::new_order(
 }
 
 void OrderEntryREST::new_order_ack(
-    Trace<web::rest::Response> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
+    Trace<web::rest::Response> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
   profile_.new_order_ack([&]() {
     auto handle_success = [&](auto &body) {
       auto new_order = json::NewOrder::create(body, decode_buffer_);
@@ -712,7 +712,7 @@ void OrderEntryREST::new_order_ack_2(Trace<web::rest::Response> const &event, ui
 }
 
 void OrderEntryREST::operator()(
-    Trace<json::NewOrder> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
+    Trace<json::NewOrder> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
   auto &[trace_info, new_order] = event;
   log::info<2>("new_order={}, user_id={}, order_id={}, version={}"sv, new_order, user_id, order_id, version);
   auto side = json::map(new_order.side);
@@ -893,9 +893,9 @@ symbol=BTCUSDT&side=BUY&type=LIMIT&cancelReplaceMode=STOP_ON_FAILURE&timeInForce
 void OrderEntryREST::cancel_replace_order_ack(
     Trace<web::rest::Response> const &event,
     uint8_t user_id,
-    uint32_t cancel_order_id,
+    uint64_t cancel_order_id,
     uint32_t cancel_version,
-    uint32_t create_order_id,
+    uint64_t create_order_id,
     uint32_t create_version) {
   profile_.cancel_replace_order_ack([&]() {
     auto &trace_info = event.trace_info;
@@ -1031,9 +1031,9 @@ void OrderEntryREST::cancel_replace_order_ack_2(Trace<web::rest::Response> const
 void OrderEntryREST::operator()(
     Trace<json::CancelReplaceOrder> const &event,
     uint8_t user_id,
-    uint32_t cancel_order_id,
+    uint64_t cancel_order_id,
     uint32_t cancel_version,
-    uint32_t create_order_id,
+    uint64_t create_order_id,
     uint32_t create_version) {
   auto &[trace_info, cancel_replace_order] = event;
   log::info<2>(
@@ -1228,9 +1228,9 @@ void OrderEntryREST::operator()(
 void OrderEntryREST::operator()(
     Trace<json::CancelReplaceOrderError> const &event,
     uint8_t user_id,
-    uint32_t cancel_order_id,
+    uint64_t cancel_order_id,
     uint32_t cancel_version,
-    uint32_t create_order_id,
+    uint64_t create_order_id,
     uint32_t create_version) {
   auto &[trace_info, cancel_replace_order_error] = event;
   log::info<2>(
@@ -1293,7 +1293,7 @@ void OrderEntryREST::cancel_order(
 }
 
 void OrderEntryREST::cancel_order_ack(
-    Trace<web::rest::Response> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
+    Trace<web::rest::Response> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
   profile_.cancel_order_ack([&]() {
     auto handle_success = [&](auto &body) {
       json::CancelOrder cancel_order{body};
@@ -1326,7 +1326,7 @@ void OrderEntryREST::cancel_order_ack_2(Trace<web::rest::Response> const &event,
 }
 
 void OrderEntryREST::operator()(
-    Trace<json::CancelOrder> const &event, uint8_t user_id, uint32_t order_id, uint32_t version) {
+    Trace<json::CancelOrder> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
   auto &[trace_info, cancel_order] = event;
   log::info<2>("cancel_order={}, user_id={}, order_id={}, version={}"sv, cancel_order, user_id, order_id, version);
   auto side = json::map(cancel_order.side);
@@ -1535,7 +1535,7 @@ void OrderEntryREST::process_response(
 }
 
 template <typename... Args>
-void OrderEntryREST::operator()(Trace<oms::Response> const &event, uint8_t user_id, uint32_t order_id, Args &&...args) {
+void OrderEntryREST::operator()(Trace<oms::Response> const &event, uint8_t user_id, uint64_t order_id, Args &&...args) {
   auto &[trace_info, response] = event;
   if (shared_.update_order(
           user_id,

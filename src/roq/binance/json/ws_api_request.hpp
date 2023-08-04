@@ -17,9 +17,9 @@ struct WSAPIRequest final {
   uint32_t sequence = {};
   json::WSAPIType type = {};
   uint8_t user_id = {};
-  uint32_t order_id = {};
+  uint64_t order_id = {};
   uint32_t version = {};
-  uint32_t order_id_2 = {};
+  uint64_t order_id_2 = {};
 
   static std::string_view encode(std::vector<char> &buffer, WSAPIRequest const &);
   static WSAPIRequest decode(std::string_view const &buffer);
