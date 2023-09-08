@@ -137,7 +137,7 @@ TEST_CASE("json_new_order_simple_taker", "[json_new_order]") {
 }
 
 TEST_CASE("json_new_order_create_market", "[json_new_order]") {
-  CreateOrder create_order{
+  auto create_order = CreateOrder{
       .account = {},
       .order_id = {},
       .exchange = {},
@@ -153,6 +153,7 @@ TEST_CASE("json_new_order_create_market", "[json_new_order]") {
       .price = NaN,
       .stop_price = NaN,
       .routing_id = {},
+      .strategy_id = {},
   };
   oms::Order order = {};
   order.price_decimals = Decimals::_2;
@@ -170,7 +171,7 @@ TEST_CASE("json_new_order_create_market", "[json_new_order]") {
 }
 
 TEST_CASE("json_new_order_create_limit", "[json_new_order]") {
-  CreateOrder create_order{
+  auto create_order = CreateOrder{
       .account = {},
       .order_id = {},
       .exchange = {},
@@ -186,6 +187,7 @@ TEST_CASE("json_new_order_create_limit", "[json_new_order]") {
       .price = 123.4,
       .stop_price = NaN,
       .routing_id = {},
+      .strategy_id = {},
   };
   oms::Order order = {};
   order.price_decimals = Decimals::_2;
@@ -205,7 +207,7 @@ TEST_CASE("json_new_order_create_limit", "[json_new_order]") {
 }
 
 TEST_CASE("json_new_order_create_limit_maker", "[json_new_order]") {
-  CreateOrder create_order{
+  auto create_order = CreateOrder{
       .account = {},
       .order_id = {},
       .exchange = {},
@@ -221,6 +223,7 @@ TEST_CASE("json_new_order_create_limit_maker", "[json_new_order]") {
       .price = 123.4,
       .stop_price = NaN,
       .routing_id = {},
+      .strategy_id = {},
   };
   oms::Order order = {};
   order.price_decimals = Decimals::_2;
@@ -239,7 +242,7 @@ TEST_CASE("json_new_order_create_limit_maker", "[json_new_order]") {
 }
 
 TEST_CASE("json_new_order_create_stop_loss", "[json_new_order]") {
-  CreateOrder create_order{
+  auto create_order = CreateOrder{
       .account = {},
       .order_id = {},
       .exchange = {},
@@ -255,6 +258,7 @@ TEST_CASE("json_new_order_create_stop_loss", "[json_new_order]") {
       .price = NaN,
       .stop_price = 123.4,
       .routing_id = {},
+      .strategy_id = {},
   };
   oms::Order order = {};
   order.price_decimals = Decimals::_2;
@@ -273,7 +277,7 @@ TEST_CASE("json_new_order_create_stop_loss", "[json_new_order]") {
 }
 
 TEST_CASE("json_new_order_create_stop_loss_limit", "[json_new_order]") {
-  CreateOrder create_order{
+  auto create_order = CreateOrder{
       .account = {},
       .order_id = {},
       .exchange = {},
@@ -289,6 +293,7 @@ TEST_CASE("json_new_order_create_stop_loss_limit", "[json_new_order]") {
       .price = 123.4,
       .stop_price = 123.4,
       .routing_id = {},
+      .strategy_id = {},
   };
   oms::Order order = {};
   order.price_decimals = Decimals::_2;
