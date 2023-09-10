@@ -10,9 +10,9 @@
 
 #include "roq/utils/safe_cast.hpp"
 
-#include "roq/core/text/writer.hpp"
+#include "roq/utils/codec/hex.hpp"
 
-#include "roq/core/codec/hex.hpp"
+#include "roq/utils/text/writer.hpp"
 
 using namespace std::literals;
 
@@ -44,7 +44,7 @@ Crypto::Crypto(std::string_view const &key, std::string_view const &secret)
 
 std::string_view Crypto::create_query(
     std::span<std::byte> const &buffer, std::chrono::milliseconds now, std::string_view const &body) {
-  core::text::Writer writer{buffer};
+  utils::text::Writer writer{buffer};
   writer.write("?timestamp="sv).write(now.count());
   mac_.clear();
   auto tmp = static_cast<std::string_view>(writer).substr(1);
@@ -52,7 +52,7 @@ std::string_view Crypto::create_query(
   if (!std::empty(body))
     mac_.update(body);
   auto digest = mac_.final(digest_);
-  writer.write("&signature="sv).write(core::codec::Hex{digest});
+  writer.write("&signature="sv).write(utils::codec::Hex{digest});
   return writer.finish();
 }
 
@@ -60,8 +60,8 @@ std::string_view Crypto::create_ws_api_signature(std::span<std::byte> const &buf
   mac_.clear();
   mac_.update(body);
   auto digest = mac_.final(digest_);
-  core::text::Writer writer{buffer};
-  writer.write(core::codec::Hex{digest});
+  utils::text::Writer writer{buffer};
+  writer.write(utils::codec::Hex{digest});
   return writer.finish();
 }
 

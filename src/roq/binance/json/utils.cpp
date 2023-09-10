@@ -4,9 +4,9 @@
 
 #include "roq/logging.hpp"
 
-#include "roq/core/text/writer.hpp"
-
 #include "roq/utils/number.hpp"
+
+#include "roq/utils/text/writer.hpp"
 
 using namespace std::literals;
 
@@ -179,7 +179,7 @@ std::string_view new_order(
   auto time_in_force = map_time_in_force(create_order);
   buffer.resize(512);
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
-  core::text::Writer writer{buffer_2};
+  utils::text::Writer writer{buffer_2};
   writer.write("newClientOrderId="sv).write(request_id);
   if (!std::isnan(create_order.price))
     writer.write("&price="sv).write(utils::Number{create_order.price, order.price_decimals});
@@ -211,7 +211,7 @@ std::string_view new_order_ws_url(
   auto time_in_force = map_time_in_force(create_order);
   buffer.resize(512);
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
-  core::text::Writer writer{buffer_2};
+  utils::text::Writer writer{buffer_2};
   if (!std::empty(api_key))
     writer.write("apiKey="sv).write(api_key).write("&"sv);
   writer.write("newClientOrderId="sv).write(request_id);
@@ -247,7 +247,7 @@ std::string_view new_order_ws_json(
   auto time_in_force = map_time_in_force(create_order);
   buffer.resize(512);
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
-  core::text::Writer writer{buffer_2};
+  utils::text::Writer writer{buffer_2};
   writer.write("{"sv);
   writer.write(R"("apiKey":")"sv).write(api_key).write(R"(")"sv);
   writer.write(R"(,"newClientOrderId":")"sv).write(request_id).write(R"(")"sv);
@@ -288,7 +288,7 @@ std::string_view cancel_order(
     std::chrono::milliseconds recv_window) {
   buffer.resize(512);
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
-  core::text::Writer writer{buffer_2};
+  utils::text::Writer writer{buffer_2};
   writer.write("newClientOrderId="sv).write(request_id);
   if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
     writer.write("&cancelRestrictions="sv).write(cancel_order_template.cancel_restrictions.as_raw_text());
@@ -312,7 +312,7 @@ std::string_view cancel_order_ws_url(
     std::chrono::milliseconds now) {
   buffer.resize(512);
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
-  core::text::Writer writer{buffer_2};
+  utils::text::Writer writer{buffer_2};
   writer.write("apiKey="sv).write(api_key);
   if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
     writer.write("&cancelRestrictions="sv).write(cancel_order_template.cancel_restrictions.as_raw_text());
@@ -339,7 +339,7 @@ std::string_view cancel_order_ws_json(
     std::string_view const &signature) {
   buffer.resize(512);
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
-  core::text::Writer writer{buffer_2};
+  utils::text::Writer writer{buffer_2};
   writer.write("{"sv);
   writer.write(R"("apiKey":")"sv).write(api_key).write(R"(")"sv);
   if (cancel_order_template.cancel_restrictions != CancelRestrictions{})

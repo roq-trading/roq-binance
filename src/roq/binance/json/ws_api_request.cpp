@@ -2,7 +2,7 @@
 
 #include "roq/binance/json/ws_api_request.hpp"
 
-#include "roq/core/codec/base64.hpp"
+#include "roq/utils/codec/base64.hpp"
 
 using namespace std::literals;
 
@@ -23,7 +23,7 @@ std::string_view WSAPIRequest::encode(std::vector<char> &buffer, WSAPIRequest co
   std::memcpy(&data[6], &request.order_id, 4);
   std::memcpy(&data[10], &request.version, 4);
   std::memcpy(&data[14], &request.order_id_2, 4);
-  auto result = core::codec::Base64::encode(buffer, data, true, false);
+  auto result = utils::codec::Base64::encode(buffer, data, true, false);
   return {std::data(result), std::size(result)};
 }
 
@@ -31,7 +31,7 @@ WSAPIRequest WSAPIRequest::decode(std::string_view const &buffer) {
   if (std::size(buffer) != 24)
     throw RuntimeError{"Unexpected: len(buffer)={}"sv, std::size(buffer)};
   std::array<std::byte, 18> data;
-  core::codec::Base64::decode(data, std::span{std::data(buffer), std::size(buffer)}, true, false);
+  utils::codec::Base64::decode(data, std::span{std::data(buffer), std::size(buffer)}, true, false);
   WSAPIRequest result;
   std::memcpy(&result.sequence, &data[0], 4);
   result.type = json::WSAPIType{static_cast<json::WSAPIType::type_t>(std::to_integer<uint8_t>(data[4]))};
