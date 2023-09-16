@@ -55,6 +55,14 @@
     {
       "name": "requireSelfTradePrevention",
       "type": "bool"
+    },
+    {
+      "name": "preventSor",
+      "type": "bool"
+    },
+    {
+      "name": "uid",
+      "type": "int32_t"
     }
   ]
 }
