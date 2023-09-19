@@ -300,6 +300,7 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
         .last_traded_quantity = execution_report.last_executed_quantity,
         .last_traded_price = execution_report.last_executed_price,
         .last_liquidity = last_liquidity,
+        .routing_id = {},
         .update_type = UpdateType::INCREMENTAL,
         .sending_time_utc = execution_report.event_time,
     };
