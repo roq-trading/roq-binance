@@ -9,7 +9,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <roq/core/hash/sha256.hpp>
+#include <roq/utils/hash/sha256.hpp>
 
 #include "roq/binance/tools/crypto.hpp"
 
