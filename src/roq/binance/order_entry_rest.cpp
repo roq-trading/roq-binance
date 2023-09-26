@@ -620,6 +620,9 @@ void OrderEntryREST::operator()(Trace<json::OpenOrders> const &event) {
         .last_traded_price = {},
         .last_liquidity = {},
         .routing_id = {},
+        .max_request_version = {},
+        .max_response_version = {},
+        .max_accepted_version = {},
         .update_type = UpdateType::SNAPSHOT,
         .sending_time_utc = {},
     };
@@ -776,6 +779,9 @@ void OrderEntryREST::operator()(
       .last_traded_price = last_traded_price,
       .last_liquidity = {},
       .routing_id = {},
+      .max_request_version = {},
+      .max_response_version = {},
+      .max_accepted_version = {},
       .update_type = UpdateType::INCREMENTAL,
       .sending_time_utc = {},
   };
@@ -1100,6 +1106,9 @@ void OrderEntryREST::operator()(
           .last_traded_price = NaN,
           .last_liquidity = {},
           .routing_id = {},
+          .max_request_version = {},
+          .max_response_version = {},
+          .max_accepted_version = {},
           .update_type = UpdateType::INCREMENTAL,
           .sending_time_utc = {},
       };
@@ -1190,6 +1199,9 @@ void OrderEntryREST::operator()(
           .last_traded_price = NaN,
           .last_liquidity = {},
           .routing_id = {},
+          .max_request_version = {},
+          .max_response_version = {},
+          .max_accepted_version = {},
           .update_type = UpdateType::INCREMENTAL,
           .sending_time_utc = {},
       };
@@ -1378,6 +1390,9 @@ void OrderEntryREST::operator()(
       .last_traded_price = NaN,
       .last_liquidity = {},
       .routing_id = {},
+      .max_request_version = {},
+      .max_response_version = {},
+      .max_accepted_version = {},
       .update_type = UpdateType::INCREMENTAL,
       .sending_time_utc = {},
   };
@@ -1483,6 +1498,9 @@ void OrderEntryREST::operator()(Trace<json::CancelAllOpenOrders> const &event) {
         .last_traded_price = {},
         .last_liquidity = {},
         .routing_id = {},
+        .max_request_version = {},
+        .max_response_version = {},
+        .max_accepted_version = {},
         .update_type = UpdateType::INCREMENTAL,
         .sending_time_utc = {},
     };
