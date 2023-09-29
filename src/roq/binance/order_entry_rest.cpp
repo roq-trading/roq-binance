@@ -416,7 +416,7 @@ void OrderEntryREST::get_listen_key() {
 }
 
 void OrderEntryREST::get_listen_key_ack(Trace<web::rest::Response> const &event) {
-  auto const constexpr STATE = OrderEntryState::LISTEN_KEY;
+  auto constexpr const STATE = OrderEntryState::LISTEN_KEY;
   profile_.listen_key_ack([&]() {
     auto handle_success = [&](auto &body) {
       json::ListenKey listen_key{body};
