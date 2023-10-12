@@ -243,6 +243,10 @@ void OrderEntryWS::user_data_stream_start() {
     auto request = json::WSAPIRequest{
         .sequence = ++request_id_,
         .type = json::WSAPIType::LISTEN_KEY_CREATE,
+        .user_id = {},
+        .order_id = {},
+        .version = {},
+        .order_id_2 = {},
     };
     auto request_id = json::WSAPIRequest::encode(request_encode_buffer_, request);
     auto message = fmt::format(
@@ -273,6 +277,10 @@ void OrderEntryWS::user_data_stream_ping(std::chrono::nanoseconds now) {
     auto request = json::WSAPIRequest{
         .sequence = ++request_id_,
         .type = json::WSAPIType::LISTEN_KEY_PING,
+        .user_id = {},
+        .order_id = {},
+        .version = {},
+        .order_id_2 = {},
     };
     auto request_id = json::WSAPIRequest::encode(request_encode_buffer_, request);
     auto message = fmt::format(
@@ -300,6 +308,10 @@ void OrderEntryWS::account_status() {
     auto request = json::WSAPIRequest{
         .sequence = ++request_id_,
         .type = json::WSAPIType::ACCOUNT_STATUS,
+        .user_id = {},
+        .order_id = {},
+        .version = {},
+        .order_id_2 = {},
     };
     auto request_id = json::WSAPIRequest::encode(request_encode_buffer_, request);
     auto message = fmt::format(
@@ -329,6 +341,10 @@ void OrderEntryWS::open_orders_status() {
     auto request = json::WSAPIRequest{
         .sequence = ++request_id_,
         .type = json::WSAPIType::OPEN_ORDERS_STATUS,
+        .user_id = {},
+        .order_id = {},
+        .version = {},
+        .order_id_2 = {},
     };
     auto request_id = json::WSAPIRequest::encode(request_encode_buffer_, request);
     auto message = fmt::format(
@@ -367,6 +383,9 @@ void OrderEntryWS::open_orders_cancel_all(
           .sequence = ++request_id_,
           .type = json::WSAPIType::OPEN_ORDERS_CANCEL_ALL,
           .user_id = message_info.source,
+          .order_id = {},
+          .version = {},
+          .order_id_2 = {},
       };
       auto request_id_2 = json::WSAPIRequest::encode(request_encode_buffer_, request);
       auto message = fmt::format(
@@ -422,6 +441,7 @@ void OrderEntryWS::order_place(
         .user_id = message_info.source,
         .order_id = create_order.order_id,
         .version = 1,
+        .order_id_2 = {},
     };
     auto request_id_2 = json::WSAPIRequest::encode(request_encode_buffer_, request);
     auto message = fmt::format(
@@ -479,6 +499,7 @@ void OrderEntryWS::order_cancel(
         .user_id = message_info.source,
         .order_id = cancel_order.order_id,
         .version = cancel_order.version,
+        .order_id_2 = {},
     };
     auto request_id_2 = json::WSAPIRequest::encode(request_encode_buffer_, request);
     auto message = fmt::format(
