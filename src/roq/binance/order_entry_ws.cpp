@@ -366,14 +366,34 @@ void OrderEntryWS::open_orders_status() {
   });
 }
 
-void OrderEntryWS::open_orders_cancel_all(
-    Event<CancelAllOrders> const &event, [[maybe_unused]] std::string_view const &request_id) {
+void OrderEntryWS::open_orders_cancel_all(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
   profile_.open_orders_cancel_all([&]() {
-    if (!ready()) {
-      log::warn("Unable to cancel open orders (reason: NOT READY)"sv);
-      return;
-    }
+    if (!ready()) [[unlikely]]
+      throw oms::NotReady{"not ready"sv};
     auto &[message_info, cancel_all_orders] = event;
+    auto send_ack = [&](auto &symbol) {
+      auto cancel_all_orders_ack = CancelAllOrdersAck{
+          .stream_id = stream_id_,
+          .account = account_.get_name(),
+          .order_id = cancel_all_orders.order_id,
+          .exchange = cancel_all_orders.exchange,
+          .symbol = symbol,
+          .side = cancel_all_orders.side,
+          .origin = Origin::GATEWAY,
+          .status = RequestStatus::FORWARDED,
+          .error = {},
+          .text = {},
+          .request_id = request_id,
+          .external_account = {},
+          .number_of_affected_orders = {},
+          .round_trip_latency = {},
+          .user = {},
+          .strategy_id = cancel_all_orders.strategy_id,
+      };
+      TraceInfo trace_info{event};
+      Trace event_2{trace_info, cancel_all_orders_ack};
+      shared_(event_2);
+    };
     for (auto &symbol : open_orders_symbols_) {
       auto now = clock::get_realtime<std::chrono::milliseconds>();
       auto message_for_signature =
@@ -387,7 +407,8 @@ void OrderEntryWS::open_orders_cancel_all(
           .version = {},
           .order_id_2 = {},
       };
-      auto request_id_2 = json::WSAPIRequest::encode(request_encode_buffer_, request);
+      auto request_id_2 =
+          json::WSAPIRequest::encode(request_encode_buffer_, request);  // XXX FIXME here we lose request_id
       auto message = fmt::format(
           R"({{)"
           R"("id":"{}",)"
@@ -406,6 +427,7 @@ void OrderEntryWS::open_orders_cancel_all(
           signature);
       log::debug("{}"sv, message);
       (*connection_).send_text(message);
+      send_ack(symbol);
     }
   });
 }
@@ -708,6 +730,7 @@ void OrderEntryWS::operator()(Trace<json::Error> const &event, json::WSAPIReques
         download_orders_ = false;
         break;
       case OPEN_ORDERS_CANCEL_ALL:
+        // XXX FIXME TODO CancelAllOrdersAck
         break;
       case ORDER_PLACE:
         dispatch_oms_error(RequestType::CREATE_ORDER);

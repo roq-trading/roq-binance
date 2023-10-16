@@ -144,7 +144,7 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
   void operator()(Trace<json::CancelOrder> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
 
   void cancel_all_open_orders(Event<CancelAllOrders> const &, std::string_view const &request_id);
-  void cancel_all_open_orders_ack(Trace<web::rest::Response> const &);
+  void cancel_all_open_orders_ack(Trace<web::rest::Response> const &, std::string_view const &request_id);
   void operator()(Trace<json::CancelAllOpenOrders> const &);
 
   template <typename SuccessHandler, typename ErrorHandler>

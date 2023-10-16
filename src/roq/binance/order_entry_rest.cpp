@@ -335,7 +335,7 @@ void OrderEntryREST::operator()(
       cancel_order_ack_2(event, opaque);
       return;
     case CANCEL_ALL_OPEN_ORDERS:
-      cancel_all_open_orders_ack(event);
+      cancel_all_open_orders_ack(event, {});
       return;
   }
   log::fatal("Unexpected"sv);
@@ -1400,13 +1400,34 @@ void OrderEntryREST::operator()(
   (*this)(event_2, user_id, order_id, order_update);
 }
 
-void OrderEntryREST::cancel_all_open_orders(
-    Event<CancelAllOrders> const &, [[maybe_unused]] std::string_view const &request_id) {
+void OrderEntryREST::cancel_all_open_orders(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
   profile_.cancel_all_open_orders([&]() {
-    if (!ready()) {
-      log::warn("*** NOT POSSIBLE TO CANCEL ALL OPEN ORDERS (NOT READY) ***"sv);
-      return;
-    }
+    if (!ready()) [[unlikely]]
+      throw oms::NotReady{"not ready"sv};
+    auto &cancel_all_orders = event.value;
+    auto send_ack = [&](auto &symbol) {
+      auto cancel_all_orders_ack = CancelAllOrdersAck{
+          .stream_id = stream_id_,
+          .account = account_.get_name(),
+          .order_id = cancel_all_orders.order_id,
+          .exchange = cancel_all_orders.exchange,
+          .symbol = symbol,
+          .side = cancel_all_orders.side,
+          .origin = Origin::GATEWAY,
+          .status = RequestStatus::FORWARDED,
+          .error = {},
+          .text = {},
+          .request_id = request_id,
+          .external_account = {},
+          .number_of_affected_orders = {},
+          .round_trip_latency = {},
+          .user = {},
+          .strategy_id = cancel_all_orders.strategy_id,
+      };
+      TraceInfo trace_info{event};
+      Trace event_2{trace_info, cancel_all_orders_ack};
+      shared_(event_2);
+    };
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     for (auto &symbol : open_orders_symbols_) {
       auto body = json::cancel_all_open_orders(encode_buffer_, symbol, recv_window);
@@ -1431,21 +1452,46 @@ void OrderEntryREST::cancel_all_open_orders(
       auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
         TraceInfo trace_info;
         Trace event{trace_info, response};
-        cancel_all_open_orders_ack(event);
+        cancel_all_open_orders_ack(event, request_id);
       };
       (*connection_)(request_id, request, callback);
+      send_ack(symbol);
 #endif
     }
   });
 }
 
-void OrderEntryREST::cancel_all_open_orders_ack(Trace<web::rest::Response> const &event) {
+void OrderEntryREST::cancel_all_open_orders_ack(
+    Trace<web::rest::Response> const &event, std::string_view const &request_id) {
   profile_.cancel_all_open_orders_ack([&]() {
+    auto send_ack = [&](auto status, Error error, std::string_view const &text) {
+      auto cancel_all_orders_ack = CancelAllOrdersAck{
+          .stream_id = stream_id_,
+          .account = account_.get_name(),
+          .order_id = {},
+          .exchange = {},
+          .symbol = {},
+          .side = {},
+          .origin = Origin::EXCHANGE,
+          .status = status,
+          .error = error,
+          .text = text,
+          .request_id = request_id,
+          .external_account = {},
+          .number_of_affected_orders = {},
+          .round_trip_latency = {},
+          .user = {},
+          .strategy_id = {},
+      };
+      Trace event_2{event, cancel_all_orders_ack};
+      shared_(event_2);
+    };
     auto handle_success = [&](auto &body) {
       auto cancel_all_open_orders = json::CancelAllOpenOrders::create(body, decode_buffer_);
       log::debug("cancel_all_open_orders={}"sv, cancel_all_open_orders);
       Trace event_2{event, cancel_all_open_orders};
       (*this)(event_2);
+      send_ack(RequestStatus::ACCEPTED, {}, {});
     };
     auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
       switch (error) {
@@ -1455,6 +1501,7 @@ void OrderEntryREST::cancel_all_open_orders_ack(Trace<web::rest::Response> const
         default:
           log::warn(R"(error={}, text="{}")"sv, error, text);
       }
+      send_ack(RequestStatus::REJECTED, error, text);
     };
     process_response(event, handle_success, handle_error);
   });
