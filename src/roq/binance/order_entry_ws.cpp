@@ -370,7 +370,8 @@ void OrderEntryWS::open_orders_cancel_all(Event<CancelAllOrders> const &event, s
   profile_.open_orders_cancel_all([&]() {
     if (!ready()) [[unlikely]]
       throw oms::NotReady{"not ready"sv};
-    auto &[message_info, cancel_all_orders] = event;
+    auto &message_info = event.message_info;
+    auto &cancel_all_orders = event.value;
     auto send_ack = [&](auto &symbol) {
       auto cancel_all_orders_ack = CancelAllOrdersAck{
           .stream_id = stream_id_,
