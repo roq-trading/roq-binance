@@ -45,7 +45,9 @@ symbol.hpp
 symbol_status.hpp
 ticker.hpp
 time_in_force.hpp
+trade2.hpp
 trade.hpp
+trades.hpp
 user_stream.hpp
 ws_api_type.hpp
 account.cpp
@@ -93,6 +95,8 @@ symbol.cpp
 symbol_status.cpp
 ticker.cpp
 time_in_force.cpp
+trade2.cpp
 trade.cpp
+trades.cpp
 user_stream.cpp
 ws_api_type.cpp

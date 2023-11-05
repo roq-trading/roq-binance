@@ -15,6 +15,9 @@
       "name": "OPEN_ORDERS_STATUS"
     },
     {
+      "name": "MY_TRADES"
+    },
+    {
       "name": "OPEN_ORDERS_CANCEL_ALL"
     },
     {

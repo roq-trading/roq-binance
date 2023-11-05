@@ -1,0 +1,58 @@
+{
+  "name": "Trade2",
+  "type": "item",
+  "values": [
+    {
+      "name": "symbol",
+      "type": "std::string_view"
+    },
+    {
+      "name": "id",
+      "type": "int64_t"
+    },
+    {
+      "name": "orderId",
+      "type": "int64_t"
+    },
+    {
+      "name": "orderListId",
+      "type": "int64_t"
+    },
+    {
+      "name": "price",
+      "type": "double"
+    },
+    {
+      "name": "qty",
+      "type": "double"
+    },
+    {
+      "name": "quoteQty",
+      "type": "double"
+    },
+    {
+      "name": "commission",
+      "type": "double"
+    },
+    {
+      "name": "commissionAsset",
+      "type": "std::string_view"
+    },
+    {
+      "name": "time",
+      "type": "std::chrono::milliseconds"
+    },
+    {
+      "name": "isBuyer",
+      "type": "bool"
+    },
+    {
+      "name": "isMaker",
+      "type": "bool"
+    },
+    {
+      "name": "isBestMatch",
+      "type": "bool"
+    }
+  ]
+}

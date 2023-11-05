@@ -51,7 +51,9 @@ set(AUTOGEN_SCHEMAS
     symbol_status.json
     ticker.json
     time_in_force.json
+    trade2.json
     trade.json
+    trades.json
     user_stream.json
     ws_api_type.json)
 

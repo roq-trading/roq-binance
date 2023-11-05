@@ -47,6 +47,9 @@ TEST_CASE("simple", "[json_ws_listen_key]") {
         Trace<json::OpenOrders> const &, json::WSAPIRequest const &, [[maybe_unused]] int32_t status) override {
       FAIL();
     }
+    void operator()(Trace<json::Trades> const &, json::WSAPIRequest const &, [[maybe_unused]] int32_t status) override {
+      FAIL();
+    }
     void operator()(
         Trace<json::CancelAllOpenOrders> const &,
         json::WSAPIRequest const &,

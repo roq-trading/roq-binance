@@ -244,6 +244,16 @@ inline json::TimeInForce map(roq::TimeInForce time_in_force) {
 
 extern roq::Error guess_error(int32_t code);
 
+// new
+
+extern std::string_view my_trades(
+    std::vector<char> &buffer,
+    std::string_view const &symbol,
+    std::chrono::nanoseconds lookback,
+    uint32_t count,
+    uint32_t limit,
+    std::chrono::milliseconds now);
+
 // cancel-all
 
 extern std::string_view cancel_all_open_orders(

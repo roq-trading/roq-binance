@@ -66,13 +66,16 @@ struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handl
   uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id) override;
 
  protected:
-  bool downloading() const { return download_account_ || download_orders_; }
+  bool downloading() const { return download_account_ || download_orders_ || download_trades_; }
 
   void user_data_stream_start();
   void user_data_stream_ping(std::chrono::nanoseconds now);
 
   void account_status();
   void open_orders_status();
+
+  void my_trades();
+
   void open_orders_cancel_all(Event<CancelAllOrders> const &, std::string_view const &request_id);
   void order_place(Event<CreateOrder> const &, oms::Order const &, std::string_view const &request_id);
   void order_cancel(
@@ -103,6 +106,7 @@ struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handl
   void operator()(Trace<json::ListenKey> const &, json::WSAPIRequest const &, int32_t status) override;
   void operator()(Trace<json::Account> const &, json::WSAPIRequest const &, int32_t status) override;
   void operator()(Trace<json::OpenOrders> const &, json::WSAPIRequest const &, int32_t status) override;
+  void operator()(Trace<json::Trades> const &, json::WSAPIRequest const &, int32_t status) override;
   void operator()(Trace<json::CancelAllOpenOrders> const &, json::WSAPIRequest const &, int32_t status) override;
   void operator()(Trace<json::NewOrder> const &, json::WSAPIRequest const &, int32_t status) override;
   void operator()(Trace<json::CancelOrder> const &, json::WSAPIRequest const &, int32_t status) override;
@@ -138,8 +142,8 @@ struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handl
   struct {
     core::metrics::Profile parse, error, user_data_stream_start, user_data_stream_start_ack, user_data_stream_ping,
         user_data_stream_ping_ack, account_status, account_status_ack, open_orders_status, open_orders_status_ack,
-        open_orders_cancel_all, open_orders_cancel_all_ack, order_place, order_place_ack, order_cancel,
-        order_cancel_ack, order_cancel_replace, order_cancel_replace_ack, order_cancel_replace_error;
+        my_trades, my_trades_ack, open_orders_cancel_all, open_orders_cancel_all_ack, order_place, order_place_ack,
+        order_cancel, order_cancel_ack, order_cancel_replace, order_cancel_replace_ack, order_cancel_replace_error;
   } profile_;
   struct {
     core::metrics::Latency ping, heartbeat;
@@ -155,6 +159,7 @@ struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handl
   std::chrono::nanoseconds listen_key_refresh_ = {};
   bool download_account_ = false;
   bool download_orders_ = false;
+  bool download_trades_ = false;
   absl::flat_hash_set<Symbol> open_orders_symbols_;
   std::vector<char> request_encode_buffer_;
   std::vector<char> encode_buffer_;

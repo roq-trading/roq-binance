@@ -49,6 +49,12 @@ bool dispatch_open_orders_status(
   return true;
 }
 
+bool dispatch_my_trades(auto &handler, auto status, auto &value, auto &buffer, auto &trace_info, auto &request) {
+  json::Trades trades{value, buffer};
+  create_trace_and_dispatch(handler, trace_info, trades, request, status);
+  return true;
+}
+
 bool dispatch_open_orders_cancel_all(
     auto &handler, auto status, auto &value, auto &buffer, auto &trace_info, auto &request) {
   json::CancelAllOpenOrders cancel_all_open_orders{value, buffer};
@@ -89,6 +95,8 @@ bool dispatch_helper(auto &handler, auto status, auto &value, auto &buffer, auto
       return dispatch_account_status(handler, status, value, buffer, trace_info, request);
     case OPEN_ORDERS_STATUS:
       return dispatch_open_orders_status(handler, status, value, buffer, trace_info, request);
+    case MY_TRADES:
+      return dispatch_my_trades(handler, status, value, buffer, trace_info, request);
     case OPEN_ORDERS_CANCEL_ALL:
       return dispatch_open_orders_cancel_all(handler, status, value, buffer, trace_info, request);
     case ORDER_PLACE:

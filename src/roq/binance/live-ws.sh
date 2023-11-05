@@ -27,7 +27,7 @@ $PREFIX ./roq-binance \
   --service_listen_address "$HOME/run/metrics/${NAME}.sock" \
   --ws_uri "$WS_URI" \
   --rest_uri "$REST_URI" \
-  --ws_api=false \
+  --ws_api=true \
   --download_symbols="BTCUSDT" \
   --download_trades_lookback=1440m \
   $@

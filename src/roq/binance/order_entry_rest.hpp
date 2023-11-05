@@ -37,6 +37,7 @@
 #include "roq/binance/json/listen_key.hpp"
 #include "roq/binance/json/new_order.hpp"
 #include "roq/binance/json/open_orders.hpp"
+#include "roq/binance/json/trades.hpp"
 
 namespace roq {
 namespace binance {
@@ -76,7 +77,7 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
   uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id) override;
 
  protected:
-  bool downloading() const { return download_account_ || download_orders_; }
+  bool downloading() const { return download_account_ || download_orders_ || download_trades_; }
 
   void operator()(Trace<web::rest::Client::Connected> const &) override;
   void operator()(Trace<web::rest::Client::Disconnected> const &) override;
@@ -98,6 +99,10 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
   void get_open_orders();
   void get_open_orders_ack(Trace<web::rest::Response> const &);
   void operator()(Trace<json::OpenOrders> const &);
+
+  void get_trades();
+  void get_trades_ack(Trace<web::rest::Response> const &);
+  void operator()(Trace<json::Trades> const &);
 
   void refresh_listen_key(std::chrono::nanoseconds now);
 
@@ -179,6 +184,7 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
     core::metrics::Profile listen_key, listen_key_ack,   //
         account, account_ack,                            //
         open_orders, open_orders_ack,                    //
+        trades, trades_ack,                              //
         new_order, new_order_ack,                        //
         cancel_replace_order, cancel_replace_order_ack,  //
         cancel_order, cancel_order_ack,                  //
@@ -202,6 +208,7 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
   absl::flat_hash_set<Symbol> open_orders_symbols_;
   bool download_account_ = false;
   bool download_orders_ = false;
+  bool download_trades_ = false;
   std::vector<char> encode_buffer_;
 };
 

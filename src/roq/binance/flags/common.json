@@ -45,6 +45,30 @@
       "type": "bool",
       "default": false,
       "description": "if the cancel request fails, the replacement will not be attempted"
+    },
+    {
+      "name": "download_symbols",
+      "type": "std::vector<std::string>",
+      "description": "comma-separated list of symbols"
+    },
+    {
+      "name": "download_trades_lookback",
+      "type": "std::chrono::nanoseconds",
+      "validator": "roq::flags::validators::TimePeriod",
+      "default": "{}",
+      "description": "download trades? (lookback period)"
+    },
+    {
+      "name": "download_trades_count",
+      "type": "uint32_t",
+      "default": 0,
+      "description": "download trades? (count)"
+    },
+    {
+      "name": "download_trades_limit",
+      "type": "uint32_t",
+      "default": 1000,
+      "description": "exchange limitation"
     }
   ]
 }

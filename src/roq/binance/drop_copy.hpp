@@ -77,6 +77,9 @@ struct DropCopy final : public web::socket::Client::Handler, public json::UserSt
   void request_orders();
   void check_response_orders();
 
+  void request_trades();
+  void check_response_trades();
+
  private:
   Handler &handler_;
   // config

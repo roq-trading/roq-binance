@@ -9,6 +9,9 @@
       "name": "orders"
     },
     {
+      "name": "trades"
+    },
+    {
       "name": "done"
     }
   ]

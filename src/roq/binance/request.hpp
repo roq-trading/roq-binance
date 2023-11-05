@@ -14,6 +14,9 @@ struct Request final {
   // orders
   std::chrono::nanoseconds request_orders = {};
   std::chrono::nanoseconds respond_orders = {};
+  // trades
+  std::chrono::nanoseconds request_trades = {};
+  std::chrono::nanoseconds respond_trades = {};
 };
 
 }  // namespace binance

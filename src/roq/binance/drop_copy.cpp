@@ -119,6 +119,7 @@ void DropCopy::operator()(Event<Timer> const &event) {
   (*connection_).refresh(event.value.now);
   check_response_account();
   check_response_orders();
+  check_response_trades();
 }
 
 void DropCopy::operator()(metrics::Writer &writer) {
@@ -207,6 +208,14 @@ uint32_t DropCopy::download(DropCopyState state) {
     case ORDERS:
       request_orders();
       return 1;
+    case TRADES:
+      if ((shared_.settings.common.download_trades_lookback.count() || shared_.settings.common.download_trades_count) &&
+          !std::empty(shared_.settings.common.download_symbols)) {
+        request_trades();
+        return 1;
+      } else {
+        return {};
+      }
     case DONE:
       (*this)(ConnectionStatus::READY);
       assert(!ready_);
@@ -384,6 +393,20 @@ void DropCopy::check_response_orders() {
   if (request_.request_orders < request_.respond_orders) {
     log::info("Order download has completed!"sv);
     download_.check(DropCopyState::ORDERS);
+  }
+}
+
+void DropCopy::request_trades() {
+  log::info("Requesting trades download..."sv);
+  request_.request_trades = clock::get_system();
+}
+
+void DropCopy::check_response_trades() {
+  if (download_.state() != DropCopyState::TRADES)
+    return;
+  if (request_.request_trades < request_.respond_trades) {
+    log::info("Trade download has completed!"sv);
+    download_.check(DropCopyState::TRADES);
   }
 }
 

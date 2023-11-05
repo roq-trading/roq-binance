@@ -156,6 +156,8 @@ OrderEntryREST::OrderEntryREST(
           .account_ack = create_metrics(shared.settings, name_, "account_ack"sv),
           .open_orders = create_metrics(shared.settings, name_, "open_orders"sv),
           .open_orders_ack = create_metrics(shared.settings, name_, "open_orders_ack"sv),
+          .trades = create_metrics(shared.settings, name_, "trades"sv),
+          .trades_ack = create_metrics(shared.settings, name_, "trades_ack"sv),
           .new_order = create_metrics(shared.settings, name_, "new_order"sv),
           .new_order_ack = create_metrics(shared.settings, name_, "new_order_ack"sv),
           .cancel_replace_order = create_metrics(shared.settings, name_, "cancel_replace_order"sv),
@@ -195,6 +197,11 @@ void OrderEntryREST::operator()(Event<Timer> const &event) {
       get_open_orders();
       download_orders_ = true;
     }
+    if (!downloading() && request_.respond_trades < request_.request_trades) {
+      log::info("Download trades..."sv);
+      get_trades();
+      download_trades_ = true;
+    }
   }
 }
 
@@ -209,6 +216,8 @@ void OrderEntryREST::operator()(metrics::Writer &writer) {
       .write(profile_.account_ack, metrics::PROFILE)
       .write(profile_.open_orders, metrics::PROFILE)
       .write(profile_.open_orders_ack, metrics::PROFILE)
+      .write(profile_.trades, metrics::PROFILE)
+      .write(profile_.trades_ack, metrics::PROFILE)
       .write(profile_.new_order, metrics::PROFILE)
       .write(profile_.new_order_ack, metrics::PROFILE)
       .write(profile_.cancel_replace_order, metrics::PROFILE)
@@ -631,6 +640,111 @@ void OrderEntryREST::operator()(Trace<json::OpenOrders> const &event) {
   }
 }
 
+// trades
+
+void OrderEntryREST::get_trades() {
+  auto symbol = "BTCUSDT"sv;  // XXX HANS
+  profile_.trades([&]() {
+    auto now = clock::get_realtime<std::chrono::milliseconds>();
+    auto headers = account_.create_headers();
+    auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
+    auto body = json::my_trades(
+        encode_buffer_,
+        symbol,
+        shared_.settings.common.download_trades_lookback,
+        shared_.settings.common.download_trades_count,
+        shared_.settings.common.download_trades_limit,
+        now);
+    log::debug(R"(body="{}")"sv, body);
+    auto query = account_.create_query(now, body);
+    auto request = web::rest::Request{
+        .method = web::http::Method::GET,
+        .path = "/api/v3/myTrades"sv,
+        .query = query,
+        .accept = web::http::Accept::APPLICATION_JSON,
+        .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
+        .headers = headers,
+        .body = body,
+        .quality_of_service = {},
+    };
+    auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
+      TraceInfo trace_info;
+      Trace event{trace_info, response};
+      get_trades_ack(event);
+    };
+    (*connection_)("trades"sv, request, callback);
+  });
+}
+
+void OrderEntryREST::get_trades_ack(Trace<web::rest::Response> const &event) {
+  profile_.trades_ack([&]() {
+    auto handle_success = [&](auto &body) {
+      auto trades = json::Trades::create(body, decode_buffer_);
+      Trace event_2{event, trades};
+      (*this)(event_2);
+      request_.respond_trades = clock::get_system();  // completion
+      download_trades_ = false;
+    };
+    auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
+      log::warn(R"(error={}, text="{}")"sv, error, text);
+      request_.respond_trades = clock::get_system();  // completion
+      download_trades_ = false;
+    };
+    process_response(event, handle_success, handle_error);
+  });
+}
+
+void OrderEntryREST::operator()(Trace<json::Trades> const &event) {
+  auto &[trace_info, trades] = event;
+  for (auto &trade : trades.data) {
+    log::info<2>("trade={}"sv, trade);
+    /*
+    if (std::empty(order.client_order_id))
+      continue;
+    open_orders_symbols_.emplace(order.symbol);
+    auto side = json::map(order.side);
+    auto order_type = json::map(order.type);
+    auto time_in_force = json::map(order.time_in_force);
+    auto external_order_id = fmt::format("{}"_cf, order.order_id);  // alloc
+    auto order_status = json::map(order.status);
+    auto order_update = oms::OrderUpdate{
+        .account = account_.get_name(),
+        .exchange = shared_.settings.exchange,
+        .symbol = order.symbol,
+        .side = side,
+        .position_effect = {},
+        .max_show_quantity = NaN,
+        .order_type = order_type,
+        .time_in_force = time_in_force,
+        .execution_instructions = {},
+        .create_time_utc = order.time,
+        .update_time_utc = order.update_time,
+        .external_account = {},
+        .external_order_id = external_order_id,
+        .client_order_id = {},
+        .status = order_status,
+        .quantity = order.orig_qty,
+        .price = order.price,
+        .stop_price = order.stop_price,
+        .remaining_quantity = NaN,
+        .traded_quantity = order.executed_qty,
+        .average_traded_price = {},
+        .last_traded_quantity = {},
+        .last_traded_price = {},
+        .last_liquidity = {},
+        .routing_id = {},
+        .max_request_version = {},
+        .max_response_version = {},
+        .max_accepted_version = {},
+        .update_type = UpdateType::SNAPSHOT,
+        .sending_time_utc = {},
+    };
+    Trace event_2{trace_info, order_update};
+    (*this)(event_2, order.client_order_id);
+    */
+  }
+}
+
 // ...
 
 void OrderEntryREST::refresh_listen_key(std::chrono::nanoseconds now) {
@@ -706,6 +820,7 @@ void OrderEntryREST::new_order_ack(
           .quantity = NaN,
           .price = NaN,
       };
+      log::debug("response={}, user_id={}, order_id={}"sv, response, user_id, order_id);
       Trace event_2{event, response};
       (*this)(event_2, user_id, order_id);
     };

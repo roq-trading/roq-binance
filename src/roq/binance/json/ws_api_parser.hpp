@@ -19,6 +19,7 @@
 #include "roq/binance/json/cancel_replace_order_error.hpp"
 #include "roq/binance/json/new_order.hpp"
 #include "roq/binance/json/open_orders.hpp"
+#include "roq/binance/json/trades.hpp"
 
 namespace roq {
 namespace binance {
@@ -30,6 +31,7 @@ struct WSAPIParser final {
     virtual void operator()(Trace<ListenKey> const &, WSAPIRequest const &, int32_t status) = 0;
     virtual void operator()(Trace<Account> const &, WSAPIRequest const &, int32_t status) = 0;
     virtual void operator()(Trace<OpenOrders> const &, WSAPIRequest const &, int32_t status) = 0;
+    virtual void operator()(Trace<Trades> const &, WSAPIRequest const &, int32_t status) = 0;
     virtual void operator()(Trace<CancelAllOpenOrders> const &, WSAPIRequest const &, int32_t status) = 0;
     virtual void operator()(Trace<NewOrder> const &, WSAPIRequest const &, int32_t status) = 0;
     virtual void operator()(Trace<CancelOrder> const &, WSAPIRequest const &, int32_t status) = 0;

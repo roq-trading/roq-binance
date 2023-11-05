@@ -107,6 +107,8 @@ OrderEntryWS::OrderEntryWS(
           .account_status_ack = create_metrics(shared.settings, name_, "account_status_ack"sv),
           .open_orders_status = create_metrics(shared.settings, name_, "open_orders_status"sv),
           .open_orders_status_ack = create_metrics(shared.settings, name_, "open_orders_status_ack"sv),
+          .my_trades = create_metrics(shared.settings, name_, "my_trades"sv),
+          .my_trades_ack = create_metrics(shared.settings, name_, "my_trades_ack"sv),
           .open_orders_cancel_all = create_metrics(shared.settings, name_, "open_orders_cancel_all"sv),
           .open_orders_cancel_all_ack = create_metrics(shared.settings, name_, "open_orders_cancel_all_ack"sv),
           .order_place = create_metrics(shared.settings, name_, "order_place"sv),
@@ -123,7 +125,7 @@ OrderEntryWS::OrderEntryWS(
       },
       account_{account}, shared_{shared}, request_{request}, request_id_{REQUEST_ID} {
   // DEBUG
-  open_orders_symbols_.emplace("BTCUSDT"sv);
+  open_orders_symbols_.emplace("BTCUSDT"sv);  // XXX HANS
 }
 
 void OrderEntryWS::operator()(Event<Start> const &) {
@@ -148,6 +150,11 @@ void OrderEntryWS::operator()(Event<Timer> const &event) {
       log::info("Download orders..."sv);
       open_orders_status();
       download_orders_ = true;
+    }
+    if (!downloading() && request_.respond_trades < request_.request_trades) {
+      log::info("Download trades..."sv);
+      my_trades();
+      download_trades_ = true;
     }
   }
 }
@@ -363,6 +370,103 @@ void OrderEntryWS::open_orders_status() {
         signature);
     log::debug("{}"sv, message);
     (*connection_).send_text(message);
+  });
+}
+
+void OrderEntryWS::my_trades() {
+  auto symbol = "BTCUSDT"sv;
+  profile_.my_trades([&]() {
+    auto now = clock::get_realtime<std::chrono::milliseconds>();
+    if (shared_.settings.common.download_trades_count) {
+      auto message_for_signature = fmt::format(
+          "apiKey={}&"
+          "limit={}&"
+          "symbol={}&"
+          "timestamp={}"sv,
+          account_.get_key(),
+          shared_.settings.common.download_trades_count,
+          symbol,
+          now.count());
+      log::debug("message_for_signature={}"sv, message_for_signature);
+      auto signature = account_.create_ws_api_signature(message_for_signature);
+      auto request = json::WSAPIRequest{
+          .sequence = ++request_id_,
+          .type = json::WSAPIType::MY_TRADES,
+          .user_id = {},
+          .order_id = {},
+          .version = {},
+          .order_id_2 = {},
+      };
+      auto request_id = json::WSAPIRequest::encode(request_encode_buffer_, request);
+      auto message = fmt::format(
+          R"({{)"
+          R"("id":"{}",)"
+          R"("method":"myTrades",)"
+          R"("params":{{)"
+          R"("apiKey":"{}",)"
+          R"("limit":{},)"
+          R"("symbol":"{}",)"
+          R"("timestamp":{},)"
+          R"("signature":"{}")"
+          R"(}})"
+          R"(}})"sv,
+          request_id,
+          account_.get_key(),
+          shared_.settings.common.download_trades_count,
+          symbol,
+          now.count(),
+          signature);
+      log::debug("{}"sv, message);
+      (*connection_).send_text(message);
+    } else {
+      auto start_time =
+          std::chrono::duration_cast<std::chrono::milliseconds>(now - shared_.settings.common.download_trades_lookback);
+      // note! remember to sort
+      auto message_for_signature = fmt::format(
+          "apiKey={}&"
+          "limit={}&"
+          "startTime={}&"
+          "symbol={}&"
+          "timestamp={}"sv,
+          account_.get_key(),
+          shared_.settings.common.download_trades_limit,
+          start_time.count(),
+          symbol,
+          now.count());
+      log::debug("message_for_signature={}"sv, message_for_signature);
+      auto signature = account_.create_ws_api_signature(message_for_signature);
+      auto request = json::WSAPIRequest{
+          .sequence = ++request_id_,
+          .type = json::WSAPIType::MY_TRADES,
+          .user_id = {},
+          .order_id = {},
+          .version = {},
+          .order_id_2 = {},
+      };
+      auto request_id = json::WSAPIRequest::encode(request_encode_buffer_, request);
+      auto message = fmt::format(
+          R"({{)"
+          R"("id":"{}",)"
+          R"("method":"myTrades",)"
+          R"("params":{{)"
+          R"("apiKey":"{}",)"
+          R"("limit":{},)"
+          R"("startTime":{},)"
+          R"("symbol":"{}",)"
+          R"("timestamp":{},)"
+          R"("signature":"{}")"
+          R"(}})"
+          R"(}})"sv,
+          request_id,
+          account_.get_key(),
+          shared_.settings.common.download_trades_limit,
+          start_time.count(),
+          symbol,
+          now.count(),
+          signature);
+      log::debug("{}"sv, message);
+      (*connection_).send_text(message);
+    }
   });
 }
 
@@ -730,6 +834,10 @@ void OrderEntryWS::operator()(Trace<json::Error> const &event, json::WSAPIReques
         request_.respond_orders = clock::get_system();  // completion
         download_orders_ = false;
         break;
+      case MY_TRADES:
+        request_.respond_trades = clock::get_system();  // completion
+        download_trades_ = false;
+        break;
       case OPEN_ORDERS_CANCEL_ALL:
         // XXX FIXME TODO CancelAllOrdersAck
         break;
@@ -837,6 +945,52 @@ void OrderEntryWS::operator()(Trace<json::OpenOrders> const &event, json::WSAPIR
     }
     request_.respond_orders = clock::get_system();  // completion
     download_orders_ = false;
+  });
+}
+
+void OrderEntryWS::operator()(Trace<json::Trades> const &event, json::WSAPIRequest const &request, int32_t status) {
+  profile_.my_trades_ack([&]() {
+    auto &[trace_info, trades] = event;
+    log::debug("HERE {}"sv, trades);
+    log::info<2>("trades={}, request={}, status={}"sv, trades, request, status);
+    for (auto &trade : trades.data) {
+      log::info<2>("trade={}"sv, trade);
+      auto liquidity = trade.is_maker ? Liquidity::MAKER : Liquidity::TAKER;
+      auto fill = Fill{
+          .external_trade_id = {},
+          .quantity = trade.qty,  // XXX FIXME quote_qty ???
+          .price = trade.price,
+          .liquidity = liquidity,
+      };
+      auto side = trade.is_buyer ? Side::BUY : Side::SELL;
+      fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"_cf, trade.id);
+      auto external_order_id = fmt::format("{}"sv, trade.order_id);
+      auto trade_update = TradeUpdate{
+          .stream_id = stream_id_,
+          .account = account_.get_name(),
+          .order_id = {},
+          .exchange = shared_.settings.exchange,
+          .symbol = trade.symbol,
+          .side = side,
+          .position_effect = {},
+          .create_time_utc = trade.time,
+          .update_time_utc = trade.time,
+          .external_account = {},
+          .external_order_id = external_order_id,
+          .client_order_id = {},
+          .fills = {&fill, 1},
+          .routing_id = {},
+          .update_type = UpdateType::INCREMENTAL,
+          .sending_time_utc = trade.time,
+          .user = {},
+          .strategy_id = {},
+      };
+      log::debug("trade_update={}"sv, trade_update);
+      std::string_view client_order_id;  // XXX MISSING
+      create_trace_and_dispatch(handler_, trace_info, trade_update, true, SOURCE_NONE, client_order_id);
+    }
+    request_.respond_trades = clock::get_system();  // completion
+    download_trades_ = false;
   });
 }
 
