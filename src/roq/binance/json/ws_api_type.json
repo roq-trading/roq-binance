@@ -15,9 +15,6 @@
       "name": "OPEN_ORDERS_STATUS"
     },
     {
-      "name": "MY_TRADES"
-    },
-    {
       "name": "OPEN_ORDERS_CANCEL_ALL"
     },
     {
@@ -28,6 +25,9 @@
     },
     {
       "name": "ORDER_CANCEL_REPLACE"
+    },
+    {
+      "name": "MY_TRADES"
     }
   ]
 }
