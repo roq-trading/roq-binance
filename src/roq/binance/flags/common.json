@@ -55,14 +55,8 @@
       "name": "download_trades_lookback",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
-      "default": "{}",
+      "default": "24h",
       "description": "download trades? (lookback period)"
-    },
-    {
-      "name": "download_trades_count",
-      "type": "uint32_t",
-      "default": 0,
-      "description": "download trades? (count)"
     },
     {
       "name": "download_trades_limit",

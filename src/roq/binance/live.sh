@@ -29,5 +29,5 @@ $PREFIX ./roq-binance \
   --rest_uri "$REST_URI" \
   --ws_api=false \
   --download_symbols="BTCUSDT,ETHUSDT" \
-  --download_trades_count=1000 \
+  --download_trades_lookback=24h \
   $@

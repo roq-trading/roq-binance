@@ -376,96 +376,53 @@ void OrderEntryWS::my_trades() {
     auto &symbols = shared_.settings.common.download_symbols;
     for (auto &symbol : symbols) {
       auto now = clock::get_realtime<std::chrono::milliseconds>();
-      if (shared_.settings.common.download_trades_count) {
-        auto message_for_signature = fmt::format(
-            "apiKey={}&"
-            "limit={}&"
-            "symbol={}&"
-            "timestamp={}"sv,
-            account_.get_key(),
-            shared_.settings.common.download_trades_count,
-            symbol,
-            now.count());
-        log::debug("message_for_signature={}"sv, message_for_signature);
-        auto signature = account_.create_ws_api_signature(message_for_signature);
-        auto request = json::WSAPIRequest{
-            .sequence = ++request_id_,
-            .type = json::WSAPIType::MY_TRADES,
-            .user_id = {},
-            .order_id = {},
-            .version = {},
-            .order_id_2 = {},
-        };
-        auto request_id = json::WSAPIRequest::encode(request_encode_buffer_, request);
-        auto message = fmt::format(
-            R"({{)"
-            R"("id":"{}",)"
-            R"("method":"myTrades",)"
-            R"("params":{{)"
-            R"("apiKey":"{}",)"
-            R"("limit":{},)"
-            R"("symbol":"{}",)"
-            R"("timestamp":{},)"
-            R"("signature":"{}")"
-            R"(}})"
-            R"(}})"sv,
-            request_id,
-            account_.get_key(),
-            shared_.settings.common.download_trades_count,
-            symbol,
-            now.count(),
-            signature);
-        log::debug("{}"sv, message);
-        (*connection_).send_text(message);
-      } else {
-        auto start_time = std::chrono::duration_cast<std::chrono::milliseconds>(
-            now - shared_.settings.common.download_trades_lookback);
-        // note! remember to sort
-        auto message_for_signature = fmt::format(
-            "apiKey={}&"
-            "limit={}&"
-            "startTime={}&"
-            "symbol={}&"
-            "timestamp={}"sv,
-            account_.get_key(),
-            shared_.settings.common.download_trades_limit,
-            start_time.count(),
-            symbol,
-            now.count());
-        log::debug("message_for_signature={}"sv, message_for_signature);
-        auto signature = account_.create_ws_api_signature(message_for_signature);
-        auto request = json::WSAPIRequest{
-            .sequence = ++request_id_,
-            .type = json::WSAPIType::MY_TRADES,
-            .user_id = {},
-            .order_id = {},
-            .version = {},
-            .order_id_2 = {},
-        };
-        auto request_id = json::WSAPIRequest::encode(request_encode_buffer_, request);
-        auto message = fmt::format(
-            R"({{)"
-            R"("id":"{}",)"
-            R"("method":"myTrades",)"
-            R"("params":{{)"
-            R"("apiKey":"{}",)"
-            R"("limit":{},)"
-            R"("startTime":{},)"
-            R"("symbol":"{}",)"
-            R"("timestamp":{},)"
-            R"("signature":"{}")"
-            R"(}})"
-            R"(}})"sv,
-            request_id,
-            account_.get_key(),
-            shared_.settings.common.download_trades_limit,
-            start_time.count(),
-            symbol,
-            now.count(),
-            signature);
-        log::debug("{}"sv, message);
-        (*connection_).send_text(message);
-      }
+      auto start_time =
+          std::chrono::duration_cast<std::chrono::milliseconds>(now - shared_.settings.common.download_trades_lookback);
+      // note! remember to sort
+      auto message_for_signature = fmt::format(
+          "apiKey={}&"
+          "limit={}&"
+          "startTime={}&"
+          "symbol={}&"
+          "timestamp={}"sv,
+          account_.get_key(),
+          shared_.settings.common.download_trades_limit,
+          start_time.count(),
+          symbol,
+          now.count());
+      log::debug("message_for_signature={}"sv, message_for_signature);
+      auto signature = account_.create_ws_api_signature(message_for_signature);
+      auto request = json::WSAPIRequest{
+          .sequence = ++request_id_,
+          .type = json::WSAPIType::MY_TRADES,
+          .user_id = {},
+          .order_id = {},
+          .version = {},
+          .order_id_2 = {},
+      };
+      auto request_id = json::WSAPIRequest::encode(request_encode_buffer_, request);
+      auto message = fmt::format(
+          R"({{)"
+          R"("id":"{}",)"
+          R"("method":"myTrades",)"
+          R"("params":{{)"
+          R"("apiKey":"{}",)"
+          R"("limit":{},)"
+          R"("startTime":{},)"
+          R"("symbol":"{}",)"
+          R"("timestamp":{},)"
+          R"("signature":"{}")"
+          R"(}})"
+          R"(}})"sv,
+          request_id,
+          account_.get_key(),
+          shared_.settings.common.download_trades_limit,
+          start_time.count(),
+          symbol,
+          now.count(),
+          signature);
+      log::debug("{}"sv, message);
+      (*connection_).send_text(message);
     }
   });
 }

@@ -250,7 +250,6 @@ extern std::string_view my_trades(
     std::vector<char> &buffer,
     std::string_view const &symbol,
     std::chrono::nanoseconds lookback,
-    uint32_t count,
     uint32_t limit,
     std::chrono::milliseconds now);
 

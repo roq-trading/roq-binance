@@ -653,7 +653,6 @@ void OrderEntryREST::get_trades() {
           encode_buffer_,
           symbol,
           shared_.settings.common.download_trades_lookback,
-          shared_.settings.common.download_trades_count,
           shared_.settings.common.download_trades_limit,
           now);
       log::debug(R"(body="{}")"sv, body);

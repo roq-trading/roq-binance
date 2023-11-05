@@ -155,21 +155,15 @@ std::string_view my_trades(
     std::vector<char> &buffer,
     std::string_view const &symbol,
     std::chrono::nanoseconds lookback,
-    uint32_t count,
     uint32_t limit,
     std::chrono::milliseconds now) {
   buffer.resize(512);
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
   utils::text::Writer writer{buffer_2};
-  if (lookback.count()) {
-    auto start_time = std::chrono::duration_cast<std::chrono::milliseconds>(now - lookback);
-    writer.write("limit="sv).write(limit);
-    writer.write("&startTime="sv).write(start_time.count());
-    writer.write("&symbol="sv).write(symbol);
-  } else {
-    writer.write("limit="sv).write(count);
-    writer.write("&symbol="sv).write(symbol);
-  }
+  auto start_time = std::chrono::duration_cast<std::chrono::milliseconds>(now - lookback);
+  writer.write("limit="sv).write(limit);
+  writer.write("&startTime="sv).write(start_time.count());
+  writer.write("&symbol="sv).write(symbol);
   return writer.finish();
 }
 
