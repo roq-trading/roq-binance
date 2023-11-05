@@ -643,36 +643,38 @@ void OrderEntryREST::operator()(Trace<json::OpenOrders> const &event) {
 // trades
 
 void OrderEntryREST::get_trades() {
-  auto symbol = "BTCUSDT"sv;  // XXX HANS
   profile_.trades([&]() {
-    auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto headers = account_.create_headers();
-    auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
-    auto body = json::my_trades(
-        encode_buffer_,
-        symbol,
-        shared_.settings.common.download_trades_lookback,
-        shared_.settings.common.download_trades_count,
-        shared_.settings.common.download_trades_limit,
-        now);
-    log::debug(R"(body="{}")"sv, body);
-    auto query = account_.create_query(now, body);
-    auto request = web::rest::Request{
-        .method = web::http::Method::GET,
-        .path = "/api/v3/myTrades"sv,
-        .query = query,
-        .accept = web::http::Accept::APPLICATION_JSON,
-        .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
-        .headers = headers,
-        .body = body,
-        .quality_of_service = {},
-    };
-    auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
-      get_trades_ack(event);
-    };
-    (*connection_)("trades"sv, request, callback);
+    auto &symbols = shared_.settings.common.download_symbols;
+    for (auto &symbol : symbols) {
+      auto now = clock::get_realtime<std::chrono::milliseconds>();
+      auto headers = account_.create_headers();
+      auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
+      auto body = json::my_trades(
+          encode_buffer_,
+          symbol,
+          shared_.settings.common.download_trades_lookback,
+          shared_.settings.common.download_trades_count,
+          shared_.settings.common.download_trades_limit,
+          now);
+      log::debug(R"(body="{}")"sv, body);
+      auto query = account_.create_query(now, body);
+      auto request = web::rest::Request{
+          .method = web::http::Method::GET,
+          .path = "/api/v3/myTrades"sv,
+          .query = query,
+          .accept = web::http::Accept::APPLICATION_JSON,
+          .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
+          .headers = headers,
+          .body = body,
+          .quality_of_service = {},
+      };
+      auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
+        TraceInfo trace_info;
+        Trace event{trace_info, response};
+        get_trades_ack(event);
+      };
+      (*connection_)("my-trades"sv, request, callback);
+    }
   });
 }
 

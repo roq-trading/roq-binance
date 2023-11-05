@@ -28,6 +28,6 @@ $PREFIX ./roq-binance \
   --ws_uri "$WS_URI" \
   --rest_uri "$REST_URI" \
   --ws_api=false \
-  --download_symbols="BTCUSDT" \
-  --download_trades_lookback=1440m \
+  --download_symbols="BTCUSDT,ETHUSDT" \
+  --download_trades_count=1000 \
   $@
