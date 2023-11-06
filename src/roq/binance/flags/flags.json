@@ -12,7 +12,7 @@
     {
       "name": "ws_api",
       "type": "bool",
-      "default": false,
+      "default": true,
       "description": "use the websocket api?"
     }
   ]
