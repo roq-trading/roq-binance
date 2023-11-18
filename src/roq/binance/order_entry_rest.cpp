@@ -97,6 +97,7 @@ enum class Type : uint8_t {
   CANCEL_ALL_OPEN_ORDERS,
 };
 
+#if defined(TEST_REQ)
 constexpr auto encode_opaque(Type type) {
   return uint64_t{static_cast<uint8_t>(type)};
 }
@@ -107,6 +108,7 @@ constexpr auto encode_opaque(Type type, uint8_t user_id, uint64_t order_id, uint
   return uint64_t{static_cast<uint8_t>(type)} | (uint64_t{user_id} << 8) | ((uint64_t{order_id} & bitmask) << 16) |
          ((uint64_t{version} & bitmask) << 40);
 }
+#endif
 
 constexpr auto type_from_opaque(uint64_t opaque) {
   auto const bitmask = (uint64_t{1} << 8) - 1;
@@ -648,7 +650,6 @@ void OrderEntryREST::get_trades() {
     for (auto &symbol : symbols) {
       auto now = clock::get_realtime<std::chrono::milliseconds>();
       auto headers = account_.create_headers();
-      auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
       auto body = json::my_trades(
           encode_buffer_,
           symbol,
