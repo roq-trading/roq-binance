@@ -1547,6 +1547,8 @@ void OrderEntryREST::cancel_all_open_orders(Event<CancelAllOrders> const &event,
     };
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     for (auto &symbol : open_orders_symbols_) {
+      if (!std::empty(cancel_all_orders.symbol) && symbol != cancel_all_orders.symbol)
+        continue;
       auto body = json::cancel_all_open_orders(encode_buffer_, symbol, recv_window);
       log::debug(R"(body="{}")"sv, body);
       auto now = clock::get_realtime<std::chrono::milliseconds>();

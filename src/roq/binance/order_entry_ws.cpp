@@ -457,6 +457,8 @@ void OrderEntryWS::open_orders_cancel_all(Event<CancelAllOrders> const &event, s
       shared_(event_2);
     };
     for (auto &symbol : open_orders_symbols_) {
+      if (!std::empty(cancel_all_orders.symbol) && symbol != cancel_all_orders.symbol)
+        continue;
       auto now = clock::get_realtime<std::chrono::milliseconds>();
       auto message_for_signature =
           fmt::format("apiKey={}&symbol={}&timestamp={}"sv, account_.get_key(), symbol, now.count());
