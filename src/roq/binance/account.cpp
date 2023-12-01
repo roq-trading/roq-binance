@@ -2,6 +2,10 @@
 
 #include "roq/binance/account.hpp"
 
+#include "roq/logging.hpp"
+
+using namespace std::literals;
+
 namespace roq {
 namespace binance {
 
@@ -9,13 +13,30 @@ namespace binance {
 
 namespace {
 static_assert(tools::Crypto::QUERY_BUFFER_LENGTH % 64 == 0);
+
+auto create_crypto(auto &config, auto &name) -> tools::Crypto {
+  auto ready = true;
+  auto key = config.get_api_key(name);
+  if (std::empty(key)) {
+    ready = false;
+    log::warn(R"(Unexpected: missing key for name="{}")"sv, name);
+  }
+  auto secret = config.get_secret(name);
+  if (std::empty(secret)) {
+    ready = false;
+    log::warn(R"(Unexpected: missing secret for name="{}")"sv, name);
+  }
+  if (!ready)
+    log::fatal("Invalid config"sv);
+  return {key, secret};
+}
 }  // namespace
 
 // === IMPLEMENTATION ===
 
 Account::Account(Config const &config, std::string_view const &name)
-    : name_{name}, crypto_{config.get_api_key(name_), config.get_secret(name_)},
-      query_encode_buffer_(tools::Crypto::QUERY_BUFFER_LENGTH), cancel_order_request_buffer_(256) {
+    : name_{name}, crypto_{create_crypto(config, name_)}, query_encode_buffer_(tools::Crypto::QUERY_BUFFER_LENGTH),
+      cancel_order_request_buffer_(256) {
 }
 
 }  // namespace binance
