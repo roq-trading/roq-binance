@@ -25,7 +25,7 @@ TEST_CASE("simple", "[json_ws_api_request]") {
   };
   std::vector<char> buffer;
   auto message = json::WSAPIRequest::encode(buffer, request);
-  CHECK(message == "AQAAAAJ7Fc1bBwCAAACxaN46WXd-CwCAAAA="sv);
+  CHECK(message == "AQAAAAJ7Fc1bBwCAAACxaN46WXd-CwCAAAAA"sv);
   auto result = json::WSAPIRequest::decode(message);
   CHECK(result.sequence == request.sequence);
   CHECK(result.type == request.type);

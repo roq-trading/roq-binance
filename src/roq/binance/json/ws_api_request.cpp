@@ -15,7 +15,7 @@ namespace json {
 // === IMPLEMENTATION ===
 
 std::string_view WSAPIRequest::encode(std::vector<char> &buffer, WSAPIRequest const &request) {
-  std::array<std::byte, 26> data;
+  std::array<std::byte, 27> data;
   std::memcpy(&data[0], &request.sequence, 4);
   auto event_type = static_cast<uint8_t>(static_cast<json::WSAPIType::type_t>(request.type));
   data[4] = *reinterpret_cast<std::byte const *>(&event_type);
@@ -23,6 +23,7 @@ std::string_view WSAPIRequest::encode(std::vector<char> &buffer, WSAPIRequest co
   std::memcpy(&data[6], &request.order_id, 8);
   std::memcpy(&data[14], &request.version, 4);
   std::memcpy(&data[18], &request.order_id_2, 8);
+  data[26] = {};
   auto result = utils::codec::Base64::encode(buffer, data, true, false);
   return {std::data(result), std::size(result)};
 }
