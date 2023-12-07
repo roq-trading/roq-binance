@@ -12,6 +12,8 @@ namespace roq {
 namespace binance {
 namespace json {
 
+// note! ^[a-zA-Z0-9-_]{1,36}$
+
 // === IMPLEMENTATION ===
 
 std::string_view WSAPIRequest::encode(std::vector<char> &buffer, WSAPIRequest const &request) {
