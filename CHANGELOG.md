@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Fixed
+
+* WS API did not correctly encode the wider order_id into the request id (#427)
+
 ## 0.9.8 &ndash; 2023-11-20
 
 ## 0.9.7 &ndash; 2023-09-18
