@@ -19,13 +19,13 @@ TEST_CASE("simple", "[json_ws_api_request]") {
       .sequence = 1,
       .type = json::WSAPIType::LISTEN_KEY_CREATE,
       .user_id = 123,
-      .order_id = 123456789,
+      .order_id = 123456789 + (uint64_t{1} << 47),
       .version = 987654321,
-      .order_id_2 = 192837465,
+      .order_id_2 = 192837465 + (uint64_t{1} << 47),
   };
   std::vector<char> buffer;
   auto message = json::WSAPIRequest::encode(buffer, request);
-  CHECK(message == "AQAAAAJ7Fc1bB7Fo3jpZd34L"sv);
+  CHECK(message == "AQAAAAJ7Fc1bBwCAAACxaN46WXd-CwCAAAA="sv);
   auto result = json::WSAPIRequest::decode(message);
   CHECK(result.sequence == request.sequence);
   CHECK(result.type == request.type);

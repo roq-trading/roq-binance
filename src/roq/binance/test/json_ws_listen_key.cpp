@@ -15,7 +15,7 @@ using namespace Catch::literals;
 
 TEST_CASE("simple", "[json_ws_listen_key]") {
   constexpr auto const message = R"({)"
-                                 R"("id":"AQAAAAJ7Fc1bB7Fo3jpZd34L",)"
+                                 R"("id":"AQAAAAJ7Fc1bBwCAAACxaN46WXd-CwCAAAA=",)"
                                  R"("status":200,)"
                                  R"("result":{)"
                                  R"("listenKey":"eSWDvurLiumxeTwtGdHaLBozyJ9qzS9QcwOk3jmERrfqtf63IoQKwhD4CALz")"

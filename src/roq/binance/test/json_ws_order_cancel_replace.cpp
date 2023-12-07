@@ -15,7 +15,7 @@ using namespace Catch::literals;
 
 TEST_CASE("simple", "[json_ws_order_cancel_replace]") {
   constexpr auto const message = R"({)"
-                                 R"("id":"UEIPAAkC7gMAAAIAAADvAwAA",)"
+                                 R"("id":"AQAAAAl7Fc1bBwCAAACxaN46WXd-CwCAAAA=",)"
                                  R"("status":200,)"
                                  R"("result":{)"
                                  R"("cancelResult":"SUCCESS",)"
