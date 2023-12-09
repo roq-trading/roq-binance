@@ -1109,7 +1109,7 @@ void OrderEntryWS::operator()(
         .time_in_force = time_in_force,
         .execution_instructions = {},
         .create_time_utc = {},
-        .update_time_utc = {},
+        .update_time_utc = cancel_order.transact_time,
         .external_account = {},
         .external_order_id = external_order_id,
         .client_order_id = {},

@@ -67,6 +67,10 @@
     {
       "name": "selfTradePreventionMode",
       "type": "std::string_view"
+    },
+    {
+      "name": "transactTime",
+      "type": "std::chrono::milliseconds"
     }
   ]
 }
