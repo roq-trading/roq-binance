@@ -55,7 +55,14 @@
       "name": "download_trades_lookback",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
-      "default": "24h",
+      "default": "300s",
+      "description": "download trades? (lookback period)"
+    },
+    {
+      "name": "download_trades_lookback_on_restart",
+      "type": "std::chrono::nanoseconds",
+      "validator": "roq::flags::validators::TimePeriod",
+      "default": "{}",
       "description": "download trades? (lookback period)"
     },
     {

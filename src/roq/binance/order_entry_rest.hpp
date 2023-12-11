@@ -210,6 +210,7 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
   bool download_orders_ = false;
   bool download_trades_ = false;
   std::vector<char> encode_buffer_;
+  bool download_trades_is_first_ = true;
 };
 
 }  // namespace binance

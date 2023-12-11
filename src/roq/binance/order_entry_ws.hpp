@@ -166,6 +166,7 @@ struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handl
   // state
   bool ready_ = false;
   ConnectionStatus status_ = {};
+  bool download_trades_is_first_ = true;
 };
 
 }  // namespace binance

@@ -77,6 +77,14 @@ struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(auto &settings, auto const &group, auto const &function)
       : core::metrics::Factory(settings.app.name, group, function) {}
 };
+
+auto get_download_trades_lookback(auto const &settings, auto download_trades_is_first) {
+  if (download_trades_is_first) {
+    if (settings.common.download_trades_lookback_on_restart.count())
+      return settings.common.download_trades_lookback_on_restart;
+  }
+  return settings.common.download_trades_lookback;
+}
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -376,8 +384,9 @@ void OrderEntryWS::my_trades() {
     auto &symbols = shared_.settings.common.download_symbols;
     for (auto &symbol : symbols) {
       auto now = clock::get_realtime<std::chrono::milliseconds>();
-      auto start_time =
-          std::chrono::duration_cast<std::chrono::milliseconds>(now - shared_.settings.common.download_trades_lookback);
+      auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
+      log::info<1>("Download trades: lookback={}"sv, lookback);
+      auto start_time = std::chrono::duration_cast<std::chrono::milliseconds>(now - lookback);
       // note! remember to sort
       auto message_for_signature = fmt::format(
           "apiKey={}&"
@@ -950,6 +959,7 @@ void OrderEntryWS::operator()(Trace<json::Trades> const &event, json::WSAPIReque
     }
     request_.respond_trades = clock::get_system();  // completion
     download_trades_ = false;
+    download_trades_is_first_ = false;
   });
 }
 

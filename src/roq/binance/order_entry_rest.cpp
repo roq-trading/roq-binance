@@ -86,6 +86,14 @@ struct create_metrics final : public core::metrics::Factory {
       : core::metrics::Factory(settings.app.name, group, function) {}
 };
 
+auto get_download_trades_lookback(auto const &settings, auto download_trades_is_first) {
+  if (download_trades_is_first) {
+    if (settings.common.download_trades_lookback_on_restart.count())
+      return settings.common.download_trades_lookback_on_restart;
+  }
+  return settings.common.download_trades_lookback;
+}
+
 enum class Type : uint8_t {
   UNDEFINED,
   GET_LISTEN_KEY,
@@ -649,13 +657,10 @@ void OrderEntryREST::get_trades() {
     auto &symbols = shared_.settings.common.download_symbols;
     for (auto &symbol : symbols) {
       auto now = clock::get_realtime<std::chrono::milliseconds>();
+      auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
+      log::info<1>("Download trades: lookback={}"sv, lookback);
       auto headers = account_.create_headers();
-      auto body = json::my_trades(
-          encode_buffer_,
-          symbol,
-          shared_.settings.common.download_trades_lookback,
-          shared_.settings.common.download_trades_limit,
-          now);
+      auto body = json::my_trades(encode_buffer_, symbol, lookback, shared_.settings.common.download_trades_limit, now);
       log::debug(R"(body="{}")"sv, body);
       auto query = account_.create_query(now, body);
       auto request = web::rest::Request{
@@ -686,6 +691,7 @@ void OrderEntryREST::get_trades_ack(Trace<web::rest::Response> const &event) {
       (*this)(event_2);
       request_.respond_trades = clock::get_system();  // completion
       download_trades_ = false;
+      download_trades_is_first_ = false;
     };
     auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
       log::warn(R"(error={}, text="{}")"sv, error, text);
