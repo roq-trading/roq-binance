@@ -27,12 +27,13 @@ requirements:
     - brotli
     - catch2  # [linux]
     - fmt
+    - libsodium
+    - roq-binance-sbe
     - roq-core
     - roq-flags
     - roq-io
     - roq-oss-benchmark
     - roq-oss-catch2  # [osx]
-    - libsodium
     - roq-oss-magic_enum
     - roq-oss-tomlplusplus
     - roq-server
