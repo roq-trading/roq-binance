@@ -530,6 +530,7 @@ void OrderEntryREST::operator()(Trace<json::Account> const &event) {
     auto funds_update = FundsUpdate{
         .stream_id = stream_id_,
         .account = account_.get_name(),
+        .margin_mode = {},
         .currency = item.asset,
         .balance = item.free,
         .hold = item.locked,
