@@ -248,8 +248,8 @@ void DropCopy::operator()(Trace<json::OutboundAccountPosition> const &event) {
       auto funds_update = FundsUpdate{
           .stream_id = stream_id_,
           .account = account_.get_name(),
-          .margin_mode = {},
           .currency = item.asset,
+          .margin_mode = {},
           .balance = item.free_amount,
           .hold = item.locked_amount,
           .external_account = {},
