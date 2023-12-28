@@ -156,8 +156,8 @@ TEST_CASE("json_new_order_create_market", "[json_new_order]") {
       .strategy_id = {},
   };
   oms::Order order = {};
-  order.price_decimals = Decimals::_2;
-  order.quantity_decimals = Decimals::_2;
+  order.price_precision.decimals = Decimals::_2;
+  order.quantity_precision.decimals = Decimals::_2;
   std::vector<char> buffer;
   auto body = json::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s);
   auto expected =
@@ -190,8 +190,8 @@ TEST_CASE("json_new_order_create_limit", "[json_new_order]") {
       .strategy_id = {},
   };
   oms::Order order = {};
-  order.price_decimals = Decimals::_2;
-  order.quantity_decimals = Decimals::_2;
+  order.price_precision.decimals = Decimals::_2;
+  order.quantity_precision.decimals = Decimals::_2;
   std::vector<char> buffer;
   auto body = json::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s);
   auto expected =
@@ -226,8 +226,8 @@ TEST_CASE("json_new_order_create_limit_maker", "[json_new_order]") {
       .strategy_id = {},
   };
   oms::Order order = {};
-  order.price_decimals = Decimals::_2;
-  order.quantity_decimals = Decimals::_2;
+  order.price_precision.decimals = Decimals::_2;
+  order.quantity_precision.decimals = Decimals::_2;
   std::vector<char> buffer;
   auto body = json::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s);
   auto expected =
@@ -261,8 +261,8 @@ TEST_CASE("json_new_order_create_stop_loss", "[json_new_order]") {
       .strategy_id = {},
   };
   oms::Order order = {};
-  order.price_decimals = Decimals::_2;
-  order.quantity_decimals = Decimals::_2;
+  order.price_precision.decimals = Decimals::_2;
+  order.quantity_precision.decimals = Decimals::_2;
   std::vector<char> buffer;
   auto body = json::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s);
   auto expected =
@@ -296,8 +296,8 @@ TEST_CASE("json_new_order_create_stop_loss_limit", "[json_new_order]") {
       .strategy_id = {},
   };
   oms::Order order = {};
-  order.price_decimals = Decimals::_2;
-  order.quantity_decimals = Decimals::_2;
+  order.price_precision.decimals = Decimals::_2;
+  order.quantity_precision.decimals = Decimals::_2;
   std::vector<char> buffer;
   auto body = json::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s);
   auto expected =
