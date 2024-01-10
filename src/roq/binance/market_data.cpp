@@ -19,8 +19,6 @@
 
 using namespace std::literals;
 
-using namespace fmt::literals;
-
 namespace roq {
 namespace binance {
 
@@ -46,7 +44,7 @@ auto const SUPPORTS_SECONDARY = Mask{
 
 namespace {
 auto create_name(auto stream_id, auto priority) {
-  auto result = fmt::format("{}:{}"_cf, stream_id, NAME);
+  auto result = fmt::format("{}:{}"sv, stream_id, NAME);
   switch (priority) {
     using enum Priority;
     case UNDEFINED:
@@ -247,20 +245,20 @@ void MarketData::subscribe(std::span<Symbol const> const &symbols) {
   }
   subscribe(symbols, "bookTicker"sv);
   auto frequency = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.ws.subscribe_depth_freq);
-  auto depth = fmt::format(R"(depth@{}ms)"_cf, frequency.count());
+  auto depth = fmt::format(R"(depth@{}ms)"sv, frequency.count());
   subscribe(symbols, depth);
 }
 
 void MarketData::subscribe(std::span<Symbol const> const &symbols, std::string_view const &channel) {
   assert(!std::empty(symbols));
   auto id = ++request_id_;
-  auto separator = fmt::format(R"(@{}",")"_cf, channel);
+  auto separator = fmt::format(R"(@{}",")"sv, channel);
   auto message = fmt::format(
       R"({{)"
       R"("method":"SUBSCRIBE",)"
       R"("params":["{}@{}"],)"
       R"("id":{})"
-      R"(}})"_cf,
+      R"(}})"sv,
       fmt::join(symbols, separator),
       channel,
       id);

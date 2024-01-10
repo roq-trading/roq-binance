@@ -22,20 +22,15 @@ struct CancelOrderTemplate final {
 
 template <>
 struct fmt::formatter<roq::binance::json::CancelOrderTemplate> {
-  template <typename Context>
-  constexpr auto parse(Context &context) {
-    return std::begin(context);
-  }
-  template <typename Context>
-  auto format(roq::binance::json::CancelOrderTemplate const &value, Context &context) const {
+  constexpr auto parse(format_parse_context &context) { return std::begin(context); }
+  auto format(roq::binance::json::CancelOrderTemplate const &value, format_context &context) const {
     using namespace std::literals;
-    using namespace fmt::literals;
     return fmt::format_to(
         context.out(),
         R"({{)"
         R"(cancel_restrictions={}, )"
         R"(cancel_replace_mode={})"
-        R"(}})"_cf,
+        R"(}})"sv,
         value.cancel_restrictions,
         value.cancel_replace_mode);
   }

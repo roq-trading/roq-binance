@@ -22,8 +22,6 @@
 
 using namespace std::literals;
 
-using namespace fmt::literals;
-
 // #define TEST_REQ  // XXX REMOVE doesn't work after order_id is uint64_t
 
 namespace roq {
@@ -47,7 +45,7 @@ auto const SUPPORTS = Mask{
 
 namespace {
 auto create_name(auto stream_id, auto const &account) {
-  return fmt::format("{}:{}:{}"_cf, stream_id, NAME, account);
+  return fmt::format("{}:{}:{}"sv, stream_id, NAME, account);
 }
 
 auto create_connection(auto &handler, auto &settings, auto &context, auto &interface) {
@@ -556,7 +554,7 @@ void OrderEntryREST::get_open_orders() {
         std::back_inserter(encode_buffer_),
         R"({{)"
         R"("timestamp":{})"
-        R"(}})"_cf,
+        R"(}})"sv,
         timestamp.count());
     std::string body{std::data(encode_buffer_), std::size(encode_buffer_)};
     log::debug(R"(body="{}")"sv, body);
@@ -612,7 +610,7 @@ void OrderEntryREST::operator()(Trace<json::OpenOrders> const &event) {
     auto side = json::map(order.side);
     auto order_type = json::map(order.type);
     auto time_in_force = json::map(order.time_in_force);
-    auto external_order_id = fmt::format("{}"_cf, order.order_id);  // alloc
+    auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
     auto order_status = json::map(order.status);
     auto order_update = oms::OrderUpdate{
         .account = account_.get_name(),
@@ -714,7 +712,7 @@ void OrderEntryREST::operator()(Trace<json::Trades> const &event) {
     auto side = json::map(order.side);
     auto order_type = json::map(order.type);
     auto time_in_force = json::map(order.time_in_force);
-    auto external_order_id = fmt::format("{}"_cf, order.order_id);  // alloc
+    auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
     auto order_status = json::map(order.status);
     auto order_update = oms::OrderUpdate{
         .account = account_.get_name(),
@@ -849,7 +847,7 @@ void OrderEntryREST::operator()(
   auto side = json::map(new_order.side);
   auto order_type = json::map(new_order.type);
   auto time_in_force = json::map(new_order.time_in_force);
-  auto external_order_id = fmt::format("{}"_cf, new_order.order_id);  // alloc
+  auto external_order_id = fmt::format("{}"sv, new_order.order_id);  // alloc
   auto order_status = json::map(new_order.status);
   // LIMIT_MAKER orders do not return any order state + we only end up here if we receive HTTP status OK
   if (order_status == OrderStatus{})
@@ -1191,7 +1189,7 @@ void OrderEntryREST::operator()(
       auto side = json::map(cancel_order.side);
       auto order_type = json::map(cancel_order.type);
       auto time_in_force = json::map(cancel_order.time_in_force);
-      auto external_order_id = fmt::format("{}"_cf, cancel_order.order_id);  // alloc
+      auto external_order_id = fmt::format("{}"sv, cancel_order.order_id);  // alloc
       auto order_status = json::map(cancel_order.status);
       auto response = oms::Response{
           .type = RequestType::CANCEL_ORDER,
@@ -1284,7 +1282,7 @@ void OrderEntryREST::operator()(
       auto side = json::map(new_order.side);
       auto order_type = json::map(new_order.type);
       auto time_in_force = json::map(new_order.time_in_force);
-      auto external_order_id = fmt::format("{}"_cf, new_order.order_id);  // alloc
+      auto external_order_id = fmt::format("{}"sv, new_order.order_id);  // alloc
       auto order_status = json::map(new_order.status);
       auto response = oms::Response{
           .type = RequestType::CREATE_ORDER,
@@ -1475,7 +1473,7 @@ void OrderEntryREST::operator()(
   auto side = json::map(cancel_order.side);
   auto order_type = json::map(cancel_order.type);
   auto time_in_force = json::map(cancel_order.time_in_force);
-  auto external_order_id = fmt::format("{}"_cf, cancel_order.order_id);  // alloc
+  auto external_order_id = fmt::format("{}"sv, cancel_order.order_id);  // alloc
   auto order_status = json::map(cancel_order.status);
   auto response = oms::Response{
       .type = RequestType::CANCEL_ORDER,
@@ -1643,7 +1641,7 @@ void OrderEntryREST::operator()(Trace<json::CancelAllOpenOrders> const &event) {
     auto side = json::map(order.side);
     auto order_type = json::map(order.type);
     auto time_in_force = json::map(order.time_in_force);
-    auto external_order_id = fmt::format("{}"_cf, order.order_id);  // alloc
+    auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
     auto order_status = json::map(order.status);
     auto order_update = oms::OrderUpdate{
         .account = account_.get_name(),
@@ -1701,7 +1699,7 @@ void OrderEntryREST::process_response(
             [[fallthrough]];
           case I_AM_A_TEAPOT:        // 418
           case TOO_MANY_REQUESTS: {  // 429
-            auto text = fmt::format("{}"_cf, status);
+            auto text = fmt::format("{}"sv, status);
             error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, text);
             break;
           }
@@ -1715,7 +1713,7 @@ void OrderEntryREST::process_response(
         }
         break;
       case SERVER_ERROR: {  // 5xx
-        auto text = fmt::format("{}"_cf, status);
+        auto text = fmt::format("{}"sv, status);
         error_handler(Origin::EXCHANGE, RequestStatus::ERROR, Error::UNKNOWN, text);
         break;
       }
@@ -1786,7 +1784,7 @@ void OrderEntryREST::dispatch_error_2(
           case FORBIDDEN:            // 403
           case I_AM_A_TEAPOT:        // 418
           case TOO_MANY_REQUESTS: {  // 429
-            auto text = fmt::format("{}"_cf, status);
+            auto text = fmt::format("{}"sv, status);
             callback(RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, text);
             break;
           }
@@ -1804,7 +1802,7 @@ void OrderEntryREST::dispatch_error_2(
       // HTTP 5XX return codes are used for internal errors; the issue is on Binance's side.
       //   It is important to NOT treat this as a failure operation; the execution status is UNKNOWN
       //   and could have been a success.
-      auto text = fmt::format("{}"_cf, status);
+      auto text = fmt::format("{}"sv, status);
       callback(RequestStatus::ERROR, Error::UNKNOWN, text);
       break;
     }

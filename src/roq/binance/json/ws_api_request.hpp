@@ -31,14 +31,9 @@ struct WSAPIRequest final {
 
 template <>
 struct fmt::formatter<roq::binance::json::WSAPIRequest> {
-  template <typename Context>
-  constexpr auto parse(Context &context) {
-    return std::begin(context);
-  }
-  template <typename Context>
-  auto format(roq::binance::json::WSAPIRequest const &value, Context &context) const {
+  constexpr auto parse(format_parse_context &context) { return std::begin(context); }
+  auto format(roq::binance::json::WSAPIRequest const &value, format_context &context) const {
     using namespace std::literals;
-    using namespace fmt::literals;
     return fmt::format_to(
         context.out(),
         R"({{)"
@@ -48,7 +43,7 @@ struct fmt::formatter<roq::binance::json::WSAPIRequest> {
         R"(order_id={}, )"
         R"(version={}, )"
         R"(order_id_2={})"
-        R"(}})"_cf,
+        R"(}})"sv,
         value.sequence,
         value.type,
         value.user_id,

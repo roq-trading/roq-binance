@@ -14,8 +14,6 @@
 
 using namespace std::literals;
 
-using namespace fmt::literals;
-
 namespace roq {
 namespace binance {
 
@@ -36,13 +34,13 @@ auto const SUPPORTS = Mask{
 
 namespace {
 auto create_name(auto stream_id, auto const &account) {
-  return fmt::format("{}:{}:{}"_cf, stream_id, NAME, account);
+  return fmt::format("{}:{}:{}"sv, stream_id, NAME, account);
 }
 
 auto create_connection(auto &handler, auto &settings, auto &context, auto const &listen_key) {
   assert(!std::empty(listen_key));
   auto uri = settings.ws.uri;
-  auto query = fmt::format("?streams={}"_cf, listen_key);
+  auto query = fmt::format("?streams={}"sv, listen_key);
   auto config = web::socket::Client::Config{
       // connection
       .interface = {},
@@ -278,7 +276,7 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
     auto side = json::map(execution_report.side);
     auto order_type = json::map(execution_report.order_type);
     auto time_in_force = json::map(execution_report.time_in_force);
-    auto external_order_id = fmt::format("{}"_cf, execution_report.order_id);
+    auto external_order_id = fmt::format("{}"sv, execution_report.order_id);
     auto status = json::map(execution_report.current_order_status);
     auto average_traded_price = utils::is_zero(execution_report.cumulative_filled_quantity)
                                     ? NaN
@@ -337,7 +335,7 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
         .price = execution_report.last_executed_price,
         .liquidity = last_liquidity,
     };
-    fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"_cf, execution_report.trade_id);
+    fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"sv, execution_report.trade_id);
     auto trade_update = TradeUpdate{
         .stream_id = stream_id_,
         .account = account_.get_name(),

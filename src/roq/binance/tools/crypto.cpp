@@ -16,8 +16,6 @@
 
 using namespace std::literals;
 
-using namespace fmt::literals;
-
 namespace roq {
 namespace binance {
 namespace tools {
@@ -32,7 +30,7 @@ static_assert(Crypto::QUERY_BUFFER_LENGTH % 64 == 0);
 
 namespace {
 auto create_headers_helper(auto const &key) {
-  return fmt::format("X-MBX-APIKEY: {}\r\n"_cf, key);
+  return fmt::format("X-MBX-APIKEY: {}\r\n"sv, key);
 }
 }  // namespace
 

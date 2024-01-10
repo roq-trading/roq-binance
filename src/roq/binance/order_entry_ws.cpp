@@ -20,8 +20,6 @@
 
 using namespace std::literals;
 
-using namespace fmt::literals;
-
 namespace roq {
 namespace binance {
 
@@ -45,7 +43,7 @@ auto const REQUEST_ID = uint32_t{1000000};
 
 namespace {
 auto create_name(auto stream_id, auto const &account) {
-  return fmt::format("{}:{}:{}"_cf, stream_id, NAME, account);
+  return fmt::format("{}:{}:{}"sv, stream_id, NAME, account);
 }
 
 auto create_connection(auto &handler, auto &settings, auto &context, auto &interface) {
@@ -875,7 +873,7 @@ void OrderEntryWS::operator()(Trace<json::OpenOrders> const &event, json::WSAPIR
       auto side = json::map(order.side);
       auto order_type = json::map(order.type);
       auto time_in_force = json::map(order.time_in_force);
-      auto external_order_id = fmt::format("{}"_cf, order.order_id);  // alloc
+      auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
       auto order_status = json::map(order.status);
       auto order_update = oms::OrderUpdate{
           .account = account_.get_name(),
@@ -932,7 +930,7 @@ void OrderEntryWS::operator()(Trace<json::Trades> const &event, json::WSAPIReque
           .liquidity = liquidity,
       };
       auto side = trade.is_buyer ? Side::BUY : Side::SELL;
-      fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"_cf, trade.id);
+      fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"sv, trade.id);
       auto external_order_id = fmt::format("{}"sv, trade.order_id);
       auto trade_update = TradeUpdate{
           .stream_id = stream_id_,
@@ -976,7 +974,7 @@ void OrderEntryWS::operator()(
       auto side = json::map(order.side);
       auto order_type = json::map(order.type);
       auto time_in_force = json::map(order.time_in_force);
-      auto external_order_id = fmt::format("{}"_cf, order.order_id);  // alloc
+      auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
       auto order_status = json::map(order.status);
       auto order_update = oms::OrderUpdate{
           .account = account_.get_name(),
@@ -1023,7 +1021,7 @@ void OrderEntryWS::operator()(Trace<json::NewOrder> const &event, json::WSAPIReq
     auto side = json::map(new_order.side);
     auto order_type = json::map(new_order.type);
     auto time_in_force = json::map(new_order.time_in_force);
-    auto external_order_id = fmt::format("{}"_cf, new_order.order_id);  // alloc
+    auto external_order_id = fmt::format("{}"sv, new_order.order_id);  // alloc
     auto order_status = json::map(new_order.status);
     // LIMIT_MAKER orders do not return any order state + we only end up here if we receive HTTP status OK
     if (order_status == OrderStatus{})
@@ -1096,7 +1094,7 @@ void OrderEntryWS::operator()(
     auto side = json::map(cancel_order.side);
     auto order_type = json::map(cancel_order.type);
     auto time_in_force = json::map(cancel_order.time_in_force);
-    auto external_order_id = fmt::format("{}"_cf, cancel_order.order_id);  // alloc
+    auto external_order_id = fmt::format("{}"sv, cancel_order.order_id);  // alloc
     auto order_status = json::map(cancel_order.status);
     auto response = oms::Response{
         .type = RequestType::CANCEL_ORDER,
@@ -1208,7 +1206,7 @@ void OrderEntryWS::update_helper(
       auto side = json::map(cancel_order.side);
       auto order_type = json::map(cancel_order.type);
       auto time_in_force = json::map(cancel_order.time_in_force);
-      auto external_order_id = fmt::format("{}"_cf, cancel_order.order_id);  // alloc
+      auto external_order_id = fmt::format("{}"sv, cancel_order.order_id);  // alloc
       auto order_status = json::map(cancel_order.status);
       auto response = oms::Response{
           .type = RequestType::CANCEL_ORDER,
@@ -1314,7 +1312,7 @@ void OrderEntryWS::update_helper(
       auto side = json::map(new_order.side);
       auto order_type = json::map(new_order.type);
       auto time_in_force = json::map(new_order.time_in_force);
-      auto external_order_id = fmt::format("{}"_cf, new_order.order_id);  // alloc
+      auto external_order_id = fmt::format("{}"sv, new_order.order_id);  // alloc
       auto order_status = json::map(new_order.status);
       auto response = oms::Response{
           .type = RequestType::CREATE_ORDER,

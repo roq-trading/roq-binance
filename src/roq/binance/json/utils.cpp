@@ -10,8 +10,6 @@
 
 using namespace std::literals;
 
-using namespace fmt::literals;
-
 namespace roq {
 namespace binance {
 namespace json {
@@ -175,7 +173,7 @@ std::string_view cancel_all_open_orders(
   fmt::format_to(
       std::back_inserter(buffer),
       R"(symbol={}&)"
-      R"(recvWindow={})"_cf,
+      R"(recvWindow={})"sv,
       symbol,
       recv_window.count());
   std::string_view result{std::data(buffer), std::size(buffer)};
