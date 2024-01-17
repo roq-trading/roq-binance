@@ -299,7 +299,7 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
         .external_account = {},
         .external_order_id = external_order_id,
         .client_order_id = {},
-        .status = status,
+        .order_status = status,
         .quantity = NaN,
         .price = execution_report.price,
         .stop_price = execution_report.stop_price,

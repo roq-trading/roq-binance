@@ -449,7 +449,7 @@ void OrderEntryWS::open_orders_cancel_all(Event<CancelAllOrders> const &event, s
           .symbol = symbol,
           .side = cancel_all_orders.side,
           .origin = Origin::GATEWAY,
-          .status = RequestStatus::FORWARDED,
+          .request_status = RequestStatus::FORWARDED,
           .error = {},
           .text = {},
           .request_id = request_id,
@@ -766,9 +766,9 @@ void OrderEntryWS::operator()(Trace<json::Error> const &event, json::WSAPIReques
     auto dispatch_oms_error = [&](auto type) {
       auto error_2 = json::guess_error(error.code);
       auto response = oms::Response{
-          .type = type,
+          .request_type = type,
           .origin = Origin::EXCHANGE,
-          .status = RequestStatus::REJECTED,
+          .request_status = RequestStatus::REJECTED,
           .error = error_2,
           .text = error.msg,
           .version = request.version,
@@ -891,7 +891,7 @@ void OrderEntryWS::operator()(Trace<json::OpenOrders> const &event, json::WSAPIR
           .external_account = {},
           .external_order_id = external_order_id,
           .client_order_id = {},
-          .status = order_status,
+          .order_status = order_status,
           .quantity = order.orig_qty,
           .price = order.price,
           .stop_price = order.stop_price,
@@ -994,7 +994,7 @@ void OrderEntryWS::operator()(
           .external_account = {},
           .external_order_id = external_order_id,
           .client_order_id = {},
-          .status = order_status,
+          .order_status = order_status,
           .quantity = order.orig_qty,
           .price = order.price,
           .stop_price = order.stop_price,
@@ -1042,9 +1042,9 @@ void OrderEntryWS::operator()(Trace<json::NewOrder> const &event, json::WSAPIReq
     if (utils::is_greater(last_traded_quantity, 0.0))
       last_traded_price = tmp / last_traded_quantity;
     auto response = oms::Response{
-        .type = RequestType::CREATE_ORDER,
+        .request_type = RequestType::CREATE_ORDER,
         .origin = Origin::EXCHANGE,
-        .status = RequestStatus::ACCEPTED,
+        .request_status = RequestStatus::ACCEPTED,
         .error = {},
         .text = {},
         .version = request.version,
@@ -1068,7 +1068,7 @@ void OrderEntryWS::operator()(Trace<json::NewOrder> const &event, json::WSAPIReq
         .external_account = {},
         .external_order_id = external_order_id,
         .client_order_id = {},
-        .status = order_status,
+        .order_status = order_status,
         .quantity = new_order.orig_qty,
         .price = new_order.price,
         .stop_price = NaN,
@@ -1101,9 +1101,9 @@ void OrderEntryWS::operator()(
     auto external_order_id = fmt::format("{}"sv, cancel_order.order_id);  // alloc
     auto order_status = json::map(cancel_order.status);
     auto response = oms::Response{
-        .type = RequestType::CANCEL_ORDER,
+        .request_type = RequestType::CANCEL_ORDER,
         .origin = Origin::EXCHANGE,
-        .status = RequestStatus::ACCEPTED,
+        .request_status = RequestStatus::ACCEPTED,
         .error = {},
         .text = {},
         .version = request.version,
@@ -1127,7 +1127,7 @@ void OrderEntryWS::operator()(
         .external_account = {},
         .external_order_id = external_order_id,
         .client_order_id = {},
-        .status = order_status,
+        .order_status = order_status,
         .quantity = cancel_order.orig_qty,
         .price = cancel_order.price,
         .stop_price = NaN,
@@ -1177,9 +1177,9 @@ void OrderEntryWS::update_helper(
   auto dispatch_cancel_error = [&]() {
     auto &cancel_order = cancel_replace_order.cancel_response;
     auto response = oms::Response{
-        .type = RequestType::CANCEL_ORDER,
+        .request_type = RequestType::CANCEL_ORDER,
         .origin = Origin::EXCHANGE,
-        .status = RequestStatus::REJECTED,
+        .request_status = RequestStatus::REJECTED,
         .error = json::guess_error(std::max(error_code, cancel_order.code)),
         .text = std::empty(cancel_order.msg) ? error_msg : cancel_order.msg,
         .version = request.version,
@@ -1214,9 +1214,9 @@ void OrderEntryWS::update_helper(
       auto external_order_id = fmt::format("{}"sv, cancel_order.order_id);  // alloc
       auto order_status = json::map(cancel_order.status);
       auto response = oms::Response{
-          .type = RequestType::CANCEL_ORDER,
+          .request_type = RequestType::CANCEL_ORDER,
           .origin = Origin::EXCHANGE,
-          .status = RequestStatus::ACCEPTED,
+          .request_status = RequestStatus::ACCEPTED,
           .error = {},
           .text = {},
           .version = request.version,
@@ -1240,7 +1240,7 @@ void OrderEntryWS::update_helper(
           .external_account = {},
           .external_order_id = external_order_id,
           .client_order_id = {},
-          .status = order_status,
+          .order_status = order_status,
           .quantity = cancel_order.orig_qty,
           .price = cancel_order.price,
           .stop_price = NaN,
@@ -1283,9 +1283,9 @@ void OrderEntryWS::update_helper(
   auto dispatch_create_error = [&]() {
     auto &new_order = cancel_replace_order.new_order_response;
     auto response = oms::Response{
-        .type = RequestType::CREATE_ORDER,
+        .request_type = RequestType::CREATE_ORDER,
         .origin = Origin::EXCHANGE,
-        .status = RequestStatus::REJECTED,
+        .request_status = RequestStatus::REJECTED,
         .error = json::guess_error(std::max(error_code, new_order.code)),
         .text = std::empty(new_order.msg) ? error_msg : new_order.msg,
         .version = 1,  // note!
@@ -1321,9 +1321,9 @@ void OrderEntryWS::update_helper(
       auto external_order_id = fmt::format("{}"sv, new_order.order_id);  // alloc
       auto order_status = json::map(new_order.status);
       auto response = oms::Response{
-          .type = RequestType::CREATE_ORDER,
+          .request_type = RequestType::CREATE_ORDER,
           .origin = Origin::EXCHANGE,
-          .status = RequestStatus::ACCEPTED,
+          .request_status = RequestStatus::ACCEPTED,
           .error = {},
           .text = {},
           .version = 1,  // note!
@@ -1347,7 +1347,7 @@ void OrderEntryWS::update_helper(
           .external_account = {},
           .external_order_id = external_order_id,
           .client_order_id = {},
-          .status = order_status,
+          .order_status = order_status,
           .quantity = new_order.orig_qty,
           .price = new_order.price,
           .stop_price = NaN,
