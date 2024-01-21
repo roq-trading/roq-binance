@@ -9,6 +9,8 @@
 
 #include "roq/utils/update.hpp"
 
+#include "roq/utils/metrics/const.hpp"
+
 #include "roq/core/charconv.hpp"
 
 #include "roq/core/tools/exception.hpp"
@@ -152,21 +154,21 @@ void MarketData::operator()(Event<Timer> const &event) {
 void MarketData::operator()(metrics::Writer &writer) {
   writer
       // counter
-      .write(counter_.disconnect, metrics::COUNTER)
-      .write(counter_.total_bytes_received, metrics::COUNTER)
+      .write(counter_.disconnect, utils::metrics::COUNTER)
+      .write(counter_.total_bytes_received, utils::metrics::COUNTER)
       // profile
-      .write(profile_.parse, metrics::PROFILE)
-      .write(profile_.error, metrics::PROFILE)
-      .write(profile_.result, metrics::PROFILE)
-      .write(profile_.agg_trade, metrics::PROFILE)
-      .write(profile_.trade, metrics::PROFILE)
-      .write(profile_.mini_ticker, metrics::PROFILE)
-      .write(profile_.book_ticker, metrics::PROFILE)
-      .write(profile_.depth, metrics::PROFILE)
-      .write(profile_.depth_update, metrics::PROFILE)
+      .write(profile_.parse, utils::metrics::PROFILE)
+      .write(profile_.error, utils::metrics::PROFILE)
+      .write(profile_.result, utils::metrics::PROFILE)
+      .write(profile_.agg_trade, utils::metrics::PROFILE)
+      .write(profile_.trade, utils::metrics::PROFILE)
+      .write(profile_.mini_ticker, utils::metrics::PROFILE)
+      .write(profile_.book_ticker, utils::metrics::PROFILE)
+      .write(profile_.depth, utils::metrics::PROFILE)
+      .write(profile_.depth_update, utils::metrics::PROFILE)
       // latency
-      .write(latency_.ping, metrics::LATENCY)
-      .write(latency_.heartbeat, metrics::LATENCY);
+      .write(latency_.ping, utils::metrics::LATENCY)
+      .write(latency_.heartbeat, utils::metrics::LATENCY);
 }
 
 void MarketData::subscribe(size_t start_from) {

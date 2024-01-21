@@ -11,6 +11,8 @@
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
+#include "roq/utils/metrics/const.hpp"
+
 #include "roq/core/charconv.hpp"
 
 #include "roq/core/metrics/factory.hpp"
@@ -216,26 +218,26 @@ void OrderEntryREST::operator()(Event<Timer> const &event) {
 void OrderEntryREST::operator()(metrics::Writer &writer) {
   writer
       // counter
-      .write(counter_.disconnect, metrics::COUNTER)
+      .write(counter_.disconnect, utils::metrics::COUNTER)
       // profile
-      .write(profile_.listen_key, metrics::PROFILE)
-      .write(profile_.listen_key_ack, metrics::PROFILE)
-      .write(profile_.account, metrics::PROFILE)
-      .write(profile_.account_ack, metrics::PROFILE)
-      .write(profile_.open_orders, metrics::PROFILE)
-      .write(profile_.open_orders_ack, metrics::PROFILE)
-      .write(profile_.trades, metrics::PROFILE)
-      .write(profile_.trades_ack, metrics::PROFILE)
-      .write(profile_.new_order, metrics::PROFILE)
-      .write(profile_.new_order_ack, metrics::PROFILE)
-      .write(profile_.cancel_replace_order, metrics::PROFILE)
-      .write(profile_.cancel_replace_order_ack, metrics::PROFILE)
-      .write(profile_.cancel_order, metrics::PROFILE)
-      .write(profile_.cancel_order_ack, metrics::PROFILE)
-      .write(profile_.cancel_all_open_orders, metrics::PROFILE)
-      .write(profile_.cancel_all_open_orders_ack, metrics::PROFILE)
+      .write(profile_.listen_key, utils::metrics::PROFILE)
+      .write(profile_.listen_key_ack, utils::metrics::PROFILE)
+      .write(profile_.account, utils::metrics::PROFILE)
+      .write(profile_.account_ack, utils::metrics::PROFILE)
+      .write(profile_.open_orders, utils::metrics::PROFILE)
+      .write(profile_.open_orders_ack, utils::metrics::PROFILE)
+      .write(profile_.trades, utils::metrics::PROFILE)
+      .write(profile_.trades_ack, utils::metrics::PROFILE)
+      .write(profile_.new_order, utils::metrics::PROFILE)
+      .write(profile_.new_order_ack, utils::metrics::PROFILE)
+      .write(profile_.cancel_replace_order, utils::metrics::PROFILE)
+      .write(profile_.cancel_replace_order_ack, utils::metrics::PROFILE)
+      .write(profile_.cancel_order, utils::metrics::PROFILE)
+      .write(profile_.cancel_order_ack, utils::metrics::PROFILE)
+      .write(profile_.cancel_all_open_orders, utils::metrics::PROFILE)
+      .write(profile_.cancel_all_open_orders_ack, utils::metrics::PROFILE)
       // latency
-      .write(latency_.ping, metrics::LATENCY);
+      .write(latency_.ping, utils::metrics::LATENCY);
 }
 
 void OrderEntryREST::operator()(Event<Disconnected> const &event) {
