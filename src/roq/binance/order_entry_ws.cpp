@@ -11,8 +11,6 @@
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
-#include "roq/utils/metrics/const.hpp"
-
 #include "roq/core/metrics/factory.hpp"
 
 #include "roq/web/socket/client_factory.hpp"
@@ -168,30 +166,30 @@ void OrderEntryWS::operator()(Event<Timer> const &event) {
 void OrderEntryWS::operator()(metrics::Writer &writer) {
   writer
       // counter
-      .write(counter_.disconnect, utils::metrics::COUNTER)
+      .write(counter_.disconnect, metrics::Type::COUNTER)
       // profile
-      .write(profile_.parse, utils::metrics::PROFILE)
-      .write(profile_.error, utils::metrics::PROFILE)
-      .write(profile_.user_data_stream_start, utils::metrics::PROFILE)
-      .write(profile_.user_data_stream_start_ack, utils::metrics::PROFILE)
-      .write(profile_.user_data_stream_ping, utils::metrics::PROFILE)
-      .write(profile_.user_data_stream_ping_ack, utils::metrics::PROFILE)
-      .write(profile_.account_status, utils::metrics::PROFILE)
-      .write(profile_.account_status_ack, utils::metrics::PROFILE)
-      .write(profile_.open_orders_status, utils::metrics::PROFILE)
-      .write(profile_.open_orders_status_ack, utils::metrics::PROFILE)
-      .write(profile_.open_orders_cancel_all, utils::metrics::PROFILE)
-      .write(profile_.open_orders_cancel_all_ack, utils::metrics::PROFILE)
-      .write(profile_.order_place, utils::metrics::PROFILE)
-      .write(profile_.order_place_ack, utils::metrics::PROFILE)
-      .write(profile_.order_cancel, utils::metrics::PROFILE)
-      .write(profile_.order_cancel_ack, utils::metrics::PROFILE)
-      .write(profile_.order_cancel_replace, utils::metrics::PROFILE)
-      .write(profile_.order_cancel_replace_ack, utils::metrics::PROFILE)
-      .write(profile_.order_cancel_replace_error, utils::metrics::PROFILE)
+      .write(profile_.parse, metrics::Type::PROFILE)
+      .write(profile_.error, metrics::Type::PROFILE)
+      .write(profile_.user_data_stream_start, metrics::Type::PROFILE)
+      .write(profile_.user_data_stream_start_ack, metrics::Type::PROFILE)
+      .write(profile_.user_data_stream_ping, metrics::Type::PROFILE)
+      .write(profile_.user_data_stream_ping_ack, metrics::Type::PROFILE)
+      .write(profile_.account_status, metrics::Type::PROFILE)
+      .write(profile_.account_status_ack, metrics::Type::PROFILE)
+      .write(profile_.open_orders_status, metrics::Type::PROFILE)
+      .write(profile_.open_orders_status_ack, metrics::Type::PROFILE)
+      .write(profile_.open_orders_cancel_all, metrics::Type::PROFILE)
+      .write(profile_.open_orders_cancel_all_ack, metrics::Type::PROFILE)
+      .write(profile_.order_place, metrics::Type::PROFILE)
+      .write(profile_.order_place_ack, metrics::Type::PROFILE)
+      .write(profile_.order_cancel, metrics::Type::PROFILE)
+      .write(profile_.order_cancel_ack, metrics::Type::PROFILE)
+      .write(profile_.order_cancel_replace, metrics::Type::PROFILE)
+      .write(profile_.order_cancel_replace_ack, metrics::Type::PROFILE)
+      .write(profile_.order_cancel_replace_error, metrics::Type::PROFILE)
       // latency
-      .write(latency_.ping, utils::metrics::LATENCY)
-      .write(latency_.heartbeat, utils::metrics::LATENCY);
+      .write(latency_.ping, metrics::Type::LATENCY)
+      .write(latency_.heartbeat, metrics::Type::LATENCY);
 }
 
 void OrderEntryWS::operator()(Event<Disconnected> const &event) {
