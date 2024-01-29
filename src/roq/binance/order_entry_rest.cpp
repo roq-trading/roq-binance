@@ -1044,8 +1044,8 @@ void OrderEntryREST::cancel_replace_order_ack(
         create_order_id,
         create_version);
     try {
-      auto [status, category, body_] = response.result();
-      auto body = body_;  // XXX clang workaround
+      auto [status, category, body] = response.result();
+      // auto body = body_;  // XXX clang workaround
       log::info(R"(DEBUG status={}, category={}, body="{}")"sv, status, category, body);
       test(status);
       switch (category) {
