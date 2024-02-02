@@ -12,7 +12,7 @@
 #include "roq/api.hpp"
 #include "roq/server.hpp"
 
-#include "roq/utils/mbp/sequencer.hpp"
+#include "roq/market/mbp/sequencer.hpp"
 
 #include "roq/core/symbols.hpp"
 #include "roq/core/timer_queue.hpp"
@@ -73,7 +73,7 @@ struct Shared final {
   struct Instrument final {
     int64_t tob_last_update_id = {};
     int64_t mbp_last_update_id = {};
-    utils::mbp::Sequencer sequencer;
+    market::mbp::Sequencer sequencer;
 
     bool tob_update(int64_t update_id) {
       if (update_id < tob_last_update_id)

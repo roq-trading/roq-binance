@@ -34,6 +34,7 @@ requirements:
     - roq-core
     - roq-flags
     - roq-io
+    - roq-market
     - roq-oss-benchmark
     - roq-oss-brotli
     - roq-oss-magic_enum
