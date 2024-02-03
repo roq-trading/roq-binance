@@ -6,15 +6,15 @@
 #include <string_view>
 #include <vector>
 
-#include "roq/core/download.hpp"
-
-#include "roq/core/metrics/counter.hpp"
-#include "roq/core/metrics/latency.hpp"
-#include "roq/core/metrics/profile.hpp"
+#include "roq/utils/metrics/counter.hpp"
+#include "roq/utils/metrics/latency.hpp"
+#include "roq/utils/metrics/profile.hpp"
 
 #include "roq/io/context.hpp"
 
 #include "roq/web/socket/client.hpp"
+
+#include "roq/core/download.hpp"
 
 #include "roq/server.hpp"
 
@@ -137,16 +137,16 @@ struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handl
   std::vector<std::byte> decode_buffer_;
   // metrics
   struct {
-    core::metrics::Counter disconnect;
+    utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    core::metrics::Profile parse, error, user_data_stream_start, user_data_stream_start_ack, user_data_stream_ping,
+    utils::metrics::Profile parse, error, user_data_stream_start, user_data_stream_start_ack, user_data_stream_ping,
         user_data_stream_ping_ack, account_status, account_status_ack, open_orders_status, open_orders_status_ack,
         my_trades, my_trades_ack, open_orders_cancel_all, open_orders_cancel_all_ack, order_place, order_place_ack,
         order_cancel, order_cancel_ack, order_cancel_replace, order_cancel_replace_ack, order_cancel_replace_error;
   } profile_;
   struct {
-    core::metrics::Latency ping, heartbeat;
+    utils::metrics::Latency ping, heartbeat;
   } latency_;
   // authentication
   Account &account_;

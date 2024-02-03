@@ -8,15 +8,15 @@
 #include <string>
 #include <string_view>
 
-#include "roq/core/download.hpp"
-
-#include "roq/core/metrics/counter.hpp"
-#include "roq/core/metrics/latency.hpp"
-#include "roq/core/metrics/profile.hpp"
+#include "roq/utils/metrics/counter.hpp"
+#include "roq/utils/metrics/latency.hpp"
+#include "roq/utils/metrics/profile.hpp"
 
 #include "roq/io/context.hpp"
 
 #include "roq/web/rest/client.hpp"
+
+#include "roq/core/download.hpp"
 
 #include "roq/server.hpp"
 
@@ -178,10 +178,10 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
   std::vector<std::byte> decode_buffer_;
   // metrics
   struct {
-    core::metrics::Counter disconnect;
+    utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    core::metrics::Profile listen_key, listen_key_ack,   //
+    utils::metrics::Profile listen_key, listen_key_ack,  //
         account, account_ack,                            //
         open_orders, open_orders_ack,                    //
         trades, trades_ack,                              //
@@ -191,7 +191,7 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
         cancel_all_open_orders, cancel_all_open_orders_ack;
   } profile_;
   struct {
-    core::metrics::Latency ping;
+    utils::metrics::Latency ping;
   } latency_;
   // authentication
   Account &account_;
