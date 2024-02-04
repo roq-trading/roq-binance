@@ -27,8 +27,8 @@ auto const KEY = "sSzUA6j8tGDfmLoFrOPhWHY3VeXbC3NrApp94Ci4H4XvcjuCuvOXp8gH89XzMP
 auto const SECRET = "tHurnNFWLFkm97xVRqoESdujAiq1ilNjnY52tDej5RilUbTVZXT2YB5eo7txFLHk"sv;
 auto const OMS_ORDER = []() {
   oms::Order result;
-  result.quantity_precision.decimals = Decimals::_5;
-  result.price_precision.decimals = Decimals::_2;
+  result.quantity_precision.precision = Precision::_5;
+  result.price_precision.precision = Precision::_2;
   return result;
 }();
 }  // namespace
