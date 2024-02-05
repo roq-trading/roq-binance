@@ -31,6 +31,7 @@ requirements:
     - fmt
     - libsodium
     - roq-binance-sbe
+    - roq-cache
     - roq-core
     - roq-flags
     - roq-io

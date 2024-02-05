@@ -32,6 +32,7 @@ target_link_libraries(
           roq-server::roq-server
           roq-core::roq-core
           roq-io::roq-io
+          roq-cache::roq-cache
           fmt::fmt
           Catch2::Catch2
           ${RT_LIBRARIES})

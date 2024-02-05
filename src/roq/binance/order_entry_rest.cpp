@@ -281,7 +281,7 @@ uint16_t OrderEntryREST::operator()(
   } else {
     // cancel + replace
     auto cancel_order_request = server::cache::CancelOrderRequest{
-        .cancel_order = cancel_order,
+        .cancel_order = cache::CancelOrder{cancel_order},
         .request_id = request_id,
         .previous_request_id = previous_request_id,
     };
