@@ -71,6 +71,8 @@ struct Shared final {
   auto &get_mbp() { return mbp.clear(); }
 
   struct Instrument final {
+    explicit Instrument(Settings const &);
+
     int64_t tob_last_update_id = {};
     int64_t mbp_last_update_id = {};
     market::mbp::Sequencer sequencer;
@@ -89,7 +91,11 @@ struct Shared final {
       return true;
     }
   };
-  absl::flat_hash_map<Symbol, Instrument> instruments;
+
+  Instrument &get_instrument(std::string_view const &symbol);
+
+ private:
+  absl::flat_hash_map<Symbol, Instrument> instruments_;
 
  private:
   server::Dispatcher &dispatcher_;

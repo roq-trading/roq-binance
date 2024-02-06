@@ -7,6 +7,18 @@ using namespace std::literals;
 namespace roq {
 namespace binance {
 
+// === HELPERS ===
+
+namespace {
+auto create_sequencer(auto &settings) {
+  auto options = market::mbp::Sequencer::Options{
+      .timeout = settings.common.mbp_sequencer_timeout,
+      .max_updates = {},
+  };
+  return market::mbp::Sequencer{options};
+}
+}  // namespace
+
 // === IMPLEMENTATION ===
 
 Shared::Shared(server::Dispatcher &dispatcher, Settings const &settings, Config const &config)
@@ -14,6 +26,16 @@ Shared::Shared(server::Dispatcher &dispatcher, Settings const &settings, Config 
       rate_limiter{settings.common.request_limit, settings.common.request_limit_interval},
       symbols{settings.ws.max_subscriptions_per_stream}, depth_request_queue{settings.ws.mbp_request_delay},
       create_order_templates{config.create_order_templates}, cancel_order_templates{config.cancel_order_templates} {
+}
+
+Shared::Instrument &Shared::get_instrument(std::string_view const &symbol) {
+  auto iter = instruments_.find(symbol);
+  if (iter == std::end(instruments_)) [[unlikely]] {
+    auto res = instruments_.try_emplace(symbol, settings);
+    assert(res.second);
+    iter = res.first;
+  }
+  return (*iter).second;
 }
 
 json::CreateOrderTemplate const &Shared::get_create_order_template(std::string_view const &name) {
@@ -36,6 +58,11 @@ json::CancelOrderTemplate const &Shared::get_cancel_order_template(std::string_v
   if (iter != std::end(cancel_order_templates))
     return (*iter).second;
   throw roq::oms::Rejected{Origin::GATEWAY, Error::INVALID_REQUEST_TEMPLATE, "cancel_order_template"sv};
+}
+
+// instrument
+
+Shared::Instrument::Instrument(Settings const &settings) : sequencer{create_sequencer(settings)} {
 }
 
 }  // namespace binance

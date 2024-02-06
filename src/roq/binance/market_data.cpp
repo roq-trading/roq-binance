@@ -394,7 +394,7 @@ void MarketData::operator()(Trace<json::BookTicker> const &event) {
     auto &[trace_info, book_ticker] = event;
     log::info<3>("book_ticker={}"sv, book_ticker);
     (*connection_).touch(trace_info.source_receive_time);
-    auto &instrument = shared_.instruments[book_ticker.symbol];
+    auto &instrument = shared_.get_instrument(book_ticker.symbol);
     if (!instrument.tob_update(book_ticker.order_book_update_id))
       return;
     auto top_of_book = TopOfBook{
@@ -430,7 +430,7 @@ void MarketData::operator()(Trace<json::DepthUpdate> const &event) {
     auto first_sequence = depth_update.first_update_id;
     auto last_sequence = depth_update.final_update_id;
     auto previous_sequence = first_sequence - 1;
-    auto &instrument = shared_.instruments[symbol];
+    auto &instrument = shared_.get_instrument(symbol);
     if (!instrument.mbp_update(depth_update.final_update_id))
       return;
     auto &sequencer = instrument.sequencer;
@@ -457,8 +457,8 @@ void MarketData::operator()(Trace<json::DepthUpdate> const &event) {
             .stream_id = stream_id_,
             .exchange = shared_.settings.exchange,
             .symbol = symbol,
-            .bids = {const_cast<MBPUpdate *>(std::data(bids)), std::size(bids)},  // FIXME
-            .asks = {const_cast<MBPUpdate *>(std::data(asks)), std::size(asks)},  // FIXME
+            .bids = bids,
+            .asks = asks,
             .update_type = update_type,
             .exchange_time_utc = {},
             .exchange_sequence = exchange_sequence,
@@ -469,19 +469,23 @@ void MarketData::operator()(Trace<json::DepthUpdate> const &event) {
         };
       };
       auto publish_update = [&](auto &bids, auto &asks) {
-        // log::debug(R"(PUBLISH UPDATE symbol="{}")"sv, symbol);
         auto market_by_price_update = create_update(bids, asks, UpdateType::INCREMENTAL, last_sequence);
         create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true);
       };
-      auto publish_snapshot = [&](auto &bids, auto &asks, auto sequence) {
-        log::debug(R"(PUBLISH SNAPSHOT symbol="{}", sequence={})"sv, symbol, sequence);
+      auto publish_snapshot = [&](auto &bids, auto &asks, auto sequence, auto retries, auto delay) {
+        log::info(
+            R"(DEBUG PUBLISH SNAPSHOT symbol="{}", sequence={}, retries={}, delay={})"sv,
+            symbol,
+            sequence,
+            retries,
+            std::chrono::duration_cast<std::chrono::milliseconds>(delay));
         auto market_by_price_update = create_update(bids, asks, UpdateType::SNAPSHOT, sequencer.last_sequence());
         auto apply_updates = [&](auto &market_by_price) { sequencer.apply(market_by_price, sequence, false); };
         Trace event{trace_info, market_by_price_update};
         shared_(event, true, apply_updates);
       };
       auto request_snapshot = [&](auto retries) {
-        log::debug(R"(REQUEST symbol="{}" (retries={}))"sv, symbol, retries);
+        log::info(R"(DEBUG REQUEST SNAPSHOT symbol="{}", retries={})"sv, symbol, retries);
         if (shared_.settings.ws.mbp_request_max_retries && shared_.settings.ws.mbp_request_max_retries < retries) {
           log::fatal(R"(Unexpected: symbol="{}", retries={})"sv, symbol, retries);
         }

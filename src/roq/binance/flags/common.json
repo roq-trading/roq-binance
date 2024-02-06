@@ -41,6 +41,13 @@
       "description": "max depth levels (count)"
     },
     {
+      "name": "mbp_sequencer_timeout",
+      "type": "std::chrono::nanoseconds",
+      "validator": "roq::flags::validators::TimePeriod",
+      "default": "120s",
+      "description": "mbp sequencer timeout"
+    },
+    {
       "name": "cancel_replace_stop_on_failure",
       "type": "bool",
       "default": false,
