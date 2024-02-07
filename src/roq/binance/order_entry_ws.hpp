@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "roq/utils/metrics/counter.hpp"
+#include "roq/utils/metrics/gauge.hpp"
 #include "roq/utils/metrics/latency.hpp"
 #include "roq/utils/metrics/profile.hpp"
 
@@ -148,6 +149,9 @@ struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handl
   struct {
     utils::metrics::Latency ping, heartbeat;
   } latency_;
+  struct {
+    utils::metrics::Gauge minute;
+  } rate_limiter_;
   // authentication
   Account &account_;
   // shared

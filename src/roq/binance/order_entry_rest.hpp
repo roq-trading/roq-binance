@@ -9,6 +9,7 @@
 #include <string_view>
 
 #include "roq/utils/metrics/counter.hpp"
+#include "roq/utils/metrics/gauge.hpp"
 #include "roq/utils/metrics/latency.hpp"
 #include "roq/utils/metrics/profile.hpp"
 
@@ -82,6 +83,7 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
   // web::rest::Client::Handler
   void operator()(Trace<web::rest::Client::Connected> const &) override;
   void operator()(Trace<web::rest::Client::Disconnected> const &) override;
+  void operator()(Trace<web::rest::Client::Header> const &) override;
   void operator()(Trace<web::rest::Client::Latency> const &) override;
 
   void operator()(ConnectionStatus);
@@ -158,7 +160,7 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
   void operator()(Trace<oms::OrderUpdate> const &, std::string_view const &client_order_id);
 
   template <typename Parse, typename Callback>
-  void dispatch_error_2(web::http::Category, web::http::Status, Parse, Callback);  // XXX
+  void dispatch_error_2(web::rest::Response const &, web::http::Category, web::http::Status, Parse, Callback);  // XXX
 
   void test(web::http::Status);  // XXX
   void waf_limit_violation();
@@ -190,6 +192,9 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
   struct {
     utils::metrics::Latency ping;
   } latency_;
+  struct {
+    utils::metrics::Gauge minute;
+  } rate_limiter_;
   // authentication
   Account &account_;
   // shared

@@ -7,10 +7,9 @@
 
 #include "roq/mask.hpp"
 
+#include "roq/utils/charconv.hpp"
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
-
-#include "roq/core/charconv.hpp"
 
 #include "roq/core/metrics/factory.hpp"
 
@@ -124,6 +123,9 @@ OrderEntryREST::OrderEntryREST(
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
       },
+      rate_limiter_{
+          .minute = create_metrics(shared.settings, name_, "1m"sv),
+      },
       account_{account}, shared_{shared}, request_{request},
       download_{shared.settings.rest.request_timeout, [this](auto state) { return download(state); }} {
 }
@@ -181,7 +183,9 @@ void OrderEntryREST::operator()(metrics::Writer &writer) {
       .write(profile_.cancel_all_open_orders, metrics::Type::PROFILE)
       .write(profile_.cancel_all_open_orders_ack, metrics::Type::PROFILE)
       // latency
-      .write(latency_.ping, metrics::Type::LATENCY);
+      .write(latency_.ping, metrics::Type::LATENCY)
+      // rate limiter
+      .write(rate_limiter_.minute, metrics::Type::RATE_LIMITER);
 }
 
 void OrderEntryREST::operator()(Event<Disconnected> const &event) {
@@ -259,6 +263,19 @@ void OrderEntryREST::operator()(Trace<web::rest::Client::Disconnected> const &) 
     download_.reset();
   download_account_ = false;
   download_orders_ = false;
+}
+
+void OrderEntryREST::operator()(Trace<web::rest::Client::Header> const &event) {
+  auto &header = event.value;
+  if (header.name == "x-mbx-used-weight-1m"sv) {
+    log::info("DEBUG header={}"sv, header);
+    try {
+      auto value = utils::from_string_relaxed<int64_t>(header.value);
+      rate_limiter_.minute.set(value);
+    } catch (RuntimeError &) {
+      log::warn<5>(R"(Failed to parse text="{}")"sv, header.value);
+    }
+  }
 }
 
 void OrderEntryREST::operator()(Trace<web::rest::Client::Latency> const &event) {
@@ -942,7 +959,7 @@ void OrderEntryREST::cancel_replace_order_ack(
             Trace event{trace_info, cancel_replace_order_error};
             (*this)(event, user_id, cancel_order_id, cancel_version, create_order_id, create_version);
           };
-          dispatch_error_2(category, status, parse, [&]([[maybe_unused]] auto status, auto error, auto text) {
+          dispatch_error_2(response, category, status, parse, [&]([[maybe_unused]] auto status, auto error, auto text) {
             {  // cancel
               auto response = oms::Response{
                   .request_type = RequestType::CANCEL_ORDER,
@@ -1624,10 +1641,30 @@ void OrderEntryREST::operator()(Trace<oms::OrderUpdate> const &event, std::strin
   }
 }
 
+namespace {
+auto get_retry_after(auto &response) {
+  std::chrono::nanoseconds result = {};
+  response.dispatch(web::http::Header::RETRY_AFTER, [&](auto &value) {
+    try {
+      // XXX FIXME could also be a datetime (see https://datatracker.ietf.org/doc/html/rfc7231)
+      auto seconds = utils::from_string_relaxed<int64_t>(value);
+      result = std::chrono::seconds{seconds};
+    } catch (RuntimeError &) {
+      log::warn<5>(R"(Failed to parse text="{}")"sv, value);
+    }
+  });
+  return result;
+}
+}  // namespace
+
 // note! used by cancel-replace
 template <typename Parse, typename Callback>
 void OrderEntryREST::dispatch_error_2(
-    web::http::Category category, web::http::Status status, Parse parse, Callback callback) {
+    web::rest::Response const &response,
+    web::http::Category category,
+    web::http::Status status,
+    Parse parse,
+    Callback callback) {
   switch (category) {
     using enum web::http::Category;
     case UNKNOWN:
@@ -1651,6 +1688,9 @@ void OrderEntryREST::dispatch_error_2(
           case FORBIDDEN:            // 403
           case I_AM_A_TEAPOT:        // 418
           case TOO_MANY_REQUESTS: {  // 429
+            auto retry_after = get_retry_after(response);
+            if (retry_after.count())
+              (*connection_).suspend(retry_after);
             auto text = fmt::format("{}"sv, status);
             callback(RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, text);
             break;

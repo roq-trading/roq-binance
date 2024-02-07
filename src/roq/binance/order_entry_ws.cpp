@@ -131,6 +131,9 @@ OrderEntryWS::OrderEntryWS(
           .ping = create_metrics(shared.settings, name_, "ping"sv),
           .heartbeat = create_metrics(shared.settings, name_, "heartbeat"sv),
       },
+      rate_limiter_{
+          .minute = create_metrics(shared.settings, name_, "1m"sv),
+      },
       account_{account}, shared_{shared}, request_{request}, request_id_{REQUEST_ID} {
 }
 
@@ -191,7 +194,9 @@ void OrderEntryWS::operator()(metrics::Writer &writer) {
       .write(profile_.order_cancel_replace_error, metrics::Type::PROFILE)
       // latency
       .write(latency_.ping, metrics::Type::LATENCY)
-      .write(latency_.heartbeat, metrics::Type::LATENCY);
+      .write(latency_.heartbeat, metrics::Type::LATENCY)
+      // rate limiter
+      .write(rate_limiter_.minute, metrics::Type::RATE_LIMITER);
 }
 
 void OrderEntryWS::operator()(Event<Disconnected> const &event) {
