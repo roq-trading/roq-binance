@@ -79,10 +79,10 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
  protected:
   bool downloading() const { return download_account_ || download_orders_ || download_trades_; }
 
+  // web::rest::Client::Handler
   void operator()(Trace<web::rest::Client::Connected> const &) override;
   void operator()(Trace<web::rest::Client::Disconnected> const &) override;
   void operator()(Trace<web::rest::Client::Latency> const &) override;
-  void operator()(Trace<web::rest::Response> const &, uint64_t request_id, uint64_t opaque) override;
 
   void operator()(ConnectionStatus);
 
@@ -108,7 +108,6 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
 
   void new_order(Event<CreateOrder> const &, oms::Order const &order, std::string_view const &request_id);
   void new_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
-  void new_order_ack_2(Trace<web::rest::Response> const &, uint64_t opaque);
   void operator()(Trace<json::NewOrder> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
 
   void cancel_replace_order(
@@ -123,7 +122,6 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
       uint32_t cancel_version,
       uint64_t create_order_id,
       uint32_t create_version);
-  void cancel_replace_order_ack_2(Trace<web::rest::Response> const &, uint64_t opaque);
   void operator()(
       Trace<json::CancelReplaceOrder> const &,
       uint8_t user_id,
@@ -145,7 +143,6 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
       std::string_view const &request_id,
       std::string_view const &previous_request_id);
   void cancel_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
-  void cancel_order_ack_2(Trace<web::rest::Response> const &, uint64_t opaque);
   void operator()(Trace<json::CancelOrder> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
 
   void cancel_all_open_orders(Event<CancelAllOrders> const &, std::string_view const &request_id);

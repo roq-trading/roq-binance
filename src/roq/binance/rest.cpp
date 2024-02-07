@@ -9,11 +9,11 @@
 
 #include "roq/utils/update.hpp"
 
-#include "roq/core/charconv.hpp"
+#include "roq/utils/charconv.hpp"
 
 #include "roq/core/metrics/factory.hpp"
 
-#include "roq/web/rest/client_factory.hpp"
+#include "roq/web/rest/client.hpp"
 
 #include "roq/binance/utils.hpp"
 
@@ -22,8 +22,6 @@
 #include "roq/binance/json/utils.hpp"
 
 using namespace std::literals;
-
-// #define TEST_REQ
 
 namespace roq {
 namespace binance {
@@ -70,39 +68,13 @@ auto create_connection(auto &handler, auto &settings, auto &context) {
       .encode_buffer_size = settings.common.encode_buffer_size,
       .allow_pipelining = true,
   };
-#if defined(TEST_REQ)
-  return web::rest::ClientFactory::create_2(handler, context, config);
-#else
-  return web::rest::ClientFactory::create(handler, context, config);
-#endif
+  return web::rest::Client::create(handler, context, config);
 }
 
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(auto &settings, auto const &group, auto const &function)
       : core::metrics::Factory(settings.app.name, group, function) {}
 };
-
-enum class Type : uint8_t {
-  UNDEFINED,
-  GET_EXCHANGE_INFO,
-  GET_DEPTH,
-};
-
-#if defined(TEST_REQ)
-constexpr auto encode_opaque(Type type, uint32_t sequence_or_symbol) {
-  return uint64_t{static_cast<uint8_t>(type)} | (uint64_t{sequence_or_symbol} << 8);
-}
-#endif
-
-constexpr auto type_from_opaque(uint64_t opaque) {
-  auto const bitmask = (uint64_t{1} << 8) - 1;
-  return Type{static_cast<uint8_t>(opaque & bitmask)};
-}
-
-constexpr auto sequence_or_symbol_from_opaque(uint64_t opaque) {
-  auto const bitmask = (uint64_t{1} << 32) - 1;
-  return static_cast<uint32_t>((opaque >> 8) & bitmask);
-}
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -123,6 +95,9 @@ Rest::Rest(Handler &handler, io::Context &context, uint16_t stream_id, Shared &s
       },
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
+      },
+      rate_limiter_{
+          .minute = create_metrics(shared.settings, name_, "1m"sv),
       },
       shared_{shared}, download_{shared.settings.rest.request_timeout, [this](auto state) { return download(state); }} {
 }
@@ -152,7 +127,9 @@ void Rest::operator()(metrics::Writer &writer) {
       .write(profile_.depth, metrics::Type::PROFILE)
       .write(profile_.depth_ack, metrics::Type::PROFILE)
       // latency
-      .write(latency_.ping, metrics::Type::LATENCY);
+      .write(latency_.ping, metrics::Type::LATENCY)
+      // rate limiter
+      .write(rate_limiter_.minute, metrics::Type::RATE_LIMITER);
 }
 
 void Rest::operator()(Trace<web::rest::Client::Connected> const &) {
@@ -172,6 +149,19 @@ void Rest::operator()(Trace<web::rest::Client::Disconnected> const &) {
     download_.reset();
 }
 
+void Rest::operator()(Trace<web::rest::Client::Header> const &event) {
+  auto &header = event.value;
+  if (header.name == "x-mbx-used-weight-1m"sv) {
+    log::info("DEBUG header={}"sv, header);
+    try {
+      auto value = utils::from_string_relaxed<int64_t>(header.value);
+      rate_limiter_.minute.set(value);
+    } catch (RuntimeError &) {
+      log::warn<5>(R"(Failed to parse text="{}")"sv, header.value);
+    }
+  }
+}
+
 void Rest::operator()(Trace<web::rest::Client::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
@@ -181,22 +171,6 @@ void Rest::operator()(Trace<web::rest::Client::Latency> const &event) {
   };
   create_trace_and_dispatch(handler_, trace_info, external_latency);
   latency_.ping.update(latency.sample);
-}
-
-void Rest::operator()(Trace<web::rest::Response> const &event, [[maybe_unused]] uint64_t request_id, uint64_t opaque) {
-  auto type = type_from_opaque(opaque);
-  switch (type) {
-    using enum Type;
-    case UNDEFINED:
-      break;
-    case GET_EXCHANGE_INFO:
-      get_exchange_info_ack_2(event, opaque);
-      return;
-    case GET_DEPTH:
-      get_depth_ack_2(event, opaque);
-      return;
-  }
-  log::fatal("Unexpected"sv);
 }
 
 void Rest::operator()(ConnectionStatus status) {
@@ -254,17 +228,12 @@ void Rest::get_exchange_info() {
         .body = {},
         .quality_of_service = {},
     };
-#if defined(TEST_REQ)
-    auto opaque = encode_opaque(Type::GET_EXCHANGE_INFO, download_.sequence());
-    (*connection_)(request, opaque);
-#else
     auto callback = [this, sequence = download_.sequence()]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
       get_exchange_info_ack(event, sequence);
     };
     (*connection_)("exchange_info"sv, request, callback);
-#endif
   });
 }
 
@@ -289,11 +258,6 @@ void Rest::get_exchange_info_ack(Trace<web::rest::Response> const &event, uint32
     };
     process_response(event, handle_success, handle_error);
   });
-}
-
-void Rest::get_exchange_info_ack_2(Trace<web::rest::Response> const &event, uint64_t opaque) {
-  auto sequence = sequence_or_symbol_from_opaque(opaque);
-  get_exchange_info_ack(event, sequence);
 }
 
 void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
@@ -430,18 +394,12 @@ void Rest::get_depth(std::string_view const &symbol) {
         .body = {},
         .quality_of_service = {},
     };
-#if defined(TEST_REQ)
-    auto symbol_id = shared_.get_symbol_id(shared_.settings.exchange, symbol);
-    auto opaque = encode_opaque(Type::GET_DEPTH, symbol_id);
-    [[maybe_unused]] auto request_id = (*connection_)(request, opaque);
-#else
     auto callback = [this, symbol = std::string{symbol}]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
       get_depth_ack(event, symbol);
     };
     (*connection_)("depth"sv, request, callback);
-#endif
   });
 }
 
@@ -458,12 +416,6 @@ void Rest::get_depth_ack(Trace<web::rest::Response> const &event, std::string_vi
     };
     process_response(event, handle_success, handle_error);
   });
-}
-
-void Rest::get_depth_ack_2(Trace<web::rest::Response> const &event, uint64_t opaque) {
-  auto symbol_id = sequence_or_symbol_from_opaque(opaque);
-  auto [exchange, symbol] = shared_.get_exchange_symbol(symbol_id);
-  get_depth_ack(event, symbol);
 }
 
 void Rest::operator()(Trace<json::Depth> const &event, std::string_view const &symbol) {
@@ -540,6 +492,22 @@ void Rest::check_request_queue(std::chrono::nanoseconds now) {
   shared_.depth_request_queue.dispatch(can_request, request, now);
 }
 
+namespace {
+auto get_retry_after(auto &response) {
+  std::chrono::nanoseconds result = {};
+  response.dispatch(web::http::Header::RETRY_AFTER, [&](auto &value) {
+    try {
+      // XXX FIXME could also be a datetime (see https://datatracker.ietf.org/doc/html/rfc7231)
+      auto seconds = utils::from_string_relaxed<int64_t>(value);
+      result = std::chrono::seconds{seconds};
+    } catch (RuntimeError &) {
+      log::warn<5>(R"(Failed to parse text="{}")"sv, value);
+    }
+  });
+  return result;
+}
+}  // namespace
+
 template <typename SuccessHandler, typename ErrorHandler>
 void Rest::process_response(
     web::rest::Response const &response, SuccessHandler success_handler, ErrorHandler error_handler) {
@@ -559,6 +527,9 @@ void Rest::process_response(
             [[fallthrough]];
           case I_AM_A_TEAPOT:        // 418
           case TOO_MANY_REQUESTS: {  // 429
+            auto retry_after = get_retry_after(response);
+            if (retry_after.count())
+              (*connection_).suspend(retry_after);
             auto text = fmt::format("{}"sv, status);
             error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, text);
             break;

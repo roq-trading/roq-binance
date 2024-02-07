@@ -14,14 +14,12 @@
 
 #include "roq/core/metrics/factory.hpp"
 
-#include "roq/web/rest/client_factory.hpp"
+#include "roq/web/rest/client.hpp"
 
 #include "roq/binance/json/error.hpp"
 #include "roq/binance/json/utils.hpp"
 
 using namespace std::literals;
-
-// #define TEST_REQ  // XXX REMOVE doesn't work after order_id is uint64_t
 
 namespace roq {
 namespace binance {
@@ -71,11 +69,7 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &inter
       .encode_buffer_size = settings.common.encode_buffer_size,
       .allow_pipelining = true,
   };
-#if defined(TEST_REQ)
-  return web::rest::ClientFactory::create_2(handler, context, config);
-#else
-  return web::rest::ClientFactory::create(handler, context, config);
-#endif
+  return web::rest::Client::create(handler, context, config);
 }
 
 struct create_metrics final : public core::metrics::Factory {
@@ -90,53 +84,6 @@ auto get_download_trades_lookback(auto const &settings, auto download_trades_is_
   }
   return settings.common.download_trades_lookback;
 }
-
-enum class Type : uint8_t {
-  UNDEFINED,
-  GET_LISTEN_KEY,
-  GET_ACCOUNT,
-  GET_OPEN_ORDERS,
-  NEW_ORDER,
-  CANCEL_REPLACE_ORDER,
-  CANCEL_ORDER,
-  CANCEL_ALL_OPEN_ORDERS,
-};
-
-#if defined(TEST_REQ)
-constexpr auto encode_opaque(Type type) {
-  return uint64_t{static_cast<uint8_t>(type)};
-}
-
-constexpr auto encode_opaque(Type type, uint8_t user_id, uint64_t order_id, uint32_t version) {
-  assert(false);  // XXX REMOVE doesn't work after order_id is uint64_t
-  auto const bitmask = (uint64_t{1} << 24) - 1;
-  return uint64_t{static_cast<uint8_t>(type)} | (uint64_t{user_id} << 8) | ((uint64_t{order_id} & bitmask) << 16) |
-         ((uint64_t{version} & bitmask) << 40);
-}
-#endif
-
-constexpr auto type_from_opaque(uint64_t opaque) {
-  auto const bitmask = (uint64_t{1} << 8) - 1;
-  return Type{static_cast<uint8_t>(opaque & bitmask)};
-}
-
-constexpr std::tuple<uint8_t, uint64_t, uint32_t> order_request_from_opaque(uint64_t opaque) {
-  auto const bitmask_1 = (uint64_t{1} << 8) - 1;
-  auto const bitmask_2 = (uint64_t{1} << 24) - 1;
-  auto user_id = static_cast<uint8_t>((opaque >> 8) & bitmask_1);
-  auto order_id = static_cast<uint32_t>((opaque >> 16) & bitmask_2);  // XXX TODO uint32_t -> uint64_t order_id
-  auto version = static_cast<uint32_t>((opaque >> 40) & bitmask_2);
-  return {user_id, order_id, version};
-}
-
-// --- test ---
-
-/*
-static_assert(encode_opaque(Type::GET_LISTEN_KEY) == uint64_t{1});
-static_assert(
-    encode_opaque(Type::NEW_ORDER, 1, 2, 3) ==
-    (uint64_t{4} | (uint64_t{1} << 8) | (uint64_t{2} << 16) | (uint64_t{3} << 40)));
-*/
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -325,38 +272,6 @@ void OrderEntryREST::operator()(Trace<web::rest::Client::Latency> const &event) 
   latency_.ping.update(latency.sample);
 }
 
-void OrderEntryREST::operator()(
-    Trace<web::rest::Response> const &event, [[maybe_unused]] uint64_t request_id, uint64_t opaque) {
-  auto type = type_from_opaque(opaque);
-  switch (type) {
-    using enum Type;
-    case UNDEFINED:
-      break;
-    case GET_LISTEN_KEY:
-      get_listen_key_ack(event);
-      return;
-    case GET_ACCOUNT:
-      get_account_ack(event);
-      return;
-    case GET_OPEN_ORDERS:
-      get_open_orders_ack(event);
-      return;
-    case NEW_ORDER:
-      new_order_ack_2(event, opaque);
-      return;
-    case CANCEL_REPLACE_ORDER:
-      cancel_replace_order_ack_2(event, opaque);
-      return;
-    case CANCEL_ORDER:
-      cancel_order_ack_2(event, opaque);
-      return;
-    case CANCEL_ALL_OPEN_ORDERS:
-      cancel_all_open_orders_ack(event, {});
-      return;
-  }
-  log::fatal("Unexpected"sv);
-}
-
 void OrderEntryREST::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     TraceInfo trace_info;
@@ -417,17 +332,12 @@ void OrderEntryREST::get_listen_key() {
         .body = {},
         .quality_of_service = {},
     };
-#if defined(TEST_REQ)
-    auto opaque = encode_opaque(Type::GET_LISTEN_KEY);
-    (*connection_)(request, opaque);
-#else
     auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
       get_listen_key_ack(event);
     };
     (*connection_)("listen_key"sv, request, callback);
-#endif
   });
 }
 
@@ -487,17 +397,12 @@ void OrderEntryREST::get_account() {
         .body = {},
         .quality_of_service = {},
     };
-#if defined(TEST_REQ)
-    auto opaque = encode_opaque(Type::GET_ACCOUNT);
-    (*connection_)(request, opaque);
-#else
     auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
       get_account_ack(event);
     };
     (*connection_)("account"sv, request, callback);
-#endif
   });
 }
 
@@ -567,17 +472,12 @@ void OrderEntryREST::get_open_orders() {
         .body = {},
         .quality_of_service = {},
     };
-#if defined(TEST_REQ)
-    auto opaque = encode_opaque(Type::GET_OPEN_ORDERS);
-    (*connection_)(request, opaque);
-#else
     auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
       get_open_orders_ack(event);
     };
     (*connection_)("open_orders"sv, request, callback);
-#endif
   });
 }
 
@@ -791,10 +691,6 @@ void OrderEntryREST::new_order(
         .body = body,
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
-#if defined(TEST_REQ)
-    auto opaque = encode_opaque(Type::NEW_ORDER, message_info.source, create_order.order_id, 1);
-    (*connection_)(request, opaque);
-#else
     auto callback = [this, user_id = message_info.source, order_id = create_order.order_id](
                         [[maybe_unused]] auto &request_id, auto &response) {
       auto version = uint32_t{1};
@@ -803,7 +699,6 @@ void OrderEntryREST::new_order(
       new_order_ack(event, user_id, order_id, version);
     };
     (*connection_)(request_id, request, callback);
-#endif
   });
 }
 
@@ -834,11 +729,6 @@ void OrderEntryREST::new_order_ack(
     };
     process_response(event, handle_success, handle_error);
   });
-}
-
-void OrderEntryREST::new_order_ack_2(Trace<web::rest::Response> const &event, uint64_t opaque) {
-  auto [user_id, order_id, version] = order_request_from_opaque(opaque);
-  new_order_ack(event, user_id, order_id, version);
 }
 
 void OrderEntryREST::operator()(
@@ -955,26 +845,17 @@ void OrderEntryREST::cancel_replace_order(
                   .body = body,
                   .quality_of_service = io::QualityOfService::IMMEDIATE,
               };
-#if defined(TEST_REQ)
-              // XXX also encode create_order (need a cache)
-              auto opaque = encode_opaque(
-                  Type::CANCEL_REPLACE_ORDER,
-                  message_info.source,
-                  cancel_order_request.cancel_order.order_id,
-                  cancel_order_request.cancel_order.order_id);
-              (*connection_)(request, opaque);
-#else
               auto callback = [this,
                                user_id = message_info.source,
                                cancel_order_id = cancel_order_request.cancel_order.order_id,
                                cancel_version = cancel_order_request.cancel_order.version,
-                               create_order_id = create_order.order_id]([[maybe_unused]] auto &request_id, auto &response) {
+                               create_order_id = create_order.order_id](
+                                  [[maybe_unused]] auto &request_id, auto &response) {
                 TraceInfo trace_info;
                 Trace event{trace_info, response};
                 cancel_replace_order_ack(event, user_id, cancel_order_id, cancel_version, create_order_id, uint32_t{1});
               };
               (*connection_)(request_id, request, callback);
-#endif
             })) {
     } else {
       throw oms::Rejected{Origin::GATEWAY, Error::CONDITIONAL_REQUEST_HAS_FAILED, "internal error"sv};
@@ -1156,10 +1037,6 @@ void OrderEntryREST::cancel_replace_order_ack(
       }
     }
   });
-}
-
-void OrderEntryREST::cancel_replace_order_ack_2(Trace<web::rest::Response> const &, [[maybe_unused]] uint64_t opaque) {
-  log::fatal("Not implemented"sv);  // HANS
 }
 
 void OrderEntryREST::operator()(
@@ -1420,10 +1297,6 @@ void OrderEntryREST::cancel_order(
         .body = body,
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
-#if defined(TEST_REQ)
-    auto opaque = encode_opaque(Type::CANCEL_ORDER, message_info.source, cancel_order.order_id, cancel_order.version);
-    (*connection_)(request, opaque);
-#else
     auto callback =
         [this, user_id = message_info.source, order_id = cancel_order.order_id, version = cancel_order.version](
             [[maybe_unused]] auto &request_id, auto &response) {
@@ -1432,7 +1305,6 @@ void OrderEntryREST::cancel_order(
           cancel_order_ack(event, user_id, order_id, version);
         };
     (*connection_)(request_id, request, callback);
-#endif
   });
 }
 
@@ -1462,11 +1334,6 @@ void OrderEntryREST::cancel_order_ack(
     };
     process_response(event, handle_success, handle_error);
   });
-}
-
-void OrderEntryREST::cancel_order_ack_2(Trace<web::rest::Response> const &event, uint64_t opaque) {
-  auto [user_id, order_id, version] = order_request_from_opaque(opaque);
-  cancel_order_ack(event, user_id, order_id, version);
 }
 
 void OrderEntryREST::operator()(
@@ -1573,10 +1440,6 @@ void OrderEntryREST::cancel_all_open_orders(Event<CancelAllOrders> const &event,
           .body = body,
           .quality_of_service = io::QualityOfService::IMMEDIATE,
       };
-#if defined(TEST_REQ)
-      auto opaque = encode_opaque(Type::CANCEL_ALL_OPEN_ORDERS);
-      (*connection_)(request, opaque);
-#else
       auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
         TraceInfo trace_info;
         Trace event{trace_info, response};
@@ -1584,7 +1447,6 @@ void OrderEntryREST::cancel_all_open_orders(Event<CancelAllOrders> const &event,
       };
       (*connection_)(request_id, request, callback);
       send_ack(symbol);
-#endif
     }
   });
 }
