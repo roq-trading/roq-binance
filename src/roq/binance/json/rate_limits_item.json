@@ -1,0 +1,26 @@
+{
+  "name": "RateLimitsItem",
+  "type": "array_item",
+  "values": [
+    {
+      "name": "rateLimitType",
+      "type": "RateLimitType"
+    },
+    {
+      "name": "interval",
+      "type": "Interval"
+    },
+    {
+      "name": "intervalNum",
+      "type": "uint32_t"
+    },
+    {
+      "name": "limit",
+      "type": "uint32_t"
+    },
+    {
+      "name": "count",
+      "type": "uint32_t"
+    }
+  ]
+}

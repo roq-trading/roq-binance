@@ -32,6 +32,7 @@ set(AUTOGEN_SCHEMAS
     filter.json
     filters.json
     filter_type.json
+    interval.json
     listen_key.json
     list_status_item.json
     list_status.json
@@ -42,6 +43,8 @@ set(AUTOGEN_SCHEMAS
     order_status.json
     order_type.json
     outbound_account_position.json
+    rate_limits_item.json
+    rate_limit_type.json
     result.json
     self_trade_prevention_mode.json
     side.json

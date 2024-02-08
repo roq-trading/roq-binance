@@ -26,6 +26,7 @@ fill.hpp
 filter.hpp
 filters.hpp
 filter_type.hpp
+interval.hpp
 listen_key.hpp
 list_status_item.hpp
 list_status.hpp
@@ -36,6 +37,8 @@ order.hpp
 order_status.hpp
 order_type.hpp
 outbound_account_position.hpp
+rate_limits_item.hpp
+rate_limit_type.hpp
 result.hpp
 self_trade_prevention_mode.hpp
 side.hpp
@@ -76,6 +79,7 @@ fill.cpp
 filter.cpp
 filters.cpp
 filter_type.cpp
+interval.cpp
 listen_key.cpp
 list_status_item.cpp
 list_status.cpp
@@ -86,6 +90,8 @@ order.cpp
 order_status.cpp
 order_type.cpp
 outbound_account_position.cpp
+rate_limits_item.cpp
+rate_limit_type.cpp
 result.cpp
 self_trade_prevention_mode.cpp
 side.cpp
