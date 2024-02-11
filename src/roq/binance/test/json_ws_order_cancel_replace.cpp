@@ -6,6 +6,8 @@
 
 #include "roq/binance/json/ws_api_parser.hpp"
 
+#include "roq/binance/json/ws_api_cancel_replace_order.hpp"
+
 using namespace roq;
 using namespace roq::binance;
 
@@ -127,4 +129,28 @@ TEST_CASE("simple", "[json_ws_order_cancel_replace]") {
   auto result = json::WSAPIParser::dispatch(handler, message, buffer, trace_info);
   CHECK(result == true);
   CHECK(handler.counter == 1);
+
+  // new
+
+  json::WSAPICancelReplaceOrder obj{message, buffer};
+  auto &rate_limits = obj.rate_limits;
+  REQUIRE(std::size(rate_limits) == 3);
+  auto &rl0 = rate_limits[0];
+  CHECK(rl0.rate_limit_type == json::RateLimitType::ORDERS);
+  CHECK(rl0.interval == json::Interval::SECOND);
+  CHECK(rl0.interval_num == 10);
+  CHECK(rl0.limit == 50);
+  CHECK(rl0.count == 2);
+  auto &rl1 = rate_limits[1];
+  CHECK(rl1.rate_limit_type == json::RateLimitType::ORDERS);
+  CHECK(rl1.interval == json::Interval::DAY);
+  CHECK(rl1.interval_num == 1);
+  CHECK(rl1.limit == 160000);
+  CHECK(rl1.count == 19);
+  auto &rl2 = rate_limits[2];
+  CHECK(rl2.rate_limit_type == json::RateLimitType::REQUEST_WEIGHT);
+  CHECK(rl2.interval == json::Interval::MINUTE);
+  CHECK(rl2.interval_num == 1);
+  CHECK(rl2.limit == 1200);
+  CHECK(rl2.count == 18);
 }

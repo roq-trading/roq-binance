@@ -51,7 +51,7 @@ TEST_CASE("json_cancel_replace_order_simple", "[json_cancel_replace_order]") {
                  R"(})"
                  R"(})";
   std::vector<std::byte> buffer(8192);
-  auto obj = json::CancelReplaceOrder::create(message, buffer);
+  json::CancelReplaceOrder obj{message, buffer};
   CHECK(obj.cancel_result == json::SuccessOrFailure::SUCCESS);
   CHECK(obj.new_order_result == json::SuccessOrFailure::SUCCESS);
   // cancel order

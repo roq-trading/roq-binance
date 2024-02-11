@@ -244,7 +244,7 @@ void Rest::get_exchange_info_ack(Trace<web::rest::Response> const &event, uint32
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
-        auto exchange_info = json::ExchangeInfo::create(body, decode_buffer_);
+        json::ExchangeInfo exchange_info{body, decode_buffer_};
         // log::debug("exchange_info={}"sv, exchange_info);
         Trace event_2{event, exchange_info};
         (*this)(event_2);
@@ -274,7 +274,7 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
     auto trade_vol_step_size = min_trade_vol;
     auto min_notional = NaN;
     // parse filters and update
-    auto filters = json::Filters::create(item.filters, decode_buffer_2_);
+    json::Filters filters{item.filters, decode_buffer_2_};
     for (auto &filter : filters.data) {
       switch (filter.filter_type) {
         using enum json::FilterType::type_t;
@@ -406,7 +406,7 @@ void Rest::get_depth(std::string_view const &symbol) {
 void Rest::get_depth_ack(Trace<web::rest::Response> const &event, std::string_view const &symbol) {
   profile_.depth_ack([&]() {
     auto handle_success = [&](auto &body) {
-      auto depth = json::Depth::create(body, decode_buffer_);
+      json::Depth depth{body, decode_buffer_};
       Trace event_2{event, depth};
       (*this)(event_2, symbol);
     };

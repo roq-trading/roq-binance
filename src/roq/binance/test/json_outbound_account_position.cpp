@@ -35,7 +35,7 @@ TEST_CASE("json_outbound_account_position_simple", "[json_outbound_account_posit
                  R"(])"
                  R"(})";
   std::vector<std::byte> buffer(8192);
-  auto obj = json::OutboundAccountPosition::create(message, buffer);
+  json::OutboundAccountPosition obj{message, buffer};
   CHECK(obj.event_type == json::EventType::OUTBOUND_ACCOUNT_POSITION);
   CHECK(obj.event_time == 1634285425303ms);
   CHECK(obj.time_of_last_account_update == 1634285425302ms);

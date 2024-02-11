@@ -37,7 +37,7 @@ TEST_CASE("json_new_order_simple", "[json_new_order]") {
                  R"("fills":[])"
                  R"(})";
   std::vector<std::byte> buffer(8192);
-  auto obj = json::NewOrder::create(message, buffer);
+  json::NewOrder obj{message, buffer};
   CHECK(obj.symbol == "LTCBTC"sv);
   CHECK(obj.order_id == 778507063);
   CHECK(obj.order_list_id == -1);
@@ -71,7 +71,7 @@ TEST_CASE("json_new_order_simple_maker", "[json_new_order]") {
                  R"("fills":[])"
                  R"(})";
   std::vector<std::byte> buffer(8192);
-  auto obj = json::NewOrder::create(message, buffer);
+  json::NewOrder obj{message, buffer};
   CHECK(obj.symbol == "LTCUSDT"sv);
   CHECK(obj.order_id == 2426862755);
   CHECK(obj.order_list_id == -1);
@@ -113,7 +113,7 @@ TEST_CASE("json_new_order_simple_taker", "[json_new_order]") {
                  R"(])"
                  R"(})";
   std::vector<std::byte> buffer(8192);
-  auto obj = json::NewOrder::create(message, buffer);
+  json::NewOrder obj{message, buffer};
   CHECK(obj.symbol == "LTCUSDT"sv);
   CHECK(obj.order_id == 2426923399);
   CHECK(obj.order_list_id == -1);

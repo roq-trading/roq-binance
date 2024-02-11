@@ -21,7 +21,7 @@ void UserStreamParser::dispatch(
     TraceInfo const &trace_info) {
   // XXX HANS this is bad... 3 levels of parsing
   // XXX HANS buffer will not be used for first iteration
-  auto user_stream = UserStream::create(message, buffer);
+  UserStream user_stream{message, buffer};
   auto &data = user_stream.data;
   core::json::Parser parser{data};
   auto root = parser.root();
@@ -55,7 +55,7 @@ bool UserStreamParser::try_dispatch(
       log::fatal("Unexpected"sv);
       break;
     case OUTBOUND_ACCOUNT_POSITION: {
-      auto outbound_account_position = OutboundAccountPosition::create(message, buffer);
+      OutboundAccountPosition outbound_account_position{message, buffer};
       Trace event{trace_info, outbound_account_position};
       handler(event);
       break;
@@ -73,7 +73,7 @@ bool UserStreamParser::try_dispatch(
       break;
     }
     case LIST_STATUS: {
-      auto list_status = ListStatus::create(message, buffer);
+      ListStatus list_status{message, buffer};
       Trace event{trace_info, list_status};
       handler(event);
       break;

@@ -1,6 +1,6 @@
 {
   "name": "RateLimitsItem",
-  "type": "array_item",
+  "type": "item",
   "values": [
     {
       "name": "rateLimitType",

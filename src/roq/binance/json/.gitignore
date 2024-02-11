@@ -52,6 +52,14 @@ trade2.hpp
 trade.hpp
 trades.hpp
 user_stream.hpp
+ws_api_account.hpp
+ws_api_cancel_open_orders.hpp
+ws_api_cancel_order.hpp
+ws_api_cancel_replace_order.hpp
+ws_api_listen_key.hpp
+ws_api_open_orders.hpp
+ws_api_order_place.hpp
+ws_api_trades.hpp
 ws_api_type.hpp
 account.cpp
 agg_trade.cpp
@@ -105,4 +113,12 @@ trade2.cpp
 trade.cpp
 trades.cpp
 user_stream.cpp
+ws_api_account.cpp
+ws_api_cancel_open_orders.cpp
+ws_api_cancel_order.cpp
+ws_api_cancel_replace_order.cpp
+ws_api_listen_key.cpp
+ws_api_open_orders.cpp
+ws_api_order_place.cpp
+ws_api_trades.cpp
 ws_api_type.cpp

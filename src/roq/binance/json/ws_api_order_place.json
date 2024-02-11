@@ -1,0 +1,26 @@
+{
+  "name": "WSAPIOrderPlace",
+  "type": "comp",
+  "values": [
+    {
+      "name": "id",
+      "type": "std::string_view"
+    },
+    {
+      "name": "status",
+      "type": "int32_t"
+    },
+    {
+      "name": "result",
+      "type": "NewOrder"
+    },
+    {
+      "name": "error",
+      "type": "Error"
+    },
+    {
+      "name": "rateLimits",
+      "type": "std::span<RateLimitsItem const>"
+    }
+  ]
+}

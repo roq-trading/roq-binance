@@ -38,7 +38,7 @@ TEST_CASE("json_account_simple", "[json_account]") {
                  R"(])"
                  R"(})";
   std::vector<std::byte> buffer(8192);
-  auto account = json::Account::create(message, buffer);
+  json::Account account{message, buffer};
   CHECK(account.maker_commission == 10.0_a);
   CHECK(account.taker_commission == 10.0_a);
   CHECK(account.buyer_commission == 0.0_a);

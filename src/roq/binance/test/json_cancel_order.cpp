@@ -31,7 +31,7 @@ TEST_CASE("json_cancel_order_simple", "[json_cancel_order]") {
                  R"("side":"BUY")"
                  R"(})";
   std::vector<std::byte> buffer(8192);
-  auto obj = json::CancelOrder::create(message, buffer);
+  json::CancelOrder obj{message, buffer};
   CHECK(obj.symbol == "LTCBTC"sv);
   CHECK(obj.orig_client_order_id == "OgAC6QMAAQAACt7PDZQW"sv);
   CHECK(obj.order_id == 779219002);

@@ -104,7 +104,7 @@ TEST_CASE("json_exchange_info_simple", "[json_exchange_info]") {
       R"(])"
       R"(})";
   std::vector<std::byte> buffer(65536);
-  auto obj = json::ExchangeInfo::create(message, buffer);
+  json::ExchangeInfo obj{message, buffer};
   CHECK(obj.timezone == "UTC"sv);
   CHECK(obj.server_time == 1634180185607ms);
   // not parsed: rate_limits

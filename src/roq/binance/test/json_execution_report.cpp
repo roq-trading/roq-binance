@@ -50,7 +50,7 @@ TEST_CASE("json_execution_report_simple", "[json_execution_report]") {
                  R"("Q":"0.00000000")"
                  R"(})";
   std::vector<std::byte> buffer(8192);
-  auto obj = json::ExecutionReport::create(message, buffer);
+  json::ExecutionReport obj{message, buffer};
   CHECK(obj.event_type == json::EventType::EXECUTION_REPORT);
   CHECK(obj.event_time == 1634211568285ms);
   CHECK(obj.symbol == "BTCBUSD"sv);
@@ -119,7 +119,7 @@ TEST_CASE("json_execution_report_canceled", "[json_execution_report]") {
                  R"("Q":"0.00000000")"
                  R"(})";
   std::vector<std::byte> buffer(8192);
-  auto obj = json::ExecutionReport::create(message, buffer);
+  json::ExecutionReport obj{message, buffer};
   CHECK(obj.event_type == json::EventType::EXECUTION_REPORT);
   CHECK(obj.event_time == 1634215338588ms);
   CHECK(obj.symbol == "LTCBTC"sv);

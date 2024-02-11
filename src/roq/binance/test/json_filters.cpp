@@ -52,7 +52,7 @@ TEST_CASE("json_filters_simple_1", "[json_filters]") {
                  R"(})"
                  R"(])";
   std::vector<std::byte> buffer(8192);
-  auto obj = json::Filters::create(message, buffer);
+  json::Filters obj{message, buffer};
   auto &data = obj.data;
   REQUIRE(std::size(data) == 8);
   auto &d0 = data[0];
@@ -132,7 +132,7 @@ TEST_CASE("json_filters_simple_2", "[json_filters]") {
                  R"(})"
                  R"(])";
   std::vector<std::byte> buffer(8192);
-  auto obj = json::Filters::create(message, buffer);
+  json::Filters obj{message, buffer};
   auto &data = obj.data;
   REQUIRE(std::size(data) == 9);
   auto &d0 = data[0];

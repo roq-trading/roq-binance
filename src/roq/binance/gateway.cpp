@@ -10,6 +10,8 @@
 
 #include "roq/logging.hpp"
 
+#include "roq/oms/exceptions.hpp"
+
 #include "roq/core/charconv.hpp"
 #include "roq/core/utils.hpp"
 
