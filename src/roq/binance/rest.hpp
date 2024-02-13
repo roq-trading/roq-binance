@@ -38,6 +38,7 @@ struct Rest final : public web::rest::Client::Handler {
   struct Handler {
     virtual void operator()(Trace<StreamStatus> const &) = 0;
     virtual void operator()(Trace<ExternalLatency> const &) = 0;
+    virtual void operator()(Trace<RateLimitsUpdate> const &) = 0;
     virtual void operator()(Trace<ReferenceData> const &, bool is_last) = 0;
     virtual void operator()(Trace<MarketStatus> const &, bool is_last) = 0;
     // cross-communication
@@ -61,8 +62,10 @@ struct Rest final : public web::rest::Client::Handler {
   // web::rest::Client::Handler
   void operator()(Trace<web::rest::Client::Connected> const &) override;
   void operator()(Trace<web::rest::Client::Disconnected> const &) override;
-  void operator()(Trace<web::rest::Client::Header> const &) override;
   void operator()(Trace<web::rest::Client::Latency> const &) override;
+  void operator()(Trace<web::rest::Client::MessageBegin> const &) override;
+  void operator()(Trace<web::rest::Client::Header> const &) override;
+  void operator()(Trace<web::rest::Client::MessageEnd> const &) override;
 
   void operator()(ConnectionStatus);
 

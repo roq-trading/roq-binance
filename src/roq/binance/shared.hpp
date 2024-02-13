@@ -115,6 +115,8 @@ struct Shared final {
  public:
   json::CreateOrderTemplate const &get_create_order_template(std::string_view const &name);
   json::CancelOrderTemplate const &get_cancel_order_template(std::string_view const &name);
+
+  std::vector<RateLimit> rate_limits;
 };
 
 }  // namespace binance

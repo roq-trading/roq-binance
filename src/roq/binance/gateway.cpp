@@ -140,6 +140,10 @@ void Gateway::operator()(Trace<ExternalLatency> const &event) {
   dispatcher_(event);
 }
 
+void Gateway::operator()(Trace<RateLimitsUpdate> const &event) {
+  dispatcher_(event);
+}
+
 void Gateway::operator()(Trace<ReferenceData> const &event, bool is_last) {
   dispatcher_(event, is_last);
 }

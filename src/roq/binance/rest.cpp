@@ -151,19 +151,6 @@ void Rest::operator()(Trace<web::rest::Client::Disconnected> const &) {
     download_.reset();
 }
 
-void Rest::operator()(Trace<web::rest::Client::Header> const &event) {
-  auto &header = event.value;
-  if (header.name == "x-mbx-used-weight-1m"sv) {
-    log::info("DEBUG header={}"sv, header);
-    try {
-      auto value = utils::from_string_relaxed<int64_t>(header.value);
-      rate_limiter_.minute.set(value);
-    } catch (RuntimeError &) {
-      log::warn<5>(R"(Failed to parse text="{}")"sv, header.value);
-    }
-  }
-}
-
 void Rest::operator()(Trace<web::rest::Client::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
@@ -173,6 +160,46 @@ void Rest::operator()(Trace<web::rest::Client::Latency> const &event) {
   };
   create_trace_and_dispatch(handler_, trace_info, external_latency);
   latency_.ping.update(latency.sample);
+}
+
+void Rest::operator()(Trace<web::rest::Client::MessageBegin> const &) {
+  shared_.rate_limits.clear();
+}
+
+void Rest::operator()(Trace<web::rest::Client::Header> const &event) {
+  auto &header = event.value;
+  if (header.name == "x-mbx-used-weight-1m"sv) {
+    log::info("DEBUG header={}"sv, header);
+    try {
+      auto value = utils::from_string_relaxed<uint32_t>(header.value);
+      auto rate_limit = RateLimit{
+          .type = RateLimitType::REQUEST,
+          .period = 1min,
+          .end_time_utc = {},
+          .limit = {},
+          .value = value,
+      };
+      shared_.rate_limits.emplace_back(std::move(rate_limit));
+      rate_limiter_.minute.set(value);
+    } catch (RuntimeError &) {
+      log::warn<5>(R"(Failed to parse text="{}")"sv, header.value);
+    }
+  }
+}
+
+void Rest::operator()(Trace<web::rest::Client::MessageEnd> const &event) {
+  auto &trace_info = event.trace_info;
+  if (std::empty(shared_.rate_limits))
+    return;
+  auto rate_limits_update = RateLimitsUpdate{
+      .stream_id = stream_id_,
+      .account = {},
+      .origin = Origin::EXCHANGE,
+      .rate_limits = shared_.rate_limits,
+  };
+  log::info("DEBUG rate_limits_update={}"sv, rate_limits_update);
+  create_trace_and_dispatch(handler_, trace_info, rate_limits_update);
+  shared_.rate_limits.clear();
 }
 
 void Rest::operator()(ConnectionStatus status) {
