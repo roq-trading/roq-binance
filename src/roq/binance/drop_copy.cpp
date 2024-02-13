@@ -285,7 +285,7 @@ void DropCopy::operator()(Trace<json::ExecutionReport> const &event) {
                                     : (execution_report.cumulative_quote_asset_transacted_quantity /
                                        execution_report.cumulative_filled_quantity);
     auto last_liquidity = execution_report.is_trade_maker ? Liquidity::MAKER : Liquidity::TAKER;
-    auto order_update = oms::OrderUpdate{
+    auto order_update = server::oms::OrderUpdate{
         .account = account_.get_name(),
         .exchange = shared_.settings.exchange,
         .symbol = execution_report.symbol,

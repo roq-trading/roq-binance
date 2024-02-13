@@ -2,7 +2,7 @@
 
 #include "roq/binance/shared.hpp"
 
-#include "roq/oms/exceptions.hpp"
+#include "roq/server/oms/exceptions.hpp"
 
 using namespace std::literals;
 
@@ -48,7 +48,7 @@ json::CreateOrderTemplate const &Shared::get_create_order_template(std::string_v
   auto iter = create_order_templates.find(name);
   if (iter != std::end(create_order_templates))
     return (*iter).second;
-  throw roq::oms::Rejected{Origin::GATEWAY, Error::INVALID_REQUEST_TEMPLATE, "create_order_template"sv};
+  throw server::oms::Rejected{Origin::GATEWAY, Error::INVALID_REQUEST_TEMPLATE, "create_order_template"sv};
 }
 
 json::CancelOrderTemplate const &Shared::get_cancel_order_template(std::string_view const &name) {
@@ -59,7 +59,7 @@ json::CancelOrderTemplate const &Shared::get_cancel_order_template(std::string_v
   auto iter = cancel_order_templates.find(name);
   if (iter != std::end(cancel_order_templates))
     return (*iter).second;
-  throw roq::oms::Rejected{Origin::GATEWAY, Error::INVALID_REQUEST_TEMPLATE, "cancel_order_template"sv};
+  throw server::oms::Rejected{Origin::GATEWAY, Error::INVALID_REQUEST_TEMPLATE, "cancel_order_template"sv};
 }
 
 // instrument

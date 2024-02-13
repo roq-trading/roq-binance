@@ -156,7 +156,7 @@ TEST_CASE("json_new_order_create_market", "[json_new_order]") {
       .routing_id = {},
       .strategy_id = {},
   };
-  oms::Order order = {};
+  server::oms::Order order = {};
   order.price_precision.precision = Precision::_2;
   order.quantity_precision.precision = Precision::_2;
   std::vector<char> buffer;
@@ -191,7 +191,7 @@ TEST_CASE("json_new_order_create_limit", "[json_new_order]") {
       .routing_id = {},
       .strategy_id = {},
   };
-  oms::Order order = {};
+  server::oms::Order order = {};
   order.price_precision.precision = Precision::_2;
   order.quantity_precision.precision = Precision::_2;
   std::vector<char> buffer;
@@ -228,7 +228,7 @@ TEST_CASE("json_new_order_create_limit_maker", "[json_new_order]") {
       .routing_id = {},
       .strategy_id = {},
   };
-  oms::Order order = {};
+  server::oms::Order order = {};
   order.price_precision.precision = Precision::_2;
   order.quantity_precision.precision = Precision::_2;
   std::vector<char> buffer;
@@ -264,7 +264,7 @@ TEST_CASE("json_new_order_create_stop_loss", "[json_new_order]") {
       .routing_id = {},
       .strategy_id = {},
   };
-  oms::Order order = {};
+  server::oms::Order order = {};
   order.price_precision.precision = Precision::_2;
   order.quantity_precision.precision = Precision::_2;
   std::vector<char> buffer;
@@ -300,7 +300,7 @@ TEST_CASE("json_new_order_create_stop_loss_limit", "[json_new_order]") {
       .routing_id = {},
       .strategy_id = {},
   };
-  oms::Order order = {};
+  server::oms::Order order = {};
   order.price_precision.precision = Precision::_2;
   order.quantity_precision.precision = Precision::_2;
   std::vector<char> buffer;

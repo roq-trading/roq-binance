@@ -10,7 +10,7 @@
 
 #include "roq/logging.hpp"
 
-#include "roq/oms/exceptions.hpp"
+#include "roq/server/oms/exceptions.hpp"
 
 #include "roq/core/charconv.hpp"
 #include "roq/core/utils.hpp"
@@ -232,14 +232,14 @@ void Gateway::operator()(OrderEntry::ListenKeyUpdate const &listen_key_update) {
 }
 
 uint16_t Gateway::operator()(
-    Event<CreateOrder> const &event, oms::Order const &order, std::string_view const &request_id) {
+    Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
   assert(!std::empty(event.value.account));
   return get_order_entry(event.value.account)(event, order, request_id);
 }
 
 uint16_t Gateway::operator()(
     Event<ModifyOrder> const &event,
-    oms::Order const &order,
+    server::oms::Order const &order,
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
   assert(!std::empty(event.value.account));
@@ -249,7 +249,7 @@ uint16_t Gateway::operator()(
 
 uint16_t Gateway::operator()(
     Event<CancelOrder> const &event,
-    oms::Order const &order,
+    server::oms::Order const &order,
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
   assert(!std::empty(event.value.account));
@@ -319,7 +319,7 @@ OrderEntry &Gateway::OrderEntryRR::get_next() {
     return order_entry;
   }
   // log::error("DEBUG failed"sv);
-  throw oms::NotReady{"get_next"sv};
+  throw server::oms::NotReady{"get_next"sv};
 }
 
 }  // namespace binance

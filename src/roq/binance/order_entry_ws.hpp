@@ -53,15 +53,16 @@ struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handl
 
   void operator()(Event<Disconnected> const &) override;
 
-  uint16_t operator()(Event<CreateOrder> const &, oms::Order const &, std::string_view const &request_id) override;
+  uint16_t operator()(
+      Event<CreateOrder> const &, server::oms::Order const &, std::string_view const &request_id) override;
   uint16_t operator()(
       Event<ModifyOrder> const &,
-      oms::Order const &,
+      server::oms::Order const &,
       std::string_view const &request_id,
       std::string_view const &previous_request_id) override;
   uint16_t operator()(
       Event<CancelOrder> const &,
-      oms::Order const &,
+      server::oms::Order const &,
       std::string_view const &request_id,
       std::string_view const &previous_request_id) override;
   uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id) override;
@@ -78,16 +79,16 @@ struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handl
   void my_trades();
 
   void open_orders_cancel_all(Event<CancelAllOrders> const &, std::string_view const &request_id);
-  void order_place(Event<CreateOrder> const &, oms::Order const &, std::string_view const &request_id);
+  void order_place(Event<CreateOrder> const &, server::oms::Order const &, std::string_view const &request_id);
   void order_cancel(
       Event<CancelOrder> const &,
-      oms::Order const &,
+      server::oms::Order const &,
       std::string_view const &request_id,
       std::string_view const &previous_request_id);
   void order_cancel_replace(
       server::cache::CancelOrderRequest const &,
       Event<CreateOrder> const &,
-      oms::Order const &,
+      server::oms::Order const &,
       std::string_view const &_request_id);
 
   void operator()(web::socket::Client::Connected const &) override;
@@ -122,9 +123,9 @@ struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handl
       std::string_view const &error_msg);
 
   template <typename... Args>
-  void operator()(Trace<oms::Response> const &, uint8_t user_id, uint64_t order_id, Args &&...args);
+  void operator()(Trace<server::oms::Response> const &, uint8_t user_id, uint64_t order_id, Args &&...args);
 
-  void operator()(Trace<oms::OrderUpdate> const &, std::string_view const &client_order_id);
+  void operator()(Trace<server::oms::OrderUpdate> const &, std::string_view const &client_order_id);
 
  private:
   OrderEntry::Handler &handler_;

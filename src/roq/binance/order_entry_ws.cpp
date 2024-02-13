@@ -8,7 +8,7 @@
 
 #include "roq/mask.hpp"
 
-#include "roq/oms/exceptions.hpp"
+#include "roq/server/oms/exceptions.hpp"
 
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
@@ -207,7 +207,7 @@ void OrderEntryWS::operator()(Event<Disconnected> const &event) {
 }
 
 uint16_t OrderEntryWS::operator()(
-    Event<CreateOrder> const &event, oms::Order const &order, std::string_view const &request_id) {
+    Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
   auto &message_info = event.message_info;
   auto &tmp = account_.cancel_order_request_buffer_[message_info.source];
   if (!tmp) {
@@ -224,21 +224,21 @@ uint16_t OrderEntryWS::operator()(
 
 uint16_t OrderEntryWS::operator()(
     Event<ModifyOrder> const &,
-    oms::Order const &,
+    server::oms::Order const &,
     [[maybe_unused]] std::string_view const &request_id,
     [[maybe_unused]] std::string_view const &previous_request_id) {
-  throw oms::NotSupported{"not supported"sv};
+  throw server::oms::NotSupported{"not supported"sv};
 }
 
 uint16_t OrderEntryWS::operator()(
     Event<CancelOrder> const &event,
-    oms::Order const &order,
+    server::oms::Order const &order,
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
   auto &[message_info, cancel_order] = event;
   auto &tmp = account_.cancel_order_request_buffer_[message_info.source];
   if (tmp)
-    throw oms::NotSupported{"not supported"sv};
+    throw server::oms::NotSupported{"not supported"sv};
   if (message_info.is_last) {
     order_cancel(event, order, request_id, previous_request_id);
   } else {
@@ -446,7 +446,7 @@ void OrderEntryWS::my_trades() {
 void OrderEntryWS::open_orders_cancel_all(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
   profile_.open_orders_cancel_all([&]() {
     if (!ready()) [[unlikely]]
-      throw oms::NotReady{"not ready"sv};
+      throw server::oms::NotReady{"not ready"sv};
     auto &message_info = event.message_info;
     auto &cancel_all_orders = event.value;
     auto send_ack = [&](auto &symbol) {
@@ -513,10 +513,12 @@ void OrderEntryWS::open_orders_cancel_all(Event<CancelAllOrders> const &event, s
 }
 
 void OrderEntryWS::order_place(
-    Event<CreateOrder> const &event, oms::Order const &order, [[maybe_unused]] std::string_view const &request_id) {
+    Event<CreateOrder> const &event,
+    server::oms::Order const &order,
+    [[maybe_unused]] std::string_view const &request_id) {
   profile_.order_place([&]() {
     if (!ready())
-      throw oms::NotReady{"not ready"sv};
+      throw server::oms::NotReady{"not ready"sv};
     auto &[message_info, create_order] = event;
     open_orders_symbols_.emplace(create_order.symbol);
     auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
@@ -561,12 +563,12 @@ void OrderEntryWS::order_place(
 
 void OrderEntryWS::order_cancel(
     Event<CancelOrder> const &event,
-    oms::Order const &order,
+    server::oms::Order const &order,
     [[maybe_unused]] std::string_view const &request_id,
     [[maybe_unused]] std::string_view const &previous_request_id) {
   profile_.order_cancel([&]() {
     if (!ready())
-      throw oms::NotReady{"not ready"sv};
+      throw server::oms::NotReady{"not ready"sv};
     auto &[message_info, cancel_order] = event;
     auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
@@ -620,11 +622,11 @@ void OrderEntryWS::order_cancel(
 void OrderEntryWS::order_cancel_replace(
     server::cache::CancelOrderRequest const &cancel_order_request,
     Event<CreateOrder> const &event,
-    oms::Order const &order,
+    server::oms::Order const &order,
     std::string_view const &request_id) {
   profile_.order_cancel_replace([&]() {
     if (!ready())
-      throw oms::NotReady{"not ready"sv};
+      throw server::oms::NotReady{"not ready"sv};
     if (shared_.find_order(
             event.message_info.source, cancel_order_request.cancel_order.order_id, [&](auto &cancel_order) {
               auto &[message_info, create_order] = event;
@@ -685,7 +687,7 @@ void OrderEntryWS::order_cancel_replace(
               (*connection_).send_text(message);
             })) {
     } else {
-      throw oms::Rejected{Origin::GATEWAY, Error::CONDITIONAL_REQUEST_HAS_FAILED, "internal error"sv};
+      throw server::oms::Rejected{Origin::GATEWAY, Error::CONDITIONAL_REQUEST_HAS_FAILED, "internal error"sv};
     }
   });
 }
@@ -774,7 +776,7 @@ void OrderEntryWS::operator()(Trace<json::Error> const &event, json::WSAPIReques
     log::warn<2>("error={}, request={}, status={}"sv, error, request, status);
     auto dispatch_oms_error = [&](auto type) {
       auto error_2 = json::guess_error(error.code);
-      auto response = oms::Response{
+      auto response = server::oms::Response{
           .request_type = type,
           .origin = Origin::EXCHANGE,
           .request_status = RequestStatus::REJECTED,
@@ -884,7 +886,7 @@ void OrderEntryWS::operator()(Trace<json::OpenOrders> const &event, json::WSAPIR
       auto time_in_force = json::map(order.time_in_force);
       auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
       auto order_status = json::map(order.status);
-      auto order_update = oms::OrderUpdate{
+      auto order_update = server::oms::OrderUpdate{
           .account = account_.get_name(),
           .exchange = shared_.settings.exchange,
           .symbol = order.symbol,
@@ -987,7 +989,7 @@ void OrderEntryWS::operator()(
       auto time_in_force = json::map(order.time_in_force);
       auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
       auto order_status = json::map(order.status);
-      auto order_update = oms::OrderUpdate{
+      auto order_update = server::oms::OrderUpdate{
           .account = account_.get_name(),
           .exchange = shared_.settings.exchange,
           .symbol = order.symbol,
@@ -1050,7 +1052,7 @@ void OrderEntryWS::operator()(Trace<json::NewOrder> const &event, json::WSAPIReq
     auto last_traded_price = NaN;  // note! could also use average_traded_price
     if (utils::is_greater(last_traded_quantity, 0.0))
       last_traded_price = tmp / last_traded_quantity;
-    auto response = oms::Response{
+    auto response = server::oms::Response{
         .request_type = RequestType::CREATE_ORDER,
         .origin = Origin::EXCHANGE,
         .request_status = RequestStatus::ACCEPTED,
@@ -1061,7 +1063,7 @@ void OrderEntryWS::operator()(Trace<json::NewOrder> const &event, json::WSAPIReq
         .quantity = NaN,
         .price = NaN,
     };
-    auto order_update = oms::OrderUpdate{
+    auto order_update = server::oms::OrderUpdate{
         .account = account_.get_name(),
         .exchange = shared_.settings.exchange,
         .symbol = new_order.symbol,
@@ -1109,7 +1111,7 @@ void OrderEntryWS::operator()(
     auto time_in_force = json::map(cancel_order.time_in_force);
     auto external_order_id = fmt::format("{}"sv, cancel_order.order_id);  // alloc
     auto order_status = json::map(cancel_order.status);
-    auto response = oms::Response{
+    auto response = server::oms::Response{
         .request_type = RequestType::CANCEL_ORDER,
         .origin = Origin::EXCHANGE,
         .request_status = RequestStatus::ACCEPTED,
@@ -1120,7 +1122,7 @@ void OrderEntryWS::operator()(
         .quantity = NaN,
         .price = NaN,
     };
-    auto order_update = oms::OrderUpdate{
+    auto order_update = server::oms::OrderUpdate{
         .account = account_.get_name(),
         .exchange = shared_.settings.exchange,
         .symbol = cancel_order.symbol,
@@ -1185,7 +1187,7 @@ void OrderEntryWS::update_helper(
   // cancel
   auto dispatch_cancel_error = [&]() {
     auto &cancel_order = cancel_replace_order.cancel_response;
-    auto response = oms::Response{
+    auto response = server::oms::Response{
         .request_type = RequestType::CANCEL_ORDER,
         .origin = Origin::EXCHANGE,
         .request_status = RequestStatus::REJECTED,
@@ -1222,7 +1224,7 @@ void OrderEntryWS::update_helper(
       auto time_in_force = json::map(cancel_order.time_in_force);
       auto external_order_id = fmt::format("{}"sv, cancel_order.order_id);  // alloc
       auto order_status = json::map(cancel_order.status);
-      auto response = oms::Response{
+      auto response = server::oms::Response{
           .request_type = RequestType::CANCEL_ORDER,
           .origin = Origin::EXCHANGE,
           .request_status = RequestStatus::ACCEPTED,
@@ -1233,7 +1235,7 @@ void OrderEntryWS::update_helper(
           .quantity = NaN,
           .price = NaN,
       };
-      auto order_update = oms::OrderUpdate{
+      auto order_update = server::oms::OrderUpdate{
           .account = account_.get_name(),
           .exchange = shared_.settings.exchange,
           .symbol = cancel_order.symbol,
@@ -1291,7 +1293,7 @@ void OrderEntryWS::update_helper(
   // new order
   auto dispatch_create_error = [&]() {
     auto &new_order = cancel_replace_order.new_order_response;
-    auto response = oms::Response{
+    auto response = server::oms::Response{
         .request_type = RequestType::CREATE_ORDER,
         .origin = Origin::EXCHANGE,
         .request_status = RequestStatus::REJECTED,
@@ -1329,7 +1331,7 @@ void OrderEntryWS::update_helper(
       auto time_in_force = json::map(new_order.time_in_force);
       auto external_order_id = fmt::format("{}"sv, new_order.order_id);  // alloc
       auto order_status = json::map(new_order.status);
-      auto response = oms::Response{
+      auto response = server::oms::Response{
           .request_type = RequestType::CREATE_ORDER,
           .origin = Origin::EXCHANGE,
           .request_status = RequestStatus::ACCEPTED,
@@ -1340,7 +1342,7 @@ void OrderEntryWS::update_helper(
           .quantity = NaN,
           .price = NaN,
       };
-      auto order_update = oms::OrderUpdate{
+      auto order_update = server::oms::OrderUpdate{
           .account = account_.get_name(),
           .exchange = shared_.settings.exchange,
           .symbol = new_order.symbol,
@@ -1394,7 +1396,8 @@ void OrderEntryWS::update_helper(
 }
 
 template <typename... Args>
-void OrderEntryWS::operator()(Trace<oms::Response> const &event, uint8_t user_id, uint64_t order_id, Args &&...args) {
+void OrderEntryWS::operator()(
+    Trace<server::oms::Response> const &event, uint8_t user_id, uint64_t order_id, Args &&...args) {
   auto &[trace_info, response] = event;
   if (shared_.update_order(
           user_id,
@@ -1409,7 +1412,7 @@ void OrderEntryWS::operator()(Trace<oms::Response> const &event, uint8_t user_id
   }
 }
 
-void OrderEntryWS::operator()(Trace<oms::OrderUpdate> const &event, std::string_view const &client_order_id) {
+void OrderEntryWS::operator()(Trace<server::oms::OrderUpdate> const &event, std::string_view const &client_order_id) {
   auto &[trace_info, order_update] = event;
   if (shared_.update_order(
           client_order_id, stream_id_, trace_info, order_update, [&]([[maybe_unused]] auto &order) {})) {

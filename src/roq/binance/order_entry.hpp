@@ -10,7 +10,7 @@
 
 #include "roq/metrics/writer.hpp"
 
-#include "roq/oms/order.hpp"
+#include "roq/server/oms/order.hpp"
 
 namespace roq {
 namespace binance {
@@ -48,15 +48,16 @@ struct OrderEntry {
 
   virtual void operator()(Event<Disconnected> const &) = 0;
 
-  virtual uint16_t operator()(Event<CreateOrder> const &, oms::Order const &, std::string_view const &request_id) = 0;
+  virtual uint16_t operator()(
+      Event<CreateOrder> const &, server::oms::Order const &, std::string_view const &request_id) = 0;
   virtual uint16_t operator()(
       Event<ModifyOrder> const &,
-      oms::Order const &,
+      server::oms::Order const &,
       std::string_view const &request_id,
       std::string_view const &previous_request_id) = 0;
   virtual uint16_t operator()(
       Event<CancelOrder> const &,
-      oms::Order const &,
+      server::oms::Order const &,
       std::string_view const &request_id,
       std::string_view const &previous_request_id) = 0;
   virtual uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id) = 0;

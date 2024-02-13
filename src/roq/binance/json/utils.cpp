@@ -186,7 +186,7 @@ std::string_view cancel_all_open_orders(
 std::string_view new_order(
     std::vector<char> &buffer,
     CreateOrder const &create_order,
-    oms::Order const &order,
+    server::oms::Order const &order,
     std::string_view const &request_id,
     CreateOrderTemplate const &create_order_template,
     std::chrono::milliseconds recv_window) {
@@ -216,7 +216,7 @@ std::string_view new_order(
 std::string_view new_order_ws_url(
     std::vector<char> &buffer,
     CreateOrder const &create_order,
-    oms::Order const &order,
+    server::oms::Order const &order,
     std::string_view const &request_id,
     CreateOrderTemplate const &create_order_template,
     std::chrono::milliseconds recv_window,
@@ -251,7 +251,7 @@ std::string_view new_order_ws_url(
 std::string_view new_order_ws_json(
     std::vector<char> &buffer,
     CreateOrder const &create_order,
-    oms::Order const &order,
+    server::oms::Order const &order,
     std::string_view const &request_id,
     CreateOrderTemplate const &create_order_template,
     std::chrono::milliseconds recv_window,
@@ -297,7 +297,7 @@ std::string_view new_order_ws_json(
 std::string_view cancel_order(
     std::vector<char> &buffer,
     roq::CancelOrder const &,
-    oms::Order const &order,
+    server::oms::Order const &order,
     std::string_view const &request_id,
     std::string_view const &previous_request_id,
     CancelOrderTemplate const &cancel_order_template,
@@ -319,7 +319,7 @@ std::string_view cancel_order(
 std::string_view cancel_order_ws_url(
     std::vector<char> &buffer,
     roq::CancelOrder const &,
-    oms::Order const &order,
+    server::oms::Order const &order,
     std::string_view const &request_id,
     std::string_view const &previous_request_id,
     CancelOrderTemplate const &cancel_order_template,
@@ -345,7 +345,7 @@ std::string_view cancel_order_ws_url(
 std::string_view cancel_order_ws_json(
     std::vector<char> &buffer,
     roq::CancelOrder const &,
-    oms::Order const &order,
+    server::oms::Order const &order,
     std::string_view const &request_id,
     std::string_view const &previous_request_id,
     CancelOrderTemplate const &cancel_order_template,
@@ -400,7 +400,7 @@ std::string_view cancel_replace_order(
     std::string_view const &cancel_previous_request_id,
     std::string_view const &cancel_external_order_id,
     CreateOrder const &create_order,
-    oms::Order const &order,
+    server::oms::Order const &order,
     std::string_view const &create_request_id,
     CancelOrderTemplate const &cancel_order_template,
     CreateOrderTemplate const &create_order_template,
@@ -453,7 +453,7 @@ std::string_view cancel_replace_order_ws_url(
     std::string_view const &cancel_previous_request_id,
     std::string_view const &cancel_external_order_id,
     CreateOrder const &create_order,
-    oms::Order const &order,
+    server::oms::Order const &order,
     std::string_view const &create_request_id,
     CancelOrderTemplate const &cancel_order_template,
     CreateOrderTemplate const &create_order_template,
@@ -510,7 +510,7 @@ std::string_view cancel_replace_order_ws_json(
     std::string_view const &cancel_previous_request_id,
     std::string_view const &cancel_external_order_id,
     CreateOrder const &create_order,
-    oms::Order const &order,
+    server::oms::Order const &order,
     std::string_view const &create_request_id,
     CancelOrderTemplate const &cancel_order_template,
     CreateOrderTemplate const &create_order_template,
