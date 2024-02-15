@@ -1916,7 +1916,6 @@ void OrderEntryWS::update_rate_limits(auto &event) {
         .origin = Origin::EXCHANGE,
         .rate_limits = shared_.rate_limits,
     };
-    log::info("rate_limits_update={}"sv, rate_limits_update);
     Trace event_2{trace_info, rate_limits_update};
     handler_(event_2);
   }
