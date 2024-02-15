@@ -759,7 +759,8 @@ void OrderEntryWS::parse(std::string_view const &message) {
     try {
       log::debug(R"(message="{}")"sv, message);
       TraceInfo trace_info;
-      auto res = json::WSAPIParser::dispatch(*this, message, decode_buffer_, trace_info);
+      // auto res = json::WSAPIParser::dispatch(*this, message, decode_buffer_, trace_info);
+      auto res = json::WSAPIParser2::dispatch(*this, message, decode_buffer_, trace_info);
       if (!res) [[unlikely]] {
         log::warn(R"(message="{}")"sv, message);
       }
@@ -1393,6 +1394,504 @@ void OrderEntryWS::update_helper(
       dispatch_create_error();
       break;
   }
+}
+
+// json::WSAPIParser2::Handler
+
+void OrderEntryWS::operator()(Trace<json::WSAPIListenKey> const &event, json::WSAPIRequest const &request) {
+  profile_.user_data_stream_start_ack([&]() {
+    auto &[trace_info, message] = event;
+    log::info<2>("message={}, request={}"sv, message, request);
+    switch (message.status) {
+      case 200: {
+        auto &listen_key = message.result;
+        listen_key_ = listen_key.listen_key;
+        auto listen_key_update = ListenKeyUpdate{
+            .account = account_.get_name(),
+            .listen_key = listen_key_,
+        };
+        create_trace_and_dispatch(handler_, trace_info, listen_key_update);
+        (*this)(ConnectionStatus::READY);
+        auto now = clock::get_system();
+        listen_key_refresh_ = now + shared_.settings.rest.listen_key_refresh;
+        break;
+      }
+      default:
+        switch (message.error.code) {
+          case -2015:  // invalid key
+            log::error("Unexpected: error={}"sv, message.error);
+        }
+    }
+    update_rate_limits(event);
+  });
+}
+
+void OrderEntryWS::operator()(Trace<json::WSAPIAccount> const &event, json::WSAPIRequest const &request) {
+  profile_.user_data_stream_ping_ack([&]() {
+    auto &[trace_info, message] = event;
+    log::info<2>("message={}, request={}"sv, message, request);
+    switch (message.status) {
+      case 200: {
+        auto &account = message.result;
+        for (auto &item : account.balances) {
+          // log::debug("item={}"sv, item);
+          auto funds_update = FundsUpdate{
+              .stream_id = stream_id_,
+              .account = account_.get_name(),
+              .currency = item.asset,
+              .margin_mode = {},
+              .balance = item.free,
+              .hold = item.locked,
+              .external_account = {},
+              .update_type = UpdateType::SNAPSHOT,
+              .exchange_time_utc = account.update_time,
+              .sending_time_utc = account.update_time,
+          };
+          create_trace_and_dispatch(handler_, trace_info, funds_update, true);
+        }
+        break;
+      }
+      default:
+        log::error("Unexpected: error={}"sv, message.error);
+    }
+    request_.respond_account = clock::get_system();  // completion
+    download_account_ = false;
+    update_rate_limits(event);
+  });
+}
+
+void OrderEntryWS::operator()(Trace<json::WSAPIOpenOrders> const &event, json::WSAPIRequest const &request) {
+  profile_.open_orders_status_ack([&]() {
+    auto &[trace_info, message] = event;
+    log::info<2>("message={}, request={}"sv, message, request);
+    switch (message.status) {
+      case 200: {
+        auto &open_orders = message.result;
+        for (auto &order : open_orders) {
+          log::info<2>("order={}"sv, order);
+          if (std::empty(order.client_order_id))
+            continue;
+          open_orders_symbols_.emplace(order.symbol);
+          auto side = json::map(order.side);
+          auto order_type = json::map(order.type);
+          auto time_in_force = json::map(order.time_in_force);
+          auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
+          auto order_status = json::map(order.status);
+          auto order_update = server::oms::OrderUpdate{
+              .account = account_.get_name(),
+              .exchange = shared_.settings.exchange,
+              .symbol = order.symbol,
+              .side = side,
+              .position_effect = {},
+              .margin_mode = {},
+              .max_show_quantity = NaN,
+              .order_type = order_type,
+              .time_in_force = time_in_force,
+              .execution_instructions = {},
+              .create_time_utc = order.time,
+              .update_time_utc = order.update_time,
+              .external_account = {},
+              .external_order_id = external_order_id,
+              .client_order_id = {},
+              .order_status = order_status,
+              .quantity = order.orig_qty,
+              .price = order.price,
+              .stop_price = order.stop_price,
+              .remaining_quantity = NaN,
+              .traded_quantity = order.executed_qty,
+              .average_traded_price = {},
+              .last_traded_quantity = {},
+              .last_traded_price = {},
+              .last_liquidity = {},
+              .routing_id = {},
+              .max_request_version = {},
+              .max_response_version = {},
+              .max_accepted_version = {},
+              .update_type = UpdateType::SNAPSHOT,
+              .sending_time_utc = {},
+          };
+          Trace event_2{trace_info, order_update};
+          (*this)(event_2, order.client_order_id);
+        }
+        break;
+      }
+      default:
+        log::error("Unexpected: error={}"sv, message.error);
+    }
+    request_.respond_orders = clock::get_system();  // completion
+    download_orders_ = false;
+    update_rate_limits(event);
+  });
+}
+
+void OrderEntryWS::operator()(Trace<json::WSAPITrades> const &event, json::WSAPIRequest const &request) {
+  profile_.my_trades_ack([&]() {
+    auto &[trace_info, message] = event;
+    log::info<2>("message={}, request={}"sv, message, request);
+    switch (message.status) {
+      case 200: {
+        download_trades_is_first_ = false;  // after first successful
+        auto &trades = message.result;
+        for (auto &trade : trades) {
+          log::info<2>("trade={}"sv, trade);
+          auto liquidity = trade.is_maker ? Liquidity::MAKER : Liquidity::TAKER;
+          auto fill = Fill{
+              .external_trade_id = {},
+              .quantity = trade.qty,  // XXX FIXME quote_qty ???
+              .price = trade.price,
+              .liquidity = liquidity,
+          };
+          auto side = trade.is_buyer ? Side::BUY : Side::SELL;
+          fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"sv, trade.id);
+          auto external_order_id = fmt::format("{}"sv, trade.order_id);
+          auto trade_update = TradeUpdate{
+              .stream_id = stream_id_,
+              .account = account_.get_name(),
+              .order_id = {},
+              .exchange = shared_.settings.exchange,
+              .symbol = trade.symbol,
+              .side = side,
+              .position_effect = {},
+              .margin_mode = {},
+              .create_time_utc = trade.time,
+              .update_time_utc = trade.time,
+              .external_account = {},
+              .external_order_id = external_order_id,
+              .client_order_id = {},
+              .fills = {&fill, 1},
+              .routing_id = {},
+              .update_type = UpdateType::INCREMENTAL,
+              .sending_time_utc = trade.time,
+              .user = {},
+              .strategy_id = {},
+          };
+          log::debug("trade_update={}"sv, trade_update);
+          std::string_view client_order_id;  // XXX MISSING
+          create_trace_and_dispatch(handler_, trace_info, trade_update, true, SOURCE_NONE, client_order_id);
+        }
+        break;
+      }
+      default:
+        log::error("Unexpected: error={}"sv, message.error);
+    }
+    request_.respond_trades = clock::get_system();  // completion
+    download_trades_ = false;
+    update_rate_limits(event);
+  });
+}
+
+void OrderEntryWS::operator()(Trace<json::WSAPICancelOpenOrders> const &event, json::WSAPIRequest const &request) {
+  profile_.open_orders_cancel_all_ack([&]() {
+    auto &[trace_info, message] = event;
+    log::info<2>("message={}, request={}"sv, message, request);
+    switch (message.status) {
+      case 200: {
+        auto &cancel_all_open_orders = message.result;
+        for (auto &order : cancel_all_open_orders) {
+          log::debug("order={}"sv, order);
+          if (std::empty(order.client_order_id))
+            continue;
+          auto side = json::map(order.side);
+          auto order_type = json::map(order.type);
+          auto time_in_force = json::map(order.time_in_force);
+          auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
+          auto order_status = json::map(order.status);
+          auto order_update = server::oms::OrderUpdate{
+              .account = account_.get_name(),
+              .exchange = shared_.settings.exchange,
+              .symbol = order.symbol,
+              .side = side,
+              .position_effect = {},
+              .margin_mode = {},
+              .max_show_quantity = NaN,
+              .order_type = order_type,
+              .time_in_force = time_in_force,
+              .execution_instructions = {},
+              .create_time_utc = order.time,
+              .update_time_utc = order.update_time,
+              .external_account = {},
+              .external_order_id = external_order_id,
+              .client_order_id = {},
+              .order_status = order_status,
+              .quantity = order.orig_qty,
+              .price = order.price,
+              .stop_price = order.stop_price,
+              .remaining_quantity = NaN,
+              .traded_quantity = order.executed_qty,
+              .average_traded_price = {},
+              .last_traded_quantity = {},
+              .last_traded_price = {},
+              .last_liquidity = {},
+              .routing_id = {},
+              .max_request_version = {},
+              .max_response_version = {},
+              .max_accepted_version = {},
+              .update_type = UpdateType::INCREMENTAL,
+              .sending_time_utc = {},
+          };
+          shared_.update_order(
+              order.client_order_id, stream_id_, trace_info, order_update, []([[maybe_unused]] auto &order) {});
+        }
+        break;
+      }
+      default:
+        log::error("Unexpected: error={}"sv, message.error);
+    }
+    update_rate_limits(event);
+  });
+}
+
+void OrderEntryWS::operator()(Trace<json::WSAPIOrderPlace> const &event, json::WSAPIRequest const &request) {
+  profile_.order_place_ack([&]() {
+    auto &[trace_info, message] = event;
+    log::info<2>("message={}, request={}"sv, message, request);
+    switch (message.status) {
+      case 200: {
+        auto &new_order = message.result;
+        auto side = json::map(new_order.side);
+        auto order_type = json::map(new_order.type);
+        auto time_in_force = json::map(new_order.time_in_force);
+        auto external_order_id = fmt::format("{}"sv, new_order.order_id);  // alloc
+        auto order_status = json::map(new_order.status);
+        // LIMIT_MAKER orders do not return any order state + we only end up here if we receive HTTP status OK
+        if (order_status == OrderStatus{})
+          order_status = OrderStatus::WORKING;
+        auto remaining_quantity = new_order.orig_qty - new_order.executed_qty;
+        auto average_traded_price =
+            utils::is_zero(new_order.executed_qty) ? NaN : (new_order.cummulative_quote_qty / new_order.executed_qty);
+        auto last_traded_quantity = double{0.0};  // note! could also use new_order.executed_qty
+        auto tmp = double{0.0};
+        for (auto &item : new_order.fills) {
+          last_traded_quantity += item.qty;
+          tmp += item.price * item.qty;
+        }
+        auto last_traded_price = NaN;  // note! could also use average_traded_price
+        if (utils::is_greater(last_traded_quantity, 0.0))
+          last_traded_price = tmp / last_traded_quantity;
+        auto response = server::oms::Response{
+            .request_type = RequestType::CREATE_ORDER,
+            .origin = Origin::EXCHANGE,
+            .request_status = RequestStatus::ACCEPTED,
+            .error = {},
+            .text = {},
+            .version = request.version,
+            .request_id = {},
+            .quantity = NaN,
+            .price = NaN,
+        };
+        auto order_update = server::oms::OrderUpdate{
+            .account = account_.get_name(),
+            .exchange = shared_.settings.exchange,
+            .symbol = new_order.symbol,
+            .side = side,
+            .position_effect = {},
+            .margin_mode = {},
+            .max_show_quantity = NaN,
+            .order_type = order_type,
+            .time_in_force = time_in_force,
+            .execution_instructions = {},
+            .create_time_utc = {},
+            .update_time_utc = new_order.transact_time,
+            .external_account = {},
+            .external_order_id = external_order_id,
+            .client_order_id = {},
+            .order_status = order_status,
+            .quantity = new_order.orig_qty,
+            .price = new_order.price,
+            .stop_price = NaN,
+            .remaining_quantity = remaining_quantity,
+            .traded_quantity = new_order.executed_qty,
+            .average_traded_price = average_traded_price,
+            .last_traded_quantity = last_traded_quantity,
+            .last_traded_price = last_traded_price,
+            .last_liquidity = {},
+            .routing_id = {},
+            .max_request_version = {},
+            .max_response_version = {},
+            .max_accepted_version = {},
+            .update_type = UpdateType::INCREMENTAL,
+            .sending_time_utc = {},
+        };
+        Trace event_2{trace_info, response};
+        (*this)(event_2, request.user_id, request.order_id, order_update);
+        break;
+      }
+      default: {
+        auto &error = message.error;
+        auto error_2 = json::guess_error(error.code);
+        auto response = server::oms::Response{
+            .request_type = RequestType::CREATE_ORDER,
+            .origin = Origin::EXCHANGE,
+            .request_status = RequestStatus::REJECTED,
+            .error = error_2,
+            .text = error.msg,
+            .version = request.version,
+            .request_id = {},
+            .quantity = NaN,
+            .price = NaN,
+        };
+        Trace event_2{event, response};
+        (*this)(event_2, request.user_id, request.order_id);
+      }
+    }
+    update_rate_limits(event);
+  });
+}
+
+void OrderEntryWS::operator()(Trace<json::WSAPICancelOrder> const &event, json::WSAPIRequest const &request) {
+  profile_.order_cancel_ack([&]() {
+    auto &[trace_info, message] = event;
+    log::info<2>("message={}, request={}"sv, message, request);
+    switch (message.status) {
+      case 200: {
+        auto &cancel_order = message.result;
+        auto side = json::map(cancel_order.side);
+        auto order_type = json::map(cancel_order.type);
+        auto time_in_force = json::map(cancel_order.time_in_force);
+        auto external_order_id = fmt::format("{}"sv, cancel_order.order_id);  // alloc
+        auto order_status = json::map(cancel_order.status);
+        auto response = server::oms::Response{
+            .request_type = RequestType::CANCEL_ORDER,
+            .origin = Origin::EXCHANGE,
+            .request_status = RequestStatus::ACCEPTED,
+            .error = {},
+            .text = {},
+            .version = request.version,
+            .request_id = {},
+            .quantity = NaN,
+            .price = NaN,
+        };
+        auto order_update = server::oms::OrderUpdate{
+            .account = account_.get_name(),
+            .exchange = shared_.settings.exchange,
+            .symbol = cancel_order.symbol,
+            .side = side,
+            .position_effect = {},
+            .margin_mode = {},
+            .max_show_quantity = NaN,
+            .order_type = order_type,
+            .time_in_force = time_in_force,
+            .execution_instructions = {},
+            .create_time_utc = {},
+            .update_time_utc = cancel_order.transact_time,
+            .external_account = {},
+            .external_order_id = external_order_id,
+            .client_order_id = {},
+            .order_status = order_status,
+            .quantity = cancel_order.orig_qty,
+            .price = cancel_order.price,
+            .stop_price = NaN,
+            .remaining_quantity = NaN,
+            .traded_quantity = cancel_order.executed_qty,
+            .average_traded_price = NaN,
+            .last_traded_quantity = NaN,
+            .last_traded_price = NaN,
+            .last_liquidity = {},
+            .routing_id = {},
+            .max_request_version = {},
+            .max_response_version = {},
+            .max_accepted_version = {},
+            .update_type = UpdateType::INCREMENTAL,
+            .sending_time_utc = {},
+        };
+        Trace event_2{trace_info, response};
+        (*this)(event_2, request.user_id, request.order_id, order_update);
+        break;
+      }
+      default: {
+        auto &error = message.error;
+        auto error_2 = json::guess_error(error.code);
+        auto response = server::oms::Response{
+            .request_type = RequestType::CANCEL_ORDER,
+            .origin = Origin::EXCHANGE,
+            .request_status = RequestStatus::REJECTED,
+            .error = error_2,
+            .text = error.msg,
+            .version = request.version,
+            .request_id = {},
+            .quantity = NaN,
+            .price = NaN,
+        };
+        Trace event_2{event, response};
+        (*this)(event_2, request.user_id, request.order_id);
+      }
+    }
+    update_rate_limits(event);
+  });
+}
+
+void OrderEntryWS::operator()(Trace<json::WSAPICancelReplaceOrder> const &event, json::WSAPIRequest const &request) {
+  auto &[trace_info, message] = event;
+  log::info<2>("message={}, request={}"sv, message, request);
+  switch (message.status) {
+    case 200: {
+      Trace event_2{trace_info, message.result};
+      update_helper(event_2, request, message.status, {}, {});
+      break;
+    }
+    default:
+      log::error("Unexpected: error={}"sv, message.error);
+  }
+  update_rate_limits(event);
+}
+
+// helpers
+
+void OrderEntryWS::update_rate_limits(auto &event) {
+  auto &[trace_info, message] = event;
+  shared_.rate_limits.clear();
+  for (auto &item : message.rate_limits) {
+    auto type = [&]() -> RateLimitType {
+      switch (item.rate_limit_type) {
+        using enum json::RateLimitType::type_t;
+        case UNDEFINED__:
+        case UNKNOWN__:
+          break;
+        case ORDERS:
+          return RateLimitType::CREATE_ORDER;
+        case REQUEST_WEIGHT:
+          return RateLimitType::REQUEST;
+      }
+      return {};
+    }();
+    if (type == RateLimitType{})
+      continue;
+    auto period = [&]() -> std::chrono::seconds {
+      switch (item.interval) {
+        using enum json::Interval::type_t;
+        case UNDEFINED__:
+        case UNKNOWN__:
+          break;
+        case SECOND:
+          return item.interval_num * 1s;
+        case MINUTE:
+          return item.interval_num * 1min;
+        case DAY:
+          return item.interval_num * 24h;
+      };
+      return {};
+    }();
+    auto rate_limit = RateLimit{
+        .type = type,
+        .period = period,
+        .end_time_utc = {},
+        .limit = item.limit,
+        .value = item.count,
+    };
+    shared_.rate_limits.emplace_back(std::move(rate_limit));
+  }
+  if (!std::empty(shared_.rate_limits)) {
+    auto rate_limits_update = RateLimitsUpdate{
+        .stream_id = stream_id_,
+        .account = account_.get_name(),
+        .origin = Origin::EXCHANGE,
+        .rate_limits = shared_.rate_limits,
+    };
+    log::info("rate_limits_update={}"sv, rate_limits_update);
+    Trace event_2{trace_info, rate_limits_update};
+    handler_(event_2);
+  }
+  shared_.rate_limits.clear();
 }
 
 template <typename... Args>

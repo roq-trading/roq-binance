@@ -28,11 +28,15 @@
 #include "roq/binance/shared.hpp"
 
 #include "roq/binance/json/ws_api_parser.hpp"
+#include "roq/binance/json/ws_api_parser_2.hpp"
 
 namespace roq {
 namespace binance {
 
-struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handler, public json::WSAPIParser::Handler {
+struct OrderEntryWS final : public OrderEntry,
+                            public web::socket::Client::Handler,
+                            public json::WSAPIParser::Handler,
+                            public json::WSAPIParser2::Handler {
   OrderEntryWS(
       OrderEntry::Handler &,
       io::Context &,
@@ -91,6 +95,7 @@ struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handl
       server::oms::Order const &,
       std::string_view const &_request_id);
 
+  // web::socket::Client::Handler
   void operator()(web::socket::Client::Connected const &) override;
   void operator()(web::socket::Client::Disconnected const &) override;
   void operator()(web::socket::Client::Ready const &) override;
@@ -104,6 +109,7 @@ struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handl
 
   void parse(std::string_view const &message);
 
+  // json::WSAPIParser::Handler
   void operator()(Trace<json::Error> const &, json::WSAPIRequest const &, int32_t status) override;
   void operator()(Trace<json::ListenKey> const &, json::WSAPIRequest const &, int32_t status) override;
   void operator()(Trace<json::Account> const &, json::WSAPIRequest const &, int32_t status) override;
@@ -114,6 +120,18 @@ struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handl
   void operator()(Trace<json::CancelOrder> const &, json::WSAPIRequest const &, int32_t status) override;
   void operator()(Trace<json::CancelReplaceOrder> const &, json::WSAPIRequest const &, int32_t status) override;
   void operator()(Trace<json::CancelReplaceOrderError> const &, json::WSAPIRequest const &, int32_t status) override;
+
+  // json::WSAPIParser2::Handler
+  void operator()(Trace<json::WSAPIListenKey> const &, json::WSAPIRequest const &) override;
+  void operator()(Trace<json::WSAPIAccount> const &, json::WSAPIRequest const &) override;
+  void operator()(Trace<json::WSAPIOpenOrders> const &, json::WSAPIRequest const &) override;
+  void operator()(Trace<json::WSAPITrades> const &, json::WSAPIRequest const &) override;
+  void operator()(Trace<json::WSAPICancelOpenOrders> const &, json::WSAPIRequest const &) override;
+  void operator()(Trace<json::WSAPIOrderPlace> const &, json::WSAPIRequest const &) override;
+  void operator()(Trace<json::WSAPICancelOrder> const &, json::WSAPIRequest const &) override;
+  void operator()(Trace<json::WSAPICancelReplaceOrder> const &, json::WSAPIRequest const &) override;
+
+  void update_rate_limits(auto &event);
 
   void update_helper(
       Trace<json::CancelReplaceOrder> const &,
