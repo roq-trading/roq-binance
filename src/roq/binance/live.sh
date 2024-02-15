@@ -24,7 +24,7 @@ $PREFIX ./roq-binance \
   --event_log_dir "$HOME/var/lib/roq/data" \
   --event_log_symlink true \
   --client_listen_address "$HOME/run/$NAME.sock" \
-  --service_listen_address 1234 \
+  --service_listen_address "$HOME/run/metrics/${NAME}.sock" \
   --ws_uri "$WS_URI" \
   --rest_uri "$REST_URI" \
   --ws_api=true \
