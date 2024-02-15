@@ -99,7 +99,7 @@ Rest::Rest(Handler &handler, io::Context &context, uint16_t stream_id, Shared &s
           .ping = create_metrics(shared.settings, name_, "ping"sv),
       },
       rate_limiter_{
-          .request_weight_1m = create_metrics(shared.settings, name_, "1m"sv),
+          .request_1m = create_metrics(shared.settings, name_, "request_1m"sv),
       },
       shared_{shared}, download_{shared.settings.rest.request_timeout, [this](auto state) { return download(state); }} {
 }
@@ -131,7 +131,7 @@ void Rest::operator()(metrics::Writer &writer) {
       // latency
       .write(latency_.ping, metrics::Type::LATENCY)
       // rate limiter
-      .write(rate_limiter_.request_weight_1m, metrics::Type::RATE_LIMITER);
+      .write(rate_limiter_.request_1m, metrics::Type::RATE_LIMITER);
 }
 
 void Rest::operator()(Trace<web::rest::Client::Connected> const &) {
@@ -179,7 +179,7 @@ void Rest::operator()(Trace<web::rest::Client::Header> const &event) {
           .value = value,
       };
       shared_.rate_limits.emplace_back(std::move(rate_limit));
-      rate_limiter_.request_weight_1m.set(value);
+      rate_limiter_.request_1m.set(value);
     } catch (RuntimeError &) {
       log::warn<5>(R"(Failed to parse text="{}")"sv, header.value);
     }
