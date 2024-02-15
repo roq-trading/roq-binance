@@ -1,5 +1,5 @@
 {
-  "name": "WSAPICancelOrder",
+  "name": "WSAPITrades",
   "type": "comp",
   "values": [
     {
@@ -12,7 +12,7 @@
     },
     {
       "name": "result",
-      "type": "CancelOrder"
+      "type": "std::span<Trade2 const>"
     },
     {
       "name": "error",
@@ -20,7 +20,7 @@
     },
     {
       "name": "rateLimits",
-      "type": "std::span<RateLimitsItem const>"
+      "type": "std::span<WSAPIRateLimitsItem const>"
     }
   ]
 }

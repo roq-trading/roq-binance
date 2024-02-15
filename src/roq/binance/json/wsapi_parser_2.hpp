@@ -8,16 +8,16 @@
 #include "roq/trace.hpp"
 #include "roq/trace_info.hpp"
 
-#include "roq/binance/json/ws_api_request.hpp"
+#include "roq/binance/json/wsapi_request.hpp"
 
-#include "roq/binance/json/ws_api_account.hpp"
-#include "roq/binance/json/ws_api_cancel_open_orders.hpp"
-#include "roq/binance/json/ws_api_cancel_order.hpp"
-#include "roq/binance/json/ws_api_cancel_replace_order.hpp"
-#include "roq/binance/json/ws_api_listen_key.hpp"
-#include "roq/binance/json/ws_api_open_orders.hpp"
-#include "roq/binance/json/ws_api_order_place.hpp"
-#include "roq/binance/json/ws_api_trades.hpp"
+#include "roq/binance/json/wsapi_account.hpp"
+#include "roq/binance/json/wsapi_cancel_open_orders.hpp"
+#include "roq/binance/json/wsapi_cancel_order.hpp"
+#include "roq/binance/json/wsapi_cancel_replace_order.hpp"
+#include "roq/binance/json/wsapi_listen_key.hpp"
+#include "roq/binance/json/wsapi_open_orders.hpp"
+#include "roq/binance/json/wsapi_order_place.hpp"
+#include "roq/binance/json/wsapi_trades.hpp"
 
 namespace roq {
 namespace binance {

@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2024, Hans Erik Thrane */
 
-#include "roq/binance/json/ws_api_parser.hpp"
+#include "roq/binance/json/wsapi_parser.hpp"
 
 #include <utility>
 
@@ -8,7 +8,7 @@
 
 #include "roq/core/json/parser.hpp"
 
-#include "roq/binance/json/ws_api_type.hpp"
+#include "roq/binance/json/wsapi_type.hpp"
 
 using namespace std::literals;
 

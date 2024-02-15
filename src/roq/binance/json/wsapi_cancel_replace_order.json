@@ -1,5 +1,5 @@
 {
-  "name": "WSAPIOrderPlace",
+  "name": "WSAPICancelReplaceOrder",
   "type": "comp",
   "values": [
     {
@@ -12,15 +12,15 @@
     },
     {
       "name": "result",
-      "type": "NewOrder"
+      "type": "CancelReplaceOrder"
     },
     {
       "name": "error",
-      "type": "Error"
+      "type": "CancelReplaceOrderError"
     },
     {
       "name": "rateLimits",
-      "type": "std::span<RateLimitsItem const>"
+      "type": "std::span<WSAPIRateLimitsItem const>"
     }
   ]
 }

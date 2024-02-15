@@ -20,7 +20,7 @@
 #include "roq/core/metrics/factory.hpp"
 
 #include "roq/binance/json/utils.hpp"
-#include "roq/binance/json/ws_api_type.hpp"
+#include "roq/binance/json/wsapi_type.hpp"
 
 using namespace std::literals;
 
@@ -1857,6 +1857,8 @@ void OrderEntryWS::update_rate_limits(auto &event) {
           return RateLimitType::CREATE_ORDER;
         case REQUEST_WEIGHT:
           return RateLimitType::REQUEST;
+        case RAW_REQUESTS:
+          break;
       }
       return {};
     }();

@@ -1,5 +1,5 @@
 {
-  "name": "RateLimitsItem",
+  "name": "WSAPIRateLimitsItem",
   "type": "item",
   "values": [
     {
@@ -16,6 +16,10 @@
     },
     {
       "name": "limit",
+      "type": "uint32_t"
+    },
+    {
+      "name": "count",
       "type": "uint32_t"
     }
   ]

@@ -7,7 +7,7 @@
 #include <string_view>
 #include <vector>
 
-#include "roq/binance/json/ws_api_type.hpp"
+#include "roq/binance/json/wsapi_type.hpp"
 
 namespace roq {
 namespace binance {

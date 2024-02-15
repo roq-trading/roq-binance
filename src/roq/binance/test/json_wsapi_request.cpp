@@ -2,7 +2,7 @@
 
 #include <catch2/catch_all.hpp>
 
-#include "roq/binance/json/ws_api_request.hpp"
+#include "roq/binance/json/wsapi_request.hpp"
 
 using namespace roq;
 using namespace roq::binance;
@@ -14,7 +14,7 @@ using namespace Catch::literals;
 
 // === IMPLEMENTATION ===
 
-TEST_CASE("simple", "[json_ws_api_request]") {
+TEST_CASE("simple", "[json_wsapi_request]") {
   auto request = json::WSAPIRequest{
       .sequence = 1,
       .type = json::WSAPIType::LISTEN_KEY_CREATE,

@@ -1,5 +1,5 @@
 {
-  "name": "WSAPIAccount",
+  "name": "WSAPICancelOpenOrders",
   "type": "comp",
   "values": [
     {
@@ -12,7 +12,7 @@
     },
     {
       "name": "result",
-      "type": "Account"
+      "type": "std::span<Order const>"
     },
     {
       "name": "error",
@@ -20,7 +20,7 @@
     },
     {
       "name": "rateLimits",
-      "type": "std::span<RateLimitsItem const>"
+      "type": "std::span<WSAPIRateLimitsItem const>"
     }
   ]
 }

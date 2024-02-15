@@ -177,7 +177,7 @@ void Rest::operator()(Trace<web::rest::Client::Header> const &event) {
           .type = RateLimitType::REQUEST,
           .period = 1min,
           .end_time_utc = {},
-          .limit = {},
+          .limit = shared_.limits.requests_1m,
           .value = value,
       };
       shared_.rate_limits.emplace_back(std::move(rate_limit));
@@ -291,6 +291,66 @@ void Rest::get_exchange_info_ack(Trace<web::rest::Response> const &event, uint32
 
 void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
   auto &[trace_info, exchange_info] = event;
+  // rate-limits
+  for (auto &item : exchange_info.rate_limits) {
+    switch (item.rate_limit_type) {
+      using enum json::RateLimitType::type_t;
+      case UNDEFINED__:
+      case UNKNOWN__:
+        break;
+      case ORDERS:
+        switch (item.interval) {
+          using enum json::Interval::type_t;
+          case UNDEFINED__:
+          case UNKNOWN__:
+            break;
+          case SECOND:
+            if (item.interval_num == 10) {
+              shared_.limits.orders_10s = item.limit;
+            } else {
+              log::warn("Unknown interval: rate_limit={}"sv, item);
+            }
+            break;
+          case MINUTE:
+            log::warn("Unknown interval: rate_limit={}"sv, item);
+            break;
+          case DAY:
+            if (item.interval_num == 1) {
+              shared_.limits.orders_1d = item.limit;
+            } else {
+              log::warn("Unknown interval: rate_limit={}"sv, item);
+            }
+            break;
+        }
+        break;
+      case REQUEST_WEIGHT:
+        shared_.limits.requests_1m = item.limit;
+        break;
+        switch (item.interval) {
+          using enum json::Interval::type_t;
+          case UNDEFINED__:
+          case UNKNOWN__:
+            break;
+          case SECOND:
+            log::warn("Unknown interval: rate_limit={}"sv, item);
+            break;
+          case MINUTE:
+            if (item.interval_num == 1) {
+              shared_.limits.requests_1m = item.limit;
+            } else {
+              log::warn("Unknown interval: rate_limit={}"sv, item);
+            }
+            break;
+          case DAY:
+            log::warn("Unknown interval: rate_limit={}"sv, item);
+            break;
+        }
+        break;
+      case RAW_REQUESTS:
+        break;
+    }
+  }
+  // symbols
   std::vector<Symbol> symbols;
   size_t counter = {};
   for (auto const &item : exchange_info.symbols) {

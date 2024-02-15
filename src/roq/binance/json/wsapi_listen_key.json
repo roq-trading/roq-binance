@@ -1,5 +1,5 @@
 {
-  "name": "WSAPIOpenOrders",
+  "name": "WSAPIListenKey",
   "type": "comp",
   "values": [
     {
@@ -12,7 +12,7 @@
     },
     {
       "name": "result",
-      "type": "std::span<Order const>"
+      "type": "ListenKey"
     },
     {
       "name": "error",
@@ -20,7 +20,7 @@
     },
     {
       "name": "rateLimits",
-      "type": "std::span<RateLimitsItem const>"
+      "type": "std::span<WSAPIRateLimitsItem const>"
     }
   ]
 }

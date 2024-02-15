@@ -11,7 +11,8 @@
       "type": "std::chrono::milliseconds"
     },
     {
-      "name": "rateLimits"
+      "name": "rateLimits",
+      "type": "std::span<RateLimitsItem const>"
     },
     {
       "name": "exchangeFilters",

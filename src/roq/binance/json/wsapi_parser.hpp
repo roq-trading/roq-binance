@@ -6,7 +6,7 @@
 
 #include "roq/api.hpp"
 
-#include "roq/binance/json/ws_api_request.hpp"
+#include "roq/binance/json/wsapi_request.hpp"
 
 #include "roq/binance/json/error.hpp"
 

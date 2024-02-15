@@ -116,6 +116,11 @@ struct Shared final {
   json::CreateOrderTemplate const &get_create_order_template(std::string_view const &name);
   json::CancelOrderTemplate const &get_cancel_order_template(std::string_view const &name);
 
+  struct {
+    uint32_t requests_1m = {};
+    uint32_t orders_10s = {};
+    uint32_t orders_1d = {};
+  } limits;
   std::vector<RateLimit> rate_limits;
 };
 

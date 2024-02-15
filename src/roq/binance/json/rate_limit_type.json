@@ -7,6 +7,9 @@
     },
     {
       "name": "REQUEST_WEIGHT"
+    },
+    {
+      "name": "RAW_REQUESTS"
     }
   ]
 }
