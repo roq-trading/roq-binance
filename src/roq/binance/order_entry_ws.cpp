@@ -76,9 +76,9 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &inter
 }
 
 struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(auto &settings, auto const &group, auto const &function)
+  create_metrics(auto &settings, auto const &group, auto const &function)
       : core::metrics::Factory(settings.app.name, group, function) {}
-  explicit create_metrics(auto &settings, auto const &group, auto const &function, auto const &params)
+  create_metrics(auto &settings, auto const &group, auto const &function, auto const &params)
       : core::metrics::Factory(settings.app.name, group, function, params) {}
 };
 
@@ -136,9 +136,9 @@ OrderEntryWS::OrderEntryWS(
           .heartbeat = create_metrics(shared.settings, name_, "heartbeat"sv),
       },
       rate_limiter_{
-          .request_1m = create_metrics(shared.settings, name_, "request"sv, "1m"sv),
-          .order_10s = create_metrics(shared.settings, name_, "order"sv, "10s"sv),
-          .order_1d = create_metrics(shared.settings, name_, "order"sv, "1d"sv),
+          .requests_1m = create_metrics(shared.settings, name_, "requests"sv, "1m"sv),
+          .orders_10s = create_metrics(shared.settings, name_, "orders"sv, "10s"sv),
+          .orders_1d = create_metrics(shared.settings, name_, "orders"sv, "1d"sv),
       },
       account_{account}, shared_{shared}, request_{request}, request_id_{REQUEST_ID} {
 }
@@ -202,9 +202,9 @@ void OrderEntryWS::operator()(metrics::Writer &writer) {
       .write(latency_.ping, metrics::Type::LATENCY)
       .write(latency_.heartbeat, metrics::Type::LATENCY)
       // rate limiter
-      .write(rate_limiter_.request_1m, metrics::Type::RATE_LIMITER)
-      .write(rate_limiter_.order_10s, metrics::Type::RATE_LIMITER)
-      .write(rate_limiter_.order_1d, metrics::Type::RATE_LIMITER);
+      .write(rate_limiter_.requests_1m, metrics::Type::RATE_LIMITER)
+      .write(rate_limiter_.orders_10s, metrics::Type::RATE_LIMITER)
+      .write(rate_limiter_.orders_1d, metrics::Type::RATE_LIMITER);
 }
 
 void OrderEntryWS::operator()(Event<Disconnected> const &event) {
@@ -1885,14 +1885,14 @@ void OrderEntryWS::update_rate_limits(auto &event) {
         break;
       case CREATE_ORDER:
         if (period == 10s) {
-          rate_limiter_.order_10s.set(item.count);
+          rate_limiter_.orders_10s.set(item.count);
         } else if (period == 24h) {
-          rate_limiter_.order_1d.set(item.count);
+          rate_limiter_.orders_1d.set(item.count);
         }
         break;
       case REQUEST:
         if (period == 1min) {
-          rate_limiter_.request_1m.set(item.count);
+          rate_limiter_.requests_1m.set(item.count);
         }
         break;
     }

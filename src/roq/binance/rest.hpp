@@ -108,7 +108,7 @@ struct Rest final : public web::rest::Client::Handler {
     utils::metrics::Latency ping;
   } latency_;
   struct {
-    utils::metrics::Gauge request_1m;
+    utils::metrics::Gauge requests_1m;
   } rate_limiter_;
   // cache
   Shared &shared_;

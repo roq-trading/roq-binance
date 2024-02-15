@@ -194,7 +194,7 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
     utils::metrics::Latency ping;
   } latency_;
   struct {
-    utils::metrics::Gauge minute;
+    utils::metrics::Gauge requests_1m;
   } rate_limiter_;
   // authentication
   Account &account_;
