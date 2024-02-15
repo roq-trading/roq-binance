@@ -169,7 +169,7 @@ struct OrderEntryWS final : public OrderEntry,
     utils::metrics::Latency ping, heartbeat;
   } latency_;
   struct {
-    utils::metrics::Gauge requests_1m, orders_10s, orders_1d;
+    utils::metrics::Gauge request_weight_1m, create_order_10s, create_order_1d;
   } rate_limiter_;
   // authentication
   Account &account_;

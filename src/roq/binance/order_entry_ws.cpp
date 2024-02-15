@@ -136,9 +136,9 @@ OrderEntryWS::OrderEntryWS(
           .heartbeat = create_metrics(shared.settings, name_, "heartbeat"sv),
       },
       rate_limiter_{
-          .requests_1m = create_metrics(shared.settings, name_, "requests"sv, "1m"sv),
-          .orders_10s = create_metrics(shared.settings, name_, "orders"sv, "10s"sv),
-          .orders_1d = create_metrics(shared.settings, name_, "orders"sv, "1d"sv),
+          .request_weight_1m = create_metrics(shared.settings, name_, "request_weight"sv, "1m"sv),
+          .create_order_10s = create_metrics(shared.settings, name_, "create_order"sv, "10s"sv),
+          .create_order_1d = create_metrics(shared.settings, name_, "create_order"sv, "1d"sv),
       },
       account_{account}, shared_{shared}, request_{request}, request_id_{REQUEST_ID} {
 }
@@ -202,9 +202,9 @@ void OrderEntryWS::operator()(metrics::Writer &writer) {
       .write(latency_.ping, metrics::Type::LATENCY)
       .write(latency_.heartbeat, metrics::Type::LATENCY)
       // rate limiter
-      .write(rate_limiter_.requests_1m, metrics::Type::RATE_LIMITER)
-      .write(rate_limiter_.orders_10s, metrics::Type::RATE_LIMITER)
-      .write(rate_limiter_.orders_1d, metrics::Type::RATE_LIMITER);
+      .write(rate_limiter_.request_weight_1m, metrics::Type::RATE_LIMITER)
+      .write(rate_limiter_.create_order_10s, metrics::Type::RATE_LIMITER)
+      .write(rate_limiter_.create_order_1d, metrics::Type::RATE_LIMITER);
 }
 
 void OrderEntryWS::operator()(Event<Disconnected> const &event) {
@@ -1856,9 +1856,9 @@ void OrderEntryWS::update_rate_limits(auto &event) {
         case ORDERS:
           return RateLimitType::CREATE_ORDER;
         case REQUEST_WEIGHT:
-          return RateLimitType::REQUEST;
+          return RateLimitType::REQUEST_WEIGHT;
         case RAW_REQUESTS:
-          break;
+          return RateLimitType::REQUEST;
       }
       return {};
     }();
@@ -1887,14 +1887,16 @@ void OrderEntryWS::update_rate_limits(auto &event) {
         break;
       case CREATE_ORDER:
         if (period == 10s) {
-          rate_limiter_.orders_10s.set(item.count);
+          rate_limiter_.create_order_10s.set(item.count);
         } else if (period == 24h) {
-          rate_limiter_.orders_1d.set(item.count);
+          rate_limiter_.create_order_1d.set(item.count);
         }
         break;
       case REQUEST:
+        break;
+      case REQUEST_WEIGHT:
         if (period == 1min) {
-          rate_limiter_.requests_1m.set(item.count);
+          rate_limiter_.request_weight_1m.set(item.count);
         }
         break;
     }
