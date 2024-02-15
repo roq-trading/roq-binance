@@ -78,6 +78,8 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &inter
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(auto &settings, auto const &group, auto const &function)
       : core::metrics::Factory(settings.app.name, group, function) {}
+  explicit create_metrics(auto &settings, auto const &group, auto const &function, auto const &params)
+      : core::metrics::Factory(settings.app.name, group, function, params) {}
 };
 
 auto get_download_trades_lookback(auto const &settings, auto download_trades_is_first) {
@@ -134,9 +136,9 @@ OrderEntryWS::OrderEntryWS(
           .heartbeat = create_metrics(shared.settings, name_, "heartbeat"sv),
       },
       rate_limiter_{
-          .request_1m = create_metrics(shared.settings, name_, "request_1m"sv),
-          .order_10s = create_metrics(shared.settings, name_, "order_10s"sv),
-          .order_1d = create_metrics(shared.settings, name_, "order_1d"sv),
+          .request_1m = create_metrics(shared.settings, name_, "request"sv, "1m"sv),
+          .order_10s = create_metrics(shared.settings, name_, "order"sv, "10s"sv),
+          .order_1d = create_metrics(shared.settings, name_, "order"sv, "1d"sv),
       },
       account_{account}, shared_{shared}, request_{request}, request_id_{REQUEST_ID} {
 }

@@ -76,6 +76,8 @@ auto create_connection(auto &handler, auto &settings, auto &context) {
 struct create_metrics final : public core::metrics::Factory {
   explicit create_metrics(auto &settings, auto const &group, auto const &function)
       : core::metrics::Factory(settings.app.name, group, function) {}
+  explicit create_metrics(auto &settings, auto const &group, auto const &function, auto const &params)
+      : core::metrics::Factory(settings.app.name, group, function, params) {}
 };
 }  // namespace
 
@@ -99,7 +101,7 @@ Rest::Rest(Handler &handler, io::Context &context, uint16_t stream_id, Shared &s
           .ping = create_metrics(shared.settings, name_, "ping"sv),
       },
       rate_limiter_{
-          .request_1m = create_metrics(shared.settings, name_, "request_1m"sv),
+          .request_1m = create_metrics(shared.settings, name_, "request"sv, "1m"sv),
       },
       shared_{shared}, download_{shared.settings.rest.request_timeout, [this](auto state) { return download(state); }} {
 }
