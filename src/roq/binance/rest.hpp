@@ -2,11 +2,11 @@
 
 #pragma once
 
-#include <absl/container/flat_hash_set.h>
-
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include "roq/utils/container.hpp"
 
 #include "roq/utils/metrics/counter.hpp"
 #include "roq/utils/metrics/gauge.hpp"
@@ -112,7 +112,7 @@ struct Rest final : public web::rest::Client::Handler {
   } rate_limiter_;
   // cache
   Shared &shared_;
-  absl::flat_hash_set<Symbol> all_symbols_;
+  utils::unordered_set<std::string> all_symbols_;
   // state
   bool ready_ = false;
   ConnectionStatus status_ = {};

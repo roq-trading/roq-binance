@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include <absl/container/flat_hash_map.h>
-
 #include <chrono>
 #include <string>
 #include <utility>
@@ -11,6 +9,8 @@
 
 #include "roq/api.hpp"
 #include "roq/server.hpp"
+
+#include "roq/utils/container.hpp"
 
 #include "roq/market/mbp/sequencer.hpp"
 
@@ -95,7 +95,7 @@ struct Shared final {
   Instrument &get_instrument(std::string_view const &symbol);
 
  private:
-  absl::flat_hash_map<Symbol, Instrument> instruments_;
+  utils::unordered_map<std::string, Instrument> instruments_;
 
  private:
   server::Dispatcher &dispatcher_;
@@ -109,8 +109,8 @@ struct Shared final {
   core::TimerQueue<std::string> depth_request_queue;
 
  private:
-  absl::flat_hash_map<std::string, json::CreateOrderTemplate> const &create_order_templates;
-  absl::flat_hash_map<std::string, json::CancelOrderTemplate> const &cancel_order_templates;
+  utils::unordered_map<std::string, json::CreateOrderTemplate> const &create_order_templates;
+  utils::unordered_map<std::string, json::CancelOrderTemplate> const &cancel_order_templates;
 
  public:
   json::CreateOrderTemplate const &get_create_order_template(std::string_view const &name);

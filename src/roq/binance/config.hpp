@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include <absl/container/flat_hash_map.h>
-
 #include <fmt/ranges.h>
 
 #include <toml++/toml.h>
@@ -14,6 +12,8 @@
 
 #include "roq/logging.hpp"
 #include "roq/server.hpp"
+
+#include "roq/utils/container.hpp"
 
 #include "roq/server/config/dispatcher.hpp"
 #include "roq/server/config/reader.hpp"
@@ -56,8 +56,8 @@ struct Config final : public server::config::Dispatcher, public server::config::
   server::config::Accounts accounts;
   Account master_account_;
   server::config::RateLimits rate_limits;
-  absl::flat_hash_map<std::string, json::CreateOrderTemplate> create_order_templates;
-  absl::flat_hash_map<std::string, json::CancelOrderTemplate> cancel_order_templates;
+  utils::unordered_map<std::string, json::CreateOrderTemplate> create_order_templates;
+  utils::unordered_map<std::string, json::CancelOrderTemplate> cancel_order_templates;
 };
 
 /*

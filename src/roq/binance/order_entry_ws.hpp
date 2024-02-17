@@ -6,6 +6,8 @@
 #include <string_view>
 #include <vector>
 
+#include "roq/utils/container.hpp"
+
 #include "roq/utils/metrics/counter.hpp"
 #include "roq/utils/metrics/gauge.hpp"
 #include "roq/utils/metrics/latency.hpp"
@@ -183,7 +185,7 @@ struct OrderEntryWS final : public OrderEntry,
   bool download_account_ = false;
   bool download_orders_ = false;
   bool download_trades_ = false;
-  absl::flat_hash_set<Symbol> open_orders_symbols_;
+  utils::unordered_set<std::string> open_orders_symbols_;
   std::vector<char> request_encode_buffer_;
   std::vector<char> encode_buffer_;
   // state
