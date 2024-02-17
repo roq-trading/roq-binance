@@ -37,6 +37,7 @@ find_package(roq-market REQUIRED)
 find_package(roq-server REQUIRED)
 find_package(roq-utils REQUIRED)
 find_package(roq-web REQUIRED)
+find_package(roq-unordered_dense REQUIRED)
 
 if(UNIX AND NOT APPLE)
   find_package(rt REQUIRED)
