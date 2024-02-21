@@ -30,4 +30,5 @@ $PREFIX ./roq-binance \
   --ws_api=true \
   --download_symbols="BTCUSDT,ETHUSDT" \
   --download_trades_lookback=60s \
+  --cache_all_reference_data=true \
   $@
