@@ -56,7 +56,7 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &inter
       // connection
       .interface = interface,
       .uris = {&uri, 1},
-      .host = {},
+      .host = settings.ws_api_2.host,
       .validate_certificate = settings.net.tls_validate_certificate,
       // connection manager
       .connection_timeout = settings.net.connection_timeout,

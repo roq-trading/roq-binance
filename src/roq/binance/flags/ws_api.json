@@ -16,6 +16,11 @@
       "description": "WebSocket API end-point (URI)"
     },
     {
+      "name": "host",
+      "type": "std::string",
+      "description": "host (http header) in case uri uses an IP address"
+    },
+    {
       "name": "ping_freq",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
