@@ -7,9 +7,9 @@
 
 #include "roq/mask.hpp"
 
-#include "roq/utils/update.hpp"
-
 #include "roq/utils/charconv.hpp"
+#include "roq/utils/compare.hpp"
+#include "roq/utils/update.hpp"
 
 #include "roq/core/metrics/factory.hpp"
 
@@ -171,7 +171,7 @@ void Rest::operator()(Trace<web::rest::Client::MessageBegin> const &) {
 
 void Rest::operator()(Trace<web::rest::Client::Header> const &event) {
   auto &header = event.value;
-  if (header.name == "x-mbx-used-weight-1m"sv) {
+  if (utils::case_insensitive_compare(header.name, "x-mbx-used-weight-1m"sv) == 0) {
     try {
       auto value = utils::from_string_relaxed<uint32_t>(header.value);
       auto rate_limit = RateLimit{

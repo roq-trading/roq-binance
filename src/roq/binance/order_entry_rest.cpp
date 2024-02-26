@@ -10,6 +10,7 @@
 #include "roq/server/oms/exceptions.hpp"
 
 #include "roq/utils/charconv.hpp"
+#include "roq/utils/compare.hpp"
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
@@ -274,7 +275,7 @@ void OrderEntryREST::operator()(Trace<web::rest::Client::Disconnected> const &) 
 
 void OrderEntryREST::operator()(Trace<web::rest::Client::Header> const &event) {
   auto &header = event.value;
-  if (header.name == "x-mbx-used-weight-1m"sv) {
+  if (utils::case_insensitive_compare(header.name, "x-mbx-used-weight-1m"sv) == 0) {
     log::info("DEBUG header={}"sv, header);
     try {
       auto value = utils::from_string_relaxed<int64_t>(header.value);
