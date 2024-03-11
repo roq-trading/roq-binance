@@ -3,80 +3,80 @@
   "type": "flags",
   "values": [
     {
-      "name": "request_limit",
-      "type": "uint32_t",
-      "default": "8",
-      "description": "request limit per interval"
-    },
-    {
       "name": "request_limit_interval",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "5s",
-      "description": "request limit monitor interval"
+      "description": "Request limit monitor interval"
+    },
+    {
+      "name": "request_limit",
+      "type": "uint32_t",
+      "default": "8",
+      "description": "Request limit per interval"
     },
     {
       "name": "encode_buffer_size",
       "type": "uint32_t",
       "required": true,
       "default": 1048576,
-      "description": "encode buffer size"
+      "description": "Encode buffer size"
     },
     {
       "name": "decode_buffer_size",
       "type": "uint32_t",
       "required": true,
       "default": 10485760,
-      "description": "decode buffer size"
+      "description": "Decode buffer size"
     },
     {
       "name": "mbp_allow_price_inversion",
       "type": "bool",
       "default": false,
-      "description": "allow price inversion?"
+      "description": "Allow price inversion?"
     },
     {
       "name": "mbp_max_depth",
       "type": "uint16_t",
-      "description": "max depth levels (count)"
+      "description": "Maximum depth levels (count)"
     },
     {
       "name": "mbp_sequencer_timeout",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "120s",
-      "description": "mbp sequencer timeout"
+      "description": "MbP sequencer timeout"
     },
     {
       "name": "cancel_replace_stop_on_failure",
       "type": "bool",
       "default": false,
-      "description": "if the cancel request fails, the replacement will not be attempted"
+      "description": "If the cancel request fails, the replacement will not be attempted"
     },
     {
       "name": "download_symbols",
       "type": "std::vector<std::string>",
-      "description": "comma-separated list of symbols"
+      "description": "List of symbols to download"
     },
     {
       "name": "download_trades_lookback",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "300s",
-      "description": "download trades? (lookback period)"
+      "description": "Download trades? (lookback period)"
     },
     {
       "name": "download_trades_lookback_on_restart",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "{}",
-      "description": "download trades? (lookback period)"
+      "description": "Download trades? (lookback period)"
     },
     {
       "name": "download_trades_limit",
       "type": "uint32_t",
       "default": 1000,
-      "description": "exchange limitation"
+      "description": "Exchange limitation"
     }
   ]
 }

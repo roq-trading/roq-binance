@@ -13,59 +13,59 @@
     {
       "name": "host",
       "type": "std::string",
-      "description": "host (http header) in case uri uses an IP address"
+      "description": "Host (HTTP header) to use when the URI configured with IP address"
     },
     {
       "name": "ping_freq",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "5s",
-      "description": "ping frequency"
+      "description": "Ping frequency"
     },
     {
       "name": "max_subscriptions_per_stream",
       "type": "uint32_t",
       "required": true,
       "default": 128,
-      "description": "max symbols per connection (count)"
+      "description": "Maximum number of symbols per connection"
     },
     {
       "name": "subscribe_depth_levels",
       "type": "uint32_t",
       "default": 1000,
-      "description": "depth levels (count)"
+      "description": "Pepth levels (count)"
     },
     {
       "name": "subscribe_depth_freq",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "100ms",
-      "description": "depth update frequency"
+      "description": "Depth update frequency"
     },
     {
       "name": "mbp_request_delay",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "10s",
-      "description": "request delay"
+      "description": "Request delay"
     },
     {
       "name": "mbp_request_max_retries",
       "type": "uint32_t",
       "default": 0,
-      "description": "request max retries"
+      "description": "Request max retries"
     },
     {
       "name": "subscribe_trade_details",
       "type": "bool",
       "default": false,
-      "description": "report individual matches for trade summary? (bool)"
+      "description": "Report individual matches for trade summary? (bool)"
     },
     {
       "name": "enable_secondary",
       "type": "bool",
       "default": false,
-      "description": "create secondary market data connection? (bool)"
+      "description": "Create secondary market data connection? (bool)"
     }
   ]
 }

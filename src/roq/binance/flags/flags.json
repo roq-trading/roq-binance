@@ -7,13 +7,13 @@
       "type": "std::string",
       "required": true,
       "default": "binance",
-      "description": "exchange identifier (string)"
+      "description": "Exchange identifier"
     },
     {
       "name": "ws_api",
       "type": "bool",
       "default": true,
-      "description": "use the websocket api?"
+      "description": "Use the websocket api?"
     }
   ]
 }
