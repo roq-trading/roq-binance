@@ -1,17 +1,17 @@
 !!! THIS FILE HAS BEEN AUTO-GENERATED !!!
 roq-binance-flags
-common.rstinc
-rest.rstinc
-ws.rstinc
-ws_api.rstinc
-flags.rstinc
+flags_.rstinc
+common_.rstinc
+rest_.rstinc
+ws_.rstinc
+ws_api_.rstinc
+flags.hpp
 common.hpp
 rest.hpp
 ws.hpp
 ws_api.hpp
-flags.hpp
+flags.cpp
 common.cpp
 rest.cpp
 ws.cpp
 ws_api.cpp
-flags.cpp
