@@ -178,6 +178,11 @@ Environments
    .. include:: flags/prod-us/flags.cfg
      :code: ini
 
+.. tab:: Test
+
+   .. include:: flags/test/flags.cfg
+     :code: ini
+
 
 Market Data
 -----------
