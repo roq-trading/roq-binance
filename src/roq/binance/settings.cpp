@@ -12,7 +12,8 @@ namespace binance {
 Settings::Settings(args::Parser const &args)
     : server::flags::Settings{args, ROQ_PACKAGE_NAME, ROQ_BUILD_NUMBER}, flags::Flags{flags::Flags::create()},
       common{flags::Common::create()}, rest{flags::REST::create()}, ws{flags::WS::create()},
-      ws_api_2{flags::WS_API::create()} {
+      ws_api_2{flags::WS_API::create()}, download{flags::Download::create()}, mbp{flags::MBP::create()},
+      oms{flags::OMS::create()}, request{flags::Request::create()} {
   log::info("settings={}"sv, *this);
 }
 

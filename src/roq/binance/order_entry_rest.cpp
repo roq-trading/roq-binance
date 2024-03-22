@@ -86,10 +86,10 @@ struct create_metrics final : public core::metrics::Factory {
 
 auto get_download_trades_lookback(auto const &settings, auto download_trades_is_first) {
   if (download_trades_is_first) {
-    if (settings.common.download_trades_lookback_on_restart.count())
-      return settings.common.download_trades_lookback_on_restart;
+    if (settings.download.trades_lookback_on_restart.count())
+      return settings.download.trades_lookback_on_restart;
   }
-  return settings.common.download_trades_lookback;
+  return settings.download.trades_lookback;
 }
 }  // namespace
 
@@ -578,13 +578,13 @@ void OrderEntryREST::operator()(Trace<json::OpenOrders> const &event) {
 
 void OrderEntryREST::get_trades() {
   profile_.trades([&]() {
-    auto &symbols = shared_.settings.common.download_symbols;
+    auto &symbols = shared_.settings.download.symbols;
     for (auto &symbol : symbols) {
       auto now = clock::get_realtime<std::chrono::milliseconds>();
       auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
       log::info<1>("Download trades: lookback={}"sv, lookback);
       auto headers = account_.create_headers();
-      auto body = json::my_trades(encode_buffer_, symbol, lookback, shared_.settings.common.download_trades_limit, now);
+      auto body = json::my_trades(encode_buffer_, symbol, lookback, shared_.settings.download.trades_limit, now);
       log::debug(R"(body="{}")"sv, body);
       auto query = account_.create_query(now, body);
       auto request = web::rest::Request{
@@ -855,7 +855,7 @@ void OrderEntryREST::cancel_replace_order(
                   cancel_order_template,
                   create_order_template,
                   utils::safe_cast(shared_.settings.rest.order_recv_window),
-                  shared_.settings.common.cancel_replace_stop_on_failure);
+                  shared_.settings.oms.cancel_replace_stop_on_failure);
               log::info(R"(DEBUG body="{}")"sv, body);
               auto now = clock::get_realtime<std::chrono::milliseconds>();
               auto query = account_.create_query(now, body);

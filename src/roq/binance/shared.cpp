@@ -14,7 +14,7 @@ namespace binance {
 namespace {
 auto create_sequencer(auto &settings) {
   auto options = market::mbp::Sequencer::Options{
-      .timeout = settings.common.mbp_sequencer_timeout,
+      .timeout = settings.mbp.sequencer_timeout,
       .max_updates = {},
   };
   return market::mbp::Sequencer{options};
@@ -25,7 +25,7 @@ auto create_sequencer(auto &settings) {
 
 Shared::Shared(server::Dispatcher &dispatcher, Settings const &settings, Config const &config)
     : dispatcher_{dispatcher}, settings{settings},
-      rate_limiter{settings.common.request_limit, settings.common.request_limit_interval},
+      rate_limiter{settings.request.limit, settings.request.limit_interval},
       symbols{settings.ws.max_subscriptions_per_stream}, depth_request_queue{settings.ws.mbp_request_delay},
       create_order_templates{config.create_order_templates}, cancel_order_templates{config.cancel_order_templates} {
 }

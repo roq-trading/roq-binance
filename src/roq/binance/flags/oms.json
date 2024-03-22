@@ -1,0 +1,12 @@
+{
+  "name": "OMS",
+  "type": "flags",
+  "values": [
+    {
+      "name": "cancel_replace_stop_on_failure",
+      "type": "bool",
+      "default": false,
+      "description": "If the cancel request fails, the replacement will not be attempted"
+    }
+  ]
+}

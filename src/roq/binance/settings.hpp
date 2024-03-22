@@ -7,7 +7,11 @@
 #include "roq/server/flags/settings.hpp"
 
 #include "roq/binance/flags/common.hpp"
+#include "roq/binance/flags/download.hpp"
 #include "roq/binance/flags/flags.hpp"
+#include "roq/binance/flags/mbp.hpp"
+#include "roq/binance/flags/oms.hpp"
+#include "roq/binance/flags/request.hpp"
 #include "roq/binance/flags/rest.hpp"
 #include "roq/binance/flags/ws.hpp"
 #include "roq/binance/flags/ws_api.hpp"
@@ -22,6 +26,10 @@ struct Settings final : public server::flags::Settings, public flags::Flags {
   flags::REST rest;
   flags::WS ws;
   flags::WS_API ws_api_2;  // note! overlapping with flags::Flags
+  flags::Download download;
+  flags::MBP mbp;
+  flags::OMS oms;
+  flags::Request request;
 };
 
 }  // namespace binance
@@ -41,6 +49,10 @@ struct fmt::formatter<roq::binance::Settings> {
         R"(rest={}, )"
         R"(ws={}, )"
         R"(ws_api={}, )"
+        R"(download={}, )"
+        R"(mbp={}, )"
+        R"(oms={}, )"
+        R"(request={}, )"
         R"(server={})"
         R"(}})"sv,
         value.exchange,
@@ -49,6 +61,10 @@ struct fmt::formatter<roq::binance::Settings> {
         value.rest,
         value.ws,
         value.ws_api_2,
+        value.download,
+        value.mbp,
+        value.oms,
+        value.request,
         static_cast<roq::server::Settings const &>(value));
   }
 };

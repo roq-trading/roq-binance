@@ -85,10 +85,10 @@ struct create_metrics final : public core::metrics::Factory {
 
 auto get_download_trades_lookback(auto const &settings, auto download_trades_is_first) {
   if (download_trades_is_first) {
-    if (settings.common.download_trades_lookback_on_restart.count())
-      return settings.common.download_trades_lookback_on_restart;
+    if (settings.download.trades_lookback_on_restart.count())
+      return settings.download.trades_lookback_on_restart;
   }
-  return settings.common.download_trades_lookback;
+  return settings.download.trades_lookback;
 }
 }  // namespace
 
@@ -395,7 +395,7 @@ void OrderEntryWS::open_orders_status() {
 
 void OrderEntryWS::my_trades() {
   profile_.my_trades([&]() {
-    auto &symbols = shared_.settings.common.download_symbols;
+    auto &symbols = shared_.settings.download.symbols;
     for (auto &symbol : symbols) {
       auto now = clock::get_realtime<std::chrono::milliseconds>();
       auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
@@ -409,7 +409,7 @@ void OrderEntryWS::my_trades() {
           "symbol={}&"
           "timestamp={}"sv,
           account_.get_key(),
-          shared_.settings.common.download_trades_limit,
+          shared_.settings.download.trades_limit,
           start_time.count(),
           symbol,
           now.count());
@@ -439,7 +439,7 @@ void OrderEntryWS::my_trades() {
           R"(}})"sv,
           request_id,
           account_.get_key(),
-          shared_.settings.common.download_trades_limit,
+          shared_.settings.download.trades_limit,
           start_time.count(),
           symbol,
           now.count(),
@@ -652,7 +652,7 @@ void OrderEntryWS::order_cancel_replace(
                   cancel_order_template,
                   create_order_template,
                   utils::safe_cast(shared_.settings.rest.order_recv_window),
-                  shared_.settings.common.cancel_replace_stop_on_failure,
+                  shared_.settings.oms.cancel_replace_stop_on_failure,
                   account_.get_key(),
                   now);
               log::debug(R"(message_for_signature="{}")"sv, message_for_signature);
@@ -668,7 +668,7 @@ void OrderEntryWS::order_cancel_replace(
                   cancel_order_template,
                   create_order_template,
                   utils::safe_cast(shared_.settings.rest.order_recv_window),
-                  shared_.settings.common.cancel_replace_stop_on_failure,
+                  shared_.settings.oms.cancel_replace_stop_on_failure,
                   account_.get_key(),
                   now,
                   signature);

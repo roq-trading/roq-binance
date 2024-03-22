@@ -1,0 +1,25 @@
+{
+  "name": "MBP",
+  "type": "flags",
+  "prefix": "mbp_",
+  "values": [
+    {
+      "name": "allow_price_inversion",
+      "type": "bool",
+      "default": false,
+      "description": "Allow price inversion?"
+    },
+    {
+      "name": "max_depth",
+      "type": "uint16_t",
+      "description": "Maximum depth levels (count)"
+    },
+    {
+      "name": "sequencer_timeout",
+      "type": "std::chrono::nanoseconds",
+      "validator": "roq::flags::validators::TimePeriod",
+      "default": "120s",
+      "description": "MbP sequencer timeout"
+    }
+  ]
+}
