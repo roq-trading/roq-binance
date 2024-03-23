@@ -4,17 +4,17 @@
   "prefix": "request_",
   "values": [
     {
+      "name": "limit",
+      "type": "uint32_t",
+      "default": "8",
+      "description": "Maximum number of requests per interval"
+    },
+    {
       "name": "limit_interval",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "5s",
-      "description": "Request limit monitor interval"
-    },
-    {
-      "name": "limit",
-      "type": "uint32_t",
-      "default": "8",
-      "description": "Request limit per interval"
+      "description": "Monitor interval"
     }
   ]
 }

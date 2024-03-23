@@ -6,19 +6,19 @@
     {
       "name": "network_interfaces",
       "type": "std::vector<std::string>",
-      "description": "List of WS API network interfaces"
+      "description": "Network interfaces"
     },
     {
       "name": "uri",
       "type": "roq::io::web::URI",
       "validator": "roq::core::flags::URI",
       "default": "wss://ws-api.binance.com/ws-api/v3",
-      "description": "WS API end-point (URI)"
+      "description": "Exchange end-point"
     },
     {
       "name": "host",
       "type": "std::string",
-      "description": "Host (HTTP header) in case uri uses an IP address"
+      "description": "Host (when URI is an IP address)"
     },
     {
       "name": "ping_freq",

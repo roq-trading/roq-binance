@@ -8,12 +8,12 @@
       "type": "roq::io::web::URI",
       "validator": "roq::core::flags::URI",
       "default": "wss://testnet.binance.com/realtime",
-      "description": "WebSocket end-point (URI)"
+      "description": "Exchange end-point"
     },
     {
       "name": "host",
       "type": "std::string",
-      "description": "Host (HTTP header) to use when the URI configured with IP address"
+      "description": "Host (when URI is an IP address)"
     },
     {
       "name": "ping_freq",
@@ -33,7 +33,7 @@
       "name": "subscribe_depth_levels",
       "type": "uint32_t",
       "default": 1000,
-      "description": "Pepth levels (count)"
+      "description": "Depth levels to subscribe"
     },
     {
       "name": "subscribe_depth_freq",
@@ -47,25 +47,25 @@
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "10s",
-      "description": "Request delay"
+      "description": "Delay before requesting depth snapshot"
     },
     {
       "name": "mbp_request_max_retries",
       "type": "uint32_t",
       "default": 0,
-      "description": "Request max retries"
+      "description": "Maximum number of retries before giving up"
     },
     {
       "name": "subscribe_trade_details",
       "type": "bool",
       "default": false,
-      "description": "Report individual matches for trade summary? (bool)"
+      "description": "Should trade summary reports include individual matches?"
     },
     {
       "name": "enable_secondary",
       "type": "bool",
       "default": false,
-      "description": "Create secondary market data connection? (bool)"
+      "description": "Create secondary market data connection?"
     }
   ]
 }

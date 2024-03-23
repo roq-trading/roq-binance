@@ -4,29 +4,29 @@
   "prefix": "download_",
   "values": [
     {
-      "name": "symbols",
-      "type": "std::vector<std::string>",
-      "description": "List of symbols to download"
-    },
-    {
       "name": "trades_lookback",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "300s",
-      "description": "Download trades? (lookback period)"
+      "description": "Lookback period when downloading trades (following a disconnect)"
     },
     {
       "name": "trades_lookback_on_restart",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "{}",
-      "description": "Download trades? (lookback period)"
+      "description": "Lookback period when downloading trades (initial download)"
     },
     {
       "name": "trades_limit",
       "type": "uint32_t",
       "default": 1000,
-      "description": "Exchange limitation"
+      "description": "Maximum number of trades per response (exchange limit)"
+    },
+    {
+      "name": "symbols",
+      "type": "std::vector<std::string>",
+      "description": "List of symbols to download"
     }
   ]
 }

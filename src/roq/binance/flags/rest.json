@@ -6,25 +6,25 @@
     {
       "name": "network_interfaces",
       "type": "std::vector<std::string>",
-      "description": "List of REST network interfaces"
+      "description": "Network interfaces"
     },
     {
       "name": "uri",
       "type": "roq::io::web::URI",
       "validator": "roq::core::flags::URI",
       "default": "https://testnet.binance.com",
-      "description": "REST end-point (URI)"
+      "description": "Exchange end-point"
     },
     {
       "name": "host",
       "type": "std::string",
-      "description": "Host (HTTP header) to use when the URI configured with IP address"
+      "description": "Host (when URI is an IP address)"
     },
     {
       "name": "proxy",
       "type": "roq::io::web::URI",
       "validator": "roq::core::flags::URI",
-      "description": "REST proxy end-point (URI)"
+      "description": "Proxy end-point"
     },
     {
       "name": "ping_freq",
@@ -38,7 +38,7 @@
       "type": "std::string",
       "validator": "roq::flags::validators::Path",
       "default": "/api/v3/time",
-      "description": "URI path used for REST connection keep-alive messages"
+      "description": "Ping path"
     },
     {
       "name": "request_timeout",
@@ -46,19 +46,6 @@
       "validator": "roq::flags::validators::TimePeriod",
       "default": "30s",
       "description": "Request timeout"
-    },
-    {
-      "name": "terminate_on_403",
-      "type": "bool",
-      "default": false,
-      "description": "Terminate after getting a 403 response code"
-    },
-    {
-      "name": "back_off_delay",
-      "type": "std::chrono::nanoseconds",
-      "validator": "roq::flags::validators::TimePeriod",
-      "default": "300s",
-      "description": "Time to wait before retrying a rejected request"
     },
     {
       "name": "listen_key_refresh",
@@ -72,13 +59,26 @@
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "5000ms",
-      "description": "Receive window (please refer to Binance documentation)"
+      "description": "Receive window (please refer to exchange documentation)"
     },
     {
       "name": "cancel_on_disconnect",
       "type": "bool",
       "default": false,
-      "description": "Cancel orders on disconnect?"
+      "description": "Auto-cancel orders on disconnect?"
+    },
+    {
+      "name": "terminate_on_403",
+      "type": "bool",
+      "default": false,
+      "description": "(TEST) Trigger program termination after receiving a 403 response code?"
+    },
+    {
+      "name": "back_off_delay",
+      "type": "std::chrono::nanoseconds",
+      "validator": "roq::flags::validators::TimePeriod",
+      "default": "300s",
+      "description": "(TEST) Time to wait before retrying a rejected request"
     }
   ]
 }

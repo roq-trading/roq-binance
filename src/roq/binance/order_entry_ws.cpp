@@ -70,8 +70,8 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &inter
       .request_timeout = {},
       .ping_frequency = settings.ws_api_2.ping_freq,
       // implementation
-      .decode_buffer_size = settings.common.decode_buffer_size,
-      .encode_buffer_size = settings.common.encode_buffer_size,
+      .decode_buffer_size = settings.misc.decode_buffer_size,
+      .encode_buffer_size = settings.misc.encode_buffer_size,
   };
   return web::socket::Client::create(handler, context, config, []() -> std::string { return {}; });
 }
@@ -105,7 +105,7 @@ OrderEntryWS::OrderEntryWS(
     std::string_view const &interface)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.get_name())}, master_{master},
       connection_{create_connection(*this, shared.settings, context, interface)},
-      decode_buffer_(shared.settings.common.decode_buffer_size),
+      decode_buffer_(shared.settings.misc.decode_buffer_size),
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },

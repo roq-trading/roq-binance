@@ -5,15 +5,15 @@ include(RoqAutogen)
 set(NAMESPACE "roq/binance/flags")
 
 set(AUTOGEN_SCHEMAS
-    flags.json
-    common.json
     download.json
+    flags.json
     mbp.json
+    misc.json
     oms.json
     request.json
     rest.json
-    ws.json
-    ws_api.json)
+    ws_api.json
+    ws.json)
 
 if(BUILD_DOCS)
 
