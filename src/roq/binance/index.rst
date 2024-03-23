@@ -5,13 +5,13 @@
 roq-binance
 ===========
 
+
 Links
 -----
 
 * `Website <https://www.binance.com/en>`__
 * `Support <https://www.binance.com/en/support-center>`__
 * `Documentation <https://binance-docs.github.io/apidocs/spot/en/>`__
-
 
 
 Supports
@@ -25,58 +25,60 @@ Supports
     .. list-table::
       :widths: auto
 
-      * - |checkmark|
-        - Spot
-      * -
-        - Futures
-      * -
-        - Options
+      * - Spot
+        - |checkmark|
+      * - Futures
+        -
+      * - Options
+        -
+      * - Combos
+        -
 
   .. grid-item-card::  Market Data
 
     .. list-table::
       :widths: auto
 
-      * - |checkmark|
-        - Reference Data
-      * - |checkmark|
-        - Market Status
-      * - |checkmark|
-        - Top of Book
-      * - |checkmark|
-        - Market by Price (L2)
-      * -
-        - Market by Order (L3)
-      * - |checkmark|
-        - Trade Summary
-      * - |checkmark|
-        - Statistics
+      * - Reference Data
+        - |checkmark|
+      * - Market Status
+        - |checkmark|
+      * - Top of Book
+        - |checkmark|
+      * - Market by Price
+        - |checkmark|
+      * - Market by Order
+        -
+      * - Trade Summary
+        - |checkmark|
+      * - Statistics
+        - |checkmark|
 
   .. grid-item-card::  Order Management
 
     .. list-table::
       :widths: auto
 
-      * - |checkmark|
-        - Create
-      * -
-        - Modify
-      * - |checkmark|
-        - Cancel
-      * - |checkmark|
-        - Cancel All
-      * - (|checkmark|)
-        - Auto-Cancel
+      * - Create
+        - |checkmark|
+      * - Modify
+        -
+      * - Cancel
+        - |checkmark|
+      * - Cancel All
+        - |checkmark|
+      * - Auto-Cancel
+        - (|checkmark|)
 
   .. grid-item-card::  Account Management
 
     .. list-table::
       :widths: auto
 
-      * -
-        - Positions
-      * - |checkmark|
-        - Funds
+      * - Positions
+        -
+      * - Funds
+        - |checkmark|
 
 .. note::
 
@@ -111,7 +113,7 @@ Using
 .. code-block:: shell
 
    $ roq-binance \
-         --name binance \
+         --name "binance" \
          --config_file $CONFIG_FILE_PATH \
          --client_listen_address $UNIX_SOCKET_PATH \
          --flagfile $ENVIRONMENT_FLAGFILE
