@@ -15,6 +15,10 @@
 #include "roq/core/charconv.hpp"
 #include "roq/core/utils.hpp"
 
+#include "roq/binance/drop_copy_portfolio.hpp"
+#include "roq/binance/drop_copy_simple.hpp"
+
+#include "roq/binance/order_entry_portfolio.hpp"
 #include "roq/binance/order_entry_rest.hpp"
 #include "roq/binance/order_entry_ws.hpp"
 
@@ -33,7 +37,9 @@ R create_accounts(auto &config) {
   using result_type = std::remove_cvref<R>::type;
   result_type result;
   for (auto &[_, account] : config.accounts)
-    result.try_emplace(static_cast<std::string_view>(account.name), std::make_unique<Account>(config, account.name));
+    result.try_emplace(
+        static_cast<std::string_view>(account.name),
+        std::make_unique<Account>(config, account.name, account.margin_mode));
   return result;
 }
 
@@ -52,35 +58,55 @@ R create_order_entry(
   using result_type = std::remove_cvref<R>::type;
   result_type result;
   for (auto &[name, account] : accounts) {
-    auto &request = request_by_account.at(name);
+    auto &request = request_by_account[name];
     std::vector<std::unique_ptr<OrderEntry>> order_entry;
-    if (shared.settings.ws_api) {
-      auto &interfaces = shared.settings.ws_api_2.network_interfaces;
-      // log::error("DEBUG length={}"sv, std::size(interfaces));
-      if (std::empty(interfaces)) {
-        order_entry.emplace_back(
-            std::make_unique<OrderEntryWS>(gateway, context, ++stream_id, *account, shared, request));
-      } else {
-        for (size_t i = 0; i < std::size(interfaces); ++i) {
-          auto master = i == 0;
-          auto &interface = interfaces[i];
-          order_entry.emplace_back(std::make_unique<OrderEntryWS>(
-              gateway, context, ++stream_id, *account, shared, request, master, interface));
+    switch ((*account).margin_mode) {
+      using enum MarginMode;
+      case UNDEFINED:
+      case ISOLATED:
+      case CROSS:
+        if (shared.settings.ws_api) {
+          auto &interfaces = shared.settings.ws_api_2.network_interfaces;
+          if (std::empty(interfaces)) {
+            order_entry.emplace_back(
+                std::make_unique<OrderEntryWS>(gateway, context, ++stream_id, *account, shared, request));
+          } else {
+            for (size_t i = 0; i < std::size(interfaces); ++i) {
+              auto master = i == 0;
+              auto &interface = interfaces[i];
+              order_entry.emplace_back(std::make_unique<OrderEntryWS>(
+                  gateway, context, ++stream_id, *account, shared, request, master, interface));
+            }
+          }
+        } else {
+          auto &interfaces = shared.settings.rest.network_interfaces;
+          if (std::empty(interfaces)) {
+            order_entry.emplace_back(
+                std::make_unique<OrderEntryREST>(gateway, context, ++stream_id, *account, shared, request));
+          } else {
+            for (size_t i = 0; i < std::size(interfaces); ++i) {
+              auto master = i == 0;
+              auto &interface = interfaces[i];
+              order_entry.emplace_back(std::make_unique<OrderEntryREST>(
+                  gateway, context, ++stream_id, *account, shared, request, master, interface));
+            }
+          }
         }
-      }
-    } else {
-      auto &interfaces = shared.settings.rest.network_interfaces;
-      // log::error("DEBUG length={}"sv, std::size(interfaces));
-      if (std::empty(interfaces)) {
-        order_entry.emplace_back(
-            std::make_unique<OrderEntryREST>(gateway, context, ++stream_id, *account, shared, request));
-      } else {
-        for (size_t i = 0; i < std::size(interfaces); ++i) {
-          auto master = i == 0;
-          auto &interface = interfaces[i];
-          order_entry.emplace_back(std::make_unique<OrderEntryREST>(
-              gateway, context, ++stream_id, *account, shared, request, master, interface));
+        break;
+      case PORTFOLIO: {
+        auto &interfaces = shared.settings.rest.network_interfaces;
+        if (std::empty(interfaces)) {
+          order_entry.emplace_back(
+              std::make_unique<OrderEntryPortfolio>(gateway, context, ++stream_id, *account, shared, request));
+        } else {
+          for (size_t i = 0; i < std::size(interfaces); ++i) {
+            auto master = i == 0;
+            auto &interface = interfaces[i];
+            order_entry.emplace_back(std::make_unique<OrderEntryPortfolio>(
+                gateway, context, ++stream_id, *account, shared, request, master, interface));
+          }
         }
+        break;
       }
     }
     result.try_emplace(name, std::move(order_entry));
@@ -216,18 +242,25 @@ void Gateway::operator()(OrderEntry::ListenKeyUpdate const &listen_key_update) {
   auto &account = listen_key_update.account;
   assert(!std::empty(account));
   auto iter = drop_copy_.find(account);
-  if (iter == std::end(drop_copy_)) {
+  if (iter == std::end(drop_copy_))
     log::fatal(R"(Unexpected: account="{}")"sv, account);
-  } else if (!static_cast<bool>((*iter).second)) {
+  if (!static_cast<bool>((*iter).second)) {
     log::info(R"(Create drop-copy (user-stream) for account="{}")"sv, account);
-    auto drop_copy = std::make_unique<DropCopy>(
-        *this,
-        context_,
-        ++stream_id_,
-        *accounts_.at(account),
-        shared_,
-        request_.at(account),
-        listen_key_update.listen_key);
+    auto &account_2 = *accounts_.at(account);
+    std::unique_ptr<DropCopy> drop_copy;
+    switch (account_2.margin_mode) {
+      using enum MarginMode;
+      case UNDEFINED:
+      case ISOLATED:
+      case CROSS:
+        drop_copy = std::make_unique<DropCopySimple>(
+            *this, context_, ++stream_id_, account_2, shared_, request_.at(account), listen_key_update.listen_key);
+        break;
+      case PORTFOLIO:
+        drop_copy = std::make_unique<DropCopyPortfolio>(
+            *this, context_, ++stream_id_, account_2, shared_, request_.at(account), listen_key_update.listen_key);
+        break;
+    }
     MessageInfo message_info;
     Start start;
     create_event_and_dispatch(*drop_copy, message_info, start);

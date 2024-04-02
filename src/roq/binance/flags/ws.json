@@ -16,6 +16,18 @@
       "description": "Host (when URI is an IP address)"
     },
     {
+      "name": "pm_uri",
+      "type": "roq::io::web::URI",
+      "validator": "roq::core::flags::URI",
+      "default": "wss://testnet.binance.com/realtime",
+      "description": "Exchange end-point"
+    },
+    {
+      "name": "pm_host",
+      "type": "std::string",
+      "description": "Host (when URI is an IP address)"
+    },
+    {
       "name": "ping_freq",
       "type": "std::chrono::nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",

@@ -18,12 +18,11 @@ namespace roq {
 namespace binance {
 
 struct Account final {
-  Account(Config const &, std::string_view const &name);
+  Account(Config const &, std::string_view const &name, MarginMode);
 
   Account(Account &&) = delete;
   Account(Account const &) = delete;
 
-  inline std::string_view get_name() const { return name_; }
   inline std::string_view get_key() const { return crypto_.get_key(); }
 
   inline std::string_view create_query(std::chrono::milliseconds now, std::string_view const &body) {
@@ -37,8 +36,11 @@ struct Account final {
     return crypto_.create_ws_api_signature(query_encode_buffer_, body);
   }
 
+ public:
+  std::string const name;
+  MarginMode const margin_mode;
+
  private:
-  std::string const name_;
   tools::Crypto crypto_;
   std::vector<std::byte> query_encode_buffer_;
 

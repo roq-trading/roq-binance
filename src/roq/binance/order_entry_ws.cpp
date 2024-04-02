@@ -103,7 +103,7 @@ OrderEntryWS::OrderEntryWS(
     Request &request,
     bool master,
     std::string_view const &interface)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.get_name())}, master_{master},
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)}, master_{master},
       connection_{create_connection(*this, shared.settings, context, interface)},
       decode_buffer_(shared.settings.misc.decode_buffer_size),
       counter_{
@@ -459,7 +459,7 @@ void OrderEntryWS::open_orders_cancel_all(Event<CancelAllOrders> const &event, s
     auto send_ack = [&](auto &symbol) {
       auto cancel_all_orders_ack = CancelAllOrdersAck{
           .stream_id = stream_id_,
-          .account = account_.get_name(),
+          .account = account_.name,
           .order_id = cancel_all_orders.order_id,
           .exchange = cancel_all_orders.exchange,
           .symbol = symbol,
@@ -724,7 +724,7 @@ void OrderEntryWS::operator()(web::socket::Client::Latency const &latency) {
   TraceInfo trace_info;
   auto external_latency = ExternalLatency{
       .stream_id = stream_id_,
-      .account = account_.get_name(),
+      .account = account_.name,
       .latency = latency.sample,
   };
   create_trace_and_dispatch(handler_, trace_info, external_latency);
@@ -744,7 +744,7 @@ void OrderEntryWS::operator()(ConnectionStatus status) {
     TraceInfo trace_info;
     auto stream_status = StreamStatus{
         .stream_id = stream_id_,
-        .account = account_.get_name(),
+        .account = account_.name,
         .supports = SUPPORTS,
         .transport = Transport::TCP,
         .protocol = Protocol::WS,
@@ -845,7 +845,7 @@ void OrderEntryWS::operator()(Trace<json::ListenKey> const &event, json::WSAPIRe
     log::info<2>("listen_key={}, request={}, status={}"sv, listen_key, request, status);
     listen_key_ = listen_key.listen_key;
     auto listen_key_update = ListenKeyUpdate{
-        .account = account_.get_name(),
+        .account = account_.name,
         .listen_key = listen_key_,
     };
     create_trace_and_dispatch(handler_, trace_info, listen_key_update);
@@ -863,7 +863,7 @@ void OrderEntryWS::operator()(Trace<json::Account> const &event, json::WSAPIRequ
       // log::debug("item={}"sv, item);
       auto funds_update = FundsUpdate{
           .stream_id = stream_id_,
-          .account = account_.get_name(),
+          .account = account_.name,
           .currency = item.asset,
           .margin_mode = {},
           .balance = item.free,
@@ -895,7 +895,7 @@ void OrderEntryWS::operator()(Trace<json::OpenOrders> const &event, json::WSAPIR
       auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
       auto order_status = json::map(order.status);
       auto order_update = server::oms::OrderUpdate{
-          .account = account_.get_name(),
+          .account = account_.name,
           .exchange = shared_.settings.exchange,
           .symbol = order.symbol,
           .side = side,
@@ -954,7 +954,7 @@ void OrderEntryWS::operator()(Trace<json::Trades> const &event, json::WSAPIReque
       auto external_order_id = fmt::format("{}"sv, trade.order_id);
       auto trade_update = TradeUpdate{
           .stream_id = stream_id_,
-          .account = account_.get_name(),
+          .account = account_.name,
           .order_id = {},
           .exchange = shared_.settings.exchange,
           .symbol = trade.symbol,
@@ -998,7 +998,7 @@ void OrderEntryWS::operator()(
       auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
       auto order_status = json::map(order.status);
       auto order_update = server::oms::OrderUpdate{
-          .account = account_.get_name(),
+          .account = account_.name,
           .exchange = shared_.settings.exchange,
           .symbol = order.symbol,
           .side = side,
@@ -1072,7 +1072,7 @@ void OrderEntryWS::operator()(Trace<json::NewOrder> const &event, json::WSAPIReq
         .price = NaN,
     };
     auto order_update = server::oms::OrderUpdate{
-        .account = account_.get_name(),
+        .account = account_.name,
         .exchange = shared_.settings.exchange,
         .symbol = new_order.symbol,
         .side = side,
@@ -1131,7 +1131,7 @@ void OrderEntryWS::operator()(
         .price = NaN,
     };
     auto order_update = server::oms::OrderUpdate{
-        .account = account_.get_name(),
+        .account = account_.name,
         .exchange = shared_.settings.exchange,
         .symbol = cancel_order.symbol,
         .side = side,
@@ -1244,7 +1244,7 @@ void OrderEntryWS::update_helper(
           .price = NaN,
       };
       auto order_update = server::oms::OrderUpdate{
-          .account = account_.get_name(),
+          .account = account_.name,
           .exchange = shared_.settings.exchange,
           .symbol = cancel_order.symbol,
           .side = side,
@@ -1351,7 +1351,7 @@ void OrderEntryWS::update_helper(
           .price = NaN,
       };
       auto order_update = server::oms::OrderUpdate{
-          .account = account_.get_name(),
+          .account = account_.name,
           .exchange = shared_.settings.exchange,
           .symbol = new_order.symbol,
           .side = side,
@@ -1414,7 +1414,7 @@ void OrderEntryWS::operator()(Trace<json::WSAPIListenKey> const &event, json::WS
         auto &listen_key = message.result;
         listen_key_ = listen_key.listen_key;
         auto listen_key_update = ListenKeyUpdate{
-            .account = account_.get_name(),
+            .account = account_.name,
             .listen_key = listen_key_,
         };
         create_trace_and_dispatch(handler_, trace_info, listen_key_update);
@@ -1444,7 +1444,7 @@ void OrderEntryWS::operator()(Trace<json::WSAPIAccount> const &event, json::WSAP
           // log::debug("item={}"sv, item);
           auto funds_update = FundsUpdate{
               .stream_id = stream_id_,
-              .account = account_.get_name(),
+              .account = account_.name,
               .currency = item.asset,
               .margin_mode = {},
               .balance = item.free,
@@ -1485,7 +1485,7 @@ void OrderEntryWS::operator()(Trace<json::WSAPIOpenOrders> const &event, json::W
           auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
           auto order_status = json::map(order.status);
           auto order_update = server::oms::OrderUpdate{
-              .account = account_.get_name(),
+              .account = account_.name,
               .exchange = shared_.settings.exchange,
               .symbol = order.symbol,
               .side = side,
@@ -1553,7 +1553,7 @@ void OrderEntryWS::operator()(Trace<json::WSAPITrades> const &event, json::WSAPI
           auto external_order_id = fmt::format("{}"sv, trade.order_id);
           auto trade_update = TradeUpdate{
               .stream_id = stream_id_,
-              .account = account_.get_name(),
+              .account = account_.name,
               .order_id = {},
               .exchange = shared_.settings.exchange,
               .symbol = trade.symbol,
@@ -1604,7 +1604,7 @@ void OrderEntryWS::operator()(Trace<json::WSAPICancelOpenOrders> const &event, j
           auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
           auto order_status = json::map(order.status);
           auto order_update = server::oms::OrderUpdate{
-              .account = account_.get_name(),
+              .account = account_.name,
               .exchange = shared_.settings.exchange,
               .symbol = order.symbol,
               .side = side,
@@ -1687,7 +1687,7 @@ void OrderEntryWS::operator()(Trace<json::WSAPIOrderPlace> const &event, json::W
             .price = NaN,
         };
         auto order_update = server::oms::OrderUpdate{
-            .account = account_.get_name(),
+            .account = account_.name,
             .exchange = shared_.settings.exchange,
             .symbol = new_order.symbol,
             .side = side,
@@ -1769,7 +1769,7 @@ void OrderEntryWS::operator()(Trace<json::WSAPICancelOrder> const &event, json::
             .price = NaN,
         };
         auto order_update = server::oms::OrderUpdate{
-            .account = account_.get_name(),
+            .account = account_.name,
             .exchange = shared_.settings.exchange,
             .symbol = cancel_order.symbol,
             .side = side,
@@ -1913,7 +1913,7 @@ void OrderEntryWS::update_rate_limits(auto &event) {
   if (!std::empty(shared_.rate_limits)) {
     auto rate_limits_update = RateLimitsUpdate{
         .stream_id = stream_id_,
-        .account = account_.get_name(),
+        .account = account_.name,
         .origin = Origin::EXCHANGE,
         .rate_limits = shared_.rate_limits,
     };

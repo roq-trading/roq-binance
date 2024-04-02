@@ -21,6 +21,18 @@
       "description": "Host (when URI is an IP address)"
     },
     {
+      "name": "pm_uri",
+      "type": "roq::io::web::URI",
+      "validator": "roq::core::flags::URI",
+      "default": "https://testnet.binance.com",
+      "description": "Exchange end-point"
+    },
+    {
+      "name": "pm_host",
+      "type": "std::string",
+      "description": "Host (when URI is an IP address)"
+    },
+    {
       "name": "proxy",
       "type": "roq::io::web::URI",
       "validator": "roq::core::flags::URI",
