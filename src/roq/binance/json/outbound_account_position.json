@@ -18,6 +18,11 @@
       "type": "std::chrono::milliseconds"
     },
     {
+      "raw": "U",
+      "name": "event_update_id",
+      "type": "uint64_t"
+    },
+    {
       "raw": "B",
       "name": "balances",
       "type": "std::span<BalancesItem const>"

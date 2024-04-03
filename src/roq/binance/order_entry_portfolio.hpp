@@ -33,8 +33,6 @@
 #include "roq/binance/json/account.hpp"
 #include "roq/binance/json/cancel_all_open_orders.hpp"
 #include "roq/binance/json/cancel_order.hpp"
-#include "roq/binance/json/cancel_replace_order.hpp"
-#include "roq/binance/json/cancel_replace_order_error.hpp"
 #include "roq/binance/json/listen_key.hpp"
 #include "roq/binance/json/new_order.hpp"
 #include "roq/binance/json/open_orders.hpp"
@@ -112,33 +110,6 @@ struct OrderEntryPortfolio final : public OrderEntry, public web::rest::Client::
   void new_order(Event<CreateOrder> const &, server::oms::Order const &order, std::string_view const &request_id);
   void new_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
   void operator()(Trace<json::NewOrder> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
-
-  void cancel_replace_order(
-      server::cache::CancelOrderRequest const &,
-      Event<CreateOrder> const &,
-      server::oms::Order const &,
-      std::string_view const &_request_id);
-  void cancel_replace_order_ack(
-      Trace<web::rest::Response> const &,
-      uint8_t user_id,
-      uint64_t cancel_order_id,
-      uint32_t cancel_version,
-      uint64_t create_order_id,
-      uint32_t create_version);
-  void operator()(
-      Trace<json::CancelReplaceOrder> const &,
-      uint8_t user_id,
-      uint64_t cancel_order_id,
-      uint32_t cancel_version,
-      uint64_t create_order_id,
-      uint32_t create_version);
-  void operator()(
-      Trace<json::CancelReplaceOrderError> const &,
-      uint8_t user_id,
-      uint64_t cancel_order_id,
-      uint32_t cancel_version,
-      uint64_t create_order_id,
-      uint32_t create_version);
 
   void cancel_order(
       Event<CancelOrder> const &,

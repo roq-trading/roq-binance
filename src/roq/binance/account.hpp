@@ -36,6 +36,10 @@ struct Account final {
     return crypto_.create_ws_api_signature(query_encode_buffer_, body);
   }
 
+  inline std::string create_query_2(std::chrono::milliseconds now, std::string_view const &body) {
+    return crypto_.create_query_2(now, body);
+  }
+
  public:
   std::string const name;
   MarginMode const margin_mode;

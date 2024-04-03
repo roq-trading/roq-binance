@@ -37,6 +37,25 @@ void UserStreamParser::dispatch(
   log::fatal("Unexpected"sv);
 }
 
+void UserStreamParser::dispatch_papi(
+    UserStreamParser::Handler &handler,
+    std::string_view const &message,
+    std::span<std::byte> const &buffer,
+    TraceInfo const &trace_info) {
+  core::json::Parser parser{message};
+  auto root = parser.root();
+  for (auto [key, value] : std::get<core::json::Object>(root)) {
+    if (key.compare("e"sv) != 0)
+      continue;
+    EventType event_type{value};
+    if (try_dispatch(handler, message, buffer, event_type, trace_info))
+      return;
+    break;
+  }
+  log::warn(R"(message="{}")"sv, message);
+  log::fatal("Unexpected"sv);
+}
+
 bool UserStreamParser::try_dispatch(
     UserStreamParser::Handler &handler,
     std::string_view const &message,
@@ -76,6 +95,12 @@ bool UserStreamParser::try_dispatch(
       ListStatus list_status{message, buffer};
       Trace event{trace_info, list_status};
       handler(event);
+      break;
+    }
+    case OPEN_ORDER_LOSS: {
+      // OpenOrderLoss open_order_loss{message, buffer};
+      // Trace event{trace_info, open_order_loss};
+      // handler(event);
       break;
     }
     default:

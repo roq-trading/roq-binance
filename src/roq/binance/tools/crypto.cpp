@@ -63,6 +63,16 @@ std::string_view Crypto::create_ws_api_signature(std::span<std::byte> const &buf
   return writer.finish();
 }
 
+std::string Crypto::create_query_2(std::chrono::milliseconds now, std::string_view const &body) {
+  auto tmp = fmt::format("{}&timestamp={}"sv, body, now.count());
+  mac_.clear();
+  mac_.update(tmp);
+  auto digest = mac_.final(digest_);
+  std::string signature;
+  utils::codec::Hex::encode(signature, digest);
+  return fmt::format("?{}&signature={}"sv, tmp, signature);
+}
+
 }  // namespace tools
 }  // namespace binance
 }  // namespace roq

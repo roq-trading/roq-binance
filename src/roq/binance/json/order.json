@@ -89,6 +89,16 @@
     {
       "name": "selfTradePreventionMode",
       "type": "std::string_view"
+    },
+    {
+      "name": "accountId",
+      "type": "int64_t"
+    },
+    {
+      "name": "preventedMatchId"
+    },
+    {
+      "name": "preventedQuantity"
     }
   ]
 }

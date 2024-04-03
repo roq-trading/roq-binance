@@ -28,6 +28,9 @@
     },
     {
       "name": "listStatus"
+    },
+    {
+      "name": "openOrderLoss"
     }
   ]
 }

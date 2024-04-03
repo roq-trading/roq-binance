@@ -39,10 +39,16 @@ auto create_name(auto stream_id, auto const &account) {
   return fmt::format("{}:{}:{}"sv, stream_id, NAME, account);
 }
 
+auto create_uri(auto &settings, auto const &listen_key) {
+  assert(!std::empty(listen_key));
+  auto &uri = settings.ws.pm_uri;
+  auto result = fmt::format("{}://{}{}/{}"sv, uri.get_scheme(), uri.get_host(), uri.get_path(), listen_key);
+  return io::web::URI{result};
+}
+
 auto create_connection(auto &handler, auto &settings, auto &context, auto const &listen_key) {
   assert(!std::empty(listen_key));
-  auto uri = settings.ws.uri;
-  auto query = fmt::format("?streams={}"sv, listen_key);
+  auto uri = create_uri(settings, listen_key);
   auto config = web::socket::Client::Config{
       // connection
       .interface = {},
@@ -56,7 +62,7 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto const 
       // proxy
       .proxy = {},
       // http
-      .query = query,
+      .query = {},
       .user_agent = ROQ_PACKAGE_NAME,
       .request_timeout = {},
       .ping_frequency = settings.ws.ping_freq,
@@ -232,7 +238,7 @@ void DropCopyPortfolio::parse(std::string_view const &message) {
     try {
       TraceInfo trace_info;
       log::debug(R"(HERE message="{}")"sv, message);
-      json::UserStreamParser::dispatch(*this, message, decode_buffer_, trace_info);
+      json::UserStreamParser::dispatch_papi(*this, message, decode_buffer_, trace_info);
     } catch (...) {
       log::warn(R"(message="{}")"sv, message);
       core::tools::UnhandledException::terminate();
@@ -274,6 +280,7 @@ void DropCopyPortfolio::operator()(Trace<json::ExecutionReport> const &event) {
   profile_.execution_report([&]() {
     auto &trace_info = event.trace_info;
     auto &execution_report = event.value;
+    log::info("DEBUG execution_report={}"sv, execution_report);
     log::info<2>("execution_report={}"sv, execution_report);
     auto side = json::map(execution_report.side);
     auto order_type = json::map(execution_report.order_type);

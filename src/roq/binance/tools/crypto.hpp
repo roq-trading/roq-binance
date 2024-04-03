@@ -33,6 +33,10 @@ struct Crypto final {
 
   static constexpr auto const QUERY_BUFFER_LENGTH = size_t{128};  // note! expected length == 99
 
+  // PAPI
+
+  std::string create_query_2(std::chrono::milliseconds now, std::string_view const &body);
+
  private:
   using MAC = utils::mac::HMAC<utils::hash::SHA256>;
   using Digest = std::array<std::byte, MAC::DIGEST_LENGTH>;

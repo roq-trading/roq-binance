@@ -19,6 +19,7 @@
 
 #include "roq/core/limit/rate_limiter.hpp"
 
+#include "roq/binance/api.hpp"
 #include "roq/binance/config.hpp"
 #include "roq/binance/settings.hpp"
 
@@ -102,6 +103,7 @@ struct Shared final {
 
  public:
   Settings const &settings;
+  API const api;
 
  public:
   core::limit::RateLimiter rate_limiter;

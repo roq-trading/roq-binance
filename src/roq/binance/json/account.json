@@ -63,6 +63,42 @@
     {
       "name": "uid",
       "type": "int32_t"
+    },
+    {
+      "name": "uniMMR",
+      "type": "double"
+    },
+    {
+      "name": "accountEquity",
+      "type": "double"
+    },
+    {
+      "name": "actualEquity",
+      "type": "double"
+    },
+    {
+      "name": "accountInitialMargin",
+      "type": "double"
+    },
+    {
+      "name": "accountMaintMargin",
+      "type": "double"
+    },
+    {
+      "name": "accountStatus",
+      "type": "std::string_view"
+    },
+    {
+      "name": "virtualMaxWithdrawAmount",
+      "type": "double"
+    },
+    {
+      "name": "totalAvailableBalance",
+      "type": "double"
+    },
+    {
+      "name": "totalMarginOpenLoss",
+      "type": "double"
     }
   ]
 }

@@ -27,6 +27,9 @@ struct UserStreamParser final {
 
   static void dispatch(Handler &, std::string_view const &message, std::span<std::byte> const &, TraceInfo const &);
 
+  static void dispatch_papi(
+      Handler &, std::string_view const &message, std::span<std::byte> const &, TraceInfo const &);
+
  private:
   static bool try_dispatch(
       UserStreamParser::Handler &,
