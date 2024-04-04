@@ -16,7 +16,7 @@ API API::create(Settings const &) {
       .papi{
           .ping_path = "/papi/v1/time"sv,
           .get_listen_key = "/papi/v1/listenKey"sv,
-          .get_account = "/papi/v1/account"sv,
+          .get_account = "/papi/v1/balance"sv,
           .get_open_orders = "/papi/v1/margin/openOrders"sv,
           .get_trades = "/papi/v1/margin/myTrades"sv,
           .order = "/papi/v1/margin/order"sv,

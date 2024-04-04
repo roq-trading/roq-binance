@@ -2,7 +2,9 @@
 roq-binance-json
 account.hpp
 agg_trade.hpp
+balance2.hpp
 balance.hpp
+balances.hpp
 balances_item.hpp
 balance_update.hpp
 book_ticker.hpp
@@ -64,7 +66,9 @@ wsapi_trades.hpp
 wsapi_type.hpp
 account.cpp
 agg_trade.cpp
+balance2.cpp
 balance.cpp
+balances.cpp
 balances_item.cpp
 balance_update.cpp
 book_ticker.cpp

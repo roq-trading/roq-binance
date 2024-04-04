@@ -280,7 +280,6 @@ void DropCopyPortfolio::operator()(Trace<json::ExecutionReport> const &event) {
   profile_.execution_report([&]() {
     auto &trace_info = event.trace_info;
     auto &execution_report = event.value;
-    log::info("DEBUG execution_report={}"sv, execution_report);
     log::info<2>("execution_report={}"sv, execution_report);
     auto side = json::map(execution_report.side);
     auto order_type = json::map(execution_report.order_type);

@@ -410,7 +410,7 @@ void OrderEntryPortfolio::get_account() {
 void OrderEntryPortfolio::get_account_ack(Trace<web::rest::Response> const &event) {
   profile_.account_ack([&]() {
     auto handle_success = [&](auto &body) {
-      json::Account account{body, decode_buffer_};
+      json::Balances account{body, decode_buffer_};
       Trace event_2{event, account};
       (*this)(event_2);
       request_.respond_account = clock::get_system();  // completion
@@ -425,22 +425,22 @@ void OrderEntryPortfolio::get_account_ack(Trace<web::rest::Response> const &even
   });
 }
 
-void OrderEntryPortfolio::operator()(Trace<json::Account> const &event) {
-  auto &[trace_info, account] = event;
-  log::info<2>("account={}"sv, account);
-  for (auto &item : account.balances) {
+void OrderEntryPortfolio::operator()(Trace<json::Balances> const &event) {
+  auto &[trace_info, balances] = event;
+  log::info<2>("balances={}"sv, balances);
+  for (auto &item : balances.data) {
     // log::debug("item={}"sv, item);
     auto funds_update = FundsUpdate{
         .stream_id = stream_id_,
         .account = account_.name,
         .currency = item.asset,
         .margin_mode = MarginMode::PORTFOLIO,
-        .balance = item.free,
-        .hold = item.locked,
+        .balance = item.total_wallet_balance,
+        .hold = NaN,
         .external_account = {},
         .update_type = UpdateType::SNAPSHOT,
-        .exchange_time_utc = account.update_time,
-        .sending_time_utc = account.update_time,
+        .exchange_time_utc = item.update_time,
+        .sending_time_utc = {},
     };
     create_trace_and_dispatch(handler_, trace_info, funds_update, true);
   }
@@ -486,7 +486,6 @@ void OrderEntryPortfolio::get_open_orders() {
 void OrderEntryPortfolio::get_open_orders_ack(Trace<web::rest::Response> const &event) {
   profile_.open_orders_ack([&]() {
     auto handle_success = [&](auto &body) {
-      log::info(R"(DEBUG body="{}")"sv, body);
       json::OpenOrders open_orders{body, decode_buffer_};
       Trace event_2{event, open_orders};
       (*this)(event_2);
@@ -590,7 +589,6 @@ void OrderEntryPortfolio::get_trades() {
 void OrderEntryPortfolio::get_trades_ack(Trace<web::rest::Response> const &event) {
   profile_.trades_ack([&]() {
     auto handle_success = [&](auto &body) {
-      log::info(R"(DEBUG body="{}")"sv, body);
       json::Trades trades{body, decode_buffer_};
       Trace event_2{event, trades};
       (*this)(event_2);

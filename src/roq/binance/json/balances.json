@@ -1,0 +1,10 @@
+{
+  "name": "Balances",
+  "type": "array",
+  "values": [
+    {
+      "name": "data",
+      "type": "std::span<Balance2 const>"
+    }
+  ]
+}

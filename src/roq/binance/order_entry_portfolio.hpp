@@ -30,7 +30,7 @@
 #include "roq/binance/request.hpp"
 #include "roq/binance/shared.hpp"
 
-#include "roq/binance/json/account.hpp"
+#include "roq/binance/json/balances.hpp"
 #include "roq/binance/json/cancel_all_open_orders.hpp"
 #include "roq/binance/json/cancel_order.hpp"
 #include "roq/binance/json/listen_key.hpp"
@@ -95,7 +95,7 @@ struct OrderEntryPortfolio final : public OrderEntry, public web::rest::Client::
 
   void get_account();
   void get_account_ack(Trace<web::rest::Response> const &);
-  void operator()(Trace<json::Account> const &);
+  void operator()(Trace<json::Balances> const &);
 
   void get_open_orders();
   void get_open_orders_ack(Trace<web::rest::Response> const &);

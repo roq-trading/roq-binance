@@ -8,7 +8,9 @@ include(RoqAutogen)
 set(AUTOGEN_SCHEMAS
     account.json
     agg_trade.json
+    balance2.json
     balance.json
+    balances.json
     balances_item.json
     balance_update.json
     book_ticker.json
