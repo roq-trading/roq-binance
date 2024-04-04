@@ -434,7 +434,7 @@ void OrderEntryPortfolio::operator()(Trace<json::Account> const &event) {
         .stream_id = stream_id_,
         .account = account_.name,
         .currency = item.asset,
-        .margin_mode = {},
+        .margin_mode = MarginMode::PORTFOLIO,
         .balance = item.free,
         .hold = item.locked,
         .external_account = {},
@@ -514,13 +514,15 @@ void OrderEntryPortfolio::operator()(Trace<json::OpenOrders> const &event) {
     auto time_in_force = json::map(order.time_in_force);
     auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
     auto order_status = json::map(order.status);
+    auto stop_price = utils::compare(order.stop_price, 0.0) == 0 ? NaN : order.stop_price;
+    auto remaining_quantity = order.orig_qty - order.executed_qty;
     auto order_update = server::oms::OrderUpdate{
         .account = account_.name,
         .exchange = shared_.settings.exchange,
         .symbol = order.symbol,
         .side = side,
         .position_effect = {},
-        .margin_mode = {},
+        .margin_mode = MarginMode::PORTFOLIO,
         .max_show_quantity = NaN,
         .order_type = order_type,
         .time_in_force = time_in_force,
@@ -529,12 +531,12 @@ void OrderEntryPortfolio::operator()(Trace<json::OpenOrders> const &event) {
         .update_time_utc = order.update_time,
         .external_account = {},
         .external_order_id = external_order_id,
-        .client_order_id = {},
+        .client_order_id = order.client_order_id,
         .order_status = order_status,
         .quantity = order.orig_qty,
         .price = order.price,
-        .stop_price = order.stop_price,
-        .remaining_quantity = NaN,
+        .stop_price = stop_price,
+        .remaining_quantity = remaining_quantity,
         .traded_quantity = order.executed_qty,
         .average_traded_price = {},
         .last_traded_quantity = {},
@@ -572,7 +574,7 @@ void OrderEntryPortfolio::get_trades() {
           .accept = web::http::Accept::APPLICATION_JSON,
           .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
           .headers = headers,
-          .body = {},  // XXX
+          .body = {},  // note! can't use body with GET
           .quality_of_service = {},
       };
       auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
@@ -609,51 +611,40 @@ void OrderEntryPortfolio::operator()(Trace<json::Trades> const &event) {
   auto &[trace_info, trades] = event;
   for (auto &trade : trades.data) {
     log::info<2>("trade={}"sv, trade);
-    /*
-    if (std::empty(order.client_order_id))
-      continue;
-    open_orders_symbols_.emplace(order.symbol);
-    auto side = json::map(order.side);
-    auto order_type = json::map(order.type);
-    auto time_in_force = json::map(order.time_in_force);
-    auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
-    auto order_status = json::map(order.status);
-    auto order_update = server::oms::OrderUpdate{
+    auto liquidity = trade.is_maker ? Liquidity::MAKER : Liquidity::TAKER;
+    auto fill = Fill{
+        .exchange_time_utc = trade.time,
+        .external_trade_id = {},
+        .quantity = trade.qty,
+        .price = trade.price,
+        .liquidity = liquidity,
+    };
+    fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"sv, trade.id);
+    auto external_order_id = fmt::format("{}"sv, trade.order_id);  // alloc
+    auto side = trade.is_buyer ? Side::BUY : Side::SELL;
+    auto trade_update = TradeUpdate{
+        .stream_id = stream_id_,
         .account = account_.name,
+        .order_id = {},
         .exchange = shared_.settings.exchange,
-        .symbol = order.symbol,
+        .symbol = trade.symbol,
         .side = side,
         .position_effect = {},
-        .margin_mode={},
-        .max_show_quantity = NaN,
-        .order_type = order_type,
-        .time_in_force = time_in_force,
-        .execution_instructions = {},
-        .create_time_utc = order.time,
-        .update_time_utc = order.update_time,
+        .margin_mode = MarginMode::PORTFOLIO,
+        .create_time_utc = trade.time,
+        .update_time_utc = trade.time,
         .external_account = {},
         .external_order_id = external_order_id,
         .client_order_id = {},
-        .order_status = order_status,
-        .quantity = order.orig_qty,
-        .price = order.price,
-        .stop_price = order.stop_price,
-        .remaining_quantity = NaN,
-        .traded_quantity = order.executed_qty,
-        .average_traded_price = {},
-        .last_traded_quantity = {},
-        .last_traded_price = {},
-        .last_liquidity = {},
+        .fills = {&fill, 1},
         .routing_id = {},
-        .max_request_version = {},
-        .max_response_version = {},
-        .max_accepted_version = {},
         .update_type = UpdateType::SNAPSHOT,
         .sending_time_utc = {},
+        .user = {},
+        .strategy_id = {},
     };
-    Trace event_2{trace_info, order_update};
-    (*this)(event_2, order.client_order_id);
-    */
+    std::string_view client_order_id;  // note! unavailable
+    create_trace_and_dispatch(handler_, trace_info, trade_update, true, SOURCE_NONE, client_order_id);
   }
 }
 
@@ -776,7 +767,7 @@ void OrderEntryPortfolio::operator()(
       .symbol = new_order.symbol,
       .side = side,
       .position_effect = {},
-      .margin_mode = {},
+      .margin_mode = MarginMode::PORTFOLIO,
       .max_show_quantity = NaN,
       .order_type = order_type,
       .time_in_force = time_in_force,
@@ -901,7 +892,7 @@ void OrderEntryPortfolio::operator()(
       .symbol = cancel_order.symbol,
       .side = side,
       .position_effect = {},
-      .margin_mode = {},
+      .margin_mode = MarginMode::PORTFOLIO,
       .max_show_quantity = NaN,
       .order_type = order_type,
       .time_in_force = time_in_force,
@@ -1055,7 +1046,7 @@ void OrderEntryPortfolio::operator()(Trace<json::CancelAllOpenOrders> const &eve
         .symbol = order.symbol,
         .side = side,
         .position_effect = {},
-        .margin_mode = {},
+        .margin_mode = MarginMode::PORTFOLIO,
         .max_show_quantity = NaN,
         .order_type = order_type,
         .time_in_force = time_in_force,
