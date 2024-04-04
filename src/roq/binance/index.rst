@@ -694,3 +694,11 @@ Comments
   of local network interfaces to bind to.
   The implementation will then round-robin requests between connections already
   in the ready-state.
+
+* There are different end-points depending on the margin-mode.
+
+  * If nothing is specified, the classic margin-mode is selected.
+    The end-points are then taken from :code:`--rest_uri` and :code:`--ws_uri`.
+
+  * The new end-points are selected if the toml config has :code:`margin_mode = "portfolio"`.
+    The end-points are then taken from :code:`--rest_pm_uri` and :code:`--ws_pm_uri`.
