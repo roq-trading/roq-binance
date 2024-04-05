@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <span>
 #include <string_view>
 
 #include "roq/trace_info.hpp"
@@ -25,9 +26,11 @@ struct UserStreamParser final {
     virtual void operator()(Trace<ListStatus> const &) = 0;
   };
 
-  static void dispatch(Handler &, std::string_view const &message, std::span<std::byte> const &, TraceInfo const &);
+  // traditional
+  static bool dispatch(Handler &, std::string_view const &message, std::span<std::byte> const &, TraceInfo const &);
 
-  static void dispatch_papi(
+  // papi
+  static bool dispatch_papi(
       Handler &, std::string_view const &message, std::span<std::byte> const &, TraceInfo const &);
 
  private:

@@ -40,8 +40,6 @@ struct DropCopySimple final : public DropCopy,
       Request &,
       std::string_view const &listen_key);
 
-  bool ready() const override;
-
   void operator()(Event<Start> const &) override;
   void operator()(Event<Stop> const &) override;
   void operator()(Event<Timer> const &) override;

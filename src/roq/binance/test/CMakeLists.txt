@@ -16,8 +16,6 @@ set(SOURCES
     json_open_orders.cpp
     json_outbound_account_position.cpp
     json_wsapi_request.cpp
-    json_ws_listen_key.cpp
-    json_ws_order_cancel_replace.cpp
     tools_crypto.cpp
     main.cpp)
 

@@ -29,16 +29,12 @@
 #include "roq/binance/request.hpp"
 #include "roq/binance/shared.hpp"
 
-#include "roq/binance/json/wsapi_parser.hpp"
 #include "roq/binance/json/wsapi_parser_2.hpp"
 
 namespace roq {
 namespace binance {
 
-struct OrderEntryWS final : public OrderEntry,
-                            public web::socket::Client::Handler,
-                            public json::WSAPIParser::Handler,
-                            public json::WSAPIParser2::Handler {
+struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handler, public json::WSAPIParser2::Handler {
   OrderEntryWS(
       OrderEntry::Handler &,
       io::Context &,
@@ -110,18 +106,6 @@ struct OrderEntryWS final : public OrderEntry,
   void operator()(ConnectionStatus);
 
   void parse(std::string_view const &message);
-
-  // json::WSAPIParser::Handler
-  void operator()(Trace<json::Error> const &, json::WSAPIRequest const &, int32_t status) override;
-  void operator()(Trace<json::ListenKey> const &, json::WSAPIRequest const &, int32_t status) override;
-  void operator()(Trace<json::Account> const &, json::WSAPIRequest const &, int32_t status) override;
-  void operator()(Trace<json::OpenOrders> const &, json::WSAPIRequest const &, int32_t status) override;
-  void operator()(Trace<json::Trades> const &, json::WSAPIRequest const &, int32_t status) override;
-  void operator()(Trace<json::CancelAllOpenOrders> const &, json::WSAPIRequest const &, int32_t status) override;
-  void operator()(Trace<json::NewOrder> const &, json::WSAPIRequest const &, int32_t status) override;
-  void operator()(Trace<json::CancelOrder> const &, json::WSAPIRequest const &, int32_t status) override;
-  void operator()(Trace<json::CancelReplaceOrder> const &, json::WSAPIRequest const &, int32_t status) override;
-  void operator()(Trace<json::CancelReplaceOrderError> const &, json::WSAPIRequest const &, int32_t status) override;
 
   // json::WSAPIParser2::Handler
   void operator()(Trace<json::WSAPIListenKey> const &, json::WSAPIRequest const &) override;

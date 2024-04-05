@@ -4,8 +4,6 @@
 
 #include <string_view>
 
-#include "roq/io/context.hpp"
-
 #include "roq/api.hpp"
 
 #include "roq/metrics/writer.hpp"
@@ -34,10 +32,10 @@ struct OrderEntry {
 
   OrderEntry() = default;
 
-  virtual ~OrderEntry() = default;
-
   OrderEntry(OrderEntry &&) = delete;
   OrderEntry(OrderEntry const &) = delete;
+
+  virtual ~OrderEntry() {}
 
   virtual bool ready() const = 0;
 

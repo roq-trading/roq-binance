@@ -25,8 +25,6 @@ struct DropCopy {
 
   virtual ~DropCopy() {}
 
-  virtual bool ready() const = 0;
-
   virtual void operator()(Event<Start> const &) = 0;
   virtual void operator()(Event<Stop> const &) = 0;
   virtual void operator()(Event<Timer> const &) = 0;

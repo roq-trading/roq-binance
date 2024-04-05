@@ -23,6 +23,11 @@
       "type": "double"
     },
     {
+      "raw": "U",
+      "name": "update_id",
+      "type": "uint64_t"
+    },
+    {
       "raw": "T",
       "name": "clear_time",
       "type": "std::chrono::milliseconds"

@@ -14,13 +14,13 @@ namespace roq {
 namespace binance {
 namespace json {
 
-void UserStreamParser::dispatch(
+bool UserStreamParser::dispatch(
     UserStreamParser::Handler &handler,
     std::string_view const &message,
     std::span<std::byte> const &buffer,
     TraceInfo const &trace_info) {
-  // XXX HANS this is bad... 3 levels of parsing
-  // XXX HANS buffer will not be used for first iteration
+  // XXX this is bad... 3 levels of parsing
+  // XXX buffer will not be used for first iteration
   UserStream user_stream{message, buffer};
   auto &data = user_stream.data;
   core::json::Parser parser{data};
@@ -30,14 +30,13 @@ void UserStreamParser::dispatch(
       continue;
     EventType event_type{value};
     if (try_dispatch(handler, data, buffer, event_type, trace_info))
-      return;
+      return true;
     break;
   }
-  log::warn(R"(message="{}")"sv, message);
-  log::fatal("Unexpected"sv);
+  return false;
 }
 
-void UserStreamParser::dispatch_papi(
+bool UserStreamParser::dispatch_papi(
     UserStreamParser::Handler &handler,
     std::string_view const &message,
     std::span<std::byte> const &buffer,
@@ -49,11 +48,10 @@ void UserStreamParser::dispatch_papi(
       continue;
     EventType event_type{value};
     if (try_dispatch(handler, message, buffer, event_type, trace_info))
-      return;
+      return true;
     break;
   }
-  log::warn(R"(message="{}")"sv, message);
-  log::fatal("Unexpected"sv);
+  return false;
 }
 
 bool UserStreamParser::try_dispatch(

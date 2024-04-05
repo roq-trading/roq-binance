@@ -123,6 +123,8 @@ struct OrderEntryPortfolio final : public OrderEntry, public web::rest::Client::
   void cancel_all_open_orders_ack(Trace<web::rest::Response> const &, std::string_view const &request_id);
   void operator()(Trace<json::CancelAllOpenOrders> const &);
 
+  // helpers
+
   template <typename SuccessHandler, typename ErrorHandler>
   void process_response(web::rest::Response const &, SuccessHandler, ErrorHandler);
 
@@ -131,10 +133,6 @@ struct OrderEntryPortfolio final : public OrderEntry, public web::rest::Client::
 
   void operator()(Trace<server::oms::OrderUpdate> const &, std::string_view const &client_order_id);
 
-  template <typename Parse, typename Callback>
-  void dispatch_error_2(web::rest::Response const &, web::http::Category, web::http::Status, Parse, Callback);  // XXX
-
-  void test(web::http::Status);  // XXX
   void waf_limit_violation();
 
  private:

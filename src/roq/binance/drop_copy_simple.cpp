@@ -6,8 +6,6 @@
 
 #include "roq/utils/update.hpp"
 
-#include "roq/web/socket/client.hpp"
-
 #include "roq/core/tools/exception.hpp"
 
 #include "roq/core/metrics/factory.hpp"
@@ -35,11 +33,11 @@ auto const SUPPORTS = Mask{
 // === HELPERS ===
 
 namespace {
-auto create_name(auto stream_id, auto const &account) {
+auto create_name(auto stream_id, auto &account) {
   return fmt::format("{}:{}:{}"sv, stream_id, NAME, account);
 }
 
-auto create_connection(auto &handler, auto &settings, auto &context, auto const &listen_key) {
+auto create_connection(auto &handler, auto &settings, auto &context, auto &listen_key) {
   assert(!std::empty(listen_key));
   auto uri = settings.ws.uri;
   auto query = fmt::format("?streams={}"sv, listen_key);
@@ -102,10 +100,6 @@ DropCopySimple::DropCopySimple(
       },
       account_{account}, shared_{shared}, request_{request},
       download_{{}, [this](auto state) { return download(state); }} {
-}
-
-bool DropCopySimple::ready() const {
-  return (*connection_).ready();
 }
 
 void DropCopySimple::operator()(Event<Start> const &) {
@@ -214,27 +208,27 @@ uint32_t DropCopySimple::download(DropCopyState state) {
         request_trades();
         return 1;
       } else {
-        return {};
+        return 0;
       }
     case DONE:
       (*this)(ConnectionStatus::READY);
       assert(!ready_);
       ready_ = true;
-      // subscribe(symbols_);
-      return {};
+      return 0;
   }
   assert(false);
-  return {};
+  return 0;
 }
 
 void DropCopySimple::parse(std::string_view const &message) {
   profile_.parse([&]() {
+    auto log_message = [&]() { log::warn(R"(message="{}")"sv, message); };
     try {
       TraceInfo trace_info;
-      log::debug(R"(HERE message="{}")"sv, message);
-      json::UserStreamParser::dispatch(*this, message, decode_buffer_, trace_info);
+      if (!json::UserStreamParser::dispatch(*this, message, decode_buffer_, trace_info))
+        log_message();
     } catch (...) {
-      log::warn(R"(message="{}")"sv, message);
+      log_message();
       core::tools::UnhandledException::terminate();
     }
   });
@@ -278,7 +272,7 @@ void DropCopySimple::operator()(Trace<json::ExecutionReport> const &event) {
     auto side = json::map(execution_report.side);
     auto order_type = json::map(execution_report.order_type);
     auto time_in_force = json::map(execution_report.time_in_force);
-    auto external_order_id = fmt::format("{}"sv, execution_report.order_id);
+    auto external_order_id = fmt::format("{}"sv, execution_report.order_id);  // alloc
     auto status = json::map(execution_report.current_order_status);
     auto average_traded_price = utils::is_zero(execution_report.cumulative_filled_quantity)
                                     ? NaN

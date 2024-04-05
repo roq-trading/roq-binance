@@ -12,12 +12,12 @@ namespace binance {
 struct API final {
   struct {
     std::string_view ping_path;
-    std::string_view get_listen_key;
-    std::string_view get_account;
-    std::string_view get_open_orders;
-    std::string_view get_trades;
-    std::string_view order;
-    std::string_view all_open_orders;
+    std::string_view listen_key;
+    std::string_view balance;
+    std::string_view margin_open_orders;
+    std::string_view margin_my_trades;
+    std::string_view margin_order;
+    std::string_view margin_all_open_orders;
   } papi;
 
   // factory
