@@ -254,10 +254,10 @@ uint32_t Rest::download(RestState state) {
       (*this)(ConnectionStatus::READY);
       assert(!ready_);
       ready_ = true;
-      return {};
+      return 0;
   }
   assert(false);
-  return {};
+  return 0;
 }
 
 // exchange-info

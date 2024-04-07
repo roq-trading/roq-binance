@@ -15,6 +15,14 @@ struct API final {
     std::string_view depth;
   } market_data;
   struct {
+    std::string_view user_data_stream;
+    std::string_view account;
+    std::string_view open_orders;
+    std::string_view my_trades;
+    std::string_view order;
+    std::string_view order_cancel_replace;
+  } simple;
+  struct {
     std::string_view ping_path;
     std::string_view listen_key;
     std::string_view balance;

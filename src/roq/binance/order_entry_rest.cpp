@@ -43,7 +43,7 @@ auto const SUPPORTS = Mask{
 // === HELPERS ===
 
 namespace {
-auto create_name(auto stream_id, auto const &account) {
+auto create_name(auto stream_id, auto &account) {
   return fmt::format("{}:{}:{}"sv, stream_id, NAME, account);
 }
 
@@ -84,12 +84,26 @@ struct create_metrics final : public core::metrics::Factory {
       : core::metrics::Factory(settings.app.name, group, function, params) {}
 };
 
-auto get_download_trades_lookback(auto const &settings, auto download_trades_is_first) {
+auto get_download_trades_lookback(auto &settings, auto download_trades_is_first) {
   if (download_trades_is_first) {
     if (settings.download.trades_lookback_on_restart.count())
       return settings.download.trades_lookback_on_restart;
   }
   return settings.download.trades_lookback;
+}
+
+auto get_retry_after(auto &response) {
+  std::chrono::nanoseconds result = {};
+  response.dispatch(web::http::Header::RETRY_AFTER, [&](auto &value) {
+    try {
+      // XXX FIXME could also be a datetime (see https://datatracker.ietf.org/doc/html/rfc7231)
+      auto seconds = utils::from_string_relaxed<int64_t>(value);
+      result = std::chrono::seconds{seconds};
+    } catch (RuntimeError &) {
+      log::warn<5>(R"(Failed to parse text="{}")"sv, value);
+    }
+  });
+  return result;
 }
 }  // namespace
 
@@ -276,7 +290,6 @@ void OrderEntryREST::operator()(Trace<web::rest::Client::Disconnected> const &) 
 void OrderEntryREST::operator()(Trace<web::rest::Client::Header> const &event) {
   auto &header = event.value;
   if (utils::case_insensitive_compare(header.name, "x-mbx-used-weight-1m"sv) == 0) {
-    log::info("DEBUG header={}"sv, header);
     try {
       auto value = utils::from_string_relaxed<int64_t>(header.value);
       rate_limiter_.requests_1m.set(value);
@@ -336,10 +349,10 @@ uint32_t OrderEntryREST::download(OrderEntryState state) {
       (*this)(ConnectionStatus::READY);
       assert(!ready_);
       ready_ = true;
-      return {};
+      return 0;
   }
   assert(false);
-  return {};
+  return 0;
 }
 
 // listen-key
@@ -349,7 +362,7 @@ void OrderEntryREST::get_listen_key() {
     auto headers = account_.create_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
-        .path = "/api/v3/userDataStream"sv,
+        .path = shared_.api.simple.user_data_stream,
         .query = {},
         .accept = web::http::Accept::APPLICATION_JSON,
         .content_type = {},
@@ -371,7 +384,6 @@ void OrderEntryREST::get_listen_key_ack(Trace<web::rest::Response> const &event)
   profile_.listen_key_ack([&]() {
     auto handle_success = [&](auto &body) {
       json::ListenKey listen_key{body};
-      log::debug("listen_key={}"sv, listen_key);
       Trace event_2{event, listen_key};
       (*this)(event_2);
       download_.check_relaxed(STATE);
@@ -414,7 +426,7 @@ void OrderEntryREST::get_account() {
     auto headers = account_.create_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
-        .path = "/api/v3/account"sv,
+        .path = shared_.api.simple.account,
         .query = query,
         .accept = web::http::Accept::APPLICATION_JSON,
         .content_type = {},
@@ -453,7 +465,6 @@ void OrderEntryREST::operator()(Trace<json::Account> const &event) {
   auto &[trace_info, account] = event;
   log::info<2>("account={}"sv, account);
   for (auto &item : account.balances) {
-    // log::debug("item={}"sv, item);
     auto funds_update = FundsUpdate{
         .stream_id = stream_id_,
         .account = account_.name,
@@ -486,10 +497,9 @@ void OrderEntryREST::get_open_orders() {
         R"(}})"sv,
         timestamp.count());
     std::string body{std::data(encode_buffer_), std::size(encode_buffer_)};
-    log::debug(R"(body="{}")"sv, body);
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
-        .path = "/api/v3/openOrders"sv,
+        .path = shared_.api.simple.open_orders,
         .query = query,
         .accept = web::http::Accept::APPLICATION_JSON,
         .content_type = {},
@@ -585,11 +595,10 @@ void OrderEntryREST::get_trades() {
       log::info<1>("Download trades: lookback={}"sv, lookback);
       auto headers = account_.create_headers();
       auto body = json::my_trades(encode_buffer_, symbol, lookback, shared_.settings.download.trades_limit, now);
-      log::debug(R"(body="{}")"sv, body);
       auto query = account_.create_query(now, body);
       auto request = web::rest::Request{
           .method = web::http::Method::GET,
-          .path = "/api/v3/myTrades"sv,
+          .path = shared_.api.simple.my_trades,
           .query = query,
           .accept = web::http::Accept::APPLICATION_JSON,
           .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
@@ -702,13 +711,12 @@ void OrderEntryREST::new_order(
     auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto body = json::new_order(encode_buffer_, create_order, order, request_id, create_order_template, recv_window);
-    log::debug(R"(body="{}")"sv, body);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = account_.create_query(now, body);
     auto headers = account_.create_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
-        .path = "/api/v3/order"sv,
+        .path = shared_.api.simple.order,
         .query = query,
         .accept = web::http::Accept::APPLICATION_JSON,
         .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
@@ -732,7 +740,6 @@ void OrderEntryREST::new_order_ack(
   profile_.new_order_ack([&]() {
     auto handle_success = [&](auto &body) {
       json::NewOrder new_order{body, decode_buffer_};
-      log::debug("new_order={}"sv, new_order);
       Trace event_2{event, new_order};
       (*this)(event_2, user_id, order_id, version);
     };
@@ -748,7 +755,6 @@ void OrderEntryREST::new_order_ack(
           .quantity = NaN,
           .price = NaN,
       };
-      log::debug("response={}, user_id={}, order_id={}"sv, response, user_id, order_id);
       Trace event_2{event, response};
       (*this)(event_2, user_id, order_id);
     };
@@ -856,13 +862,12 @@ void OrderEntryREST::cancel_replace_order(
                   create_order_template,
                   utils::safe_cast(shared_.settings.rest.order_recv_window),
                   shared_.settings.oms.cancel_replace_stop_on_failure);
-              log::info(R"(DEBUG body="{}")"sv, body);
               auto now = clock::get_realtime<std::chrono::milliseconds>();
               auto query = account_.create_query(now, body);
               auto headers = account_.create_headers();
               auto request = web::rest::Request{
                   .method = web::http::Method::POST,
-                  .path = "/api/v3/order/cancelReplace"sv,
+                  .path = shared_.api.simple.order_cancel_replace,
                   .query = query,
                   .accept = web::http::Accept::APPLICATION_JSON,
                   .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
@@ -941,16 +946,8 @@ void OrderEntryREST::cancel_replace_order_ack(
   profile_.cancel_replace_order_ack([&]() {
     auto &trace_info = event.trace_info;
     auto &response = event.value;
-    log::info(
-        "DEBUG user_id={}, cancel_order_id={}, cancel_version={}, create_order_id={}, create_version={}"sv,
-        user_id,
-        cancel_order_id,
-        cancel_version,
-        create_order_id,
-        create_version);
     try {
       auto [status, category, body] = response.result();
-      log::info(R"(DEBUG status={}, category={}, body="{}")"sv, status, category, body);
       test(status);
       switch (category) {
         using enum web::http::Category;
@@ -1308,13 +1305,12 @@ void OrderEntryREST::cancel_order(
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto body = json::cancel_order(
         encode_buffer_, cancel_order, order, request_id, previous_request_id, cancel_order_template, recv_window);
-    log::debug(R"(body="{}")"sv, body);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = account_.create_query(now, body);
     auto headers = account_.create_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::DELETE,
-        .path = "/api/v3/order"sv,
+        .path = shared_.api.simple.order,
         .query = query,
         .accept = web::http::Accept::APPLICATION_JSON,
         .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
@@ -1338,7 +1334,6 @@ void OrderEntryREST::cancel_order_ack(
   profile_.cancel_order_ack([&]() {
     auto handle_success = [&](auto &body) {
       json::CancelOrder cancel_order{body};
-      log::debug("cancel_order={}"sv, cancel_order);
       Trace event_2{event, cancel_order};
       (*this)(event_2, user_id, order_id, version);
     };
@@ -1451,13 +1446,12 @@ void OrderEntryREST::cancel_all_open_orders(Event<CancelAllOrders> const &event,
       if (!std::empty(cancel_all_orders.symbol) && symbol != cancel_all_orders.symbol)
         continue;
       auto body = json::cancel_all_open_orders(encode_buffer_, symbol, recv_window);
-      log::debug(R"(body="{}")"sv, body);
       auto now = clock::get_realtime<std::chrono::milliseconds>();
       auto query = account_.create_query(now, body);
       auto headers = account_.create_headers();
       auto request = web::rest::Request{
           .method = web::http::Method::DELETE,
-          .path = "/api/v3/openOrders"sv,
+          .path = shared_.api.simple.open_orders,
           .query = query,
           .accept = web::http::Accept::APPLICATION_JSON,
           .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
@@ -1503,7 +1497,6 @@ void OrderEntryREST::cancel_all_open_orders_ack(
     };
     auto handle_success = [&](auto &body) {
       json::CancelAllOpenOrders cancel_all_open_orders{body, decode_buffer_};
-      log::debug("cancel_all_open_orders={}"sv, cancel_all_open_orders);
       Trace event_2{event, cancel_all_open_orders};
       (*this)(event_2);
       send_ack(RequestStatus::ACCEPTED, {}, {});
@@ -1526,7 +1519,6 @@ void OrderEntryREST::operator()(Trace<json::CancelAllOpenOrders> const &event) {
   auto &[trace_info, cancel_all_open_orders] = event;
   log::info<2>("cancel_all_open_orders={}"sv, cancel_all_open_orders);
   for (auto &order : cancel_all_open_orders.data) {
-    log::debug("order={}"sv, order);
     if (std::empty(order.client_order_id))
       continue;
     auto side = json::map(order.side);
@@ -1577,7 +1569,6 @@ void OrderEntryREST::process_response(
     web::rest::Response const &response, SuccessHandler success_handler, ErrorHandler error_handler) {
   try {
     auto [status, category, body] = response.result();
-    // log::debug(R"(status={}, category={}, body="{}")"sv, status, category, body);
     switch (category) {
       using enum web::http::Category;
       case SUCCESS:  // 2xx
@@ -1649,22 +1640,6 @@ void OrderEntryREST::operator()(Trace<server::oms::OrderUpdate> const &event, st
     log::warn("*** EXTERNAL ORDER ***"sv);
   }
 }
-
-namespace {
-auto get_retry_after(auto &response) {
-  std::chrono::nanoseconds result = {};
-  response.dispatch(web::http::Header::RETRY_AFTER, [&](auto &value) {
-    try {
-      // XXX FIXME could also be a datetime (see https://datatracker.ietf.org/doc/html/rfc7231)
-      auto seconds = utils::from_string_relaxed<int64_t>(value);
-      result = std::chrono::seconds{seconds};
-    } catch (RuntimeError &) {
-      log::warn<5>(R"(Failed to parse text="{}")"sv, value);
-    }
-  });
-  return result;
-}
-}  // namespace
 
 // note! used by cancel-replace
 template <typename Parse, typename Callback>

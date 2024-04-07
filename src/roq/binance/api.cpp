@@ -17,6 +17,14 @@ API API::create(Settings const &) {
           .exchange_info = "/api/v3/exchangeInfo"sv,
           .depth = "/api/v3/depth"sv,
       },
+      .simple{
+          .user_data_stream = "/api/v3/userDataStream"sv,
+          .account = "/api/v3/account"sv,
+          .open_orders = "/api/v3/openOrders"sv,
+          .my_trades = "/api/v3/myTrades"sv,
+          .order = "/api/v3/order"sv,
+          .order_cancel_replace = "/api/v3/order/cancelReplace"sv,
+      },
       .papi{
           .ping_path = "/papi/v1/time"sv,
           .listen_key = "/papi/v1/listenKey"sv,

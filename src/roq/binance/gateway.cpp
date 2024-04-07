@@ -217,7 +217,7 @@ void Gateway::ensure_symbol_slices(size_t size) {
   while (std::size(market_data_1_) < size) {
     auto stream_id = ++stream_id_;
     auto index = std::size(market_data_1_);
-    log::debug("Create MarketData (stream_id={}, index={}))"sv, stream_id, index);
+    log::info("Create MarketData (stream_id={}, index={}))"sv, stream_id, index);
     auto market_data = std::make_unique<MarketData>(*this, context_, stream_id, Priority::PRIMARY, shared_, index);
     MessageInfo message_info;
     Start start;
@@ -229,7 +229,7 @@ void Gateway::ensure_symbol_slices(size_t size) {
   while (std::size(market_data_2_) < size) {
     auto stream_id = ++stream_id_;
     auto index = std::size(market_data_2_);
-    log::debug("Create MarketData (stream_id={}, index={}))"sv, stream_id, index);
+    log::info("Create MarketData (stream_id={}, index={}))"sv, stream_id, index);
     auto market_data = std::make_unique<MarketData>(*this, context_, stream_id, Priority::SECONDARY, shared_, index);
     MessageInfo message_info;
     Start start;
@@ -327,11 +327,9 @@ OrderEntry &Gateway::get_order_entry(std::string_view const &account) {
 
 Gateway::OrderEntryRR::OrderEntryRR(std::vector<std::unique_ptr<OrderEntry>> &&order_entry)
     : order_entry_{std::move(order_entry)} {
-  // log::error("DEBUG length={}"sv, std::size(order_entry_));
   for (auto &item : order_entry_)
     if (item.get() == nullptr)
       log::fatal("HERE"sv);
-  // log::error("DEBUG ok"sv);
 }
 
 template <typename... Args>
@@ -344,18 +342,13 @@ OrderEntry &Gateway::OrderEntryRR::get_next() {
   auto length = std::size(order_entry_);
   for (size_t offset = 0; offset < length; ++offset) {
     auto index = (index_ + offset) % length;
-    // log::error("DEBUG index={}/{}"sv, index, length);
     auto &order_entry = *(order_entry_[index]);
     if (!order_entry.ready()) {
-      // log::error("DEBUG index={} not ready... trying next"sv, index);
       continue;
     }
-    // log::error("DEBUG index={} ready"sv, index);
     index_ = (index + 1) % length;
-    // log::error("DEBUG next_index={}"sv, index_);
     return order_entry;
   }
-  // log::error("DEBUG failed"sv);
   throw server::oms::NotReady{"get_next"sv};
 }
 
