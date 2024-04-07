@@ -40,7 +40,6 @@ struct Account final {
     return crypto_.create_query_2(now, body);
   }
 
- public:
   std::string const name;
   MarginMode const margin_mode;
 
