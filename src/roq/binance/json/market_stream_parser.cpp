@@ -21,7 +21,7 @@ namespace roq {
 namespace binance {
 namespace json {
 
-void MarketStreamParser::dispatch(
+bool MarketStreamParser::dispatch(
     MarketStreamParser::Handler &handler,
     std::string_view const &message,
     std::span<std::byte> const &buffer,
@@ -92,7 +92,7 @@ void MarketStreamParser::dispatch(
 #ifndef NDEBUG
               log::fatal("Unexpected (unknown stream)"sv);
 #endif
-              return;
+              return false;
             case AGG_TRADE: {
               AggTrade agg_trade{value};
               dispatched = true;
@@ -146,10 +146,7 @@ void MarketStreamParser::dispatch(
       }
     }
   }
-  if (dispatched)
-    return;
-  log::warn(R"(message="{}")"sv, message);
-  log::fatal("Unexpected"sv);
+  return dispatched;
 }
 
 }  // namespace json

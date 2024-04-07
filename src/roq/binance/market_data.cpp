@@ -38,6 +38,8 @@ auto const SUPPORTS_SECONDARY = Mask{
     SupportType::TOP_OF_BOOK,
     SupportType::MARKET_BY_PRICE,
 };
+
+auto const REQUEST_ID = uint64_t{1000000};
 }  // namespace
 
 // === HELPERS ===
@@ -112,7 +114,7 @@ MarketData::MarketData(
     : handler_{handler}, stream_id_{stream_id}, priority_{priority}, name_{create_name(stream_id_, priority_)},
       index_{index}, connection_{create_connection(*this, shared.settings, context)},
       decode_buffer_(shared.settings.misc.decode_buffer_size),
-      request_id_{static_cast<uint64_t>(stream_id_) * 1000000},  // scale (debugging)
+      request_id_{static_cast<uint64_t>(stream_id_) * REQUEST_ID},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
           .total_bytes_received = create_metrics(shared.settings, name_, "total_bytes_received"sv),
@@ -263,17 +265,18 @@ void MarketData::subscribe(std::span<Symbol const> const &symbols, std::string_v
       fmt::join(symbols, separator),
       channel,
       id);
-  log::debug("message={}"sv, message);
   subscribe_queue_.emplace_back(message);
 }
 
 void MarketData::parse(std::string_view const &message) {
   profile_.parse([&]() {
+    auto log_message = [&]() { log::warn(R"(message="{}")"sv, message); };
     try {
       TraceInfo trace_info;
-      json::MarketStreamParser::dispatch(*this, message, decode_buffer_, trace_info);
+      if (!json::MarketStreamParser::dispatch(*this, message, decode_buffer_, trace_info))
+        log_message();
     } catch (...) {
-      log::warn(R"(message="{}")"sv, message);
+      log_message();
       core::tools::UnhandledException::terminate();
     }
   });
@@ -358,7 +361,7 @@ void MarketData::operator()(Trace<json::MiniTicker> const &event) {
     auto &[trace_info, mini_ticker] = event;
     log::info<3>("mini_ticker={}"sv, mini_ticker);
     (*connection_).touch(trace_info.source_receive_time);
-    auto statistics = std::array<Statistics, 4>{{
+    std::array<Statistics, 4> statistics{{
         {
             .type = StatisticsType::HIGHEST_TRADED_PRICE,
             .value = mini_ticker.high_price,
@@ -512,10 +515,7 @@ void MarketData::operator()(Trace<json::DepthUpdate> const &event) {
 
 void MarketData::check_subscribe_queue(std::chrono::nanoseconds now) {
   auto can_request = [&](auto now) { return shared_.rate_limiter.can_request(now); };
-  auto request = [&](auto &message) {
-    log::debug(R"(Subscribe: "{}")"sv, message);
-    (*connection_).send_text(message);
-  };
+  auto request = [&](auto &message) { (*connection_).send_text(message); };
   subscribe_queue_.dispatch(can_request, request, now);
 }
 

@@ -11,6 +11,10 @@ namespace binance {
 
 struct API final {
   struct {
+    std::string_view exchange_info;
+    std::string_view depth;
+  } market_data;
+  struct {
     std::string_view ping_path;
     std::string_view listen_key;
     std::string_view balance;

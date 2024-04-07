@@ -13,6 +13,10 @@ namespace binance {
 
 API API::create(Settings const &) {
   return {
+      .market_data{
+          .exchange_info = "/api/v3/exchangeInfo"sv,
+          .depth = "/api/v3/depth"sv,
+      },
       .papi{
           .ping_path = "/papi/v1/time"sv,
           .listen_key = "/papi/v1/listenKey"sv,
