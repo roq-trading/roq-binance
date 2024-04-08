@@ -96,7 +96,7 @@ auto get_supports(auto priority) {
   switch (priority) {
     using enum Priority;
     case UNDEFINED:
-      std::abort();
+      log::fatal("Unexpected"sv);
       break;
     case PRIMARY:
       break;
