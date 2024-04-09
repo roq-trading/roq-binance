@@ -57,10 +57,11 @@ R create_order_entry(
     auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared, auto &request_by_account) {
   using result_type = std::remove_cvref<R>::type;
   result_type result;
-  for (auto &[name, account] : accounts) {
-    auto &request = request_by_account[name];
+  for (auto &[_, item] : accounts) {
+    auto &account = *item;
+    auto &request = request_by_account[account.name];
     std::vector<std::unique_ptr<OrderEntry>> order_entry;
-    switch ((*account).margin_mode) {
+    switch (account.margin_mode) {
       using enum MarginMode;
       case UNDEFINED:
       case ISOLATED:
@@ -68,27 +69,29 @@ R create_order_entry(
         if (shared.settings.ws_api) {
           auto &interfaces = shared.settings.ws_api_2.network_interfaces;
           if (std::empty(interfaces)) {
-            order_entry.emplace_back(
-                std::make_unique<OrderEntryWS>(gateway, context, ++stream_id, *account, shared, request));
+            auto obj = std::make_unique<OrderEntryWS>(gateway, context, ++stream_id, account, shared, request);
+            order_entry.emplace_back(std::move(obj));
           } else {
             for (size_t i = 0; i < std::size(interfaces); ++i) {
               auto master = i == 0;
               auto &interface = interfaces[i];
-              order_entry.emplace_back(std::make_unique<OrderEntryWS>(
-                  gateway, context, ++stream_id, *account, shared, request, master, interface));
+              auto obj = std::make_unique<OrderEntryWS>(
+                  gateway, context, ++stream_id, account, shared, request, master, interface);
+              order_entry.emplace_back(std::move(obj));
             }
           }
         } else {
           auto &interfaces = shared.settings.rest.network_interfaces;
           if (std::empty(interfaces)) {
-            order_entry.emplace_back(
-                std::make_unique<OrderEntryREST>(gateway, context, ++stream_id, *account, shared, request));
+            auto obj = std::make_unique<OrderEntryREST>(gateway, context, ++stream_id, account, shared, request);
+            order_entry.emplace_back(std::move(obj));
           } else {
             for (size_t i = 0; i < std::size(interfaces); ++i) {
               auto master = i == 0;
               auto &interface = interfaces[i];
-              order_entry.emplace_back(std::make_unique<OrderEntryREST>(
-                  gateway, context, ++stream_id, *account, shared, request, master, interface));
+              auto obj = std::make_unique<OrderEntryREST>(
+                  gateway, context, ++stream_id, account, shared, request, master, interface);
+              order_entry.emplace_back(std::move(obj));
             }
           }
         }
@@ -96,20 +99,21 @@ R create_order_entry(
       case PORTFOLIO: {
         auto &interfaces = shared.settings.rest.network_interfaces;
         if (std::empty(interfaces)) {
-          order_entry.emplace_back(
-              std::make_unique<OrderEntryPortfolio>(gateway, context, ++stream_id, *account, shared, request));
+          auto obj = std::make_unique<OrderEntryPortfolio>(gateway, context, ++stream_id, account, shared, request);
+          order_entry.emplace_back(std::move(obj));
         } else {
           for (size_t i = 0; i < std::size(interfaces); ++i) {
             auto master = i == 0;
             auto &interface = interfaces[i];
-            order_entry.emplace_back(std::make_unique<OrderEntryPortfolio>(
-                gateway, context, ++stream_id, *account, shared, request, master, interface));
+            auto obj = std::make_unique<OrderEntryPortfolio>(
+                gateway, context, ++stream_id, account, shared, request, master, interface);
+            order_entry.emplace_back(std::move(obj));
           }
         }
         break;
       }
     }
-    result.try_emplace(name, std::move(order_entry));
+    result.try_emplace(account.name, std::move(order_entry));
   }
   return result;
 }
@@ -122,6 +126,35 @@ R create_drop_copy(auto &accounts) {
     result.try_emplace(name, nullptr);
   return result;
 }
+
+template <typename R>
+R create_order_entry_2(
+    auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared, auto &request_by_account) {
+  using result_type = std::remove_cvref<R>::type;
+  result_type result;
+  for (auto &[_, item] : accounts) {
+    auto &account = *item;
+    if (account.margin_mode != MarginMode::PORTFOLIO)
+      continue;
+    auto &request = request_by_account[account.name];
+    auto obj = std::make_unique<OrderEntry2>(gateway, context, ++stream_id, account, shared, request);
+    result.try_emplace(account.name, std::move(obj));
+  }
+  return result;
+}
+
+template <typename R>
+R create_drop_copy_2(auto &accounts) {
+  using result_type = std::remove_cvref<R>::type;
+  result_type result;
+  for (auto &[_, item] : accounts) {
+    auto &account = *item;
+    if (account.margin_mode != MarginMode::PORTFOLIO)
+      continue;
+    result.try_emplace(account.name, nullptr);
+  }
+  return result;
+}
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -131,7 +164,10 @@ Gateway::Gateway(server::Dispatcher &dispatcher, Settings const &settings, Confi
       shared_{dispatcher, settings, config}, request_{create_request<decltype(request_)>(config)},
       rest_{*this, context_, ++stream_id_, shared_}, order_entry_{create_order_entry<decltype(order_entry_)>(
                                                          *this, context_, stream_id_, accounts_, shared_, request_)},
-      drop_copy_{create_drop_copy<decltype(drop_copy_)>(accounts_)} {
+      drop_copy_{create_drop_copy<decltype(drop_copy_)>(accounts_)},
+      order_entry_2_{
+          create_order_entry_2<decltype(order_entry_2_)>(*this, context_, stream_id_, accounts_, shared_, request_)},
+      drop_copy_2_{create_drop_copy_2<decltype(drop_copy_2_)>(accounts_)} {
   if (settings.rest.cancel_on_disconnect)
     log::fatal("Exchange does *NOT* support cancel on disconnect"sv);
 }
@@ -268,6 +304,24 @@ void Gateway::operator()(OrderEntry::ListenKeyUpdate const &listen_key_update) {
   }
 }
 
+void Gateway::operator()(OrderEntry2::ListenKeyUpdate const &listen_key_update) {
+  auto &account = listen_key_update.account;
+  assert(!std::empty(account));
+  auto iter = drop_copy_2_.find(account);
+  if (iter == std::end(drop_copy_2_))
+    log::fatal(R"(Unexpected: account="{}")"sv, account);
+  if (!static_cast<bool>((*iter).second)) {
+    log::info(R"(Create drop-copy-2 (user-stream) for account="{}")"sv, account);
+    auto &account_2 = *accounts_.at(account);
+    auto drop_copy = std::make_unique<DropCopy2>(
+        *this, context_, ++stream_id_, account_2, shared_, request_.at(account), listen_key_update.listen_key);
+    MessageInfo message_info;
+    Start start;
+    create_event_and_dispatch(*drop_copy, message_info, start);
+    (*iter).second = std::move(drop_copy);
+  }
+}
+
 uint16_t Gateway::operator()(
     Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
   assert(!std::empty(event.value.account));
@@ -310,6 +364,11 @@ void Gateway::dispatch(Args &&...args) {
   for (auto &[_, item] : order_entry_)
     helper(item);
   for (auto &[_, item] : drop_copy_)
+    if (static_cast<bool>(item))
+      helper(*item);
+  for (auto &[_, item] : order_entry_2_)
+    helper(*item);
+  for (auto &[_, item] : drop_copy_2_)
     if (static_cast<bool>(item))
       helper(*item);
   for (auto &item : market_data_1_)

@@ -13,10 +13,12 @@ set(SOURCES
     api.cpp
     application.cpp
     config.cpp
+    drop_copy_2.cpp
     drop_copy_portfolio.cpp
     drop_copy_simple.cpp
     gateway.cpp
     market_data.cpp
+    order_entry_2.cpp
     order_entry_portfolio.cpp
     order_entry_rest.cpp
     order_entry_ws.cpp
