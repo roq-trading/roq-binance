@@ -28,6 +28,7 @@ Shared::Shared(server::Dispatcher &dispatcher, Settings const &settings, Config 
       rate_limiter{settings.request.limit, settings.request.limit_interval},
       symbols{settings.ws.max_subscriptions_per_stream}, depth_request_queue{settings.ws.mbp_request_delay},
       create_order_templates{config.create_order_templates}, cancel_order_templates{config.cancel_order_templates} {
+  log::info("api={}"sv, api);
 }
 
 Shared::Instrument &Shared::get_instrument(std::string_view const &symbol) {

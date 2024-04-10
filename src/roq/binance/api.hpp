@@ -38,3 +38,54 @@ struct API final {
 
 }  // namespace binance
 }  // namespace roq
+
+template <>
+struct fmt::formatter<roq::binance::API> {
+  constexpr auto parse(format_parse_context &context) { return std::begin(context); }
+  auto format(roq::binance::API const &value, format_context &context) const {
+    using namespace std::literals;
+    return fmt::format_to(
+        context.out(),
+        R"({{)"
+        R"(market_data={{)"
+        R"(exchange_info="{}", )"
+        R"(depth="{}")"
+        R"(}}, )"
+        R"(simple={{)"
+        R"(user_data_stream="{}", )"
+        R"(account="{}", )"
+        R"(open_orders="{}", )"
+        R"(my_trades="{}", )"
+        R"(order="{}", )"
+        R"(order_cancel_replace="{}")"
+        R"(}}, )"
+        R"(papi={{)"
+        R"(ping_path="{}", )"
+        R"(listen_key="{}", )"
+        R"(balance="{}", )"
+        R"(margin_open_orders="{}", )"
+        R"(margin_my_trades="{}", )"
+        R"(margin_order="{}", )"
+        R"(margin_all_open_orders="{}")"
+        R"(}})"
+        R"(}})"sv,
+        // market_data
+        value.market_data.exchange_info,
+        value.market_data.depth,
+        // simple
+        value.simple.user_data_stream,
+        value.simple.account,
+        value.simple.open_orders,
+        value.simple.my_trades,
+        value.simple.order,
+        value.simple.order_cancel_replace,
+        // papi
+        value.papi.ping_path,
+        value.papi.listen_key,
+        value.papi.balance,
+        value.papi.margin_open_orders,
+        value.papi.margin_my_trades,
+        value.papi.margin_order,
+        value.papi.margin_all_open_orders);
+  }
+};
