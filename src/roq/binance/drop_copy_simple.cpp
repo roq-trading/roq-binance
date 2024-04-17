@@ -100,6 +100,7 @@ DropCopySimple::DropCopySimple(
       },
       account_{account}, shared_{shared}, request_{request},
       download_{{}, [this](auto state) { return download(state); }} {
+  log::info<5>(R"(stream_id={}, account="{}", listen_key="{})"sv, stream_id_, account_.name, listen_key);
 }
 
 void DropCopySimple::operator()(Event<Start> const &) {
@@ -268,6 +269,7 @@ void DropCopySimple::operator()(Trace<json::ExecutionReport> const &event) {
   profile_.execution_report([&]() {
     auto &trace_info = event.trace_info;
     auto &execution_report = event.value;
+    log::info<2>("stream_id={}"sv, stream_id_);
     log::info<2>("execution_report={}"sv, execution_report);
     auto side = json::map(execution_report.side);
     auto order_type = json::map(execution_report.order_type);

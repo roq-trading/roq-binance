@@ -406,6 +406,7 @@ void OrderEntryREST::operator()(Trace<json::ListenKey> const &event) {
       log::info<1>(R"(Listen key has been acquired (value="{}"))"sv, listen_key_);
       auto listen_key_update = ListenKeyUpdate{
           .account = account_.name,
+          .margin_mode = {},
           .listen_key = listen_key.listen_key,
       };
       create_trace_and_dispatch(handler_, trace_info, listen_key_update);

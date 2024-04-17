@@ -16,6 +16,7 @@ namespace binance {
 struct OrderEntry {
   struct ListenKeyUpdate final {
     std::string_view account;
+    MarginMode margin_mode = {};
     std::string_view listen_key;
   };
 

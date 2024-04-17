@@ -141,7 +141,8 @@ OrderEntryWS::OrderEntryWS(
           .create_order_10s = create_metrics(shared.settings, name_, "create_order"sv, "10s"sv),
           .create_order_1d = create_metrics(shared.settings, name_, "create_order"sv, "1d"sv),
       },
-      account_{account}, shared_{shared}, request_{request}, request_id_{REQUEST_ID} {
+      account_{account}, shared_{shared}, request_{request}, request_id_{REQUEST_ID * stream_id} {
+  log::info<5>(R"(stream_id={}, account="{}")"sv, stream_id_, account_.name);
 }
 
 void OrderEntryWS::operator()(Event<Start> const &) {
@@ -784,8 +785,10 @@ void OrderEntryWS::operator()(Trace<json::WSAPIListenKey> const &event, json::WS
       case 200: {
         auto &listen_key = message.result;
         listen_key_ = listen_key.listen_key;
+        log::info<1>(R"(Listen key has been acquired (value="{}"))"sv, listen_key_);
         auto listen_key_update = ListenKeyUpdate{
             .account = account_.name,
+            .margin_mode = {},
             .listen_key = listen_key_,
         };
         create_trace_and_dispatch(handler_, trace_info, listen_key_update);

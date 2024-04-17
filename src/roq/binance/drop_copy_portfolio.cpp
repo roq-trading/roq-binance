@@ -106,6 +106,7 @@ DropCopyPortfolio::DropCopyPortfolio(
       },
       account_{account}, shared_{shared}, request_{request},
       download_{{}, [this](auto state) { return download(state); }} {
+  log::info<5>(R"(stream_id={}, account="{}", listen_key="{}")"sv, stream_id_, account_.name, listen_key);
 }
 
 void DropCopyPortfolio::operator()(Event<Start> const &) {
