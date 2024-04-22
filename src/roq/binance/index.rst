@@ -5,17 +5,38 @@
 roq-binance
 ===========
 
+.. tab:: Stable
 
-Links
------
+  .. code-block:: shell
 
-* `Website <https://www.binance.com/en>`__
-* `Support <https://www.binance.com/en/support-center>`__
-* `Documentation <https://binance-docs.github.io/apidocs/spot/en/>`__
+     $ mamba install \
+           --channel https://roq-trading.com/conda/stable \
+           roq-binance
+
+.. tab:: Unstable
+
+  .. code-block:: shell
+
+     $ mamba install \
+           --channel https://roq-trading.com/conda/unstable \
+           roq-binance
+
+:code:`roq-binance`
+-------------------
+
+.. code-block:: shell
+
+   $ roq-binance [FLAGS]
+
+
+Description
+~~~~~~~~~~~
+
+:code:`roq-binance` is a gateway
 
 
 Supports
---------
+~~~~~~~~
 
 .. grid::  2
   :gutter: 2
@@ -85,47 +106,10 @@ Supports
    * Auto-Cancel only available with the REST API.
 
 
-Installing
-----------
-
-* :ref:`Using Conda <tutorial-conda>`
-
-.. tab:: Stable
-
-  .. code-block:: shell
-
-     $ mamba install \
-           --channel https://roq-trading.com/conda/stable \
-           roq-binance
-
-.. tab:: Unstable
-
-  .. code-block:: shell
-
-     $ mamba install \
-           --channel https://roq-trading.com/conda/unstable \
-           roq-binance
-
-
-Using
------
-
-.. code-block:: shell
-
-   $ roq-binance \
-         --name "binance" \
-         --config_file $CONFIG_FILE_PATH \
-         --client_listen_address $UNIX_SOCKET_PATH \
-         --flagfile $ENVIRONMENT_FLAGFILE
-
-
 .. _roq-binance-flags:
 
 Flags
------
-
-* :ref:`Using Flags <abseil-cpp>`
-* :ref:`Gateway Flags <gateway-flags>`
+~~~~~
 
 .. code-block:: shell
 
@@ -169,7 +153,7 @@ Flags
 
 
 Environments
-------------
+~~~~~~~~~~~~
 
 .. tab:: Prod
 
@@ -200,9 +184,7 @@ Environments
 
 
 Configuration
--------------
-
-* :ref:`Gateway Config <gateway-config>`
+~~~~~~~~~~~~~
 
 .. code-block:: shell
 
@@ -218,7 +200,7 @@ Configuration
 
 
 Market Data
------------
+~~~~~~~~~~~
 
 .. tab:: Live
 
@@ -314,7 +296,7 @@ Market Data
 
 
 Statistics
-~~~~~~~~~~
+^^^^^^^^^^
 
 .. list-table::
   :header-rows: 1
@@ -337,7 +319,7 @@ Statistics
 
 
 Order Management
-----------------
+~~~~~~~~~~~~~~~~
 
 .. tab:: Live
 
@@ -431,7 +413,7 @@ Order Management
 
 
 Order Types
-~~~~~~~~~~~
+^^^^^^^^^^^
 
 .. list-table::
   :header-rows: 1
@@ -448,7 +430,7 @@ Order Types
 
 
 Time in Force
-~~~~~~~~~~~~~
+^^^^^^^^^^^^^
 
 .. list-table::
   :header-rows: 1
@@ -468,7 +450,7 @@ Time in Force
 
 
 Position Effect
-~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^
 
 .. note::
 
@@ -476,7 +458,7 @@ Position Effect
 
 
 Execution Instructions
-~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^
 
 .. list-table::
   :header-rows: 1
@@ -490,10 +472,10 @@ Execution Instructions
 
 
 Templates
-~~~~~~~~~
+^^^^^^^^^
 
 :code:`create_order`
-^^^^^^^^^^^^^^^^^^^^
+++++++++++++++++++++
 
 .. list-table::
   :header-rows: 1
@@ -507,9 +489,8 @@ Templates
     - :code:`EXPIRE_TAKER`, :code:`EXPIRE_MAKER`, :code:`EXPIRE_BOTH`
     - Exchange field is :code:`selfTradePreventionMode`
 
-
 :code:`cancel_order`
-^^^^^^^^^^^^^^^^^^^^
+++++++++++++++++++++
 
 .. list-table::
   :header-rows: 1
@@ -529,7 +510,7 @@ Templates
 
 
 Account Management
-------------------
+~~~~~~~~~~~~~~~~~~
 
 .. tab:: Live
 
@@ -575,7 +556,7 @@ Account Management
 
 
 Streams
--------
+~~~~~~~
 
 .. tab:: OrderEntry
 
@@ -651,7 +632,7 @@ Streams
 
 
 Constraints
------------
+~~~~~~~~~~~
 
 * It is only possible to download current order status for open orders.
   The implication is that backup procedures must be implemented to reoncile positions in the
@@ -670,7 +651,7 @@ Constraints
 
 
 Comments
---------
+~~~~~~~~
 
 * It is possible to see gateway warnings about dropped messages caused by order status
   reversal, e.g. seeing :code:`WORKING` after :code:`COMPLETED`.
@@ -702,3 +683,21 @@ Comments
 
   * The new end-points are selected if the toml config has :code:`margin_mode = "portfolio"`.
     The end-points are then taken from :code:`--rest_pm_uri` and :code:`--ws_pm_uri`.
+
+References
+----------
+
+Common
+~~~~~~
+
+* :ref:`Using Conda <tutorial-conda>`
+* :ref:`Using Flags <abseil-cpp>`
+* :ref:`Gateway Flags <gateway-flags>`
+* :ref:`Gateway Config <gateway-config>`
+
+Binance
+~~~~~~~
+
+* `Website <https://www.binance.com/en>`__
+* `Support <https://www.binance.com/en/support-center>`__
+* `Documentation <https://binance-docs.github.io/apidocs/spot/en/>`__
