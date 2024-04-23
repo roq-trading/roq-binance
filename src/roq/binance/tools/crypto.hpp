@@ -31,7 +31,7 @@ struct Crypto final {
 
   std::string_view create_ws_api_signature(std::span<std::byte> const &buffer, std::string_view const &body);
 
-  static constexpr auto const QUERY_BUFFER_LENGTH = size_t{128};  // note! expected length == 99
+  static constexpr auto const QUERY_BUFFER_LENGTH = 128uz;  // note! expected length == 99
 
   // PAPI
 
