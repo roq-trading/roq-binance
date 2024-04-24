@@ -29,51 +29,10 @@ auto get_request(auto &message) -> WSAPIRequest {
   return {};
 }
 
-bool dispatch_listen_key(auto &handler, auto &message, auto &buffer, auto &trace_info, auto &request) {
-  WSAPIListenKey listen_key{message, buffer};
-  create_trace_and_dispatch(handler, trace_info, listen_key, request);
-  return true;
-}
-
-bool dispatch_account_status(auto &handler, auto &message, auto &buffer, auto &trace_info, auto &request) {
-  WSAPIAccount account{message, buffer};
-  create_trace_and_dispatch(handler, trace_info, account, request);
-  return true;
-}
-
-bool dispatch_open_orders_status(auto &handler, auto &message, auto &buffer, auto &trace_info, auto &request) {
-  WSAPIOpenOrders open_orders{message, buffer};
-  create_trace_and_dispatch(handler, trace_info, open_orders, request);
-  return true;
-}
-
-bool dispatch_my_trades(auto &handler, auto &message, auto &buffer, auto &trace_info, auto &request) {
-  WSAPITrades trades{message, buffer};
-  create_trace_and_dispatch(handler, trace_info, trades, request);
-  return true;
-}
-
-bool dispatch_open_orders_cancel_all(auto &handler, auto &message, auto &buffer, auto &trace_info, auto &request) {
-  WSAPICancelOpenOrders cancel_open_orders{message, buffer};
-  create_trace_and_dispatch(handler, trace_info, cancel_open_orders, request);
-  return true;
-}
-
-bool dispatch_order_place(auto &handler, auto &message, auto &buffer, auto &trace_info, auto &request) {
-  WSAPIOrderPlace order_place{message, buffer};
-  create_trace_and_dispatch(handler, trace_info, order_place, request);
-  return true;
-}
-
-bool dispatch_order_cancel(auto &handler, auto &message, auto &buffer, auto &trace_info, auto &request) {
-  WSAPICancelOrder cancel_order{message, buffer};
-  create_trace_and_dispatch(handler, trace_info, cancel_order, request);
-  return true;
-}
-
-bool dispatch_order_cancel_replace(auto &handler, auto &message, auto &buffer, auto &trace_info, auto &request) {
-  WSAPICancelReplaceOrder cancel_replace_order{message, buffer};
-  create_trace_and_dispatch(handler, trace_info, cancel_replace_order, request);
+template <typename T>
+bool dispatch_helper(auto &handler, auto &message, auto &buffer, auto &trace_info, auto &request) {
+  T obj{message, buffer};
+  create_trace_and_dispatch(handler, trace_info, obj, request);
   return true;
 }
 }  // namespace
@@ -90,23 +49,23 @@ bool WSAPIParser2::dispatch(
     case UNKNOWN__:
       break;
     case LISTEN_KEY_CREATE:
-      return dispatch_listen_key(handler, message, buffer, trace_info, request);
+      return dispatch_helper<WSAPIListenKey>(handler, message, buffer, trace_info, request);
     case LISTEN_KEY_PING:
       return true;  // note!
     case ACCOUNT_STATUS:
-      return dispatch_account_status(handler, message, buffer, trace_info, request);
+      return dispatch_helper<WSAPIAccount>(handler, message, buffer, trace_info, request);
     case OPEN_ORDERS_STATUS:
-      return dispatch_open_orders_status(handler, message, buffer, trace_info, request);
+      return dispatch_helper<WSAPIOpenOrders>(handler, message, buffer, trace_info, request);
     case MY_TRADES:
-      return dispatch_my_trades(handler, message, buffer, trace_info, request);
+      return dispatch_helper<WSAPITrades>(handler, message, buffer, trace_info, request);
     case OPEN_ORDERS_CANCEL_ALL:
-      return dispatch_open_orders_cancel_all(handler, message, buffer, trace_info, request);
+      return dispatch_helper<WSAPICancelOpenOrders>(handler, message, buffer, trace_info, request);
     case ORDER_PLACE:
-      return dispatch_order_place(handler, message, buffer, trace_info, request);
+      return dispatch_helper<WSAPIOrderPlace>(handler, message, buffer, trace_info, request);
     case ORDER_CANCEL:
-      return dispatch_order_cancel(handler, message, buffer, trace_info, request);
+      return dispatch_helper<WSAPICancelOrder>(handler, message, buffer, trace_info, request);
     case ORDER_CANCEL_REPLACE:
-      return dispatch_order_cancel_replace(handler, message, buffer, trace_info, request);
+      return dispatch_helper<WSAPICancelReplaceOrder>(handler, message, buffer, trace_info, request);
   }
   return false;
 }
