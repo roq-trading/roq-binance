@@ -82,6 +82,13 @@
     },
     {
       "name": "allowedSelfTradePreventionModes"
+    },
+    {
+      "name": "otoAllowed",
+      "type": "bool"
+    },
+    {
+      "name": "permissionSets"
     }
   ]
 }
