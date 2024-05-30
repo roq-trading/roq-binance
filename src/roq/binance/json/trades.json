@@ -4,7 +4,8 @@
   "values": [
     {
       "name": "data",
-      "type": "std::span<Trade2 const>"
+      "type": "Trade2",
+      "array": "std/span"
     }
   ]
 }

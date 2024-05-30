@@ -4,7 +4,7 @@
   "values": [
     {
       "name": "symbol",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "status",
@@ -12,80 +12,80 @@
     },
     {
       "name": "baseAsset",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "baseAssetPrecision",
-      "type": "uint32_t"
+      "type": "std/uint32"
     },
     {
       "name": "quoteAsset",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "quotePrecision",
-      "type": "uint32_t"
+      "type": "std/uint32"
     },
     {
       "name": "quoteAssetPrecision",
-      "type": "uint32_t"
+      "type": "std/uint32"
     },
     {
       "name": "baseCommissionPrecision",
-      "type": "uint32_t"
+      "type": "std/uint32"
     },
     {
       "name": "quoteCommissionPrecision",
-      "type": "uint32_t"
+      "type": "std/uint32"
     },
     {
       "name": "orderTypes"
     },
     {
       "name": "icebergAllowed",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "ocoAllowed",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "quoteOrderQtyMarketAllowed",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "isSpotTradingAllowed",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "isMarginTradingAllowed",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "filters",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "permissions"
     },
     {
       "name": "allowTrailingStop",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "cancelReplaceAllowed",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "defaultSelfTradePreventionMode",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "allowedSelfTradePreventionModes"
     },
     {
       "name": "otoAllowed",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "permissionSets"

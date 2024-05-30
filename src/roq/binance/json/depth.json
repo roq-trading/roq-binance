@@ -4,15 +4,17 @@
   "values": [
     {
       "name": "lastUpdateId",
-      "type": "uint64_t"
+      "type": "std/uint64"
     },
     {
       "name": "bids",
-      "type": "std::span<DepthItem const>"
+      "type": "DepthItem",
+      "array": "std/span"
     },
     {
       "name": "asks",
-      "type": "std::span<DepthItem const>"
+      "type": "DepthItem",
+      "array": "std/span"
     }
   ]
 }

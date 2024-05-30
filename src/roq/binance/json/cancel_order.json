@@ -4,39 +4,39 @@
   "values": [
     {
       "name": "symbol",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "origClientOrderId",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "orderId",
-      "type": "int64_t"
+      "type": "std/int64"
     },
     {
       "name": "orderListId",
-      "type": "int64_t"
+      "type": "std/int64"
     },
     {
       "name": "clientOrderId",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "origQty",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "executedQty",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "cummulativeQuoteQty",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "status",
@@ -56,21 +56,21 @@
     },
     {
       "name": "code",
-      "type": "int32_t",
+      "type": "std/int32",
       "comment": "only populated by cancel-replace"
     },
     {
       "name": "msg",
-      "type": "std::string_view",
+      "type": "std/string_view",
       "comment": "only populated by cancel-replace"
     },
     {
       "name": "selfTradePreventionMode",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "transactTime",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     }
   ]
 }

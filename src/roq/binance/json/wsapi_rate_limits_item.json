@@ -12,15 +12,15 @@
     },
     {
       "name": "intervalNum",
-      "type": "uint32_t"
+      "type": "std/uint32"
     },
     {
       "name": "limit",
-      "type": "uint32_t"
+      "type": "std/uint32"
     },
     {
       "name": "count",
-      "type": "uint32_t"
+      "type": "std/uint32"
     }
   ]
 }

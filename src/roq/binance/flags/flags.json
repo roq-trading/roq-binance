@@ -4,14 +4,14 @@
   "values": [
     {
       "name": "exchange",
-      "type": "std::string",
+      "type": "std/string",
       "required": true,
       "default": "binance",
       "description": "Exchange identifier"
     },
     {
       "name": "ws_api",
-      "type": "bool",
+      "type": "std/bool",
       "default": true,
       "description": "Use WebSocket API?"
     }

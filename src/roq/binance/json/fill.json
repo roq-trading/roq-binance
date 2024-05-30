@@ -4,23 +4,23 @@
   "values": [
     {
       "name": "price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "qty",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "commission",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "commissionAsset",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "tradeId",
-      "type": "int64_t"
+      "type": "std/int64"
     }
   ]
 }

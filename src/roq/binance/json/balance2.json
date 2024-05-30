@@ -4,55 +4,55 @@
   "values": [
     {
       "name": "asset",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "totalWalletBalance",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "crossMarginAsset",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "crossMarginBorrowed",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "crossMarginFree",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "crossMarginInterest",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "crossMarginLocked",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "umWalletBalance",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "umUnrealizedPNL",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "cmWalletBalance",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "cmUnrealizedPNL",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "updateTime",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "name": "negativeBalance",
-      "type": "double"
+      "type": "std/double"
     }
   ]
 }

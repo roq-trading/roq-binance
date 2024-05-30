@@ -10,17 +10,17 @@
     {
       "raw": "E",
       "name": "event_time",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "raw": "s",
       "name": "symbol",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "raw": "c",
       "name": "client_order_id",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "raw": "S",
@@ -40,32 +40,32 @@
     {
       "raw": "q",
       "name": "quantity",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "p",
       "name": "price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "P",
       "name": "stop_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "F",
       "name": "iceberg_quantity",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "g",
       "name": "order_list_id",
-      "type": "int64_t"
+      "type": "std/int64"
     },
     {
       "raw": "C",
       "name": "original_client_order_id",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "raw": "x",
@@ -80,47 +80,47 @@
     {
       "raw": "r",
       "name": "order_reject_reason",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "raw": "i",
       "name": "order_id",
-      "type": "int64_t"
+      "type": "std/int64"
     },
     {
       "raw": "l",
       "name": "last_executed_quantity",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "z",
       "name": "cumulative_filled_quantity",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "L",
       "name": "last_executed_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "n",
       "name": "commission_amount",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "N",
       "name": "commission_asset",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "raw": "T",
       "name": "transaction_time",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "raw": "t",
       "name": "trade_id",
-      "type": "int64_t"
+      "type": "std/int64"
     },
     {
       "raw": "I",
@@ -129,12 +129,12 @@
     {
       "raw": "w",
       "name": "order_on_book",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "raw": "m",
       "name": "is_trade_maker",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "raw": "M",
@@ -143,32 +143,32 @@
     {
       "raw": "O",
       "name": "order_creation_time",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "raw": "Z",
       "name": "cumulative_quote_asset_transacted_quantity",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "Y",
       "name": "last_quote_asset_transacted_quantity",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "Q",
       "name": "quote_order_qty",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "W",
       "name": "working_time",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "raw": "V",
       "name": "self_trade_prevention",
-      "type": "std::string_view"
+      "type": "std/string_view"
     }
   ]
 }

@@ -10,22 +10,23 @@
     {
       "raw": "E",
       "name": "event_time",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "raw": "u",
       "name": "time_of_last_account_update",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "raw": "U",
       "name": "event_update_id",
-      "type": "uint64_t"
+      "type": "std/uint64"
     },
     {
       "raw": "B",
       "name": "balances",
-      "type": "std::span<BalancesItem const>"
+      "type": "BalancesItem",
+      "array": "std/span"
     },
     {
       "raw": "P",

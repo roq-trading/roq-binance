@@ -4,7 +4,8 @@
   "values": [
     {
       "name": "data",
-      "type": "std::span<Filter const>"
+      "type": "Filter",
+      "array": "std/span"
     }
   ]
 }

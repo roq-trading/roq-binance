@@ -4,7 +4,7 @@
   "values": [
     {
       "name": "listenKey",
-      "type": "std::string_view"
+      "type": "std/string_view"
     }
   ]
 }

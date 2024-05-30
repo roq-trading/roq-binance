@@ -5,32 +5,32 @@
     {
       "raw": "u",
       "name": "order_book_update_id",
-      "type": "uint64_t"
+      "type": "std/uint64"
     },
     {
       "raw": "s",
       "name": "symbol",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "raw": "b",
       "name": "best_bid_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "B",
       "name": "best_bid_qty",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "a",
       "name": "best_ask_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "A",
       "name": "best_ask_qty",
-      "type": "double"
+      "type": "std/double"
     }
   ]
 }

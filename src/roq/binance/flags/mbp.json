@@ -5,19 +5,19 @@
   "values": [
     {
       "name": "max_depth",
-      "type": "uint16_t",
+      "type": "std/uint16",
       "description": "Maximum depth"
     },
     {
       "name": "sequencer_timeout",
-      "type": "std::chrono::nanoseconds",
+      "type": "std/nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "120s",
       "description": "Sequencer timeout"
     },
     {
       "name": "allow_price_inversion",
-      "type": "bool",
+      "type": "std/bool",
       "default": false,
       "description": "Allow price inversion?"
     }

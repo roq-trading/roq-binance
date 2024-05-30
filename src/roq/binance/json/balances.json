@@ -4,7 +4,8 @@
   "values": [
     {
       "name": "data",
-      "type": "std::span<Balance2 const>"
+      "type": "Balance2",
+      "array": "std/span"
     }
   ]
 }

@@ -5,17 +5,17 @@
     {
       "raw": "a",
       "name": "asset",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "raw": "f",
       "name": "free_amount",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "l",
       "name": "locked_amount",
-      "type": "double"
+      "type": "std/double"
     }
   ]
 }

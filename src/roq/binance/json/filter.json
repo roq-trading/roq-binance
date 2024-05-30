@@ -8,132 +8,132 @@
     },
     {
       "name": "minNotional",
-      "type": "double",
+      "type": "std/double",
       "comment": "MIN_NOTIONAL"
     },
     {
       "name": "applyToMarket",
-      "type": "bool",
+      "type": "std/bool",
       "comment": "MIN_NOTIONAL"
     },
     {
       "name": "avgPriceMins",
-      "type": "int32_t",
+      "type": "std/int32",
       "comment": "MIN_NOTIONAL,PERCENT_PRICE"
     },
     {
       "name": "minPrice",
-      "type": "double",
+      "type": "std/double",
       "comment": "PRICE_FILTER"
     },
     {
       "name": "maxPrice",
-      "type": "double",
+      "type": "std/double",
       "comment": "PRICE_FILTER"
     },
     {
       "name": "tickSize",
-      "type": "double",
+      "type": "std/double",
       "comment": "PRICE_FILTER"
     },
     {
       "name": "multiplierUp",
-      "type": "double",
+      "type": "std/double",
       "comment": "PERCENT_PRICE"
     },
     {
       "name": "multiplierDown",
-      "type": "double",
+      "type": "std/double",
       "comment": "PERCENT_PRICE"
     },
     {
       "name": "minQty",
-      "type": "double",
+      "type": "std/double",
       "comment": "LOT_SIZE,MARKET_LOT_SIZE"
     },
     {
       "name": "maxQty",
-      "type": "double",
+      "type": "std/double",
       "comment": "LOT_SIZE,MARKET_LOT_SIZE"
     },
     {
       "name": "stepSize",
-      "type": "double",
+      "type": "std/double",
       "comment": "LOT_SIZE,MARKET_LOT_SIZE"
     },
     {
       "name": "limit",
-      "type": "int32_t",
+      "type": "std/int32",
       "comment": "ICEBERG_PARTS"
     },
     {
       "name": "maxNumOrders",
-      "type": "int32_t",
+      "type": "std/int32",
       "comment": "MAX_NUM_ORDERS"
     },
     {
       "name": "maxNumAlgoOrders",
-      "type": "int32_t",
+      "type": "std/int32",
       "comment": "MAX_NUM_ALGO_ORDERS"
     },
     {
       "name": "maxPosition",
-      "type": "double",
+      "type": "std/double",
       "comment": "MAX_POSITION"
     },
     {
       "name": "minTrailingAboveDelta",
-      "type": "double",
+      "type": "std/double",
       "comment": "TRAILING_DELTA"
     },
     {
       "name": "maxTrailingAboveDelta",
-      "type": "double",
+      "type": "std/double",
       "comment": "TRAILING_DELTA"
     },
     {
       "name": "minTrailingBelowDelta",
-      "type": "double",
+      "type": "std/double",
       "comment": "TRAILING_DELTA"
     },
     {
       "name": "maxTrailingBelowDelta",
-      "type": "double",
+      "type": "std/double",
       "comment": "TRAILING_DELTA"
     },
     {
       "name": "bidMultiplierUp",
-      "type": "double",
+      "type": "std/double",
       "comment": "PERCENT_PRICE_BY_SIDE?"
     },
     {
       "name": "bidMultiplierDown",
-      "type": "double",
+      "type": "std/double",
       "comment": "PERCENT_PRICE_BY_SIDE?"
     },
     {
       "name": "askMultiplierUp",
-      "type": "double",
+      "type": "std/double",
       "comment": "PERCENT_PRICE_BY_SIDE?"
     },
     {
       "name": "askMultiplierDown",
-      "type": "double",
+      "type": "std/double",
       "comment": "PERCENT_PRICE_BY_SIDE?"
     },
     {
       "name": "maxNotional",
-      "type": "double",
+      "type": "std/double",
       "comment": "NOTIONAL"
     },
     {
       "name": "applyMinToMarket",
-      "type": "bool",
+      "type": "std/bool",
       "comment": "NOTIONAL?"
     },
     {
       "name": "applyMaxToMarket",
-      "type": "bool",
+      "type": "std/bool",
       "comment": "NOTIONAL?"
     }
   ]

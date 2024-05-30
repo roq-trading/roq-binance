@@ -10,42 +10,42 @@
     {
       "raw": "E",
       "name": "event_time",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "raw": "s",
       "name": "symbol",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "raw": "c",
       "name": "close_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "o",
       "name": "open_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "h",
       "name": "high_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "l",
       "name": "low_price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "v",
       "name": "total_traded_base_asset_volume",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "q",
       "name": "total_traded_quote_asset_volume",
-      "type": "double"
+      "type": "std/double"
     }
   ]
 }

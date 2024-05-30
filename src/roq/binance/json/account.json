@@ -4,101 +4,102 @@
   "values": [
     {
       "name": "makerCommission",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "takerCommission",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "buyerCommission",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "sellerCommission",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "canTrade",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "canWithdraw",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "canDeposit",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "updateTime",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "name": "accountType",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "balances",
-      "type": "std::span<Balance const>"
+      "type": "Balance",
+      "array": "std/span"
     },
     {
       "name": "permissions"
     },
     {
       "name": "brokered",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "commissionRates"
     },
     {
       "name": "requireSelfTradePrevention",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "preventSor",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "uid",
-      "type": "int32_t"
+      "type": "std/int32"
     },
     {
       "name": "uniMMR",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "accountEquity",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "actualEquity",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "accountInitialMargin",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "accountMaintMargin",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "accountStatus",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "virtualMaxWithdrawAmount",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "totalAvailableBalance",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "totalMarginOpenLoss",
-      "type": "double"
+      "type": "std/double"
     }
   ]
 }

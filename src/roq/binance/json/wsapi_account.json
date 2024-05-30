@@ -4,11 +4,11 @@
   "values": [
     {
       "name": "id",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "status",
-      "type": "int32_t"
+      "type": "std/int32"
     },
     {
       "name": "result",
@@ -20,7 +20,8 @@
     },
     {
       "name": "rateLimits",
-      "type": "std::span<WSAPIRateLimitsItem const>"
+      "type": "WSAPIRateLimitsItem",
+      "array": "std/span"
     }
   ]
 }

@@ -5,7 +5,8 @@
   "values": [
     {
       "name": "network_interfaces",
-      "type": "std::vector<std::string>",
+      "type": "std/string",
+      "array": "std/vector",
       "description": "Network interfaces"
     },
     {
@@ -17,12 +18,12 @@
     },
     {
       "name": "host",
-      "type": "std::string",
+      "type": "std/string",
       "description": "Host (when URI is an IP address)"
     },
     {
       "name": "ping_freq",
-      "type": "std::chrono::nanoseconds",
+      "type": "std/nanoseconds",
       "validator": "roq::flags::validators::TimePeriod",
       "default": "5s",
       "description": "Ping frequency"

@@ -8,15 +8,15 @@
     },
     {
       "name": "minNotional",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "applyToMarket",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "avgPriceMins",
-      "type": "int32_t"
+      "type": "std/int32"
     }
   ]
 }

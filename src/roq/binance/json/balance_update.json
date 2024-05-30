@@ -5,32 +5,32 @@
     {
       "raw": "e",
       "name": "event_type",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "raw": "E",
       "name": "event_time",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "raw": "a",
       "name": "asset",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "raw": "d",
       "name": "balance_delta",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "U",
       "name": "update_id",
-      "type": "uint64_t"
+      "type": "std/uint64"
     },
     {
       "raw": "T",
       "name": "clear_time",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     }
   ]
 }

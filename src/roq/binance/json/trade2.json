@@ -4,55 +4,55 @@
   "values": [
     {
       "name": "symbol",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "id",
-      "type": "int64_t"
+      "type": "std/int64"
     },
     {
       "name": "orderId",
-      "type": "int64_t"
+      "type": "std/int64"
     },
     {
       "name": "orderListId",
-      "type": "int64_t"
+      "type": "std/int64"
     },
     {
       "name": "price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "qty",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "quoteQty",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "commission",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "commissionAsset",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "time",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "name": "isBuyer",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "isMaker",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "isBestMatch",
-      "type": "bool"
+      "type": "std/bool"
     }
   ]
 }

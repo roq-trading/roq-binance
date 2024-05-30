@@ -10,47 +10,47 @@
     {
       "raw": "E",
       "name": "event_time",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "raw": "s",
       "name": "symbol",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "raw": "a",
       "name": "agg_trade_id",
-      "type": "int64_t"
+      "type": "std/int64"
     },
     {
       "raw": "p",
       "name": "price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "q",
       "name": "quantity",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "raw": "f",
       "name": "first_trade_id",
-      "type": "int64_t"
+      "type": "std/int64"
     },
     {
       "raw": "l",
       "name": "last_trade_id",
-      "type": "int64_t"
+      "type": "std/int64"
     },
     {
       "raw": "T",
       "name": "trade_time",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "raw": "m",
       "name": "buyer_is_maker",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "raw": "M",

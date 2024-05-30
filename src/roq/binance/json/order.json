@@ -4,39 +4,39 @@
   "values": [
     {
       "name": "symbol",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "orderId",
-      "type": "int64_t"
+      "type": "std/int64"
     },
     {
       "name": "orderListId",
-      "type": "int64_t"
+      "type": "std/int64"
     },
     {
       "name": "clientOrderId",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "transactTime",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "name": "price",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "origQty",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "executedQty",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "cummulativeQuoteQty",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "status",
@@ -56,43 +56,43 @@
     },
     {
       "name": "stopPrice",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "icebergQty",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "time",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "name": "updateTime",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "name": "isWorking",
-      "type": "bool"
+      "type": "std/bool"
     },
     {
       "name": "origQuoteOrderQty",
-      "type": "double"
+      "type": "std/double"
     },
     {
       "name": "origClientOrderId",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "workingTime",
-      "type": "std::chrono::milliseconds"
+      "type": "std/milliseconds"
     },
     {
       "name": "selfTradePreventionMode",
-      "type": "std::string_view"
+      "type": "std/string_view"
     },
     {
       "name": "accountId",
-      "type": "int64_t"
+      "type": "std/int64"
     },
     {
       "name": "preventedMatchId"
