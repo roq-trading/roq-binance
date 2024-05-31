@@ -1,5 +1,5 @@
 {
-  "name": "Account",
+  "name": "roq/binance/json/Account",
   "type": "comp",
   "values": [
     {
@@ -40,7 +40,7 @@
     },
     {
       "name": "balances",
-      "type": "Balance",
+      "type": "roq/binance/json/Balance",
       "array": "std/span"
     },
     {

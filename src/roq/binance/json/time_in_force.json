@@ -1,5 +1,5 @@
 {
-  "name": "TimeInForce",
+  "name": "roq/binance/json/TimeInForce",
   "type": "enum",
   "values": [
     {

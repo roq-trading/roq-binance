@@ -1,5 +1,5 @@
 {
-  "name": "NewOrder",
+  "name": "roq/binance/json/NewOrder",
   "type": "comp",
   "values": [
     {
@@ -40,23 +40,23 @@
     },
     {
       "name": "status",
-      "type": "OrderStatus"
+      "type": "roq/binance/json/OrderStatus"
     },
     {
       "name": "timeInForce",
-      "type": "TimeInForce"
+      "type": "roq/binance/json/TimeInForce"
     },
     {
       "name": "type",
-      "type": "OrderType"
+      "type": "roq/binance/json/OrderType"
     },
     {
       "name": "side",
-      "type": "Side"
+      "type": "roq/binance/json/Side"
     },
     {
       "name": "fills",
-      "type": "Fill",
+      "type": "roq/binance/json/Fill",
       "array": "std/span"
     },
     {

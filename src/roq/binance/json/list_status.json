@@ -1,11 +1,11 @@
 {
-  "name": "ListStatus",
+  "name": "roq/binance/json/ListStatus",
   "type": "comp",
   "values": [
     {
       "raw": "e",
       "name": "event_type",
-      "type": "EventType"
+      "type": "roq/binance/json/EventType"
     },
     {
       "raw": "E",
@@ -55,7 +55,7 @@
     {
       "raw": "O",
       "name": "objects",
-      "type": "ListStatusItem",
+      "type": "roq/binance/json/ListStatusItem",
       "array": "std/span"
     }
   ]

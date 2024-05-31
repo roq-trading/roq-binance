@@ -1,5 +1,5 @@
 {
-  "name": "Side",
+  "name": "roq/binance/json/Side",
   "type": "enum",
   "values": [
     {

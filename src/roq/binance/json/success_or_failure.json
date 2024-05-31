@@ -1,5 +1,5 @@
 {
-  "name": "SuccessOrFailure",
+  "name": "roq/binance/json/SuccessOrFailure",
   "type": "enum",
   "values": [
     {

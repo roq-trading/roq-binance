@@ -1,14 +1,14 @@
 {
-  "name": "WSAPIRateLimitsItem",
+  "name": "roq/binance/json/WSAPIRateLimitsItem",
   "type": "item",
   "values": [
     {
       "name": "rateLimitType",
-      "type": "RateLimitType"
+      "type": "roq/binance/json/RateLimitType"
     },
     {
       "name": "interval",
-      "type": "Interval"
+      "type": "roq/binance/json/Interval"
     },
     {
       "name": "intervalNum",

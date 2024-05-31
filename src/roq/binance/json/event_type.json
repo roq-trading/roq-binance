@@ -1,5 +1,5 @@
 {
-  "name": "EventType",
+  "name": "roq/binance/json/EventType",
   "type": "enum",
   "values": [
     {

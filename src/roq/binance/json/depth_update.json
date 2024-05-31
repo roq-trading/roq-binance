@@ -1,5 +1,5 @@
 {
-  "name": "DepthUpdate",
+  "name": "roq/binance/json/DepthUpdate",
   "type": "comp",
   "values": [
     {
@@ -30,13 +30,13 @@
     {
       "raw": "b",
       "name": "bids",
-      "type": "DepthItem",
+      "type": "roq/binance/json/DepthItem",
       "array": "std/span"
     },
     {
       "raw": "a",
       "name": "asks",
-      "type": "DepthItem",
+      "type": "roq/binance/json/DepthItem",
       "array": "std/span"
     }
   ]

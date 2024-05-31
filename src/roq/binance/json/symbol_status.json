@@ -1,5 +1,5 @@
 {
-  "name": "SymbolStatus",
+  "name": "roq/binance/json/SymbolStatus",
   "type": "enum",
   "values": [
     {

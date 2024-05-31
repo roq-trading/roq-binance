@@ -1,5 +1,5 @@
 {
-  "name": "WSAPICancelOrder",
+  "name": "roq/binance/json/WSAPICancelOrder",
   "type": "comp",
   "values": [
     {
@@ -12,15 +12,15 @@
     },
     {
       "name": "result",
-      "type": "CancelOrder"
+      "type": "roq/binance/json/CancelOrder"
     },
     {
       "name": "error",
-      "type": "Error"
+      "type": "roq/binance/json/Error"
     },
     {
       "name": "rateLimits",
-      "type": "WSAPIRateLimitsItem",
+      "type": "roq/binance/json/WSAPIRateLimitsItem",
       "array": "std/span"
     }
   ]

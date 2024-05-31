@@ -1,5 +1,5 @@
 {
-  "name": "SelfTradePreventionMode",
+  "name": "roq/binance/json/SelfTradePreventionMode",
   "type": "enum",
   "values": [
     {

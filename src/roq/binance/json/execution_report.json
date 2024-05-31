@@ -1,11 +1,11 @@
 {
-  "name": "ExecutionReport",
+  "name": "roq/binance/json/ExecutionReport",
   "type": "item",
   "values": [
     {
       "raw": "e",
       "name": "event_type",
-      "type": "EventType"
+      "type": "roq/binance/json/EventType"
     },
     {
       "raw": "E",
@@ -25,17 +25,17 @@
     {
       "raw": "S",
       "name": "side",
-      "type": "Side"
+      "type": "roq/binance/json/Side"
     },
     {
       "raw": "o",
       "name": "order_type",
-      "type": "OrderType"
+      "type": "roq/binance/json/OrderType"
     },
     {
       "raw": "f",
       "name": "time_in_force",
-      "type": "TimeInForce"
+      "type": "roq/binance/json/TimeInForce"
     },
     {
       "raw": "q",
@@ -70,12 +70,12 @@
     {
       "raw": "x",
       "name": "current_execution_type",
-      "type": "ExecutionType"
+      "type": "roq/binance/json/ExecutionType"
     },
     {
       "raw": "X",
       "name": "current_order_status",
-      "type": "OrderStatus"
+      "type": "roq/binance/json/OrderStatus"
     },
     {
       "raw": "r",

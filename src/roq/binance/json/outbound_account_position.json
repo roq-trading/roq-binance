@@ -1,11 +1,11 @@
 {
-  "name": "OutboundAccountPosition",
+  "name": "roq/binance/json/OutboundAccountPosition",
   "type": "comp",
   "values": [
     {
       "raw": "e",
       "name": "event_type",
-      "type": "EventType"
+      "type": "roq/binance/json/EventType"
     },
     {
       "raw": "E",
@@ -25,7 +25,7 @@
     {
       "raw": "B",
       "name": "balances",
-      "type": "BalancesItem",
+      "type": "roq/binance/json/BalancesItem",
       "array": "std/span"
     },
     {

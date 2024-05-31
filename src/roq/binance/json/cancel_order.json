@@ -1,5 +1,5 @@
 {
-  "name": "CancelOrder",
+  "name": "roq/binance/json/CancelOrder",
   "type": "item",
   "values": [
     {
@@ -40,19 +40,19 @@
     },
     {
       "name": "status",
-      "type": "OrderStatus"
+      "type": "roq/binance/json/OrderStatus"
     },
     {
       "name": "timeInForce",
-      "type": "TimeInForce"
+      "type": "roq/binance/json/TimeInForce"
     },
     {
       "name": "type",
-      "type": "OrderType"
+      "type": "roq/binance/json/OrderType"
     },
     {
       "name": "side",
-      "type": "Side"
+      "type": "roq/binance/json/Side"
     },
     {
       "name": "code",

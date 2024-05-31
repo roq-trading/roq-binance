@@ -1,5 +1,5 @@
 {
-  "name": "Result",
+  "name": "roq/binance/json/Result",
   "type": "array",
   "values": [
     {

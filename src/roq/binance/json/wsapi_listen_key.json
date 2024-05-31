@@ -1,5 +1,5 @@
 {
-  "name": "WSAPIListenKey",
+  "name": "roq/binance/json/WSAPIListenKey",
   "type": "comp",
   "values": [
     {
@@ -12,15 +12,15 @@
     },
     {
       "name": "result",
-      "type": "ListenKey"
+      "type": "roq/binance/json/ListenKey"
     },
     {
       "name": "error",
-      "type": "Error"
+      "type": "roq/binance/json/Error"
     },
     {
       "name": "rateLimits",
-      "type": "WSAPIRateLimitsItem",
+      "type": "roq/binance/json/WSAPIRateLimitsItem",
       "array": "std/span"
     }
   ]

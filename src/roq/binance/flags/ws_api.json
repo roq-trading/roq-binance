@@ -1,5 +1,5 @@
 {
-  "name": "WS_API",
+  "name": "roq/binance/flags/WS_API",
   "type": "flags",
   "prefix": "ws_api_",
   "values": [
@@ -11,7 +11,7 @@
     },
     {
       "name": "uri",
-      "type": "roq::io::web::URI",
+      "type": "roq/io/web/URI",
       "validator": "roq::core::flags::URI",
       "default": "wss://ws-api.binance.com/ws-api/v3",
       "description": "Exchange end-point"

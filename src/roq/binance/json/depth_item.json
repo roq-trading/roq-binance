@@ -1,5 +1,5 @@
 {
-  "name": "DepthItem",
+  "name": "roq/binance/json/DepthItem",
   "type": "array_item",
   "values": [
     {

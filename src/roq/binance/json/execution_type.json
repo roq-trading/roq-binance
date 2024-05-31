@@ -1,5 +1,5 @@
 {
-  "name": "ExecutionType",
+  "name": "roq/binance/json/ExecutionType",
   "type": "enum",
   "values": [
     {

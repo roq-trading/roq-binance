@@ -1,5 +1,5 @@
 {
-  "name": "CancelReplaceMode",
+  "name": "roq/binance/json/CancelReplaceMode",
   "type": "enum",
   "values": [
     {

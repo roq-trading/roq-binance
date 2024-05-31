@@ -1,5 +1,5 @@
 {
-  "name": "Interval",
+  "name": "roq/binance/json/Interval",
   "type": "enum",
   "values": [
     {

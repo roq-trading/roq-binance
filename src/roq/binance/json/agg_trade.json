@@ -1,11 +1,11 @@
 {
-  "name": "AggTrade",
+  "name": "roq/binance/json/AggTrade",
   "type": "item",
   "values": [
     {
       "raw": "e",
       "name": "event_type",
-      "type": "EventType"
+      "type": "roq/binance/json/EventType"
     },
     {
       "raw": "E",

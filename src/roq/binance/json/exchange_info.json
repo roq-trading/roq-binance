@@ -1,5 +1,5 @@
 {
-  "name": "ExchangeInfo",
+  "name": "roq/binance/json/ExchangeInfo",
   "type": "comp",
   "values": [
     {
@@ -12,17 +12,17 @@
     },
     {
       "name": "rateLimits",
-      "type": "RateLimitsItem",
+      "type": "roq/binance/json/RateLimitsItem",
       "array": "std/span"
     },
     {
       "name": "exchangeFilters",
-      "type": "ExchangeFilter",
+      "type": "roq/binance/json/ExchangeFilter",
       "array": "std/span"
     },
     {
       "name": "symbols",
-      "type": "Symbol",
+      "type": "roq/binance/json/Symbol",
       "array": "std/span"
     }
   ]

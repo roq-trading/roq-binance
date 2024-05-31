@@ -1,5 +1,5 @@
 {
-  "name": "RateLimitType",
+  "name": "roq/binance/json/RateLimitType",
   "type": "enum",
   "values": [
     {

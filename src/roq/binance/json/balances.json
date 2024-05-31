@@ -1,10 +1,10 @@
 {
-  "name": "Balances",
+  "name": "roq/binance/json/Balances",
   "type": "array",
   "values": [
     {
       "name": "data",
-      "type": "Balance2",
+      "type": "roq/binance/json/Balance2",
       "array": "std/span"
     }
   ]

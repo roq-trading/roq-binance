@@ -1,5 +1,5 @@
 {
-  "name": "RestState",
+  "name": "roq/binance/RestState",
   "type": "enum",
   "values": [
     {

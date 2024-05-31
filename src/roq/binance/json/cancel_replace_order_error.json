@@ -1,5 +1,5 @@
 {
-  "name": "CancelReplaceOrderError",
+  "name": "roq/binance/json/CancelReplaceOrderError",
   "type": "comp",
   "values": [
     {
@@ -12,7 +12,7 @@
     },
     {
       "name": "data",
-      "type": "CancelReplaceOrder"
+      "type": "roq/binance/json/CancelReplaceOrder"
     }
   ]
 }

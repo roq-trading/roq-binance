@@ -1,10 +1,10 @@
 {
-  "name": "CancelAllOpenOrders",
+  "name": "roq/binance/json/CancelAllOpenOrders",
   "type": "array",
   "values": [
     {
       "name": "data",
-      "type": "Order",
+      "type": "roq/binance/json/Order",
       "array": "std/span"
     }
   ]

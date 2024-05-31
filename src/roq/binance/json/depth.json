@@ -1,5 +1,5 @@
 {
-  "name": "Depth",
+  "name": "roq/binance/json/Depth",
   "type": "comp",
   "values": [
     {
@@ -8,12 +8,12 @@
     },
     {
       "name": "bids",
-      "type": "DepthItem",
+      "type": "roq/binance/json/DepthItem",
       "array": "std/span"
     },
     {
       "name": "asks",
-      "type": "DepthItem",
+      "type": "roq/binance/json/DepthItem",
       "array": "std/span"
     }
   ]

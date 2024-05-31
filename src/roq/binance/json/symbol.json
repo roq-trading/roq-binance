@@ -1,5 +1,5 @@
 {
-  "name": "Symbol",
+  "name": "roq/binance/json/Symbol",
   "type": "item",
   "values": [
     {
@@ -8,7 +8,7 @@
     },
     {
       "name": "status",
-      "type": "SymbolStatus"
+      "type": "roq/binance/json/SymbolStatus"
     },
     {
       "name": "baseAsset",

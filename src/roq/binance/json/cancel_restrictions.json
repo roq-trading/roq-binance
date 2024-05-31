@@ -1,5 +1,5 @@
 {
-  "name": "CancelRestrictions",
+  "name": "roq/binance/json/CancelRestrictions",
   "type": "enum",
   "values": [
     {
