@@ -78,8 +78,7 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &inter
 }
 
 struct create_metrics final : public core::metrics::Factory {
-  create_metrics(auto &settings, auto const &group, auto const &function)
-      : core::metrics::Factory(settings.app.name, group, function) {}
+  create_metrics(auto &settings, auto const &group, auto const &function) : core::metrics::Factory(settings.app.name, group, function) {}
   create_metrics(auto &settings, auto const &group, auto const &function, auto const &params)
       : core::metrics::Factory(settings.app.name, group, function, params) {}
 };
@@ -119,8 +118,7 @@ OrderEntryREST::OrderEntryREST(
     bool master,
     std::string_view const &interface)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)}, master_{master},
-      connection_{create_connection(*this, shared.settings, context, interface)},
-      decode_buffer_(shared.settings.misc.decode_buffer_size),
+      connection_{create_connection(*this, shared.settings, context, interface)}, decode_buffer_(shared.settings.misc.decode_buffer_size),
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -148,8 +146,7 @@ OrderEntryREST::OrderEntryREST(
       rate_limiter_{
           .requests_1m = create_metrics(shared.settings, name_, "requests"sv, "1m"sv),
       },
-      account_{account}, shared_{shared}, request_{request},
-      download_{shared.settings.rest.request_timeout, [this](auto state) { return download(state); }} {
+      account_{account}, shared_{shared}, request_{request}, download_{shared.settings.rest.request_timeout, [this](auto state) { return download(state); }} {
 }
 
 void OrderEntryREST::operator()(Event<Start> const &) {
@@ -215,8 +212,7 @@ void OrderEntryREST::operator()(Event<Disconnected> const &event) {
   account_.cancel_order_request_buffer_[user_id].reset();
 }
 
-uint16_t OrderEntryREST::operator()(
-    Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
+uint16_t OrderEntryREST::operator()(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
   auto &message_info = event.message_info;
   auto &tmp = account_.cancel_order_request_buffer_[message_info.source];
   if (!tmp) {
@@ -241,10 +237,7 @@ uint16_t OrderEntryREST::operator()(
 }
 
 uint16_t OrderEntryREST::operator()(
-    Event<CancelOrder> const &event,
-    server::oms::Order const &order,
-    std::string_view const &request_id,
-    std::string_view const &previous_request_id) {
+    Event<CancelOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
   auto &[message_info, cancel_order] = event;
   auto &tmp = account_.cancel_order_request_buffer_[message_info.source];
   if (tmp)
@@ -702,8 +695,7 @@ void OrderEntryREST::refresh_listen_key(std::chrono::nanoseconds now) {
 
 // new-order
 
-void OrderEntryREST::new_order(
-    Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
+void OrderEntryREST::new_order(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
   profile_.new_order([&]() {
     if (!ready())
       throw server::oms::NotReady{"not ready"sv};
@@ -725,8 +717,7 @@ void OrderEntryREST::new_order(
         .body = body,
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
-    auto callback = [this, user_id = message_info.source, order_id = create_order.order_id](
-                        [[maybe_unused]] auto &request_id, auto &response) {
+    auto callback = [this, user_id = message_info.source, order_id = create_order.order_id]([[maybe_unused]] auto &request_id, auto &response) {
       auto version = uint32_t{1};
       TraceInfo trace_info;
       Trace event{trace_info, response};
@@ -736,8 +727,7 @@ void OrderEntryREST::new_order(
   });
 }
 
-void OrderEntryREST::new_order_ack(
-    Trace<web::rest::Response> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
+void OrderEntryREST::new_order_ack(Trace<web::rest::Response> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
   profile_.new_order_ack([&]() {
     auto handle_success = [&](auto &body) {
       json::NewOrder new_order{body, decode_buffer_};
@@ -763,8 +753,7 @@ void OrderEntryREST::new_order_ack(
   });
 }
 
-void OrderEntryREST::operator()(
-    Trace<json::NewOrder> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
+void OrderEntryREST::operator()(Trace<json::NewOrder> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
   auto &[trace_info, new_order] = event;
   log::info<2>("new_order={}, user_id={}, order_id={}, version={}"sv, new_order, user_id, order_id, version);
   auto side = json::map(new_order.side);
@@ -776,8 +765,7 @@ void OrderEntryREST::operator()(
   if (order_status == OrderStatus{})
     order_status = OrderStatus::WORKING;
   auto remaining_quantity = new_order.orig_qty - new_order.executed_qty;
-  auto average_traded_price =
-      utils::is_zero(new_order.executed_qty) ? NaN : (new_order.cummulative_quote_qty / new_order.executed_qty);
+  auto average_traded_price = utils::is_zero(new_order.executed_qty) ? NaN : (new_order.cummulative_quote_qty / new_order.executed_qty);
   auto last_traded_quantity = double{0.0};  // note! could also use new_order.executed_qty
   auto tmp = double{0.0};
   for (auto &item : new_order.fills) {
@@ -845,49 +833,46 @@ void OrderEntryREST::cancel_replace_order(
   profile_.cancel_replace_order([&]() {
     if (!ready())
       throw server::oms::NotReady{"not ready"sv};
-    if (shared_.find_order(
-            event.message_info.source, cancel_order_request.cancel_order.order_id, [&](auto &cancel_order) {
-              auto &[message_info, create_order] = event;
-              auto &cancel_order_template =
-                  shared_.get_cancel_order_template(cancel_order_request.cancel_order.request_template);
-              auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
-              auto body = json::cancel_replace_order(
-                  encode_buffer_,
-                  cancel_order_request.request_id,
-                  cancel_order_request.previous_request_id,
-                  cancel_order.external_order_id,
-                  create_order,
-                  order,
-                  request_id,
-                  cancel_order_template,
-                  create_order_template,
-                  utils::safe_cast(shared_.settings.rest.order_recv_window),
-                  shared_.settings.oms.cancel_replace_stop_on_failure);
-              auto now = clock::get_realtime<std::chrono::milliseconds>();
-              auto query = account_.create_query(now, body);
-              auto headers = account_.create_headers();
-              auto request = web::rest::Request{
-                  .method = web::http::Method::POST,
-                  .path = shared_.api.simple.order_cancel_replace,
-                  .query = query,
-                  .accept = web::http::Accept::APPLICATION_JSON,
-                  .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
-                  .headers = headers,
-                  .body = body,
-                  .quality_of_service = io::QualityOfService::IMMEDIATE,
-              };
-              auto callback = [this,
-                               user_id = message_info.source,
-                               cancel_order_id = cancel_order_request.cancel_order.order_id,
-                               cancel_version = cancel_order_request.cancel_order.version,
-                               create_order_id = create_order.order_id](
-                                  [[maybe_unused]] auto &request_id, auto &response) {
-                TraceInfo trace_info;
-                Trace event{trace_info, response};
-                cancel_replace_order_ack(event, user_id, cancel_order_id, cancel_version, create_order_id, uint32_t{1});
-              };
-              (*connection_)(request_id, request, callback);
-            })) {
+    if (shared_.find_order(event.message_info.source, cancel_order_request.cancel_order.order_id, [&](auto &cancel_order) {
+          auto &[message_info, create_order] = event;
+          auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order_request.cancel_order.request_template);
+          auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
+          auto body = json::cancel_replace_order(
+              encode_buffer_,
+              cancel_order_request.request_id,
+              cancel_order_request.previous_request_id,
+              cancel_order.external_order_id,
+              create_order,
+              order,
+              request_id,
+              cancel_order_template,
+              create_order_template,
+              utils::safe_cast(shared_.settings.rest.order_recv_window),
+              shared_.settings.oms.cancel_replace_stop_on_failure);
+          auto now = clock::get_realtime<std::chrono::milliseconds>();
+          auto query = account_.create_query(now, body);
+          auto headers = account_.create_headers();
+          auto request = web::rest::Request{
+              .method = web::http::Method::POST,
+              .path = shared_.api.simple.order_cancel_replace,
+              .query = query,
+              .accept = web::http::Accept::APPLICATION_JSON,
+              .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
+              .headers = headers,
+              .body = body,
+              .quality_of_service = io::QualityOfService::IMMEDIATE,
+          };
+          auto callback = [this,
+                           user_id = message_info.source,
+                           cancel_order_id = cancel_order_request.cancel_order.order_id,
+                           cancel_version = cancel_order_request.cancel_order.version,
+                           create_order_id = create_order.order_id]([[maybe_unused]] auto &request_id, auto &response) {
+            TraceInfo trace_info;
+            Trace event{trace_info, response};
+            cancel_replace_order_ack(event, user_id, cancel_order_id, cancel_version, create_order_id, uint32_t{1});
+          };
+          (*connection_)(request_id, request, callback);
+        })) {
     } else {
       throw server::oms::Rejected{Origin::GATEWAY, Error::CONDITIONAL_REQUEST_HAS_FAILED, "internal error"sv};
     }
@@ -978,15 +963,9 @@ void OrderEntryREST::cancel_replace_order_ack(
                   .quantity = NaN,
                   .price = NaN,
               };
-              if (shared_.update_order(
-                      user_id, cancel_order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {
-                      })) {
+              if (shared_.update_order(user_id, cancel_order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
               } else {
-                log::warn(
-                    "Did not find order: user_id={}, order_id={}, version={}"sv,
-                    user_id,
-                    cancel_order_id,
-                    cancel_version);
+                log::warn("Did not find order: user_id={}, order_id={}, version={}"sv, user_id, cancel_order_id, cancel_version);
               }
             }
             {  // create
@@ -1001,15 +980,9 @@ void OrderEntryREST::cancel_replace_order_ack(
                   .quantity = NaN,
                   .price = NaN,
               };
-              if (shared_.update_order(
-                      user_id, create_order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {
-                      })) {
+              if (shared_.update_order(user_id, create_order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
               } else {
-                log::warn(
-                    "Did not find order: user_id={}, order_id={}, version={}"sv,
-                    user_id,
-                    create_order_id,
-                    create_version);
+                log::warn("Did not find order: user_id={}, order_id={}, version={}"sv, user_id, create_order_id, create_version);
               }
             }
           });
@@ -1032,11 +1005,9 @@ void OrderEntryREST::cancel_replace_order_ack(
             .quantity = NaN,
             .price = NaN,
         };
-        if (shared_.update_order(
-                user_id, cancel_order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
+        if (shared_.update_order(user_id, cancel_order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
         } else {
-          log::warn(
-              "Did not find order: user_id={}, order_id={}, version={}"sv, user_id, cancel_order_id, cancel_version);
+          log::warn("Did not find order: user_id={}, order_id={}, version={}"sv, user_id, cancel_order_id, cancel_version);
         }
       }
       {  // create
@@ -1051,11 +1022,9 @@ void OrderEntryREST::cancel_replace_order_ack(
             .quantity = NaN,
             .price = NaN,
         };
-        if (shared_.update_order(
-                user_id, create_order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
+        if (shared_.update_order(user_id, create_order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
         } else {
-          log::warn(
-              "Did not find order: user_id={}, order_id={}, version={}"sv, user_id, create_order_id, create_version);
+          log::warn("Did not find order: user_id={}, order_id={}, version={}"sv, user_id, create_order_id, create_version);
         }
       }
     }
@@ -1136,17 +1105,9 @@ void OrderEntryREST::operator()(
           .update_type = UpdateType::INCREMENTAL,
           .sending_time_utc = {},
       };
-      if (shared_.update_order(
-              user_id,
-              cancel_order_id,
-              stream_id_,
-              trace_info,
-              response,
-              order_update,
-              []([[maybe_unused]] auto &order) {})) {
+      if (shared_.update_order(user_id, cancel_order_id, stream_id_, trace_info, response, order_update, []([[maybe_unused]] auto &order) {})) {
       } else {
-        log::warn(
-            "Did not find order: user_id={}, order_id={}, version={}"sv, user_id, cancel_order_id, cancel_version);
+        log::warn("Did not find order: user_id={}, order_id={}, version={}"sv, user_id, cancel_order_id, cancel_version);
       }
       break;
     }
@@ -1164,11 +1125,9 @@ void OrderEntryREST::operator()(
           .quantity = NaN,
           .price = NaN,
       };
-      if (shared_.update_order(
-              user_id, cancel_order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
+      if (shared_.update_order(user_id, cancel_order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
       } else {
-        log::warn(
-            "Did not find order: user_id={}, order_id={}, version={}"sv, user_id, cancel_order_id, cancel_version);
+        log::warn("Did not find order: user_id={}, order_id={}, version={}"sv, user_id, cancel_order_id, cancel_version);
       }
       break;
     }
@@ -1230,17 +1189,9 @@ void OrderEntryREST::operator()(
           .update_type = UpdateType::INCREMENTAL,
           .sending_time_utc = {},
       };
-      if (shared_.update_order(
-              user_id,
-              create_order_id,
-              stream_id_,
-              trace_info,
-              response,
-              order_update,
-              []([[maybe_unused]] auto &order) {})) {
+      if (shared_.update_order(user_id, create_order_id, stream_id_, trace_info, response, order_update, []([[maybe_unused]] auto &order) {})) {
       } else {
-        log::warn(
-            "Did not find order: user_id={}, order_id={}, version={}"sv, user_id, create_order_id, create_version);
+        log::warn("Did not find order: user_id={}, order_id={}, version={}"sv, user_id, create_order_id, create_version);
       }
       break;
     }
@@ -1258,11 +1209,9 @@ void OrderEntryREST::operator()(
           .quantity = NaN,
           .price = NaN,
       };
-      if (shared_.update_order(
-              user_id, create_order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
+      if (shared_.update_order(user_id, create_order_id, stream_id_, trace_info, response, []([[maybe_unused]] auto &order) {})) {
       } else {
-        log::warn(
-            "Did not find order: user_id={}, order_id={}, version={}"sv, user_id, create_order_id, create_version);
+        log::warn("Did not find order: user_id={}, order_id={}, version={}"sv, user_id, create_order_id, create_version);
       }
       break;
     }
@@ -1294,18 +1243,14 @@ void OrderEntryREST::operator()(
 // cancel-order
 
 void OrderEntryREST::cancel_order(
-    Event<CancelOrder> const &event,
-    server::oms::Order const &order,
-    std::string_view const &request_id,
-    std::string_view const &previous_request_id) {
+    Event<CancelOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
   profile_.cancel_order([&]() {
     if (!ready())
       throw server::oms::NotReady{"not ready"sv};
     auto &[message_info, cancel_order] = event;
     auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto body = json::cancel_order(
-        encode_buffer_, cancel_order, order, request_id, previous_request_id, cancel_order_template, recv_window);
+    auto body = json::cancel_order(encode_buffer_, cancel_order, order, request_id, previous_request_id, cancel_order_template, recv_window);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = account_.create_query(now, body);
     auto headers = account_.create_headers();
@@ -1319,19 +1264,17 @@ void OrderEntryREST::cancel_order(
         .body = body,
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
-    auto callback =
-        [this, user_id = message_info.source, order_id = cancel_order.order_id, version = cancel_order.version](
-            [[maybe_unused]] auto &request_id, auto &response) {
-          TraceInfo trace_info;
-          Trace event{trace_info, response};
-          cancel_order_ack(event, user_id, order_id, version);
-        };
+    auto callback = [this, user_id = message_info.source, order_id = cancel_order.order_id, version = cancel_order.version](
+                        [[maybe_unused]] auto &request_id, auto &response) {
+      TraceInfo trace_info;
+      Trace event{trace_info, response};
+      cancel_order_ack(event, user_id, order_id, version);
+    };
     (*connection_)(request_id, request, callback);
   });
 }
 
-void OrderEntryREST::cancel_order_ack(
-    Trace<web::rest::Response> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
+void OrderEntryREST::cancel_order_ack(Trace<web::rest::Response> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
   profile_.cancel_order_ack([&]() {
     auto handle_success = [&](auto &body) {
       json::CancelOrder cancel_order{body};
@@ -1357,8 +1300,7 @@ void OrderEntryREST::cancel_order_ack(
   });
 }
 
-void OrderEntryREST::operator()(
-    Trace<json::CancelOrder> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
+void OrderEntryREST::operator()(Trace<json::CancelOrder> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
   auto &[trace_info, cancel_order] = event;
   log::info<2>("cancel_order={}, user_id={}, order_id={}, version={}"sv, cancel_order, user_id, order_id, version);
   auto side = json::map(cancel_order.side);
@@ -1471,8 +1413,7 @@ void OrderEntryREST::cancel_all_open_orders(Event<CancelAllOrders> const &event,
   });
 }
 
-void OrderEntryREST::cancel_all_open_orders_ack(
-    Trace<web::rest::Response> const &event, std::string_view const &request_id) {
+void OrderEntryREST::cancel_all_open_orders_ack(Trace<web::rest::Response> const &event, std::string_view const &request_id) {
   profile_.cancel_all_open_orders_ack([&]() {
     auto send_ack = [&](auto status, Error error, std::string_view const &text) {
       auto cancel_all_orders_ack = CancelAllOrdersAck{
@@ -1560,14 +1501,12 @@ void OrderEntryREST::operator()(Trace<json::CancelAllOpenOrders> const &event) {
         .update_type = UpdateType::INCREMENTAL,
         .sending_time_utc = {},
     };
-    shared_.update_order(
-        order.client_order_id, stream_id_, trace_info, order_update, []([[maybe_unused]] auto &order) {});
+    shared_.update_order(order.client_order_id, stream_id_, trace_info, order_update, []([[maybe_unused]] auto &order) {});
   }
 }
 
 template <typename SuccessHandler, typename ErrorHandler>
-void OrderEntryREST::process_response(
-    web::rest::Response const &response, SuccessHandler success_handler, ErrorHandler error_handler) {
+void OrderEntryREST::process_response(web::rest::Response const &response, SuccessHandler success_handler, ErrorHandler error_handler) {
   try {
     auto [status, category, body] = response.result();
     switch (category) {
@@ -1617,17 +1556,9 @@ void OrderEntryREST::process_response(
 }
 
 template <typename... Args>
-void OrderEntryREST::operator()(
-    Trace<server::oms::Response> const &event, uint8_t user_id, uint64_t order_id, Args &&...args) {
+void OrderEntryREST::operator()(Trace<server::oms::Response> const &event, uint8_t user_id, uint64_t order_id, Args &&...args) {
   auto &[trace_info, response] = event;
-  if (shared_.update_order(
-          user_id,
-          order_id,
-          stream_id_,
-          trace_info,
-          response,
-          std::forward<Args>(args)...,
-          []([[maybe_unused]] auto &order) {})) {
+  if (shared_.update_order(user_id, order_id, stream_id_, trace_info, response, std::forward<Args>(args)..., []([[maybe_unused]] auto &order) {})) {
   } else {
     log::warn("Did not find order: user_id={}, order_id={}"sv, user_id, order_id);
   }
@@ -1635,8 +1566,7 @@ void OrderEntryREST::operator()(
 
 void OrderEntryREST::operator()(Trace<server::oms::OrderUpdate> const &event, std::string_view const &client_order_id) {
   auto &[trace_info, order_update] = event;
-  if (shared_.update_order(
-          client_order_id, stream_id_, trace_info, order_update, [&]([[maybe_unused]] auto &order) {})) {
+  if (shared_.update_order(client_order_id, stream_id_, trace_info, order_update, [&]([[maybe_unused]] auto &order) {})) {
   } else {
     log::warn("*** EXTERNAL ORDER ***"sv);
   }
@@ -1645,11 +1575,7 @@ void OrderEntryREST::operator()(Trace<server::oms::OrderUpdate> const &event, st
 // note! used by cancel-replace
 template <typename Parse, typename Callback>
 void OrderEntryREST::dispatch_error_2(
-    web::rest::Response const &response,
-    web::http::Category category,
-    web::http::Status status,
-    Parse parse,
-    Callback callback) {
+    web::rest::Response const &response, web::http::Category category, web::http::Status status, Parse parse, Callback callback) {
   switch (category) {
     using enum web::http::Category;
     case UNKNOWN:

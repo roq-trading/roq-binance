@@ -88,8 +88,7 @@ auto create_connection(auto &handler, auto &settings, auto &context) {
 }
 
 struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(auto &settings, auto const &group, auto const &function)
-      : core::metrics::Factory(settings.app.name, group, function) {}
+  explicit create_metrics(auto &settings, auto const &group, auto const &function) : core::metrics::Factory(settings.app.name, group, function) {}
 };
 
 auto get_supports(auto priority) {
@@ -109,11 +108,9 @@ auto get_supports(auto priority) {
 
 // === IMPLEMENTATION ===
 
-MarketData::MarketData(
-    Handler &handler, io::Context &context, uint16_t stream_id, Priority priority, Shared &shared, size_t index)
-    : handler_{handler}, stream_id_{stream_id}, priority_{priority}, name_{create_name(stream_id_, priority_)},
-      index_{index}, connection_{create_connection(*this, shared.settings, context)},
-      decode_buffer_(shared.settings.misc.decode_buffer_size),
+MarketData::MarketData(Handler &handler, io::Context &context, uint16_t stream_id, Priority priority, Shared &shared, size_t index)
+    : handler_{handler}, stream_id_{stream_id}, priority_{priority}, name_{create_name(stream_id_, priority_)}, index_{index},
+      connection_{create_connection(*this, shared.settings, context)}, decode_buffer_(shared.settings.misc.decode_buffer_size),
       request_id_{static_cast<uint64_t>(stream_id_) * REQUEST_ID},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -455,8 +452,7 @@ void MarketData::operator()(Trace<json::DepthUpdate> const &event) {
     for (auto &item : depth_update.asks)
       emplace_back(mbp.asks, item);
     try {
-      auto create_update =
-          [&](auto &bids, auto &asks, auto update_type, auto exchange_sequence) -> MarketByPriceUpdate {
+      auto create_update = [&](auto &bids, auto &asks, auto update_type, auto exchange_sequence) -> MarketByPriceUpdate {
         return {
             .stream_id = stream_id_,
             .exchange = shared_.settings.exchange,
@@ -495,15 +491,7 @@ void MarketData::operator()(Trace<json::DepthUpdate> const &event) {
         }
         shared_.depth_request_queue.emplace_back(symbol);
       };
-      sequencer(
-          mbp.bids,
-          mbp.asks,
-          first_sequence,
-          last_sequence,
-          previous_sequence,
-          publish_update,
-          publish_snapshot,
-          request_snapshot);
+      sequencer(mbp.bids, mbp.asks, first_sequence, last_sequence, previous_sequence, publish_update, publish_snapshot, request_snapshot);
     } catch (BadState &) {
       log::warn(R"(RESUBSCRIBE symbol="{}")"sv, symbol);
       // XXX HANS publish stale

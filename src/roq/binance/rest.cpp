@@ -77,8 +77,7 @@ auto create_connection(auto &handler, auto &settings, auto &context) {
 }
 
 struct create_metrics final : public core::metrics::Factory {
-  create_metrics(auto &settings, auto const &group, auto const &function)
-      : core::metrics::Factory(settings.app.name, group, function) {}
+  create_metrics(auto &settings, auto const &group, auto const &function) : core::metrics::Factory(settings.app.name, group, function) {}
   create_metrics(auto &settings, auto const &group, auto const &function, auto const &params)
       : core::metrics::Factory(settings.app.name, group, function, params) {}
 };
@@ -101,10 +100,8 @@ auto get_retry_after(auto &response) {
 // === IMPLEMENTATION ===
 
 Rest::Rest(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)},
-      connection_{create_connection(*this, shared.settings, context)},
-      decode_buffer_(shared.settings.misc.decode_buffer_size),
-      decode_buffer_2_(shared.settings.misc.decode_buffer_size),
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, connection_{create_connection(*this, shared.settings, context)},
+      decode_buffer_(shared.settings.misc.decode_buffer_size), decode_buffer_2_(shared.settings.misc.decode_buffer_size),
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -598,8 +595,7 @@ void Rest::check_request_queue(std::chrono::nanoseconds now) {
 }
 
 template <typename SuccessHandler, typename ErrorHandler>
-void Rest::process_response(
-    web::rest::Response const &response, SuccessHandler success_handler, ErrorHandler error_handler) {
+void Rest::process_response(web::rest::Response const &response, SuccessHandler success_handler, ErrorHandler error_handler) {
   try {
     auto [status, category, body] = response.result();
     switch (category) {

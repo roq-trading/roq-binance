@@ -35,8 +35,8 @@ auto create_crypto(auto &config, auto &name) -> tools::Crypto {
 // === IMPLEMENTATION ===
 
 Account::Account(Config const &config, std::string_view const &name, MarginMode margin_mode)
-    : name{name}, margin_mode{margin_mode}, crypto_{create_crypto(config, name)},
-      query_encode_buffer_(tools::Crypto::QUERY_BUFFER_LENGTH), cancel_order_request_buffer_(256) {
+    : name{name}, margin_mode{margin_mode}, crypto_{create_crypto(config, name)}, query_encode_buffer_(tools::Crypto::QUERY_BUFFER_LENGTH),
+      cancel_order_request_buffer_(256) {
 }
 
 }  // namespace binance

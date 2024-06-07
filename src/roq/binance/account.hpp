@@ -32,13 +32,9 @@ struct Account final {
 
   inline std::string_view create_headers() const { return crypto_.create_headers(); }
 
-  inline std::string_view create_ws_api_signature(std::string_view const &body) {
-    return crypto_.create_ws_api_signature(query_encode_buffer_, body);
-  }
+  inline std::string_view create_ws_api_signature(std::string_view const &body) { return crypto_.create_ws_api_signature(query_encode_buffer_, body); }
 
-  inline std::string create_query_2(std::chrono::milliseconds now, std::string_view const &body) {
-    return crypto_.create_query_2(now, body);
-  }
+  inline std::string create_query_2(std::chrono::milliseconds now, std::string_view const &body) { return crypto_.create_query_2(now, body); }
 
   std::string const name;
   MarginMode const margin_mode;

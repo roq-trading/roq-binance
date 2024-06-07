@@ -30,16 +30,10 @@ struct UserStreamParser final {
   static bool dispatch(Handler &, std::string_view const &message, std::span<std::byte> const &, TraceInfo const &);
 
   // papi
-  static bool dispatch_papi(
-      Handler &, std::string_view const &message, std::span<std::byte> const &, TraceInfo const &);
+  static bool dispatch_papi(Handler &, std::string_view const &message, std::span<std::byte> const &, TraceInfo const &);
 
  private:
-  static bool try_dispatch(
-      UserStreamParser::Handler &,
-      std::string_view const &message,
-      std::span<std::byte> const &,
-      EventType,
-      TraceInfo const &);
+  static bool try_dispatch(UserStreamParser::Handler &, std::string_view const &message, std::span<std::byte> const &, EventType, TraceInfo const &);
 };
 
 }  // namespace json

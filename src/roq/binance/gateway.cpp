@@ -53,8 +53,7 @@ R create_request(auto &config) {
 }
 
 template <typename R>
-R create_order_entry(
-    auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared, auto &request_by_account) {
+R create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared, auto &request_by_account) {
   using result_type = std::remove_cvref<R>::type;
   result_type result;
   for (auto &[_, item] : accounts) {
@@ -70,8 +69,7 @@ R create_order_entry(
         for (size_t i = 0; i < std::size(interfaces); ++i) {
           auto master = i == 0;
           auto &interface = interfaces[i];
-          auto obj = std::make_unique<OrderEntryWS>(
-              gateway, context, ++stream_id, account, shared, request, master, interface);
+          auto obj = std::make_unique<OrderEntryWS>(gateway, context, ++stream_id, account, shared, request, master, interface);
           order_entry.emplace_back(std::move(obj));
         }
       }
@@ -84,8 +82,7 @@ R create_order_entry(
         for (size_t i = 0; i < std::size(interfaces); ++i) {
           auto master = i == 0;
           auto &interface = interfaces[i];
-          auto obj = std::make_unique<OrderEntryREST>(
-              gateway, context, ++stream_id, account, shared, request, master, interface);
+          auto obj = std::make_unique<OrderEntryREST>(gateway, context, ++stream_id, account, shared, request, master, interface);
           order_entry.emplace_back(std::move(obj));
         }
       }
@@ -107,8 +104,7 @@ R create_drop_copy(auto &accounts) {
 }
 
 template <typename R>
-R create_order_entry_portfolio(
-    auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared, auto &request_by_account) {
+R create_order_entry_portfolio(auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared, auto &request_by_account) {
   using result_type = std::remove_cvref<R>::type;
   result_type result;
   for (auto &[_, item] : accounts) {
@@ -138,14 +134,12 @@ R create_drop_copy_portfolio(auto &accounts) {
 // === IMPLEMENTATION ===
 
 Gateway::Gateway(server::Dispatcher &dispatcher, Settings const &settings, Config const &config, io::Context &context)
-    : dispatcher_{dispatcher}, accounts_(create_accounts<decltype(accounts_)>(config)), context_{context},
-      shared_{dispatcher, settings, config}, requests_{create_request<decltype(requests_)>(config)},
-      requests_portfolio_{create_request<decltype(requests_portfolio_)>(config)},
-      rest_{*this, context_, ++stream_id_, shared_}, order_entry_{create_order_entry<decltype(order_entry_)>(
-                                                         *this, context_, stream_id_, accounts_, shared_, requests_)},
-      drop_copy_{create_drop_copy<decltype(drop_copy_)>(accounts_)},
-      order_entry_portfolio_{create_order_entry_portfolio<decltype(order_entry_portfolio_)>(
-          *this, context_, stream_id_, accounts_, shared_, requests_portfolio_)},
+    : dispatcher_{dispatcher}, accounts_(create_accounts<decltype(accounts_)>(config)), context_{context}, shared_{dispatcher, settings, config},
+      requests_{create_request<decltype(requests_)>(config)}, requests_portfolio_{create_request<decltype(requests_portfolio_)>(config)},
+      rest_{*this, context_, ++stream_id_, shared_},
+      order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_, requests_)},
+      drop_copy_{create_drop_copy<decltype(drop_copy_)>(accounts_)}, order_entry_portfolio_{create_order_entry_portfolio<decltype(order_entry_portfolio_)>(
+                                                                         *this, context_, stream_id_, accounts_, shared_, requests_portfolio_)},
       drop_copy_portfolio_{create_drop_copy_portfolio<decltype(drop_copy_portfolio_)>(accounts_)} {
   if (settings.rest.cancel_on_disconnect)
     log::fatal("Exchange does *NOT* support cancel on disconnect"sv);
@@ -210,8 +204,7 @@ void Gateway::operator()(Trace<StatisticsUpdate> const &event, bool is_last) {
   dispatcher_(event, is_last);
 }
 
-void Gateway::operator()(
-    Trace<TradeUpdate> const &event, bool is_last, uint8_t user_id, std::string_view const &request_id) {
+void Gateway::operator()(Trace<TradeUpdate> const &event, bool is_last, uint8_t user_id, std::string_view const &request_id) {
   dispatcher_(event, is_last, user_id, request_id);
 }
 
@@ -268,12 +261,10 @@ void Gateway::create_drop_copy_from_listen_key_update(auto &drop_copy, auto &lis
   if (iter == std::end(drop_copy))
     log::fatal(R"(Unexpected: account="{}")"sv, account);
   if (!static_cast<bool>((*iter).second)) {
-    log::info(
-        R"(Create drop-copy (user-stream) for account="{}", margin_mode={})"sv, account, listen_key_update.margin_mode);
+    log::info(R"(Create drop-copy (user-stream) for account="{}", margin_mode={})"sv, account, listen_key_update.margin_mode);
     auto &account_2 = get_account(account);
     auto &request = get_request(account, listen_key_update.margin_mode);
-    auto obj =
-        std::make_unique<T>(*this, context_, ++stream_id_, account_2, shared_, request, listen_key_update.listen_key);
+    auto obj = std::make_unique<T>(*this, context_, ++stream_id_, account_2, shared_, request, listen_key_update.listen_key);
     MessageInfo message_info;
     Start start;
     create_event_and_dispatch(*obj, message_info, start);
@@ -281,18 +272,14 @@ void Gateway::create_drop_copy_from_listen_key_update(auto &drop_copy, auto &lis
   }
 }
 
-uint16_t Gateway::operator()(
-    Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
+uint16_t Gateway::operator()(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
   auto &create_order = event.value;
   assert(!std::empty(create_order.account));
   return get_order_entry(create_order.account, create_order.margin_mode)(event, order, request_id);
 }
 
 uint16_t Gateway::operator()(
-    Event<ModifyOrder> const &event,
-    server::oms::Order const &order,
-    std::string_view const &request_id,
-    std::string_view const &previous_request_id) {
+    Event<ModifyOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
   auto &modify_order = event.value;
   assert(!std::empty(modify_order.account));
   assert(modify_order.account == order.account);
@@ -300,10 +287,7 @@ uint16_t Gateway::operator()(
 }
 
 uint16_t Gateway::operator()(
-    Event<CancelOrder> const &event,
-    server::oms::Order const &order,
-    std::string_view const &request_id,
-    std::string_view const &previous_request_id) {
+    Event<CancelOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
   auto &cancel_order = event.value;
   assert(!std::empty(cancel_order.account));
   assert(cancel_order.account == order.account);
@@ -411,8 +395,7 @@ DropCopy &Gateway::get_drop_copy(std::string_view const &account, MarginMode mar
   log::fatal("Unexpected"sv);
 }
 
-Gateway::OrderEntryRR::OrderEntryRR(std::vector<std::unique_ptr<OrderEntry>> &&order_entry)
-    : order_entry_{std::move(order_entry)} {
+Gateway::OrderEntryRR::OrderEntryRR(std::vector<std::unique_ptr<OrderEntry>> &&order_entry) : order_entry_{std::move(order_entry)} {
   for (auto &item : order_entry_)
     if (item.get() == nullptr)
       log::fatal("HERE"sv);

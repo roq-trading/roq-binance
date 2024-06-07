@@ -28,17 +28,8 @@
 namespace roq {
 namespace binance {
 
-struct DropCopySimple final : public DropCopy,
-                              public web::socket::Client::Handler,
-                              public json::UserStreamParser::Handler {
-  DropCopySimple(
-      DropCopy::Handler &,
-      io::Context &,
-      uint16_t stream_id,
-      Account &,
-      Shared &,
-      Request &,
-      std::string_view const &listen_key);
+struct DropCopySimple final : public DropCopy, public web::socket::Client::Handler, public json::UserStreamParser::Handler {
+  DropCopySimple(DropCopy::Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, std::string_view const &listen_key);
 
   void operator()(Event<Start> const &) override;
   void operator()(Event<Stop> const &) override;

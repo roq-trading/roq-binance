@@ -43,14 +43,7 @@ namespace binance {
 
 struct OrderEntryPortfolio final : public OrderEntry, public web::rest::Client::Handler {
   OrderEntryPortfolio(
-      OrderEntry::Handler &,
-      io::Context &,
-      uint16_t stream_id,
-      Account &,
-      Shared &,
-      Request &,
-      bool master = true,
-      std::string_view const &interface = {});
+      OrderEntry::Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, bool master = true, std::string_view const &interface = {});
 
   bool ready() const override { return status_ == ConnectionStatus::READY; }
 
@@ -62,18 +55,11 @@ struct OrderEntryPortfolio final : public OrderEntry, public web::rest::Client::
 
   void operator()(Event<Disconnected> const &) override;
 
+  uint16_t operator()(Event<CreateOrder> const &, server::oms::Order const &, std::string_view const &request_id) override;
   uint16_t operator()(
-      Event<CreateOrder> const &, server::oms::Order const &, std::string_view const &request_id) override;
+      Event<ModifyOrder> const &, server::oms::Order const &, std::string_view const &request_id, std::string_view const &previous_request_id) override;
   uint16_t operator()(
-      Event<ModifyOrder> const &,
-      server::oms::Order const &,
-      std::string_view const &request_id,
-      std::string_view const &previous_request_id) override;
-  uint16_t operator()(
-      Event<CancelOrder> const &,
-      server::oms::Order const &,
-      std::string_view const &request_id,
-      std::string_view const &previous_request_id) override;
+      Event<CancelOrder> const &, server::oms::Order const &, std::string_view const &request_id, std::string_view const &previous_request_id) override;
   uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id) override;
 
  protected:
@@ -111,11 +97,7 @@ struct OrderEntryPortfolio final : public OrderEntry, public web::rest::Client::
   void new_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
   void operator()(Trace<json::NewOrder> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
 
-  void cancel_order(
-      Event<CancelOrder> const &,
-      server::oms::Order const &,
-      std::string_view const &request_id,
-      std::string_view const &previous_request_id);
+  void cancel_order(Event<CancelOrder> const &, server::oms::Order const &, std::string_view const &request_id, std::string_view const &previous_request_id);
   void cancel_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
   void operator()(Trace<json::CancelOrder> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
 

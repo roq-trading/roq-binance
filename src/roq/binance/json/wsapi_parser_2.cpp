@@ -37,11 +37,7 @@ bool dispatch_helper(auto &handler, auto &message, auto &buffer, auto &trace_inf
 }
 }  // namespace
 
-bool WSAPIParser2::dispatch(
-    WSAPIParser2::Handler &handler,
-    std::string_view const &message,
-    std::span<std::byte> const &buffer,
-    TraceInfo const &trace_info) {
+bool WSAPIParser2::dispatch(WSAPIParser2::Handler &handler, std::string_view const &message, std::span<std::byte> const &buffer, TraceInfo const &trace_info) {
   auto request = get_request(message);
   switch (request.type) {
     using enum WSAPIType::type_t;

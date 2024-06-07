@@ -72,8 +72,7 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &liste
 }
 
 struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(auto &settings, auto const &group, auto const &function)
-      : core::metrics::Factory(settings.app.name, group, function) {}
+  explicit create_metrics(auto &settings, auto const &group, auto const &function) : core::metrics::Factory(settings.app.name, group, function) {}
 };
 }  // namespace
 
@@ -88,8 +87,7 @@ DropCopyPortfolio::DropCopyPortfolio(
     Request &request,
     std::string_view const &listen_key)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)},
-      connection_{create_connection(*this, shared.settings, context, listen_key)},
-      decode_buffer_(shared.settings.misc.decode_buffer_size),
+      connection_{create_connection(*this, shared.settings, context, listen_key)}, decode_buffer_(shared.settings.misc.decode_buffer_size),
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -104,8 +102,7 @@ DropCopyPortfolio::DropCopyPortfolio(
           .ping = create_metrics(shared.settings, name_, "ping"sv),
           .heartbeat = create_metrics(shared.settings, name_, "heartbeat"sv),
       },
-      account_{account}, shared_{shared}, request_{request},
-      download_{{}, [this](auto state) { return download(state); }} {
+      account_{account}, shared_{shared}, request_{request}, download_{{}, [this](auto state) { return download(state); }} {
   log::info<5>(R"(stream_id={}, account="{}", listen_key="{}")"sv, stream_id_, account_.name, listen_key);
 }
 
@@ -283,8 +280,7 @@ void DropCopyPortfolio::operator()(Trace<json::ExecutionReport> const &event) {
     auto status = json::map(execution_report.current_order_status);
     auto average_traded_price = utils::is_zero(execution_report.cumulative_filled_quantity)
                                     ? NaN
-                                    : (execution_report.cumulative_quote_asset_transacted_quantity /
-                                       execution_report.cumulative_filled_quantity);
+                                    : (execution_report.cumulative_quote_asset_transacted_quantity / execution_report.cumulative_filled_quantity);
     auto last_liquidity = execution_report.is_trade_maker ? Liquidity::MAKER : Liquidity::TAKER;
     auto order_update = server::oms::OrderUpdate{
         .account = account_.name,

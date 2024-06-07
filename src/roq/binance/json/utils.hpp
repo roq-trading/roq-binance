@@ -41,9 +41,7 @@ inline void update(std::chrono::milliseconds &result, core::json::Value const &v
           [](bool) { throw std::bad_cast{}; },
           [&](int64_t val) { result = std::chrono::milliseconds{val}; },
           [&](double val) { result = std::chrono::milliseconds{static_cast<int64_t>(val)}; },
-          [&](std::string_view const &val) {
-            result = core::charconv::datetime_from_string<std::remove_reference<decltype(result)>::type>(val);
-          },
+          [&](std::string_view const &val) { result = core::charconv::datetime_from_string<std::remove_reference<decltype(result)>::type>(val); },
           [](core::json::Object const &) { throw std::bad_cast{}; },
           [](core::json::Array const &) { throw std::bad_cast{}; },
       },
@@ -247,16 +245,11 @@ extern roq::Error guess_error(int32_t code);
 // new
 
 extern std::string_view my_trades(
-    std::vector<char> &buffer,
-    std::string_view const &symbol,
-    std::chrono::nanoseconds lookback,
-    uint32_t limit,
-    std::chrono::milliseconds now);
+    std::vector<char> &buffer, std::string_view const &symbol, std::chrono::nanoseconds lookback, uint32_t limit, std::chrono::milliseconds now);
 
 // cancel-all
 
-extern std::string_view cancel_all_open_orders(
-    std::vector<char> &buffer, std::string_view const &symbol, std::chrono::milliseconds recv_window);
+extern std::string_view cancel_all_open_orders(std::vector<char> &buffer, std::string_view const &symbol, std::chrono::milliseconds recv_window);
 
 // new
 

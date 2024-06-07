@@ -15,10 +15,7 @@ namespace binance {
 namespace json {
 
 bool UserStreamParser::dispatch(
-    UserStreamParser::Handler &handler,
-    std::string_view const &message,
-    std::span<std::byte> const &buffer,
-    TraceInfo const &trace_info) {
+    UserStreamParser::Handler &handler, std::string_view const &message, std::span<std::byte> const &buffer, TraceInfo const &trace_info) {
   // XXX this is bad... 3 levels of parsing
   // XXX buffer will not be used for first iteration
   UserStream user_stream{message, buffer};
@@ -37,10 +34,7 @@ bool UserStreamParser::dispatch(
 }
 
 bool UserStreamParser::dispatch_papi(
-    UserStreamParser::Handler &handler,
-    std::string_view const &message,
-    std::span<std::byte> const &buffer,
-    TraceInfo const &trace_info) {
+    UserStreamParser::Handler &handler, std::string_view const &message, std::span<std::byte> const &buffer, TraceInfo const &trace_info) {
   core::json::Parser parser{message};
   auto root = parser.root();
   for (auto [key, value] : std::get<core::json::Object>(root)) {

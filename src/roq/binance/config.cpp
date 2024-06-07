@@ -59,8 +59,7 @@ auto create_gateway_settings(auto &settings) -> GatewaySettings {
 
 // === IMPLEMENTATION ===
 
-Config::Config(Settings const &settings)
-    : exchange_{settings.exchange}, gateway_settings_{create_gateway_settings(settings)} {
+Config::Config(Settings const &settings) : exchange_{settings.exchange}, gateway_settings_{create_gateway_settings(settings)} {
   server::config::Reader::parse_file(*this, settings);
   log::info<1>("config={}"sv, *this);
 }
@@ -113,8 +112,7 @@ void Config::operator()(server::config::RateLimit &&rate_limit) {
   rate_limits.emplace(rate_limit.name, std::move(rate_limit));
 }
 
-void Config::operator()(
-    server::config::RequestTemplate request_template, std::string_view const &label, toml::table &table) {
+void Config::operator()(server::config::RequestTemplate request_template, std::string_view const &label, toml::table &table) {
   switch (request_template) {
     using enum server::config::RequestTemplate;
     case CREATE_ORDER: {

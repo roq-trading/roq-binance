@@ -36,12 +36,10 @@ auto create_headers_helper(auto const &key) {
 
 // === IMPLEMENTATION ===
 
-Crypto::Crypto(std::string_view const &key, std::string_view const &secret)
-    : key_{key}, mac_{secret}, headers_{create_headers_helper(key_)} {
+Crypto::Crypto(std::string_view const &key, std::string_view const &secret) : key_{key}, mac_{secret}, headers_{create_headers_helper(key_)} {
 }
 
-std::string_view Crypto::create_query(
-    std::span<std::byte> const &buffer, std::chrono::milliseconds now, std::string_view const &body) {
+std::string_view Crypto::create_query(std::span<std::byte> const &buffer, std::chrono::milliseconds now, std::string_view const &body) {
   utils::text::Writer writer{buffer};
   writer.write("?timestamp="sv).write(now.count());
   mac_.clear();

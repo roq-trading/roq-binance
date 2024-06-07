@@ -150,11 +150,7 @@ json::TimeInForce map_time_in_force(auto &create_order) {
 // my-trades
 
 std::string_view my_trades(
-    std::vector<char> &buffer,
-    std::string_view const &symbol,
-    std::chrono::nanoseconds lookback,
-    uint32_t limit,
-    std::chrono::milliseconds now) {
+    std::vector<char> &buffer, std::string_view const &symbol, std::chrono::nanoseconds lookback, uint32_t limit, std::chrono::milliseconds now) {
   buffer.resize(512);
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
   utils::text::Writer writer{buffer_2};
@@ -167,8 +163,7 @@ std::string_view my_trades(
 
 // cancel-all
 
-std::string_view cancel_all_open_orders(
-    std::vector<char> &buffer, std::string_view const &symbol, std::chrono::milliseconds recv_window) {
+std::string_view cancel_all_open_orders(std::vector<char> &buffer, std::string_view const &symbol, std::chrono::milliseconds recv_window) {
   buffer.clear();
   fmt::format_to(
       std::back_inserter(buffer),
@@ -269,19 +264,13 @@ std::string_view new_order_ws_json(
   writer.write(R"(,"newClientOrderId":")"sv).write(request_id).write(R"(")"sv);
   if (!std::isnan(create_order.price))
     writer.write(R"(,"price":")"sv).write(Decimal{create_order.price, order.price_precision.precision}).write(R"(")"sv);
-  writer.write(R"(,"quantity":")"sv)
-      .write(Decimal{create_order.quantity, order.quantity_precision.precision})
-      .write(R"(")"sv);
+  writer.write(R"(,"quantity":")"sv).write(Decimal{create_order.quantity, order.quantity_precision.precision}).write(R"(")"sv);
   writer.write(R"(,"recvWindow":)"sv).write(recv_window.count());
   if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{})
-    writer.write(R"(,"selfTradePreventionMode":")"sv)
-        .write(create_order_template.self_trade_prevention_mode.as_raw_text())
-        .write(R"(")"sv);
+    writer.write(R"(,"selfTradePreventionMode":")"sv).write(create_order_template.self_trade_prevention_mode.as_raw_text()).write(R"(")"sv);
   writer.write(R"(,"side":")"sv).write(side.as_raw_text()).write(R"(")"sv);
   if (!std::isnan(create_order.stop_price))
-    writer.write(R"(,"stopPrice":")"sv)
-        .write(Decimal{create_order.stop_price, order.price_precision.precision})
-        .write(R"(")"sv);
+    writer.write(R"(,"stopPrice":")"sv).write(Decimal{create_order.stop_price, order.price_precision.precision}).write(R"(")"sv);
   writer.write(R"(,"symbol":")"sv).write(create_order.symbol).write(R"(")"sv);
   if (time_in_force != json::TimeInForce{})
     writer.write(R"(,"timeInForce":")"sv).write(time_in_force.as_raw_text()).write(R"(")"sv);
@@ -359,9 +348,7 @@ std::string_view cancel_order_ws_json(
   writer.write("{"sv);
   writer.write(R"("apiKey":")"sv).write(api_key).write(R"(")"sv);
   if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
-    writer.write(R"(,"cancelRestrictions":")"sv)
-        .write(cancel_order_template.cancel_restrictions.as_raw_text())
-        .write(R"(")"sv);
+    writer.write(R"(,"cancelRestrictions":")"sv).write(cancel_order_template.cancel_restrictions.as_raw_text()).write(R"(")"sv);
   writer.write(R"(,"newClientOrderId":")"sv).write(request_id).write(R"(")"sv);
   if (!std::empty(order.external_order_id))
     writer.write(R"(,"orderId":)"sv).write(order.external_order_id);  // note! integer
@@ -417,28 +404,17 @@ std::string_view cancel_replace_order(
   fmt::format_to(std::back_inserter(buffer), "cancelOrigClientOrderId={}&"sv, cancel_previous_request_id);
   fmt::format_to(std::back_inserter(buffer), "cancelReplaceMode={}&"sv, cancel_replace_mode);
   if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
-    fmt::format_to(
-        std::back_inserter(buffer),
-        "cancelRestrictions={}&"sv,
-        cancel_order_template.cancel_restrictions.as_raw_text());
+    fmt::format_to(std::back_inserter(buffer), "cancelRestrictions={}&"sv, cancel_order_template.cancel_restrictions.as_raw_text());
   fmt::format_to(std::back_inserter(buffer), "newClientOrderId={}&"sv, create_request_id);
   if (!std::isnan(create_order.price))
-    fmt::format_to(
-        std::back_inserter(buffer), "price={}&"sv, Decimal{create_order.price, order.price_precision.precision});
-  fmt::format_to(
-      std::back_inserter(buffer), "quantity={}&"sv, Decimal{create_order.quantity, order.quantity_precision.precision});
+    fmt::format_to(std::back_inserter(buffer), "price={}&"sv, Decimal{create_order.price, order.price_precision.precision});
+  fmt::format_to(std::back_inserter(buffer), "quantity={}&"sv, Decimal{create_order.quantity, order.quantity_precision.precision});
   fmt::format_to(std::back_inserter(buffer), "recvWindow={}&"sv, recv_window.count());
   if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{})
-    fmt::format_to(
-        std::back_inserter(buffer),
-        "selfTradePreventionMode={}&"sv,
-        create_order_template.self_trade_prevention_mode.as_raw_text());
+    fmt::format_to(std::back_inserter(buffer), "selfTradePreventionMode={}&"sv, create_order_template.self_trade_prevention_mode.as_raw_text());
   fmt::format_to(std::back_inserter(buffer), "side={}&"sv, side.as_raw_text());
   if (!std::isnan(create_order.stop_price))
-    fmt::format_to(
-        std::back_inserter(buffer),
-        "stopPrice={}&"sv,
-        Decimal{create_order.stop_price, order.price_precision.precision});
+    fmt::format_to(std::back_inserter(buffer), "stopPrice={}&"sv, Decimal{create_order.stop_price, order.price_precision.precision});
   fmt::format_to(std::back_inserter(buffer), "symbol={}&"sv, order.symbol);
   if (time_in_force != json::TimeInForce{})
     fmt::format_to(std::back_inserter(buffer), "timeInForce={}&"sv, time_in_force.as_raw_text());
@@ -473,28 +449,17 @@ std::string_view cancel_replace_order_ws_url(
   fmt::format_to(std::back_inserter(buffer), "cancelOrigClientOrderId={}&"sv, cancel_previous_request_id);
   fmt::format_to(std::back_inserter(buffer), "cancelReplaceMode={}&"sv, cancel_replace_mode);
   if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
-    fmt::format_to(
-        std::back_inserter(buffer),
-        "cancelRestrictions={}&"sv,
-        cancel_order_template.cancel_restrictions.as_raw_text());
+    fmt::format_to(std::back_inserter(buffer), "cancelRestrictions={}&"sv, cancel_order_template.cancel_restrictions.as_raw_text());
   fmt::format_to(std::back_inserter(buffer), "newClientOrderId={}&"sv, create_request_id);
   if (!std::isnan(create_order.price))
-    fmt::format_to(
-        std::back_inserter(buffer), "price={}&"sv, Decimal{create_order.price, order.price_precision.precision});
-  fmt::format_to(
-      std::back_inserter(buffer), "quantity={}&"sv, Decimal{create_order.quantity, order.quantity_precision.precision});
+    fmt::format_to(std::back_inserter(buffer), "price={}&"sv, Decimal{create_order.price, order.price_precision.precision});
+  fmt::format_to(std::back_inserter(buffer), "quantity={}&"sv, Decimal{create_order.quantity, order.quantity_precision.precision});
   fmt::format_to(std::back_inserter(buffer), "recvWindow={}&"sv, recv_window.count());
   if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{})
-    fmt::format_to(
-        std::back_inserter(buffer),
-        "selfTradePreventionMode={}&"sv,
-        create_order_template.self_trade_prevention_mode.as_raw_text());
+    fmt::format_to(std::back_inserter(buffer), "selfTradePreventionMode={}&"sv, create_order_template.self_trade_prevention_mode.as_raw_text());
   fmt::format_to(std::back_inserter(buffer), "side={}&"sv, side.as_raw_text());
   if (!std::isnan(create_order.stop_price))
-    fmt::format_to(
-        std::back_inserter(buffer),
-        "stopPrice={}&"sv,
-        Decimal{create_order.stop_price, order.price_precision.precision});
+    fmt::format_to(std::back_inserter(buffer), "stopPrice={}&"sv, Decimal{create_order.stop_price, order.price_precision.precision});
   fmt::format_to(std::back_inserter(buffer), "symbol={}&"sv, order.symbol);
   if (time_in_force != json::TimeInForce{})
     fmt::format_to(std::back_inserter(buffer), "timeInForce={}&"sv, time_in_force.as_raw_text());
@@ -532,30 +497,17 @@ std::string_view cancel_replace_order_ws_json(
   fmt::format_to(std::back_inserter(buffer), R"("cancelOrigClientOrderId":"{}",)"sv, cancel_previous_request_id);
   fmt::format_to(std::back_inserter(buffer), R"("cancelReplaceMode":"{}",)"sv, cancel_replace_mode);
   if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
-    fmt::format_to(
-        std::back_inserter(buffer),
-        R"("cancelRestrictions":"{}",)"sv,
-        cancel_order_template.cancel_restrictions.as_raw_text());
+    fmt::format_to(std::back_inserter(buffer), R"("cancelRestrictions":"{}",)"sv, cancel_order_template.cancel_restrictions.as_raw_text());
   fmt::format_to(std::back_inserter(buffer), R"("newClientOrderId":"{}",)"sv, create_request_id);
   if (!std::isnan(create_order.price))
-    fmt::format_to(
-        std::back_inserter(buffer), R"("price":"{}",)"sv, Decimal{create_order.price, order.price_precision.precision});
-  fmt::format_to(
-      std::back_inserter(buffer),
-      R"("quantity":"{}",)"sv,
-      Decimal{create_order.quantity, order.quantity_precision.precision});
+    fmt::format_to(std::back_inserter(buffer), R"("price":"{}",)"sv, Decimal{create_order.price, order.price_precision.precision});
+  fmt::format_to(std::back_inserter(buffer), R"("quantity":"{}",)"sv, Decimal{create_order.quantity, order.quantity_precision.precision});
   fmt::format_to(std::back_inserter(buffer), R"("recvWindow":{},)"sv, recv_window.count());
   if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{})
-    fmt::format_to(
-        std::back_inserter(buffer),
-        R"("selfTradePreventionMode":"{}",)"sv,
-        create_order_template.self_trade_prevention_mode.as_raw_text());
+    fmt::format_to(std::back_inserter(buffer), R"("selfTradePreventionMode":"{}",)"sv, create_order_template.self_trade_prevention_mode.as_raw_text());
   fmt::format_to(std::back_inserter(buffer), R"("side":"{}",)"sv, side.as_raw_text());
   if (!std::isnan(create_order.stop_price))
-    fmt::format_to(
-        std::back_inserter(buffer),
-        R"("stopPrice":"{}",)"sv,
-        Decimal{create_order.stop_price, order.price_precision.precision});
+    fmt::format_to(std::back_inserter(buffer), R"("stopPrice":"{}",)"sv, Decimal{create_order.stop_price, order.price_precision.precision});
   fmt::format_to(std::back_inserter(buffer), R"("symbol":"{}",)"sv, order.symbol);
   if (time_in_force != json::TimeInForce{})
     fmt::format_to(std::back_inserter(buffer), R"("timeInForce":"{}",)"sv, time_in_force.as_raw_text());

@@ -36,7 +36,6 @@ TEST_CASE("simple", "[tools_crypto]") {
   auto now = 1674303865s;
   auto body = "abc=123&def=456"sv;
   auto query = crypto.create_query(buffer, now, body);
-  auto expected =
-      "?timestamp=1674303865000&signature=fa3ec135cd0ca6fd1267e30feb51147885209b0ee6c997ace0a6c7694b29736f"sv;
+  auto expected = "?timestamp=1674303865000&signature=fa3ec135cd0ca6fd1267e30feb51147885209b0ee6c997ace0a6c7694b29736f"sv;
   CHECK(query == expected);
 }
