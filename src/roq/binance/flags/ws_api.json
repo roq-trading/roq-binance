@@ -12,7 +12,7 @@
     {
       "name": "uri",
       "type": "roq/io/web/URI",
-      "validator": "roq::core::flags::URI",
+      "validator": "roq/core/flags/URI",
       "default": "wss://ws-api.binance.com/ws-api/v3",
       "description": "Exchange end-point"
     },
@@ -24,7 +24,7 @@
     {
       "name": "ping_freq",
       "type": "std/nanoseconds",
-      "validator": "roq::flags::validators::TimePeriod",
+      "validator": "roq/flags/validators/TimePeriod",
       "default": "5s",
       "description": "Ping frequency"
     }

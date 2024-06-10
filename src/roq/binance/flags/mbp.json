@@ -11,7 +11,7 @@
     {
       "name": "sequencer_timeout",
       "type": "std/nanoseconds",
-      "validator": "roq::flags::validators::TimePeriod",
+      "validator": "roq/flags/validators/TimePeriod",
       "default": "120s",
       "description": "Sequencer timeout"
     },
