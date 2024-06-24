@@ -86,7 +86,8 @@ if(BUILD_TESTING)
 endif()
 
 if(BUILD_BENCHMARK)
-  add_subdirectory(${CMAKE_SOURCE_DIR}/benchmark)
+  # doesn't work...
+  # add_subdirectory(${CMAKE_SOURCE_DIR}/benchmark)
 endif()
 
 # install
