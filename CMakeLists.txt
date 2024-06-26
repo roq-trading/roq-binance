@@ -86,8 +86,7 @@ if(BUILD_TESTING)
 endif()
 
 if(BUILD_BENCHMARK)
-  # doesn't work... when cross-compiling for aarch64 using gcc 
-  # add_subdirectory(${CMAKE_SOURCE_DIR}/benchmark)
+  # doesn't work... when cross-compiling for aarch64 using gcc add_subdirectory(${CMAKE_SOURCE_DIR}/benchmark)
 endif()
 
 # install
