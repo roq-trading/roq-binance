@@ -39,7 +39,7 @@ auto const SUPPORTS_SECONDARY = Mask{
     SupportType::MARKET_BY_PRICE,
 };
 
-auto const REQUEST_ID = uint64_t{1000000};
+uint64_t const REQUEST_ID = 1000000;
 }  // namespace
 
 // === HELPERS ===

@@ -18,7 +18,7 @@ namespace {
 auto const REQUEST_ID = "jQAB6gMAAQAAQUIp3sUSAawljiyfnylc"sv;
 auto const PREVIOUS_REQUEST_ID = "jQAB6gMAAQAAQUIp3sUSAawljiyfnylc"sv;
 auto const ACCOUNT = "A1"sv;
-auto const ORDER_ID = uint32_t{1234};
+uint32_t const ORDER_ID = 1234;
 auto const CANCEL_ORDER_TEMPLATE = json::CancelOrderTemplate{};
 auto const RECV_WINDOW = 5s;
 auto const KEY = "sSzUA6j8tGDfmLoFrOPhWHY3VeXbC3NrApp94Ci4H4XvcjuCuvOXp8gH89XzMPDe"sv;
