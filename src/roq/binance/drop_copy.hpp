@@ -19,7 +19,7 @@ struct DropCopy {
 
   DropCopy() = default;
 
-  DropCopy(DropCopy &&) = delete;
+  DropCopy(DropCopy &&) = default;
   DropCopy(DropCopy const &) = delete;
 
   virtual ~DropCopy() {}

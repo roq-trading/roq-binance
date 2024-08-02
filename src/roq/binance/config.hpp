@@ -29,6 +29,9 @@ namespace binance {
 struct Config final : public server::config::Dispatcher, public server::config::Reader::Handler {
   explicit Config(Settings const &);
 
+  Config(Config &&) = default;
+  Config(Config const &) = delete;
+
   Account const &get_master_account() const;
 
   std::string const &get_api_key(Account const &) const;
