@@ -32,7 +32,6 @@ namespace binance {
 struct Shared final {
   Shared(server::Dispatcher &, Settings const &, Config const &);
 
-  Shared(Shared &&) = default;
   Shared(Shared const &) = delete;
 
   auto discard_symbol(std::string_view const &name) const { return dispatcher_.discard_symbol(name); }
