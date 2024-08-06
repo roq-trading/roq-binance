@@ -19,6 +19,7 @@
 
 #include "roq/binance/json/error.hpp"
 #include "roq/binance/json/filters.hpp"
+#include "roq/binance/json/map.hpp"
 #include "roq/binance/json/utils.hpp"
 
 using namespace std::literals;
@@ -461,12 +462,11 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
     if (all_symbols_.emplace(symbol).second)  // only include new
       symbols.emplace_back(symbol);
     ++counter;
-    auto trading_status = json::map(item.status);
     auto market_status = MarketStatus{
         .stream_id = stream_id_,
         .exchange = shared_.settings.exchange,
         .symbol = item.symbol,
-        .trading_status = trading_status,
+        .trading_status = json::Map{item.status},
         .exchange_time_utc = {},
         .exchange_sequence = {},
         .sending_time_utc = exchange_info.server_time,

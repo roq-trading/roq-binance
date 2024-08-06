@@ -8,6 +8,8 @@
 
 #include "roq/utils/text/writer.hpp"
 
+#include "roq/binance/json/map.hpp"
+
 using namespace std::literals;
 
 namespace roq {
@@ -128,7 +130,7 @@ json::OrderType map_order_type(auto &order) {
         return json::OrderType::STOP_LOSS_LIMIT;
       return json::OrderType::LIMIT;
   }
-  return map(order.order_type);
+  return Map{order.order_type};
 }
 
 json::TimeInForce map_time_in_force(auto &create_order) {
@@ -143,7 +145,7 @@ json::TimeInForce map_time_in_force(auto &create_order) {
         return {};
       break;
   }
-  return map(create_order.time_in_force);
+  return Map{create_order.time_in_force};
 }
 }  // namespace
 
@@ -185,7 +187,7 @@ std::string_view new_order(
     std::string_view const &request_id,
     CreateOrderTemplate const &create_order_template,
     std::chrono::milliseconds recv_window) {
-  auto side = map(create_order.side);
+  auto side = map<Side>(create_order.side);
   auto type = map_order_type(create_order);
   auto time_in_force = map_time_in_force(create_order);
   buffer.resize(512);
@@ -217,7 +219,7 @@ std::string_view new_order_ws_url(
     std::chrono::milliseconds recv_window,
     std::string_view const &api_key,
     std::chrono::milliseconds now) {
-  auto side = map(create_order.side);
+  auto side = map<Side>(create_order.side);
   auto type = map_order_type(create_order);
   auto time_in_force = map_time_in_force(create_order);
   buffer.resize(512);
@@ -253,7 +255,7 @@ std::string_view new_order_ws_json(
     std::string_view const &api_key,
     std::chrono::milliseconds now,
     std::string_view const &signature) {
-  auto side = map(create_order.side);
+  auto side = map<Side>(create_order.side);
   auto type = map_order_type(create_order);
   auto time_in_force = map_time_in_force(create_order);
   buffer.resize(512);
@@ -393,7 +395,7 @@ std::string_view cancel_replace_order(
     CreateOrderTemplate const &create_order_template,
     std::chrono::milliseconds recv_window,
     bool stop_on_failure) {
-  auto side = map(order.side);
+  auto side = map<Side>(order.side);
   auto type = map_order_type(order);
   auto time_in_force = map_time_in_force(order);
   auto cancel_replace_mode = get_cancel_replace_mode(cancel_order_template, stop_on_failure);
@@ -437,7 +439,7 @@ std::string_view cancel_replace_order_ws_url(
     bool stop_on_failure,
     std::string_view const &api_key,
     std::chrono::milliseconds now) {
-  auto side = map(order.side);
+  auto side = map<Side>(order.side);
   auto type = map_order_type(order);
   auto time_in_force = map_time_in_force(order);
   auto cancel_replace_mode = get_cancel_replace_mode(cancel_order_template, stop_on_failure);
@@ -484,7 +486,7 @@ std::string_view cancel_replace_order_ws_json(
     std::string_view const &api_key,
     std::chrono::milliseconds now,
     std::string_view const &signature) {
-  auto side = map(order.side);
+  auto side = map<Side>(order.side);
   auto type = map_order_type(order);
   auto time_in_force = map_time_in_force(order);
   auto cancel_replace_mode = get_cancel_replace_mode(cancel_order_template, stop_on_failure);

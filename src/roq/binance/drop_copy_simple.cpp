@@ -10,6 +10,7 @@
 
 #include "roq/core/metrics/factory.hpp"
 
+#include "roq/binance/json/map.hpp"
 #include "roq/binance/json/utils.hpp"
 
 using namespace std::literals;
@@ -268,11 +269,7 @@ void DropCopySimple::operator()(Trace<json::ExecutionReport> const &event) {
     auto &execution_report = event.value;
     log::info<2>("stream_id={}"sv, stream_id_);
     log::info<2>("execution_report={}"sv, execution_report);
-    auto side = json::map(execution_report.side);
-    auto order_type = json::map(execution_report.order_type);
-    auto time_in_force = json::map(execution_report.time_in_force);
     auto external_order_id = fmt::format("{}"sv, execution_report.order_id);  // alloc
-    auto status = json::map(execution_report.current_order_status);
     auto average_traded_price = utils::is_zero(execution_report.cumulative_filled_quantity)
                                     ? NaN
                                     : (execution_report.cumulative_quote_asset_transacted_quantity / execution_report.cumulative_filled_quantity);
@@ -281,19 +278,19 @@ void DropCopySimple::operator()(Trace<json::ExecutionReport> const &event) {
         .account = account_.name,
         .exchange = shared_.settings.exchange,
         .symbol = execution_report.symbol,
-        .side = side,
+        .side = json::Map{execution_report.side},
         .position_effect = {},
         .margin_mode = {},
         .max_show_quantity = NaN,
-        .order_type = order_type,
-        .time_in_force = time_in_force,
+        .order_type = json::Map{execution_report.order_type},
+        .time_in_force = json::Map{execution_report.time_in_force},
         .execution_instructions = {},
         .create_time_utc = {},
         .update_time_utc = execution_report.transaction_time,
         .external_account = {},
         .external_order_id = external_order_id,
         .client_order_id = {},
-        .order_status = status,
+        .order_status = json::Map{execution_report.current_order_status},
         .quantity = NaN,
         .price = execution_report.price,
         .stop_price = execution_report.stop_price,
@@ -340,7 +337,7 @@ void DropCopySimple::operator()(Trace<json::ExecutionReport> const &event) {
         .order_id = order_id,
         .exchange = shared_.settings.exchange,
         .symbol = execution_report.symbol,
-        .side = side,
+        .side = json::Map{execution_report.side},
         .position_effect = {},
         .margin_mode = {},
         .create_time_utc = execution_report.transaction_time,
