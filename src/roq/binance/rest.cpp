@@ -7,9 +7,10 @@
 
 #include "roq/mask.hpp"
 
-#include "roq/utils/charconv.hpp"
 #include "roq/utils/compare.hpp"
 #include "roq/utils/update.hpp"
+
+#include "roq/utils/charconv/from_chars.hpp"
 
 #include "roq/core/metrics/factory.hpp"
 
@@ -88,7 +89,7 @@ auto get_retry_after(auto &response) {
   response.dispatch(web::http::Header::RETRY_AFTER, [&](auto &value) {
     try {
       // XXX FIXME could also be a datetime (see https://datatracker.ietf.org/doc/html/rfc7231)
-      auto seconds = utils::from_string_relaxed<int64_t>(value);
+      auto seconds = utils::charconv::from_string_relaxed<int64_t>(value);
       result = std::chrono::seconds{seconds};
     } catch (RuntimeError &) {
       log::warn<5>(R"(Failed to parse text="{}")"sv, value);
@@ -187,7 +188,7 @@ void Rest::operator()(Trace<web::rest::Client::Header> const &event) {
   auto &header = event.value;
   if (utils::case_insensitive_compare(header.name, X_MBX_USED_WEIGHT_1M) == 0) {
     try {
-      auto value = utils::from_string_relaxed<uint32_t>(header.value);
+      auto value = utils::charconv::from_string_relaxed<uint32_t>(header.value);
       auto rate_limit = RateLimit{
           .type = RateLimitType::REQUEST_WEIGHT,
           .period = 1min,
