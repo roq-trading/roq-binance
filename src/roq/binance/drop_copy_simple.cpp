@@ -6,9 +6,9 @@
 
 #include "roq/utils/update.hpp"
 
-#include "roq/core/tools/exception.hpp"
+#include "roq/utils/metrics/factory.hpp"
 
-#include "roq/core/metrics/factory.hpp"
+#include "roq/core/tools/exception.hpp"
 
 #include "roq/binance/json/map.hpp"
 #include "roq/binance/json/utils.hpp"
@@ -66,8 +66,8 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &liste
   return web::socket::Client::create(handler, context, config, []() -> std::string { return {}; });
 }
 
-struct create_metrics final : public core::metrics::Factory {
-  explicit create_metrics(auto &settings, auto const &group, auto const &function) : core::metrics::Factory(settings.app.name, group, function) {}
+struct create_metrics final : public utils::metrics::Factory {
+  create_metrics(auto &settings, auto &group, auto const &function) : utils::metrics::Factory(settings.app.name, group, function) {}
 };
 }  // namespace
 

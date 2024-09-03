@@ -12,7 +12,7 @@
 
 #include "roq/utils/charconv/from_chars.hpp"
 
-#include "roq/core/metrics/factory.hpp"
+#include "roq/utils/metrics/factory.hpp"
 
 #include "roq/web/rest/client.hpp"
 
@@ -78,10 +78,9 @@ auto create_connection(auto &handler, auto &settings, auto &context) {
   return web::rest::Client::create(handler, context, config);
 }
 
-struct create_metrics final : public core::metrics::Factory {
-  create_metrics(auto &settings, auto const &group, auto const &function) : core::metrics::Factory(settings.app.name, group, function) {}
-  create_metrics(auto &settings, auto const &group, auto const &function, auto const &params)
-      : core::metrics::Factory(settings.app.name, group, function, params) {}
+struct create_metrics final : public utils::metrics::Factory {
+  create_metrics(auto &settings, auto &group, auto const &function) : utils::metrics::Factory(settings.app.name, group, function) {}
+  create_metrics(auto &settings, auto &group, auto const &function, auto const &params) : utils::metrics::Factory(settings.app.name, group, function, params) {}
 };
 
 auto get_retry_after(auto &response) {
