@@ -37,6 +37,7 @@ find_package(roq-market REQUIRED)
 find_package(roq-server REQUIRED)
 find_package(roq-utils REQUIRED)
 find_package(roq-web REQUIRED)
+find_package(tomlplusplus REQUIRED)
 find_package(unordered_dense REQUIRED)
 # note! roq-core
 find_package(Brotli REQUIRED)

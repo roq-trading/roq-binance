@@ -38,6 +38,7 @@ requirements:
     - roq-market
     - roq-oss-benchmark
     - roq-oss-magic_enum
+    - roq-oss-tomlplusplus
     - roq-oss-unordered_dense
     - roq-server
     - roq-utils
