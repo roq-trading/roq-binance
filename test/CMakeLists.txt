@@ -32,8 +32,7 @@ target_link_libraries(
           roq-io::roq-io
           roq-cache::roq-cache
           fmt::fmt
-          Catch2::Catch2
-          ${RT_LIBRARIES})
+          Catch2::Catch2)
 
 if(ROQ_BUILD_TYPE STREQUAL "Release")
   set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELEASE -s)
