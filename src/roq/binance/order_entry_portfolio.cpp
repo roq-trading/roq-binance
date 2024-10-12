@@ -642,6 +642,7 @@ void OrderEntryPortfolio::operator()(Trace<json::Trades> const &event) {
         .side = side,
         .position_effect = {},
         .margin_mode = MarginMode::PORTFOLIO,
+        .quantity_type = {},
         .create_time_utc = item.time,
         .update_time_utc = item.time,
         .external_account = {},

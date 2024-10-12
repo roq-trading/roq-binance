@@ -895,6 +895,7 @@ void OrderEntryWS::operator()(Trace<json::WSAPITrades> const &event, json::WSAPI
               .side = side,
               .position_effect = {},
               .margin_mode = {},
+              .quantity_type = {},
               .create_time_utc = item.time,
               .update_time_utc = item.time,
               .external_account = {},

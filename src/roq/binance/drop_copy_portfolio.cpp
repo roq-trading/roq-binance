@@ -345,6 +345,7 @@ void DropCopyPortfolio::operator()(Trace<json::ExecutionReport> const &event) {
         .side = json::Map{execution_report.side},
         .position_effect = {},
         .margin_mode = MarginMode::PORTFOLIO,
+        .quantity_type = {},
         .create_time_utc = execution_report.transaction_time,
         .update_time_utc = execution_report.transaction_time,
         .external_account = {},
