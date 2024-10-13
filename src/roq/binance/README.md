@@ -1,3 +1,78 @@
+# ReferenceData
+
+## SPOT
+
+```
+{
+  symbol="BTCUSDT",
+  status=TRADING,
+  base_asset="BTC",
+  base_asset_precision=8,
+  quote_asset="USDT",
+  quote_precision=8,
+  quote_asset_precision=8,
+  base_commission_precision=8,
+  quote_commission_precision=8,
+  iceberg_allowed=true,
+  oco_allowed=true,
+  quote_order_qty_market_allowed=true,
+  is_spot_trading_allowed=true,
+  is_margin_trading_allowed=true,
+  filters="[{
+    "filterType":"PRICE_FILTER",
+    "minPrice":"0.01000000",
+    "maxPrice":"1000000.00000000",
+    "tickSize":"0.01000000"
+  }, {
+    "filterType":"LOT_SIZE",
+    "minQty":"0.00001000",
+    "maxQty":"9000.00000000",
+    "stepSize":"0.00001000"
+  }, {
+    "filterType":"ICEBERG_PARTS",
+    "limit":10
+  }, {
+    "filterType":"MARKET_LOT_SIZE",
+    "minQty":"0.00000000",
+    "maxQty":"120.04122288",
+    "stepSize":"0.00000000"
+  }, {
+    "filterType":"TRAILING_DELTA",
+    "minTrailingAboveDelta":10,
+    "maxTrailingAboveDelta":2000,
+    "minTrailingBelowDelta":10,
+    "maxTrailingBelowDelta":2000
+  }, {
+    "filterType":"PERCENT_PRICE_BY_SIDE",
+    "bidMultiplierUp":"5",
+    "bidMultiplierDown":"0.2",
+    "askMultiplierUp":"5",
+    "askMultiplierDown":"0.2",
+    "avgPriceMins":5
+  }, {
+    "filterType":"NOTIONAL",
+    "minNotional":"5.00000000",
+    "applyMinToMarket":true,
+    "maxNotional":"9000000.00000000",
+    "applyMaxToMarket":false,
+    "avgPriceMins":5
+  }, {
+    "filterType":"MAX_NUM_ORDERS",
+    "maxNumOrders":200
+  }, {
+    "filterType":"MAX_NUM_ALGO_ORDERS",
+    "maxNumAlgoOrders":5
+  }
+  ]",
+  allow_trailing_stop=true,
+  cancel_replace_allowed=true,
+  default_self_trade_prevention_mode="EXPIRE_MAKER",
+  oto_allowed=true
+}
+```
+
+
+
 There's a limit on # of subscriptions -- seems to be around 1k
 Streams (ws) require lower case symbols -- everywhere else it's uppercase
 
