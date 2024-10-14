@@ -429,6 +429,7 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
         .symbol = item.symbol,
         .description = {},
         .security_type = SecurityType::SPOT,
+        .cfi_code = {},
         .base_currency = item.base_asset,
         .quote_currency = item.quote_asset,
         .settlement_currency = {},
