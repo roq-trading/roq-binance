@@ -25,7 +25,9 @@ requirements:
     - roq-api
     - roq-binance-sbe
     - roq-cache
+    - roq-codec
     - roq-core
+    - roq-fix
     - roq-flags
     - roq-io
     - roq-logging
