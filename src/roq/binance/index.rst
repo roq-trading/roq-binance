@@ -9,7 +9,7 @@ roq-binance
 
   .. code-block:: shell
 
-     $ mamba install \
+     $ conda install \
            --channel https://roq-trading.com/conda/stable \
            roq-binance
 
@@ -17,7 +17,7 @@ roq-binance
 
   .. code-block:: shell
 
-     $ mamba install \
+     $ conda install \
            --channel https://roq-trading.com/conda/unstable \
            roq-binance
 
