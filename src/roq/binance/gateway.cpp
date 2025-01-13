@@ -300,6 +300,14 @@ uint16_t Gateway::operator()(Event<CancelAllOrders> const &event, std::string_vi
   return get_order_entry(cancel_all_orders.account, {})(event, request_id);
 }
 
+uint16_t Gateway::operator()(Event<MassQuote> const &) {
+  throw server::oms::NotSupported{"not supported"sv};
+}
+
+uint16_t Gateway::operator()(Event<CancelQuotes> const &) {
+  throw server::oms::NotSupported{"not supported"sv};
+}
+
 void Gateway::operator()(metrics::Writer &writer) {
   dispatch(writer);
 }
