@@ -35,6 +35,7 @@ struct Gateway final : public server::Handler, public Rest::Handler, public Mark
   void operator()(Event<Start> const &) override;
   void operator()(Event<Stop> const &) override;
   void operator()(Event<Timer> const &) override;
+  void operator()(Event<Control> const &) override;
   void operator()(Event<Connected> const &) override;
   void operator()(Event<Disconnected> const &) override;
 
