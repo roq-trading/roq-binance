@@ -2,39 +2,57 @@
 
 #pragma once
 
-#include <tuple>
-
-#include "roq/api.hpp"
-
 #include "roq/binance/json/order_status.hpp"
 #include "roq/binance/json/order_type.hpp"
 #include "roq/binance/json/side.hpp"
 #include "roq/binance/json/symbol_status.hpp"
 #include "roq/binance/json/time_in_force.hpp"
 
+#include "roq/order_status.hpp"
+#include "roq/order_type.hpp"
+#include "roq/side.hpp"
+#include "roq/trading_status.hpp"
+
+#include "roq/map.hpp"
+
 namespace roq {
-namespace binance {
-namespace json {
 
-template <typename... Args>
-struct Map final {
-  explicit Map(Args &&...args) : args_{std::forward<Args>(args)...} {}
-  explicit Map(Args const &...args) : args_{args...} {}
+template <>
+template <>
+std::optional<OrderStatus> Map<binance::json::OrderStatus>::helper() const;
 
-  Map(Map const &) = delete;
+template <>
+template <>
+std::optional<OrderType> Map<binance::json::OrderType>::helper() const;
 
-  template <typename R>
-  operator R();
+template <>
+template <>
+std::optional<Side> Map<binance::json::Side>::helper() const;
 
- private:
-  std::tuple<Args...> const args_;
-};
+template <>
+template <>
+std::optional<TradingStatus> Map<binance::json::SymbolStatus>::helper() const;
 
-template <typename R, typename... Args>
-inline R map(Args &&...args) {
-  return static_cast<R>(Map{std::forward<Args>(args)...});
-}
+template <>
+template <>
+std::optional<TimeInForce> Map<binance::json::TimeInForce>::helper() const;
 
-}  // namespace json
-}  // namespace binance
+// ===
+
+template <>
+template <>
+std::optional<binance::json::OrderStatus> Map<OrderStatus>::helper() const;
+
+template <>
+template <>
+std::optional<binance::json::OrderType> Map<OrderType>::helper() const;
+
+template <>
+template <>
+std::optional<binance::json::Side> Map<Side>::helper() const;
+
+template <>
+template <>
+std::optional<binance::json::TimeInForce> Map<TimeInForce>::helper() const;
+
 }  // namespace roq
