@@ -52,6 +52,7 @@ target_link_libraries(
           roq-api::roq-api
           roq-cache::roq-cache
           roq-core::roq-core
+          roq-codec::roq-codec
           roq-flags::roq-flags
           roq-io::roq-io
           roq-logging::roq-logging
