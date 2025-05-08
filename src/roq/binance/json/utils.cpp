@@ -120,14 +120,17 @@ json::OrderType map_order_type(auto &order) {
     case UNDEFINED:
       break;
     case MARKET:
-      if (!std::isnan(order.stop_price))
+      if (!std::isnan(order.stop_price)) {
         return json::OrderType::STOP_LOSS;
+      }
       return json::OrderType::MARKET;
     case LIMIT:
-      if (order.execution_instructions.has(ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE))
+      if (order.execution_instructions.has(ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE)) {
         return json::OrderType::LIMIT_MAKER;
-      if (!std::isnan(order.stop_price))
+      }
+      if (!std::isnan(order.stop_price)) {
         return json::OrderType::STOP_LOSS_LIMIT;
+      }
       return json::OrderType::LIMIT;
   }
   return map(order.order_type);
@@ -141,8 +144,9 @@ json::TimeInForce map_time_in_force(auto &create_order) {
     case MARKET:
       return {};
     case LIMIT:
-      if (create_order.execution_instructions.has(ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE))
+      if (create_order.execution_instructions.has(ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE)) {
         return {};
+      }
       break;
   }
   return map(create_order.time_in_force);
@@ -194,18 +198,22 @@ std::string_view new_order(
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
   utils::text::Writer writer{buffer_2};
   writer.write("newClientOrderId="sv).write(request_id);
-  if (!std::isnan(create_order.price))
+  if (!std::isnan(create_order.price)) {
     writer.write("&price="sv).write(Decimal{create_order.price, order.price_precision.precision});
+  }
   writer.write("&quantity="sv).write(Decimal{create_order.quantity, order.quantity_precision.precision});
   writer.write("&recvWindow="sv).write(recv_window.count());
-  if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{})
+  if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{}) {
     writer.write("&selfTradePreventionMode="sv).write(create_order_template.self_trade_prevention_mode.as_raw_text());
+  }
   writer.write("&side="sv).write(side.as_raw_text());
-  if (!std::isnan(create_order.stop_price))
+  if (!std::isnan(create_order.stop_price)) {
     writer.write("&stopPrice="sv).write(Decimal{create_order.stop_price, order.price_precision.precision});
+  }
   writer.write("&symbol="sv).write(create_order.symbol);
-  if (time_in_force != json::TimeInForce{})
+  if (time_in_force != json::TimeInForce{}) {
     writer.write("&timeInForce="sv).write(time_in_force.as_raw_text());
+  }
   writer.write("&type="sv).write(type.as_raw_text());
   return writer.finish();
 }
@@ -225,21 +233,26 @@ std::string_view new_order_ws_url(
   buffer.resize(512);
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
   utils::text::Writer writer{buffer_2};
-  if (!std::empty(api_key))
+  if (!std::empty(api_key)) {
     writer.write("apiKey="sv).write(api_key).write("&"sv);
+  }
   writer.write("newClientOrderId="sv).write(request_id);
-  if (!std::isnan(create_order.price))
+  if (!std::isnan(create_order.price)) {
     writer.write("&price="sv).write(Decimal{create_order.price, order.price_precision.precision});
+  }
   writer.write("&quantity="sv).write(Decimal{create_order.quantity, order.quantity_precision.precision});
   writer.write("&recvWindow="sv).write(recv_window.count());
-  if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{})
+  if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{}) {
     writer.write("&selfTradePreventionMode="sv).write(create_order_template.self_trade_prevention_mode.as_raw_text());
+  }
   writer.write("&side="sv).write(side.as_raw_text());
-  if (!std::isnan(create_order.stop_price))
+  if (!std::isnan(create_order.stop_price)) {
     writer.write("&stopPrice="sv).write(Decimal{create_order.stop_price, order.price_precision.precision});
+  }
   writer.write("&symbol="sv).write(create_order.symbol);
-  if (time_in_force != json::TimeInForce{})
+  if (time_in_force != json::TimeInForce{}) {
     writer.write("&timeInForce="sv).write(time_in_force.as_raw_text());
+  }
   writer.write("&timestamp="sv).write(now.count());
   writer.write("&type="sv).write(type.as_raw_text());
   return writer.finish();
@@ -264,18 +277,22 @@ std::string_view new_order_ws_json(
   writer.write("{"sv);
   writer.write(R"("apiKey":")"sv).write(api_key).write(R"(")"sv);
   writer.write(R"(,"newClientOrderId":")"sv).write(request_id).write(R"(")"sv);
-  if (!std::isnan(create_order.price))
+  if (!std::isnan(create_order.price)) {
     writer.write(R"(,"price":")"sv).write(Decimal{create_order.price, order.price_precision.precision}).write(R"(")"sv);
+  }
   writer.write(R"(,"quantity":")"sv).write(Decimal{create_order.quantity, order.quantity_precision.precision}).write(R"(")"sv);
   writer.write(R"(,"recvWindow":)"sv).write(recv_window.count());
-  if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{})
+  if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{}) {
     writer.write(R"(,"selfTradePreventionMode":")"sv).write(create_order_template.self_trade_prevention_mode.as_raw_text()).write(R"(")"sv);
+  }
   writer.write(R"(,"side":")"sv).write(side.as_raw_text()).write(R"(")"sv);
-  if (!std::isnan(create_order.stop_price))
+  if (!std::isnan(create_order.stop_price)) {
     writer.write(R"(,"stopPrice":")"sv).write(Decimal{create_order.stop_price, order.price_precision.precision}).write(R"(")"sv);
+  }
   writer.write(R"(,"symbol":")"sv).write(create_order.symbol).write(R"(")"sv);
-  if (time_in_force != json::TimeInForce{})
+  if (time_in_force != json::TimeInForce{}) {
     writer.write(R"(,"timeInForce":")"sv).write(time_in_force.as_raw_text()).write(R"(")"sv);
+  }
   writer.write(R"(,"timestamp":)"sv).write(now.count());
   writer.write(R"(,"type":")"sv).write(type.as_raw_text()).write(R"(")"sv);
   writer.write(R"(,"signature":")"sv).write(signature).write(R"(")"sv);
@@ -297,10 +314,12 @@ std::string_view cancel_order(
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
   utils::text::Writer writer{buffer_2};
   writer.write("newClientOrderId="sv).write(request_id);
-  if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
+  if (cancel_order_template.cancel_restrictions != CancelRestrictions{}) {
     writer.write("&cancelRestrictions="sv).write(cancel_order_template.cancel_restrictions.as_raw_text());
-  if (!std::empty(order.external_order_id))
+  }
+  if (!std::empty(order.external_order_id)) {
     writer.write("&orderId="sv).write(order.external_order_id);
+  }
   writer.write("&origClientOrderId="sv).write(previous_request_id);
   writer.write("&recvWindow="sv).write(recv_window.count());
   writer.write("&symbol="sv).write(order.symbol);
@@ -321,11 +340,13 @@ std::string_view cancel_order_ws_url(
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
   utils::text::Writer writer{buffer_2};
   writer.write("apiKey="sv).write(api_key);
-  if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
+  if (cancel_order_template.cancel_restrictions != CancelRestrictions{}) {
     writer.write("&cancelRestrictions="sv).write(cancel_order_template.cancel_restrictions.as_raw_text());
+  }
   writer.write("&newClientOrderId="sv).write(request_id);
-  if (!std::empty(order.external_order_id))
+  if (!std::empty(order.external_order_id)) {
     writer.write("&orderId="sv).write(order.external_order_id);
+  }
   writer.write("&origClientOrderId="sv).write(previous_request_id);
   writer.write("&recvWindow="sv).write(recv_window.count());
   writer.write("&symbol="sv).write(order.symbol);
@@ -349,11 +370,13 @@ std::string_view cancel_order_ws_json(
   utils::text::Writer writer{buffer_2};
   writer.write("{"sv);
   writer.write(R"("apiKey":")"sv).write(api_key).write(R"(")"sv);
-  if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
+  if (cancel_order_template.cancel_restrictions != CancelRestrictions{}) {
     writer.write(R"(,"cancelRestrictions":")"sv).write(cancel_order_template.cancel_restrictions.as_raw_text()).write(R"(")"sv);
+  }
   writer.write(R"(,"newClientOrderId":")"sv).write(request_id).write(R"(")"sv);
-  if (!std::empty(order.external_order_id))
+  if (!std::empty(order.external_order_id)) {
     writer.write(R"(,"orderId":)"sv).write(order.external_order_id);  // note! integer
+  }
   writer.write(R"(,"origClientOrderId":")"sv).write(previous_request_id).write(R"(")"sv);
   writer.write(R"(,"recvWindow":)"sv).write(recv_window.count());
   writer.write(R"(,"symbol":")"sv).write(order.symbol).write(R"(")"sv);
@@ -401,25 +424,31 @@ std::string_view cancel_replace_order(
   auto cancel_replace_mode = get_cancel_replace_mode(cancel_order_template, stop_on_failure);
   buffer.clear();
   fmt::format_to(std::back_inserter(buffer), "cancelNewClientOrderId={}&"sv, cancel_request_id);
-  if (!std::empty(cancel_external_order_id))
+  if (!std::empty(cancel_external_order_id)) {
     fmt::format_to(std::back_inserter(buffer), "cancelOrderId={}&"sv, cancel_external_order_id);
+  }
   fmt::format_to(std::back_inserter(buffer), "cancelOrigClientOrderId={}&"sv, cancel_previous_request_id);
   fmt::format_to(std::back_inserter(buffer), "cancelReplaceMode={}&"sv, cancel_replace_mode);
-  if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
+  if (cancel_order_template.cancel_restrictions != CancelRestrictions{}) {
     fmt::format_to(std::back_inserter(buffer), "cancelRestrictions={}&"sv, cancel_order_template.cancel_restrictions.as_raw_text());
+  }
   fmt::format_to(std::back_inserter(buffer), "newClientOrderId={}&"sv, create_request_id);
-  if (!std::isnan(create_order.price))
+  if (!std::isnan(create_order.price)) {
     fmt::format_to(std::back_inserter(buffer), "price={}&"sv, Decimal{create_order.price, order.price_precision.precision});
+  }
   fmt::format_to(std::back_inserter(buffer), "quantity={}&"sv, Decimal{create_order.quantity, order.quantity_precision.precision});
   fmt::format_to(std::back_inserter(buffer), "recvWindow={}&"sv, recv_window.count());
-  if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{})
+  if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{}) {
     fmt::format_to(std::back_inserter(buffer), "selfTradePreventionMode={}&"sv, create_order_template.self_trade_prevention_mode.as_raw_text());
+  }
   fmt::format_to(std::back_inserter(buffer), "side={}&"sv, side.as_raw_text());
-  if (!std::isnan(create_order.stop_price))
+  if (!std::isnan(create_order.stop_price)) {
     fmt::format_to(std::back_inserter(buffer), "stopPrice={}&"sv, Decimal{create_order.stop_price, order.price_precision.precision});
+  }
   fmt::format_to(std::back_inserter(buffer), "symbol={}&"sv, order.symbol);
-  if (time_in_force != json::TimeInForce{})
+  if (time_in_force != json::TimeInForce{}) {
     fmt::format_to(std::back_inserter(buffer), "timeInForce={}&"sv, time_in_force.as_raw_text());
+  }
   fmt::format_to(std::back_inserter(buffer), "type={}"sv, type.as_raw_text());
   std::string_view result{std::data(buffer), std::size(buffer)};
   return result;
@@ -446,25 +475,31 @@ std::string_view cancel_replace_order_ws_url(
   buffer.clear();
   fmt::format_to(std::back_inserter(buffer), "apiKey={}&"sv, api_key);
   fmt::format_to(std::back_inserter(buffer), "cancelNewClientOrderId={}&"sv, cancel_request_id);
-  if (!std::empty(cancel_external_order_id))
+  if (!std::empty(cancel_external_order_id)) {
     fmt::format_to(std::back_inserter(buffer), "cancelOrderId={}&"sv, cancel_external_order_id);
+  }
   fmt::format_to(std::back_inserter(buffer), "cancelOrigClientOrderId={}&"sv, cancel_previous_request_id);
   fmt::format_to(std::back_inserter(buffer), "cancelReplaceMode={}&"sv, cancel_replace_mode);
-  if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
+  if (cancel_order_template.cancel_restrictions != CancelRestrictions{}) {
     fmt::format_to(std::back_inserter(buffer), "cancelRestrictions={}&"sv, cancel_order_template.cancel_restrictions.as_raw_text());
+  }
   fmt::format_to(std::back_inserter(buffer), "newClientOrderId={}&"sv, create_request_id);
-  if (!std::isnan(create_order.price))
+  if (!std::isnan(create_order.price)) {
     fmt::format_to(std::back_inserter(buffer), "price={}&"sv, Decimal{create_order.price, order.price_precision.precision});
+  }
   fmt::format_to(std::back_inserter(buffer), "quantity={}&"sv, Decimal{create_order.quantity, order.quantity_precision.precision});
   fmt::format_to(std::back_inserter(buffer), "recvWindow={}&"sv, recv_window.count());
-  if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{})
+  if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{}) {
     fmt::format_to(std::back_inserter(buffer), "selfTradePreventionMode={}&"sv, create_order_template.self_trade_prevention_mode.as_raw_text());
+  }
   fmt::format_to(std::back_inserter(buffer), "side={}&"sv, side.as_raw_text());
-  if (!std::isnan(create_order.stop_price))
+  if (!std::isnan(create_order.stop_price)) {
     fmt::format_to(std::back_inserter(buffer), "stopPrice={}&"sv, Decimal{create_order.stop_price, order.price_precision.precision});
+  }
   fmt::format_to(std::back_inserter(buffer), "symbol={}&"sv, order.symbol);
-  if (time_in_force != json::TimeInForce{})
+  if (time_in_force != json::TimeInForce{}) {
     fmt::format_to(std::back_inserter(buffer), "timeInForce={}&"sv, time_in_force.as_raw_text());
+  }
   fmt::format_to(std::back_inserter(buffer), "timestamp={}&"sv, now.count());
   fmt::format_to(std::back_inserter(buffer), "type={}"sv, type.as_raw_text());
   std::string_view result{std::data(buffer), std::size(buffer)};
@@ -494,25 +529,31 @@ std::string_view cancel_replace_order_ws_json(
   fmt::format_to(std::back_inserter(buffer), "{{"sv);
   fmt::format_to(std::back_inserter(buffer), R"("apiKey":"{}",)"sv, api_key);
   fmt::format_to(std::back_inserter(buffer), R"("cancelNewClientOrderId":"{}",)"sv, cancel_request_id);
-  if (!std::empty(cancel_external_order_id))
+  if (!std::empty(cancel_external_order_id)) {
     fmt::format_to(std::back_inserter(buffer), R"("cancelOrderId":{},)"sv, cancel_external_order_id);
+  }
   fmt::format_to(std::back_inserter(buffer), R"("cancelOrigClientOrderId":"{}",)"sv, cancel_previous_request_id);
   fmt::format_to(std::back_inserter(buffer), R"("cancelReplaceMode":"{}",)"sv, cancel_replace_mode);
-  if (cancel_order_template.cancel_restrictions != CancelRestrictions{})
+  if (cancel_order_template.cancel_restrictions != CancelRestrictions{}) {
     fmt::format_to(std::back_inserter(buffer), R"("cancelRestrictions":"{}",)"sv, cancel_order_template.cancel_restrictions.as_raw_text());
+  }
   fmt::format_to(std::back_inserter(buffer), R"("newClientOrderId":"{}",)"sv, create_request_id);
-  if (!std::isnan(create_order.price))
+  if (!std::isnan(create_order.price)) {
     fmt::format_to(std::back_inserter(buffer), R"("price":"{}",)"sv, Decimal{create_order.price, order.price_precision.precision});
+  }
   fmt::format_to(std::back_inserter(buffer), R"("quantity":"{}",)"sv, Decimal{create_order.quantity, order.quantity_precision.precision});
   fmt::format_to(std::back_inserter(buffer), R"("recvWindow":{},)"sv, recv_window.count());
-  if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{})
+  if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{}) {
     fmt::format_to(std::back_inserter(buffer), R"("selfTradePreventionMode":"{}",)"sv, create_order_template.self_trade_prevention_mode.as_raw_text());
+  }
   fmt::format_to(std::back_inserter(buffer), R"("side":"{}",)"sv, side.as_raw_text());
-  if (!std::isnan(create_order.stop_price))
+  if (!std::isnan(create_order.stop_price)) {
     fmt::format_to(std::back_inserter(buffer), R"("stopPrice":"{}",)"sv, Decimal{create_order.stop_price, order.price_precision.precision});
+  }
   fmt::format_to(std::back_inserter(buffer), R"("symbol":"{}",)"sv, order.symbol);
-  if (time_in_force != json::TimeInForce{})
+  if (time_in_force != json::TimeInForce{}) {
     fmt::format_to(std::back_inserter(buffer), R"("timeInForce":"{}",)"sv, time_in_force.as_raw_text());
+  }
   fmt::format_to(std::back_inserter(buffer), R"("timestamp":{},)"sv, now.count());
   fmt::format_to(std::back_inserter(buffer), R"("type":"{}",)"sv, type.as_raw_text());
   fmt::format_to(std::back_inserter(buffer), R"("signature":"{}")"sv, signature);

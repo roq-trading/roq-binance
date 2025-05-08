@@ -44,8 +44,9 @@ template <typename R>
 R create_request(auto &config) {
   using result_type = std::remove_cvref<R>::type;
   result_type result;
-  for (auto &[_, account] : config.accounts)
+  for (auto &[_, account] : config.accounts) {
     result.try_emplace(static_cast<std::string_view>(account.name), Request{});
+  }
   return result;
 }
 
@@ -106,8 +107,9 @@ R create_order_entry_portfolio(auto &gateway, auto &context, auto &stream_id, au
   result_type result;
   for (auto &[_, item] : accounts) {
     auto &account = *item;
-    if (account.margin_mode != MarginMode::PORTFOLIO)
+    if (account.margin_mode != MarginMode::PORTFOLIO) {
       continue;
+    }
     auto &request = request_by_account[account.name];
     auto obj = std::make_unique<OrderEntryPortfolio>(gateway, context, ++stream_id, account, shared, request);
     result.try_emplace(account.name, std::move(obj));
@@ -121,8 +123,9 @@ R create_drop_copy_portfolio(auto &accounts) {
   result_type result;
   for (auto &[_, item] : accounts) {
     auto &account = *item;
-    if (account.margin_mode == MarginMode::PORTFOLIO)
+    if (account.margin_mode == MarginMode::PORTFOLIO) {
       result.try_emplace(account.name, nullptr);
+    }
   }
   return result;
 }
@@ -138,8 +141,9 @@ Gateway::Gateway(server::Dispatcher &dispatcher, Settings const &settings, Confi
       drop_copy_{create_drop_copy<decltype(drop_copy_)>(accounts_)}, order_entry_portfolio_{create_order_entry_portfolio<decltype(order_entry_portfolio_)>(
                                                                          *this, context_, stream_id_, accounts_, shared_, requests_portfolio_)},
       drop_copy_portfolio_{create_drop_copy_portfolio<decltype(drop_copy_portfolio_)>(accounts_)} {
-  if (settings.rest.cancel_on_disconnect)
+  if (settings.rest.cancel_on_disconnect) {
     log::fatal("Exchange does *NOT* support cancel on disconnect"sv);
+  }
 }
 
 void Gateway::operator()(Event<Start> const &event) {
@@ -228,10 +232,12 @@ void Gateway::operator()(Trace<FundsUpdate> const &event, bool is_last) {
 void Gateway::operator()(Rest::SymbolsUpdate &symbols_update) {
   auto [size, start_from] = shared_.symbols(symbols_update.symbols);
   ensure_symbol_slices(size);
-  for (auto &item : market_data_1_)
+  for (auto &item : market_data_1_) {
     (*item).subscribe(start_from);
-  for (auto &item : market_data_2_)
+  }
+  for (auto &item : market_data_2_) {
     (*item).subscribe(start_from);
+  }
 }
 
 void Gateway::ensure_symbol_slices(size_t size) {
@@ -245,12 +251,15 @@ void Gateway::ensure_symbol_slices(size_t size) {
     create_event_and_dispatch(*market_data, message_info, start);
     container.emplace_back(std::move(market_data));
   };
-  while (std::size(market_data_1_) < size)
+  while (std::size(market_data_1_) < size) {
     helper(market_data_1_, Priority::PRIMARY);
-  if (!shared_.settings.ws.enable_secondary)
+  }
+  if (!shared_.settings.ws.enable_secondary) {
     return;  // note
-  while (std::size(market_data_2_) < size)
+  }
+  while (std::size(market_data_2_) < size) {
     helper(market_data_2_, Priority::SECONDARY);
+  }
 }
 
 void Gateway::operator()(OrderEntry::ListenKeyUpdate const &listen_key_update) {
@@ -271,8 +280,9 @@ template <typename T>
 void Gateway::create_drop_copy_from_listen_key_update(auto &drop_copy, auto &listen_key_update) {
   auto &account = listen_key_update.account;
   auto iter = drop_copy.find(account);
-  if (iter == std::end(drop_copy))
+  if (iter == std::end(drop_copy)) {
     log::fatal(R"(Unexpected: account="{}")"sv, account);
+  }
   if (!static_cast<bool>((*iter).second)) {
     log::info(R"(Create drop-copy (user-stream) for account="{}", margin_mode={})"sv, account, listen_key_update.margin_mode);
     auto &account_2 = get_account(account);
@@ -311,8 +321,9 @@ uint16_t Gateway::operator()(Event<CancelAllOrders> const &event, std::string_vi
   auto &cancel_all_orders = event.value;
   assert(!std::empty(cancel_all_orders.account));
   auto &account = get_account(cancel_all_orders.account);
-  if (account.margin_mode == MarginMode::PORTFOLIO)
+  if (account.margin_mode == MarginMode::PORTFOLIO) {
     get_order_entry(cancel_all_orders.account, account.margin_mode)(event, request_id);
+  }
   return get_order_entry(cancel_all_orders.account, {})(event, request_id);
 }
 
@@ -332,26 +343,35 @@ template <typename... Args>
 void Gateway::dispatch(Args &&...args) {
   auto helper = [&](auto &target) { target(std::forward<Args>(args)...); };
   helper(rest_);
-  for (auto &[_, item] : order_entry_)
+  for (auto &[_, item] : order_entry_) {
     helper(item);
-  for (auto &[_, item] : drop_copy_)
-    if (static_cast<bool>(item))
+  }
+  for (auto &[_, item] : drop_copy_) {
+    if (static_cast<bool>(item)) {
       helper(*item);
-  for (auto &[_, item] : order_entry_portfolio_)
+    }
+  }
+  for (auto &[_, item] : order_entry_portfolio_) {
     helper(*item);
-  for (auto &[_, item] : drop_copy_portfolio_)
-    if (static_cast<bool>(item))
+  }
+  for (auto &[_, item] : drop_copy_portfolio_) {
+    if (static_cast<bool>(item)) {
       helper(*item);
-  for (auto &item : market_data_1_)
+    }
+  }
+  for (auto &item : market_data_1_) {
     helper(*item);
-  for (auto &item : market_data_2_)
+  }
+  for (auto &item : market_data_2_) {
     helper(*item);
+  }
 }
 
 Account &Gateway::get_account(std::string_view const &account) {
   auto iter = accounts_.find(account);
-  if (iter == std::end(accounts_)) [[unlikely]]
+  if (iter == std::end(accounts_)) [[unlikely]] {
     throw RuntimeError{R"(Unknown account="{}")"sv, account};
+  }
   return *(*iter).second;
 }
 
@@ -362,14 +382,16 @@ Request &Gateway::get_request(std::string_view const &account, MarginMode margin
     case ISOLATED:
     case CROSS: {
       auto iter = requests_.find(account);
-      if (iter == std::end(requests_)) [[unlikely]]
+      if (iter == std::end(requests_)) [[unlikely]] {
         throw RuntimeError{R"(Unknown account="{}")"sv, account};
+      }
       return (*iter).second;
     }
     case PORTFOLIO: {
       auto iter = requests_portfolio_.find(account);
-      if (iter == std::end(requests_portfolio_)) [[unlikely]]
+      if (iter == std::end(requests_portfolio_)) [[unlikely]] {
         throw RuntimeError{R"(Unknown account="{}")"sv, account};
+      }
       return (*iter).second;
     }
   }
@@ -383,14 +405,16 @@ OrderEntry &Gateway::get_order_entry(std::string_view const &account, MarginMode
     case ISOLATED:
     case CROSS: {
       auto iter = order_entry_.find(account);
-      if (iter == std::end(order_entry_)) [[unlikely]]
+      if (iter == std::end(order_entry_)) [[unlikely]] {
         throw RuntimeError{R"(Unknown account="{}")"sv, account};
+      }
       return (*iter).second.get_next();
     }
     case PORTFOLIO: {
       auto iter = order_entry_portfolio_.find(account);
-      if (iter == std::end(order_entry_portfolio_)) [[unlikely]]
+      if (iter == std::end(order_entry_portfolio_)) [[unlikely]] {
         throw RuntimeError{R"(Unknown account="{}")"sv, account};
+      }
       return *(*iter).second;
     }
   }
@@ -400,8 +424,9 @@ OrderEntry &Gateway::get_order_entry(std::string_view const &account, MarginMode
 DropCopy &Gateway::get_drop_copy(std::string_view const &account, MarginMode margin_mode) {
   auto helper = [&](auto &drop_copy) -> auto & {
     auto iter = drop_copy.find(account);
-    if (iter == std::end(drop_copy)) [[unlikely]]
+    if (iter == std::end(drop_copy)) [[unlikely]] {
       throw RuntimeError{R"(Unknown account="{}")"sv, account};
+    }
     return *(*iter).second;
   };
   switch (margin_mode) {
@@ -417,15 +442,18 @@ DropCopy &Gateway::get_drop_copy(std::string_view const &account, MarginMode mar
 }
 
 Gateway::OrderEntryRR::OrderEntryRR(std::vector<std::unique_ptr<OrderEntry>> &&order_entry) : order_entry_{std::move(order_entry)} {
-  for (auto &item : order_entry_)
-    if (item.get() == nullptr)
+  for (auto &item : order_entry_) {
+    if (item.get() == nullptr) {
       log::fatal("HERE"sv);
+    }
+  }
 }
 
 template <typename... Args>
 void Gateway::OrderEntryRR::operator()(Args &&...args) {
-  for (auto &item : order_entry_)
+  for (auto &item : order_entry_) {
     (*item)(std::forward<Args>(args)...);
+  }
 }
 
 OrderEntry &Gateway::OrderEntryRR::get_next() {
@@ -433,8 +461,9 @@ OrderEntry &Gateway::OrderEntryRR::get_next() {
   for (size_t offset = 0; offset < length; ++offset) {
     auto index = (index_ + offset) % length;
     auto &order_entry = *(order_entry_[index]);
-    if (!order_entry.ready())
+    if (!order_entry.ready()) {
       continue;
+    }
     index_ = (index + 1) % length;
     return order_entry;
   }

@@ -45,8 +45,9 @@ std::string_view Crypto::create_query(std::span<std::byte> const &buffer, std::c
   mac_.clear();
   auto tmp = static_cast<std::string_view>(writer).substr(1);
   mac_.update(tmp);
-  if (!std::empty(body))
+  if (!std::empty(body)) {
     mac_.update(body);
+  }
   auto digest = mac_.final(digest_);
   writer.write("&signature="sv).write(utils::codec::Hex{digest});
   return writer.finish();

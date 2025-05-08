@@ -46,8 +46,9 @@ json::CreateOrderTemplate const &Shared::get_create_order_template(std::string_v
     return empty;
   }
   auto iter = create_order_templates.find(name);
-  if (iter != std::end(create_order_templates))
+  if (iter != std::end(create_order_templates)) {
     return (*iter).second;
+  }
   throw server::oms::Rejected{Origin::GATEWAY, Error::INVALID_REQUEST_TEMPLATE, "create_order_template"sv};
 }
 
@@ -57,8 +58,9 @@ json::CancelOrderTemplate const &Shared::get_cancel_order_template(std::string_v
     return empty;
   }
   auto iter = cancel_order_templates.find(name);
-  if (iter != std::end(cancel_order_templates))
+  if (iter != std::end(cancel_order_templates)) {
     return (*iter).second;
+  }
   throw server::oms::Rejected{Origin::GATEWAY, Error::INVALID_REQUEST_TEMPLATE, "cancel_order_template"sv};
 }
 

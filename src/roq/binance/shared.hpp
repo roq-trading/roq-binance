@@ -76,15 +76,17 @@ struct Shared final {
     market::mbp::Sequencer sequencer;
 
     bool tob_update(int64_t update_id) {
-      if (update_id < tob_last_update_id)
+      if (update_id < tob_last_update_id) {
         return false;
+      }
       tob_last_update_id = update_id;
       return true;
     }
 
     bool mbp_update(int64_t update_id) {
-      if (update_id < mbp_last_update_id)
+      if (update_id < mbp_last_update_id) {
         return false;
+      }
       mbp_last_update_id = update_id;
       return true;
     }

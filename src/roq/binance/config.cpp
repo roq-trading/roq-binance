@@ -70,28 +70,33 @@ Account const &Config::get_master_account() const {
 
 std::string const &Config::get_api_key(Account const &account) const {
   auto iter = accounts.find(static_cast<std::string_view>(account));
-  if (iter == std::end(accounts))
+  if (iter == std::end(accounts)) {
     log::fatal(R"(Unknown account="{}")"sv, account);
+  }
   return (*iter).second.login;
 }
 
 std::string const &Config::get_secret(Account const &account) const {
   auto iter = accounts.find(static_cast<std::string_view>(account));
-  if (iter == std::end(accounts))
+  if (iter == std::end(accounts)) {
     log::fatal(R"(Unknown account="{}")"sv, account);
+  }
   return (*iter).second.secret;
 }
 
 void Config::dispatch(server::config::Handler &handler) const {
   handler(exchange_);
   handler(symbols);
-  for (auto &iter : accounts)
+  for (auto &iter : accounts) {
     handler(iter.second);
-  for (auto &user : users)
+  }
+  for (auto &user : users) {
     handler(user);
+  }
   handler(gateway_settings_);
-  for (auto &iter : rate_limits)
+  for (auto &iter : rate_limits) {
     handler(iter.second);
+  }
 }
 
 void Config::operator()(server::config::Symbols &&symbols) {
@@ -99,8 +104,9 @@ void Config::operator()(server::config::Symbols &&symbols) {
 }
 
 void Config::operator()(server::config::Account &&account) {
-  if (account.master)
+  if (account.master) {
     master_account_ = account.name;
+  }
   accounts.emplace(account.name, std::move(account));
 }
 
@@ -122,8 +128,9 @@ void Config::operator()(server::config::RequestTemplate request_template, std::s
         if (key.compare("self_trade_prevention_mode"sv) == 0) {
           auto value = *v.template value<std::string_view>();
           create_order_template.self_trade_prevention_mode = value;
-          if (create_order_template.self_trade_prevention_mode == json::SelfTradePreventionMode::UNKNOWN__)
+          if (create_order_template.self_trade_prevention_mode == json::SelfTradePreventionMode::UNKNOWN__) {
             log::fatal(R"(Unknown: value="{}")"sv, value);
+          }
         } else {
           log::fatal(R"(Unexpected: key="{}")"sv, key);
         }
@@ -141,13 +148,15 @@ void Config::operator()(server::config::RequestTemplate request_template, std::s
         if (key.compare("cancel_restrictions"sv) == 0) {
           auto value = *v.template value<std::string_view>();
           cancel_order_template.cancel_restrictions = value;
-          if (cancel_order_template.cancel_restrictions == json::CancelRestrictions::UNKNOWN__)
+          if (cancel_order_template.cancel_restrictions == json::CancelRestrictions::UNKNOWN__) {
             log::fatal(R"(Unknown: value="{}")"sv, value);
+          }
         } else if (key.compare("cancel_replace_mode"sv) == 0) {
           auto value = *v.template value<std::string_view>();
           cancel_order_template.cancel_replace_mode = value;
-          if (cancel_order_template.cancel_replace_mode == json::CancelReplaceMode::UNKNOWN__)
+          if (cancel_order_template.cancel_replace_mode == json::CancelReplaceMode::UNKNOWN__) {
             log::fatal(R"(Unknown: value="{}")"sv, value);
+          }
         } else {
           log::fatal(R"(Unexpected: key="{}")"sv, key);
         }

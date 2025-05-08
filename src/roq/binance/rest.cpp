@@ -132,8 +132,9 @@ void Rest::operator()(Event<Stop> const &) {
 void Rest::operator()(Event<Timer> const &event) {
   auto now = event.value.now;
   (*connection_).refresh(now);
-  if (ready())
+  if (ready()) {
     check_request_queue(now);
+  }
 }
 
 void Rest::operator()(metrics::Writer &writer) {
@@ -164,8 +165,9 @@ void Rest::operator()(Trace<web::rest::Client::Disconnected> const &) {
   ++counter_.disconnect;
   ready_ = false;
   (*this)(ConnectionStatus::DISCONNECTED);
-  if (!download_.downloading())
+  if (!download_.downloading()) {
     download_.reset();
+  }
 }
 
 void Rest::operator()(Trace<web::rest::Client::Latency> const &event) {
@@ -205,8 +207,9 @@ void Rest::operator()(Trace<web::rest::Client::Header> const &event) {
 
 void Rest::operator()(Trace<web::rest::Client::MessageEnd> const &event) {
   auto &trace_info = event.trace_info;
-  if (std::empty(shared_.rate_limits))
+  if (std::empty(shared_.rate_limits)) {
     return;
+  }
   auto rate_limits_update = RateLimitsUpdate{
       .stream_id = stream_id_,
       .account = {},
@@ -296,8 +299,9 @@ void Rest::get_exchange_info_ack(Trace<web::rest::Response> const &event, uint32
     };
     auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
       log::warn(R"(error={}, text="{}")"sv, error, text);
-      if (download_.downloading())
+      if (download_.downloading()) {
         download_.retry(STATE);
+      }
     };
     process_response(event, handle_success, handle_error);
   });
@@ -462,8 +466,9 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
       continue;
     }
     auto symbol = normalized_symbol(item.symbol);
-    if (all_symbols_.emplace(symbol).second)  // only include new
+    if (all_symbols_.emplace(symbol).second) {  // only include new
       symbols.emplace_back(symbol);
+    }
     ++counter;
     auto market_status = MarketStatus{
         .stream_id = stream_id_,
@@ -541,10 +546,12 @@ void Rest::operator()(Trace<json::Depth> const &event, std::string_view const &s
     };
     result.emplace_back(std::move(mbp_update));
   };
-  for (auto &item : depth.bids)
+  for (auto &item : depth.bids) {
     emplace_back(mbp.bids, item);
-  for (auto &item : depth.asks)
+  }
+  for (auto &item : depth.asks) {
     emplace_back(mbp.asks, item);
+  }
   auto &instrument = shared_.get_instrument(symbol);
   auto &sequencer = instrument.sequencer;
   try {
@@ -615,8 +622,9 @@ void Rest::process_response(web::rest::Response const &response, SuccessHandler 
           case I_AM_A_TEAPOT:        // 418
           case TOO_MANY_REQUESTS: {  // 429
             auto retry_after = get_retry_after(response);
-            if (retry_after.count())
+            if (retry_after.count()) {
               (*connection_).suspend(retry_after);
+            }
             auto text = fmt::format("{}"sv, status);
             error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, text);
             break;
@@ -648,8 +656,9 @@ void Rest::process_response(web::rest::Response const &response, SuccessHandler 
 }
 
 void Rest::test(web::http::Status status) {
-  if (status != web::http::Status::FORBIDDEN) [[likely]]
+  if (status != web::http::Status::FORBIDDEN) [[likely]] {
     return;
+  }
   waf_limit_violation();
 }
 

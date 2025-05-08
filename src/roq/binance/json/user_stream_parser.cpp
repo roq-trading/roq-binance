@@ -23,11 +23,13 @@ bool UserStreamParser::dispatch(
   core::json::Parser parser{data};
   auto root = parser.root();
   for (auto [key, value] : std::get<core::json::Object>(root)) {
-    if (key.compare("e"sv) != 0)
+    if (key.compare("e"sv) != 0) {
       continue;
+    }
     EventType event_type{value};
-    if (try_dispatch(handler, data, buffer, event_type, trace_info))
+    if (try_dispatch(handler, data, buffer, event_type, trace_info)) {
       return true;
+    }
     break;
   }
   return false;
@@ -38,11 +40,13 @@ bool UserStreamParser::dispatch_papi(
   core::json::Parser parser{message};
   auto root = parser.root();
   for (auto [key, value] : std::get<core::json::Object>(root)) {
-    if (key.compare("e"sv) != 0)
+    if (key.compare("e"sv) != 0) {
       continue;
+    }
     EventType event_type{value};
-    if (try_dispatch(handler, message, buffer, event_type, trace_info))
+    if (try_dispatch(handler, message, buffer, event_type, trace_info)) {
       return true;
+    }
     break;
   }
   return false;

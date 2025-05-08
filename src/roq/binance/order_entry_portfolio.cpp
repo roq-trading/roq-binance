@@ -89,8 +89,9 @@ struct create_metrics final : public utils::metrics::Factory {
 
 auto get_download_trades_lookback(auto const &settings, auto download_trades_is_first) {
   if (download_trades_is_first) {
-    if (settings.download.trades_lookback_on_restart.count())
+    if (settings.download.trades_lookback_on_restart.count()) {
       return settings.download.trades_lookback_on_restart;
+    }
   }
   return settings.download.trades_lookback;
 }
@@ -253,8 +254,9 @@ void OrderEntryPortfolio::operator()(Trace<web::rest::Client::Disconnected> cons
   ++counter_.disconnect;
   ready_ = false;
   (*this)(ConnectionStatus::DISCONNECTED);
-  if (!download_.downloading())
+  if (!download_.downloading()) {
     download_.reset();
+  }
   download_account_ = false;
   download_orders_ = false;
   download_trades_ = false;
@@ -363,8 +365,9 @@ void OrderEntryPortfolio::get_listen_key_ack(Trace<web::rest::Response> const &e
     };
     auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
       log::warn(R"(error={}, text="{}")"sv, error, text);
-      if (download_.downloading())
+      if (download_.downloading()) {
         download_.retry(STATE);
+      }
     };
     process_response(event, handle_success, handle_error);
   });
@@ -517,8 +520,9 @@ void OrderEntryPortfolio::operator()(Trace<json::OpenOrders> const &event) {
   auto &[trace_info, open_orders] = event;
   for (auto &item : open_orders.data) {
     log::info<2>("item={}"sv, item);
-    if (std::empty(item.client_order_id))
+    if (std::empty(item.client_order_id)) {
       continue;
+    }
     open_orders_symbols_.emplace(item.symbol);
     auto external_order_id = fmt::format("{}"sv, item.order_id);  // alloc
     auto stop_price = utils::compare(item.stop_price, 0.0) == 0 ? NaN : item.stop_price;
@@ -663,10 +667,12 @@ void OrderEntryPortfolio::operator()(Trace<json::Trades> const &event) {
 // ...
 
 void OrderEntryPortfolio::refresh_listen_key(std::chrono::nanoseconds now) {
-  if (!ready_)
+  if (!ready_) {
     return;
-  if (listen_key_refresh_ == listen_key_refresh_.zero() || now < listen_key_refresh_)
+  }
+  if (listen_key_refresh_ == listen_key_refresh_.zero() || now < listen_key_refresh_) {
     return;
+  }
   log::info<1>("Refreshing listen key..."sv);
   listen_key_refresh_ = now + shared_.settings.rest.listen_key_refresh;
   get_listen_key();
@@ -676,8 +682,9 @@ void OrderEntryPortfolio::refresh_listen_key(std::chrono::nanoseconds now) {
 
 void OrderEntryPortfolio::new_order(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
   profile_.new_order([&]() {
-    if (!ready())
+    if (!ready()) {
       throw server::oms::NotReady{"not ready"sv};
+    }
     auto &[message_info, create_order] = event;
     open_orders_symbols_.emplace(create_order.symbol);
     auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
@@ -738,8 +745,9 @@ void OrderEntryPortfolio::operator()(Trace<json::NewOrder> const &event, uint8_t
   auto external_order_id = fmt::format("{}"sv, new_order.order_id);  // alloc
   auto order_status = map(new_order.status).template get<OrderStatus>();
   // LIMIT_MAKER orders do not return any order state + we only end up here if we receive HTTP status OK
-  if (order_status == OrderStatus{})
+  if (order_status == OrderStatus{}) {
     order_status = OrderStatus::WORKING;
+  }
   auto remaining_quantity = new_order.orig_qty - new_order.executed_qty;
   auto average_traded_price = utils::is_zero(new_order.executed_qty) ? NaN : (new_order.cummulative_quote_qty / new_order.executed_qty);
   auto last_traded_quantity = double{0.0};  // note! could also use new_order.executed_qty
@@ -749,8 +757,9 @@ void OrderEntryPortfolio::operator()(Trace<json::NewOrder> const &event, uint8_t
     tmp += item.price * item.qty;
   }
   auto last_traded_price = NaN;  // note! could also use average_traded_price
-  if (utils::is_greater(last_traded_quantity, 0.0))
+  if (utils::is_greater(last_traded_quantity, 0.0)) {
     last_traded_price = tmp / last_traded_quantity;
+  }
   auto response = server::oms::Response{
       .request_type = RequestType::CREATE_ORDER,
       .origin = Origin::EXCHANGE,
@@ -804,8 +813,9 @@ void OrderEntryPortfolio::operator()(Trace<json::NewOrder> const &event, uint8_t
 void OrderEntryPortfolio::cancel_order(
     Event<CancelOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
   profile_.cancel_order([&]() {
-    if (!ready())
+    if (!ready()) {
       throw server::oms::NotReady{"not ready"sv};
+    }
     auto &[message_info, cancel_order] = event;
     auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
@@ -915,8 +925,9 @@ void OrderEntryPortfolio::operator()(Trace<json::CancelOrder> const &event, uint
 
 void OrderEntryPortfolio::cancel_all_open_orders(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
   profile_.cancel_all_open_orders([&]() {
-    if (!ready()) [[unlikely]]
+    if (!ready()) [[unlikely]] {
       throw server::oms::NotReady{"not ready"sv};
+    }
     auto &cancel_all_orders = event.value;
     auto send_ack = [&](auto &symbol) {
       auto cancel_all_orders_ack = CancelAllOrdersAck{
@@ -943,8 +954,9 @@ void OrderEntryPortfolio::cancel_all_open_orders(Event<CancelAllOrders> const &e
     };
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     for (auto &symbol : open_orders_symbols_) {
-      if (!std::empty(cancel_all_orders.symbol) && symbol != cancel_all_orders.symbol)
+      if (!std::empty(cancel_all_orders.symbol) && symbol != cancel_all_orders.symbol) {
         continue;
+      }
       auto body = json::cancel_all_open_orders(encode_buffer_, symbol, recv_window);
       auto now = clock::get_realtime<std::chrono::milliseconds>();
       auto query = account_.create_query(now, body);
@@ -1018,8 +1030,9 @@ void OrderEntryPortfolio::operator()(Trace<json::CancelAllOpenOrders> const &eve
   auto &[trace_info, cancel_all_open_orders] = event;
   log::info<2>("cancel_all_open_orders={}"sv, cancel_all_open_orders);
   for (auto &order : cancel_all_open_orders.data) {
-    if (std::empty(order.client_order_id))
+    if (std::empty(order.client_order_id)) {
       continue;
+    }
     auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
     auto order_update = server::oms::OrderUpdate{
         .account = account_.name,
@@ -1079,8 +1092,9 @@ void OrderEntryPortfolio::process_response(web::rest::Response const &response, 
           case I_AM_A_TEAPOT:        // 418
           case TOO_MANY_REQUESTS: {  // 429
             auto retry_after = get_retry_after(response);
-            if (retry_after.count())
+            if (retry_after.count()) {
               (*connection_).suspend(retry_after);
+            }
             auto text = fmt::format("{}"sv, status);  // alloc
             error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, text);
             break;

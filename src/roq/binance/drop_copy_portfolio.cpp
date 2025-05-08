@@ -230,8 +230,9 @@ void DropCopyPortfolio::parse(std::string_view const &message) {
     auto log_message = [&]() { log::warn(R"(message="{}")"sv, message); };
     try {
       TraceInfo trace_info;
-      if (!json::UserStreamParser::dispatch_papi(*this, message, decode_buffer_, trace_info))
+      if (!json::UserStreamParser::dispatch_papi(*this, message, decode_buffer_, trace_info)) {
         log_message();
+      }
     } catch (...) {
       log_message();
       utils::exceptions::Unhandled::terminate();
@@ -324,8 +325,9 @@ void DropCopyPortfolio::operator()(Trace<json::ExecutionReport> const &event) {
       log::warn("*** EXTERNAL ORDER ***"sv);
       log::warn("execution_report={}"sv, execution_report);
     }
-    if (execution_report.current_execution_type != json::ExecutionType::TRADE)
+    if (execution_report.current_execution_type != json::ExecutionType::TRADE) {
       return;
+    }
     auto fill = Fill{
         .external_trade_id = {},
         .quantity = execution_report.last_executed_quantity,
@@ -375,8 +377,9 @@ void DropCopyPortfolio::request_account() {
 }
 
 void DropCopyPortfolio::check_response_account() {
-  if (download_.state() != DropCopyState::ACCOUNT)
+  if (download_.state() != DropCopyState::ACCOUNT) {
     return;
+  }
   if (request_.request_account < request_.respond_account) {
     log::info("Account download has completed!"sv);
     download_.check(DropCopyState::ACCOUNT);
@@ -389,8 +392,9 @@ void DropCopyPortfolio::request_orders() {
 }
 
 void DropCopyPortfolio::check_response_orders() {
-  if (download_.state() != DropCopyState::ORDERS)
+  if (download_.state() != DropCopyState::ORDERS) {
     return;
+  }
   if (request_.request_orders < request_.respond_orders) {
     log::info("Order download has completed!"sv);
     download_.check(DropCopyState::ORDERS);
@@ -403,8 +407,9 @@ void DropCopyPortfolio::request_trades() {
 }
 
 void DropCopyPortfolio::check_response_trades() {
-  if (download_.state() != DropCopyState::TRADES)
+  if (download_.state() != DropCopyState::TRADES) {
     return;
+  }
   if (request_.request_trades < request_.respond_trades) {
     log::info("Trade download has completed!"sv);
     download_.check(DropCopyState::TRADES);

@@ -145,8 +145,9 @@ void MarketData::operator()(Event<Stop> const &) {
 void MarketData::operator()(Event<Timer> const &event) {
   auto now = event.value.now;
   (*connection_).refresh(now);
-  if ((*connection_).ready())
+  if ((*connection_).ready()) {
     check_subscribe_queue(now);
+  }
 }
 
 void MarketData::operator()(metrics::Writer &writer) {
@@ -170,8 +171,9 @@ void MarketData::operator()(metrics::Writer &writer) {
 }
 
 void MarketData::subscribe(size_t start_from) {
-  if (ready())
+  if (ready()) {
     subscribe(shared_.symbols.get_slice(index_, start_from));
+  }
 }
 
 void MarketData::operator()(web::socket::Client::Connected const &) {
@@ -234,13 +236,15 @@ void MarketData::operator()(ConnectionStatus status) {
 }
 
 void MarketData::subscribe(std::span<Symbol const> const &symbols) {
-  if (std::empty(symbols))
+  if (std::empty(symbols)) {
     return;
+  }
   if (priority_ == Priority::PRIMARY) {
-    if (shared_.settings.ws.subscribe_trade_details)
+    if (shared_.settings.ws.subscribe_trade_details) {
       subscribe(symbols, "trade"sv);
-    else
+    } else {
       subscribe(symbols, "aggTrade"sv);
+    }
     subscribe(symbols, "miniTicker"sv);
   }
   subscribe(symbols, "bookTicker"sv);
@@ -270,8 +274,9 @@ void MarketData::parse(std::string_view const &message) {
     auto log_message = [&]() { log::warn(R"(message="{}")"sv, message); };
     try {
       TraceInfo trace_info;
-      if (!json::MarketStreamParser::dispatch(*this, message, decode_buffer_, trace_info))
+      if (!json::MarketStreamParser::dispatch(*this, message, decode_buffer_, trace_info)) {
         log_message();
+      }
     } catch (...) {
       log_message();
       utils::exceptions::Unhandled::terminate();
@@ -396,8 +401,9 @@ void MarketData::operator()(Trace<json::BookTicker> const &event) {
     log::info<3>("book_ticker={}"sv, book_ticker);
     (*connection_).touch(trace_info.source_receive_time);
     auto &instrument = shared_.get_instrument(book_ticker.symbol);
-    if (!instrument.tob_update(book_ticker.order_book_update_id))
+    if (!instrument.tob_update(book_ticker.order_book_update_id)) {
       return;
+    }
     auto top_of_book = TopOfBook{
         .stream_id = stream_id_,
         .exchange = shared_.settings.exchange,
@@ -432,8 +438,9 @@ void MarketData::operator()(Trace<json::DepthUpdate> const &event) {
     auto last_sequence = depth_update.final_update_id;
     auto previous_sequence = first_sequence - 1;
     auto &instrument = shared_.get_instrument(symbol);
-    if (!instrument.mbp_update(depth_update.final_update_id))
+    if (!instrument.mbp_update(depth_update.final_update_id)) {
       return;
+    }
     auto &sequencer = instrument.sequencer;
     auto &mbp = shared_.get_mbp();
     auto emplace_back = [](auto &result, auto &value) {
@@ -447,10 +454,12 @@ void MarketData::operator()(Trace<json::DepthUpdate> const &event) {
       };
       result.emplace_back(std::move(mbp_update));
     };
-    for (auto &item : depth_update.bids)
+    for (auto &item : depth_update.bids) {
       emplace_back(mbp.bids, item);
-    for (auto &item : depth_update.asks)
+    }
+    for (auto &item : depth_update.asks) {
       emplace_back(mbp.asks, item);
+    }
     try {
       auto create_update = [&](auto &bids, auto &asks, auto update_type, auto exchange_sequence) -> MarketByPriceUpdate {
         return {

@@ -29,8 +29,9 @@ std::string_view WSAPIRequest::encode(std::vector<char> &buffer, WSAPIRequest co
 }
 
 WSAPIRequest WSAPIRequest::decode(std::string_view const &buffer) {
-  if (std::size(buffer) != 36)
+  if (std::size(buffer) != 36) {
     throw RuntimeError{"Unexpected: len(buffer)={}"sv, std::size(buffer)};
+  }
   std::array<std::byte, 27> data;  // note! need 1 extra
   utils::codec::Base64::decode(data, std::span{std::data(buffer), std::size(buffer)}, true, false);
   WSAPIRequest result;
