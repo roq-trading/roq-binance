@@ -220,7 +220,7 @@ uint16_t OrderEntryWS::operator()(Event<CreateOrder> const &event, server::oms::
     order_place(event, order, request_id);
   } else {
     // cancel + replace
-    typename std::remove_cvref<decltype(tmp)>::type tmp2;
+    typename std::remove_cvref_t<decltype(tmp)> tmp2;
     tmp.swap(tmp2);
     // XXX do we get error on cancel if we can't send?
     order_cancel_replace(*tmp2, event, order, request_id);

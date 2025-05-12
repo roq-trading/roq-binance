@@ -221,7 +221,7 @@ uint16_t OrderEntryREST::operator()(Event<CreateOrder> const &event, server::oms
     new_order(event, order, request_id);
   } else {
     // cancel + replace
-    typename std::remove_cvref<decltype(tmp)>::type tmp2;
+    typename std::remove_cvref_t<decltype(tmp)> tmp2;
     tmp.swap(tmp2);
     // XXX HANS do we get error on cancel if we can't send?
     cancel_replace_order(*tmp2, event, order, request_id);

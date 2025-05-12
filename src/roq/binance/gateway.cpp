@@ -31,7 +31,7 @@ namespace binance {
 namespace {
 template <typename R>
 R create_accounts(auto &config) {
-  using result_type = std::remove_cvref<R>::type;
+  using result_type = std::remove_cvref_t<R>;
   result_type result;
   for (auto &[_, account] : config.accounts) {
     auto obj = std::make_unique<Account>(config, account.name, account.margin_mode);
@@ -42,7 +42,7 @@ R create_accounts(auto &config) {
 
 template <typename R>
 R create_request(auto &config) {
-  using result_type = std::remove_cvref<R>::type;
+  using result_type = std::remove_cvref_t<R>;
   result_type result;
   for (auto &[_, account] : config.accounts) {
     result.try_emplace(static_cast<std::string_view>(account.name), Request{});
@@ -52,7 +52,7 @@ R create_request(auto &config) {
 
 template <typename R>
 R create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared, auto &request_by_account) {
-  using result_type = std::remove_cvref<R>::type;
+  using result_type = std::remove_cvref_t<R>;
   result_type result;
   for (auto &[_, item] : accounts) {
     auto &account = *item;
@@ -92,7 +92,7 @@ R create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &accoun
 
 template <typename R>
 R create_drop_copy(auto &accounts) {
-  using result_type = std::remove_cvref<R>::type;
+  using result_type = std::remove_cvref_t<R>;
   result_type result;
   for (auto &[_, item] : accounts) {
     auto &account = *item;
@@ -103,7 +103,7 @@ R create_drop_copy(auto &accounts) {
 
 template <typename R>
 R create_order_entry_portfolio(auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared, auto &request_by_account) {
-  using result_type = std::remove_cvref<R>::type;
+  using result_type = std::remove_cvref_t<R>;
   result_type result;
   for (auto &[_, item] : accounts) {
     auto &account = *item;
@@ -119,7 +119,7 @@ R create_order_entry_portfolio(auto &gateway, auto &context, auto &stream_id, au
 
 template <typename R>
 R create_drop_copy_portfolio(auto &accounts) {
-  using result_type = std::remove_cvref<R>::type;
+  using result_type = std::remove_cvref_t<R>;
   result_type result;
   for (auto &[_, item] : accounts) {
     auto &account = *item;
