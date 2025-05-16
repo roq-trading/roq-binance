@@ -22,18 +22,16 @@ struct Account final {
 
   Account(Account const &) = delete;
 
-  inline std::string_view get_key() const { return crypto_.get_key(); }
+  std::string_view get_key() const { return crypto_.get_key(); }
 
-  inline std::string_view create_query(std::chrono::milliseconds now, std::string_view const &body) {
-    return crypto_.create_query(query_encode_buffer_, now, body);
-  }
-  inline std::string_view create_query(std::chrono::milliseconds now) { return create_query(now, {}); }
+  std::string_view create_query(std::chrono::milliseconds now, std::string_view const &body) { return crypto_.create_query(query_encode_buffer_, now, body); }
+  std::string_view create_query(std::chrono::milliseconds now) { return create_query(now, {}); }
 
-  inline std::string_view create_headers() const { return crypto_.create_headers(); }
+  std::string_view create_headers() const { return crypto_.create_headers(); }
 
-  inline std::string_view create_ws_api_signature(std::string_view const &body) { return crypto_.create_ws_api_signature(query_encode_buffer_, body); }
+  std::string_view create_ws_api_signature(std::string_view const &body) { return crypto_.create_ws_api_signature(query_encode_buffer_, body); }
 
-  inline std::string create_query_2(std::chrono::milliseconds now, std::string_view const &body) { return crypto_.create_query_2(now, body); }
+  std::string create_query_2(std::chrono::milliseconds now, std::string_view const &body) { return crypto_.create_query_2(now, body); }
 
   std::string const name;
   MarginMode const margin_mode;

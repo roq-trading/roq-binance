@@ -341,7 +341,7 @@ void Gateway::operator()(metrics::Writer &writer) {
 
 template <typename... Args>
 void Gateway::dispatch(Args &&...args) {
-  auto helper = [&](auto &target) { target(std::forward<Args>(args)...); };
+  auto helper = [&](auto &target) { target(args...); };
   helper(rest_);
   for (auto &[_, item] : order_entry_) {
     helper(item);
@@ -443,7 +443,7 @@ DropCopy &Gateway::get_drop_copy(std::string_view const &account, MarginMode mar
 
 Gateway::OrderEntryRR::OrderEntryRR(std::vector<std::unique_ptr<OrderEntry>> &&order_entry) : order_entry_{std::move(order_entry)} {
   for (auto &item : order_entry_) {
-    if (item.get() == nullptr) {
+    if (item == nullptr) {
       log::fatal("HERE"sv);
     }
   }
@@ -452,7 +452,7 @@ Gateway::OrderEntryRR::OrderEntryRR(std::vector<std::unique_ptr<OrderEntry>> &&o
 template <typename... Args>
 void Gateway::OrderEntryRR::operator()(Args &&...args) {
   for (auto &item : order_entry_) {
-    (*item)(std::forward<Args>(args)...);
+    (*item)(args...);
   }
 }
 
