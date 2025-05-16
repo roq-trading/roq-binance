@@ -60,8 +60,8 @@ bool UserStreamParser::try_dispatch(
     TraceInfo const &trace_info) {
   switch (event_type) {
     using enum EventType::type_t;
-    case UNDEFINED__:
-    case UNKNOWN__:
+    case _UNDEFINED:
+    case _UNKNOWN:
     case AGG_TRADE:
     case TRADE:
     case _24HR_MINI_TICKER:

@@ -99,6 +99,10 @@
     },
     {
       "name": "preventedQuantity"
+    },
+    {
+      "name": "isIsolated",
+      "type": "std/bool"
     }
   ]
 }

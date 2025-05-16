@@ -128,7 +128,7 @@ void Config::operator()(server::config::RequestTemplate request_template, std::s
         if (key.compare("self_trade_prevention_mode"sv) == 0) {
           auto value = *v.template value<std::string_view>();
           create_order_template.self_trade_prevention_mode = value;
-          if (create_order_template.self_trade_prevention_mode == json::SelfTradePreventionMode::UNKNOWN__) {
+          if (create_order_template.self_trade_prevention_mode == json::SelfTradePreventionMode::_UNKNOWN) {
             log::fatal(R"(Unknown: value="{}")"sv, value);
           }
         } else {
@@ -148,13 +148,13 @@ void Config::operator()(server::config::RequestTemplate request_template, std::s
         if (key.compare("cancel_restrictions"sv) == 0) {
           auto value = *v.template value<std::string_view>();
           cancel_order_template.cancel_restrictions = value;
-          if (cancel_order_template.cancel_restrictions == json::CancelRestrictions::UNKNOWN__) {
+          if (cancel_order_template.cancel_restrictions == json::CancelRestrictions::_UNKNOWN) {
             log::fatal(R"(Unknown: value="{}")"sv, value);
           }
         } else if (key.compare("cancel_replace_mode"sv) == 0) {
           auto value = *v.template value<std::string_view>();
           cancel_order_template.cancel_replace_mode = value;
-          if (cancel_order_template.cancel_replace_mode == json::CancelReplaceMode::UNKNOWN__) {
+          if (cancel_order_template.cancel_replace_mode == json::CancelReplaceMode::_UNKNOWN) {
             log::fatal(R"(Unknown: value="{}")"sv, value);
           }
         } else {
