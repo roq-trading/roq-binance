@@ -712,9 +712,22 @@ void OrderEntryREST::new_order(Event<CreateOrder> const &event, server::oms::Ord
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = account_.create_query(now, body);
     auto headers = account_.create_headers();
+    auto path = [&]() -> std::string_view {
+      switch (create_order.margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          return shared_.api.simple.order;
+        case ISOLATED:
+        case CROSS:
+          return shared_.api.simple.margin_order;
+        case PORTFOLIO:
+          throw server::oms::Rejected{Origin::GATEWAY, Error::INVALID_MARGIN_MODE, "internal error"sv};
+      };
+      log::fatal("Unexpected"sv);
+    }();
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
-        .path = shared_.api.simple.order,
+        .path = path,
         .query = query,
         .accept = web::http::Accept::APPLICATION_JSON,
         .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
@@ -1252,9 +1265,22 @@ void OrderEntryREST::cancel_order(
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = account_.create_query(now, body);
     auto headers = account_.create_headers();
+    auto path = [&]() -> std::string_view {
+      switch (order.margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          return shared_.api.simple.order;
+        case ISOLATED:
+        case CROSS:
+          return shared_.api.simple.margin_order;
+        case PORTFOLIO:
+          throw server::oms::Rejected{Origin::GATEWAY, Error::INVALID_MARGIN_MODE, "internal error"sv};
+      };
+      log::fatal("Unexpected"sv);
+    }();
     auto request = web::rest::Request{
         .method = web::http::Method::DELETE,
-        .path = shared_.api.simple.order,
+        .path = path,
         .query = query,
         .accept = web::http::Accept::APPLICATION_JSON,
         .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,

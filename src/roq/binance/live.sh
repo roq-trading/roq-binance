@@ -30,10 +30,10 @@ $PREFIX ./roq-binance \
   --service_listen_address "$HOME/run/metrics/${NAME}.sock" \
   --ws_uri "$WS_URI" \
   --rest_uri "$REST_URI" \
-  --ws_api=true \
+  --ws_api=false \
   --ws_pm_uri "$WS_PM_URI" \
   --rest_pm_uri "$REST_PM_URI" \
   --download_symbols="BTCUSDT,ETHUSDT" \
-  --download_trades_lookback=60s \
+  --download_trades_lookback=0s \
   --cache_all_reference_data=true \
   $@

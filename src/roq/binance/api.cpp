@@ -24,6 +24,9 @@ API API::create(Settings const &) {
           .my_trades = "/api/v3/myTrades"sv,
           .order = "/api/v3/order"sv,
           .order_cancel_replace = "/api/v3/order/cancelReplace"sv,
+          // margin
+          .margin_open_orders = "/sapi/v1/margin/openOrders"sv,
+          .margin_order = "/sapi/v1/margin/order"sv,
       },
       .papi{
           .ping_path = "/papi/v1/time"sv,

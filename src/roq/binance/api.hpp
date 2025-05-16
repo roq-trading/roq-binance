@@ -21,6 +21,9 @@ struct API final {
     std::string_view my_trades;
     std::string_view order;
     std::string_view order_cancel_replace;
+    // margin
+    std::string_view margin_open_orders;
+    std::string_view margin_order;
   } simple;
   struct {
     std::string_view ping_path;

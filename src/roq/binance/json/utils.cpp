@@ -197,6 +197,9 @@ std::string_view new_order(
   buffer.resize(512);
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
   utils::text::Writer writer{buffer_2};
+  if (create_order.margin_mode == MarginMode::ISOLATED) {
+    writer.write("isIsolated=TRUE&"sv);
+  }
   writer.write("newClientOrderId="sv).write(request_id);
   if (!std::isnan(create_order.price)) {
     writer.write("&price="sv).write(Decimal{create_order.price, order.price_precision.precision});
@@ -313,6 +316,9 @@ std::string_view cancel_order(
   buffer.resize(512);
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
   utils::text::Writer writer{buffer_2};
+  if (order.margin_mode == MarginMode::ISOLATED) {
+    writer.write("isIsolated=TRUE&"sv);
+  }
   writer.write("newClientOrderId="sv).write(request_id);
   if (cancel_order_template.cancel_restrictions != CancelRestrictions{}) {
     writer.write("&cancelRestrictions="sv).write(cancel_order_template.cancel_restrictions.as_raw_text());

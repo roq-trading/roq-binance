@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Changed
+
+* Support SAPI (#499)
+
 ## 1.0.6 &ndash; 2025-05-16
 
 ## 1.0.5 &ndash; 2025-03-26
