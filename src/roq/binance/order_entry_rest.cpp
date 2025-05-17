@@ -699,7 +699,7 @@ void OrderEntryREST::refresh_listen_key(std::chrono::nanoseconds now) {
   if (!ready_) {
     return;
   }
-  if (listen_key_refresh_ == listen_key_refresh_.zero() || now < listen_key_refresh_) {
+  if (listen_key_refresh_.count() == 0 || now < listen_key_refresh_) {
     return;
   }
   log::info<1>("Refreshing listen key..."sv);
@@ -762,7 +762,7 @@ void OrderEntryREST::new_order_ack(Trace<web::rest::Response> const &event, uint
       Trace event_2{event, new_order};
       (*this)(event_2, user_id, order_id, version);
     };
-    auto handle_error = [&](auto origin, auto status, auto error, auto text) {
+    auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       auto response = server::oms::Response{
           .request_type = RequestType::CREATE_ORDER,
           .origin = origin,
@@ -792,8 +792,8 @@ void OrderEntryREST::operator()(Trace<json::NewOrder> const &event, uint8_t user
   }
   auto remaining_quantity = new_order.orig_qty - new_order.executed_qty;
   auto average_traded_price = utils::is_zero(new_order.executed_qty) ? NaN : (new_order.cummulative_quote_qty / new_order.executed_qty);
-  auto last_traded_quantity = double{0.0};  // note! could also use new_order.executed_qty
-  auto tmp = double{0.0};
+  auto last_traded_quantity = 0.0;  // note! could also use new_order.executed_qty
+  auto tmp = 0.0;
   for (auto &item : new_order.fills) {
     last_traded_quantity += item.qty;
     tmp += item.price * item.qty;
@@ -958,8 +958,7 @@ void OrderEntryREST::cancel_replace_order_ack(
     uint64_t create_order_id,
     uint32_t create_version) {
   profile_.cancel_replace_order_ack([&]() {
-    auto &trace_info = event.trace_info;
-    auto &response = event.value;
+    auto &[trace_info, response] = event;
     try {
       auto [status, category, body] = response.result();
       test(status);
@@ -978,7 +977,7 @@ void OrderEntryREST::cancel_replace_order_ack(
             Trace event{trace_info, cancel_replace_order_error};
             (*this)(event, user_id, cancel_order_id, cancel_version, create_order_id, create_version);
           };
-          dispatch_error_2(response, category, status, parse, [&]([[maybe_unused]] auto status, auto error, auto text) {
+          dispatch_error_2(response, category, status, parse, [&]([[maybe_unused]] auto status, auto error, auto const &text) {
             {  // cancel
               auto response = server::oms::Response{
                   .request_type = RequestType::CANCEL_ORDER,
@@ -1315,7 +1314,7 @@ void OrderEntryREST::cancel_order_ack(Trace<web::rest::Response> const &event, u
       Trace event_2{event, cancel_order};
       (*this)(event_2, user_id, order_id, version);
     };
-    auto handle_error = [&](auto origin, auto status, auto error, auto text) {
+    auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       auto response = server::oms::Response{
           .request_type = RequestType::CANCEL_ORDER,
           .origin = origin,
@@ -1391,7 +1390,7 @@ void OrderEntryREST::cancel_all_open_orders(Event<CancelAllOrders> const &event,
     if (!ready()) [[unlikely]] {
       throw server::oms::NotReady{"not ready"sv};
     }
-    auto &cancel_all_orders = event.value;
+    auto &[message_info, cancel_all_orders] = event;
     auto send_ack = [&](auto &symbol) {
       auto cancel_all_orders_ack = CancelAllOrdersAck{
           .stream_id = stream_id_,
@@ -1411,7 +1410,7 @@ void OrderEntryREST::cancel_all_open_orders(Event<CancelAllOrders> const &event,
           .user = {},
           .strategy_id = cancel_all_orders.strategy_id,
       };
-      TraceInfo trace_info{event};
+      TraceInfo trace_info{message_info};
       Trace event_2{trace_info, cancel_all_orders_ack};
       shared_(event_2);
     };
@@ -1434,8 +1433,8 @@ void OrderEntryREST::cancel_all_open_orders(Event<CancelAllOrders> const &event,
           .body = body,
           .quality_of_service = io::QualityOfService::IMMEDIATE,
       };
-      auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
-        TraceInfo trace_info;
+      auto callback = [&]([[maybe_unused]] auto &request_id, auto &response) {
+        TraceInfo trace_info{event};
         Trace event{trace_info, response};
         cancel_all_open_orders_ack(event, request_id);
       };
