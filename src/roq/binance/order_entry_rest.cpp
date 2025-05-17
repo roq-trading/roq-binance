@@ -171,7 +171,7 @@ void OrderEntryREST::operator()(Event<Timer> const &event) {
     }
     if (!downloading() && request_.respond_orders < request_.request_orders) {
       log::info("Download orders..."sv);
-      get_open_orders();
+      get_open_orders(false);
       download_orders_ = true;
     }
     if (!downloading() && request_.respond_trades < request_.request_trades) {
@@ -482,8 +482,9 @@ void OrderEntryREST::operator()(Trace<json::Account> const &event) {
 
 // orders
 
-void OrderEntryREST::get_open_orders() {
+void OrderEntryREST::get_open_orders(bool is_margin) {
   profile_.open_orders([&]() {
+    auto path = is_margin ? shared_.api.simple.margin_open_orders : shared_.api.simple.open_orders;
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = account_.create_query(now);
     auto headers = account_.create_headers();
@@ -498,7 +499,7 @@ void OrderEntryREST::get_open_orders() {
     std::string body{std::data(encode_buffer_), std::size(encode_buffer_)};
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
-        .path = shared_.api.simple.open_orders,
+        .path = path,
         .query = query,
         .accept = web::http::Accept::APPLICATION_JSON,
         .content_type = {},
@@ -506,24 +507,30 @@ void OrderEntryREST::get_open_orders() {
         .body = {},
         .quality_of_service = {},
     };
-    auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
+    auto callback = [this](auto &request_id, auto &response) {
+      auto is_margin = request_id == "margin_open_orders"sv;
       TraceInfo trace_info;
       Trace event{trace_info, response};
-      get_open_orders_ack(event);
+      get_open_orders_ack(event, is_margin);
     };
-    (*connection_)("open_orders"sv, request, callback);
+    auto request_id = is_margin ? "margin_open_orders"sv : "open_orders"sv;
+    (*connection_)(request_id, request, callback);
   });
 }
 
-void OrderEntryREST::get_open_orders_ack(Trace<web::rest::Response> const &event) {
+void OrderEntryREST::get_open_orders_ack(Trace<web::rest::Response> const &event, bool is_margin) {
   profile_.open_orders_ack([&]() {
     auto handle_success = [&](auto &body) {
       log::debug("body={}"sv, body);
       json::OpenOrders open_orders{body, decode_buffer_};
       Trace event_2{event, open_orders};
-      (*this)(event_2, false);
-      request_.respond_orders = clock::get_system();  // completion
-      download_orders_ = false;
+      (*this)(event_2, is_margin);
+      if (is_margin) {
+        request_.respond_orders = clock::get_system();  // completion
+        download_orders_ = false;
+      } else {
+        get_open_orders(true);
+      }
     };
     auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
       log::warn(R"(error={}, text="{}")"sv, error, text);
