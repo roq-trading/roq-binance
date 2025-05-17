@@ -25,7 +25,7 @@ bool MarketStreamParser::dispatch(
     MarketStreamParser::Handler &handler, std::string_view const &message, std::span<std::byte> const &buffer, TraceInfo const &trace_info) {
   int64_t id = -1;
   std::string symbol;  // allocating because we need uppercase
-  auto stream = Stream::_UNDEFINED;
+  auto stream = Stream::UNDEFINED_INTERNAL;
   bool dispatched = false;
   for (int i = 0; i < 2 && !dispatched; ++i) {
     core::json::Parser parser{message};
@@ -34,10 +34,10 @@ bool MarketStreamParser::dispatch(
       auto field = Field{key};
       switch (field) {
         using enum Field::type_t;
-        case _UNDEFINED:
+        case UNDEFINED_INTERNAL:
           log::fatal("Unexpected"sv);
           break;
-        case _UNKNOWN:
+        case UNKNOWN_INTERNAL:
 #ifndef NDEBUG
           log::fatal(R"(Unknown key="{}")"sv, key);
 #endif
@@ -81,9 +81,9 @@ bool MarketStreamParser::dispatch(
         case DATA:
           switch (stream) {
             using enum Stream::type_t;
-            case _UNDEFINED:
+            case UNDEFINED_INTERNAL:
               break;  // wait
-            case _UNKNOWN:
+            case UNKNOWN_INTERNAL:
 #ifndef NDEBUG
               log::fatal("Unexpected (unknown stream)"sv);
 #endif

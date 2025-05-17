@@ -87,7 +87,7 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
 
   void get_open_orders();
   void get_open_orders_ack(Trace<web::rest::Response> const &);
-  void operator()(Trace<json::OpenOrders> const &);
+  void operator()(Trace<json::OpenOrders> const &, bool is_margin);
 
   void get_trades();
   void get_trades_ack(Trace<web::rest::Response> const &);

@@ -41,8 +41,8 @@ bool WSAPIParser2::dispatch(WSAPIParser2::Handler &handler, std::string_view con
   auto request = get_request(message);
   switch (request.type) {
     using enum WSAPIType::type_t;
-    case _UNDEFINED:
-    case _UNKNOWN:
+    case UNDEFINED_INTERNAL:
+    case UNKNOWN_INTERNAL:
       break;
     case LISTEN_KEY_CREATE:
       return dispatch_helper<WSAPIListenKey>(handler, message, buffer, trace_info, request);

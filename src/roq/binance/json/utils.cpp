@@ -398,9 +398,9 @@ namespace {
 auto get_cancel_replace_mode(auto &cancel_order_template, bool stop_on_failure) {
   switch (cancel_order_template.cancel_replace_mode) {
     using enum CancelReplaceMode::type_t;
-    case _UNDEFINED:
+    case UNDEFINED_INTERNAL:
       break;
-    case _UNKNOWN:
+    case UNKNOWN_INTERNAL:
       log::fatal("Unexpected"sv);
       break;
     case STOP_ON_FAILURE:

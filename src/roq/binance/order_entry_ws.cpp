@@ -1189,8 +1189,8 @@ void OrderEntryWS::update_rate_limits(auto &event) {
     auto type = [&]() -> RateLimitType {
       switch (item.rate_limit_type) {
         using enum json::RateLimitType::type_t;
-        case _UNDEFINED:
-        case _UNKNOWN:
+        case UNDEFINED_INTERNAL:
+        case UNKNOWN_INTERNAL:
           break;
         case ORDERS:
           return RateLimitType::CREATE_ORDER;
@@ -1207,8 +1207,8 @@ void OrderEntryWS::update_rate_limits(auto &event) {
     auto period = [&]() -> std::chrono::seconds {
       switch (item.interval) {
         using enum json::Interval::type_t;
-        case _UNDEFINED:
-        case _UNKNOWN:
+        case UNDEFINED_INTERNAL:
+        case UNKNOWN_INTERNAL:
           break;
         case SECOND:
           return item.interval_num * 1s;
@@ -1291,10 +1291,10 @@ void OrderEntryWS::update_helper(
   };
   switch (cancel_replace_order.cancel_result) {
     using enum json::SuccessOrFailure::type_t;
-    case _UNDEFINED:
+    case UNDEFINED_INTERNAL:
       dispatch_cancel_error();
       break;
-    case _UNKNOWN:
+    case UNKNOWN_INTERNAL:
       log::warn("Unexpected"sv);
       break;
     case SUCCESS: {
@@ -1376,10 +1376,10 @@ void OrderEntryWS::update_helper(
   };
   switch (cancel_replace_order.new_order_result) {
     using enum json::SuccessOrFailure::type_t;
-    case _UNDEFINED:
+    case UNDEFINED_INTERNAL:
       dispatch_create_error();
       break;
-    case _UNKNOWN:
+    case UNKNOWN_INTERNAL:
       log::warn("Unexpected"sv);
       break;
     case SUCCESS: {

@@ -518,9 +518,10 @@ void OrderEntryREST::get_open_orders() {
 void OrderEntryREST::get_open_orders_ack(Trace<web::rest::Response> const &event) {
   profile_.open_orders_ack([&]() {
     auto handle_success = [&](auto &body) {
+      log::debug("body={}"sv, body);
       json::OpenOrders open_orders{body, decode_buffer_};
       Trace event_2{event, open_orders};
-      (*this)(event_2);
+      (*this)(event_2, false);
       request_.respond_orders = clock::get_system();  // completion
       download_orders_ = false;
     };
@@ -533,7 +534,10 @@ void OrderEntryREST::get_open_orders_ack(Trace<web::rest::Response> const &event
   });
 }
 
-void OrderEntryREST::operator()(Trace<json::OpenOrders> const &event) {
+// margin:
+// body=[{"symbol":"BTCUSDT","orderId":43109407062,"clientOrderId":"web_26025fbb1554418bb655a2a39e54824c","price":"110000","origQty":"0.0001","executedQty":"0","cummulativeQuoteQty":"0","status":"NEW","timeInForce":"GTC","type":"LIMIT","side":"SELL","stopPrice":"0","icebergQty":"0","time":1747403389646,"updateTime":1747403389646,"isWorking":true,"isIsolated":false,"selfTradePreventionMode":"EXPIRE_MAKER"}]
+
+void OrderEntryREST::operator()(Trace<json::OpenOrders> const &event, bool is_margin) {
   auto &[trace_info, open_orders] = event;
   for (auto &order : open_orders.data) {
     log::info<2>("order={}"sv, order);
@@ -541,6 +545,12 @@ void OrderEntryREST::operator()(Trace<json::OpenOrders> const &event) {
       continue;
     }
     open_orders_symbols_.emplace(order.symbol);
+    auto margin_mode = [&]() -> MarginMode {
+      if (is_margin) {
+        return order.is_isolated ? MarginMode::ISOLATED : MarginMode::CROSS;
+      }
+      return {};
+    }();
     auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
     auto order_update = server::oms::OrderUpdate{
         .account = account_.name,
@@ -548,7 +558,7 @@ void OrderEntryREST::operator()(Trace<json::OpenOrders> const &event) {
         .symbol = order.symbol,
         .side = map(order.side),
         .position_effect = {},
-        .margin_mode = {},
+        .margin_mode = margin_mode,
         .max_show_quantity = NaN,
         .order_type = map(order.type),
         .time_in_force = map(order.time_in_force),
@@ -1068,8 +1078,8 @@ void OrderEntryREST::operator()(
       create_version);
   switch (cancel_replace_order.cancel_result) {
     using enum json::SuccessOrFailure::type_t;
-    case _UNDEFINED:
-    case _UNKNOWN:
+    case UNDEFINED_INTERNAL:
+    case UNKNOWN_INTERNAL:
       log::warn("Unexpected"sv);
       break;
     case SUCCESS: {
@@ -1148,8 +1158,8 @@ void OrderEntryREST::operator()(
   }
   switch (cancel_replace_order.new_order_result) {
     using enum json::SuccessOrFailure::type_t;
-    case _UNDEFINED:
-    case _UNKNOWN:
+    case UNDEFINED_INTERNAL:
+    case UNKNOWN_INTERNAL:
       log::warn("Unexpected"sv);
       break;
     case SUCCESS: {

@@ -314,14 +314,14 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
     log::info<2>("item={}"sv, item);
     switch (item.rate_limit_type) {
       using enum json::RateLimitType::type_t;
-      case _UNDEFINED:
-      case _UNKNOWN:
+      case UNDEFINED_INTERNAL:
+      case UNKNOWN_INTERNAL:
         break;
       case ORDERS:
         switch (item.interval) {
           using enum json::Interval::type_t;
-          case _UNDEFINED:
-          case _UNKNOWN:
+          case UNDEFINED_INTERNAL:
+          case UNKNOWN_INTERNAL:
             break;
           case SECOND:
             if (item.interval_num == 10) {
@@ -347,8 +347,8 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
         break;
         switch (item.interval) {
           using enum json::Interval::type_t;
-          case _UNDEFINED:
-          case _UNKNOWN:
+          case UNDEFINED_INTERNAL:
+          case UNKNOWN_INTERNAL:
             break;
           case SECOND:
             log::warn("Unknown interval: rate_limit={}"sv, item);
@@ -386,9 +386,9 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
     for (auto &filter : filters.data) {
       switch (filter.filter_type) {
         using enum json::FilterType::type_t;
-        case _UNDEFINED:
+        case UNDEFINED_INTERNAL:
           break;
-        case _UNKNOWN:
+        case UNKNOWN_INTERNAL:
           break;
         case PRICE_FILTER:
           tick_size = filter.tick_size;
