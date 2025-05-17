@@ -106,7 +106,6 @@ struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handl
 
   void operator()(Trace<server::oms::OrderUpdate> const &, std::string_view const &client_order_id);
 
- private:
   OrderEntry::Handler &handler_;
   // config
   uint16_t const stream_id_;

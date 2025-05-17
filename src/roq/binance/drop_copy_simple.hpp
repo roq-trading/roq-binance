@@ -67,7 +67,6 @@ struct DropCopySimple final : public DropCopy, public web::socket::Client::Handl
   void request_trades();
   void check_response_trades();
 
- private:
   DropCopy::Handler &handler_;
   // config
   uint16_t const stream_id_;

@@ -78,8 +78,8 @@ TEST_CASE("json_depth_update_simple", "[json_depth_update]") {
   std::vector<std::byte> buffer(65536);
   struct Handler : public json::MarketStreamParser::Handler {
     size_t counter = 0;
-    void operator()(Trace<json::Error> const &, [[maybe_unused]] int32_t id) override { FAIL(); }
-    void operator()(Trace<json::Result> const &, [[maybe_unused]] int32_t id) override { FAIL(); }
+    void operator()(Trace<json::Error> const &, [[maybe_unused]] int64_t id) override { FAIL(); }
+    void operator()(Trace<json::Result> const &, [[maybe_unused]] int64_t id) override { FAIL(); }
     void operator()(Trace<json::AggTrade> const &) override { FAIL(); }
     void operator()(Trace<json::Trade> const &) override { FAIL(); }
     void operator()(Trace<json::MiniTicker> const &) override { FAIL(); }

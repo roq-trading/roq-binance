@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <string>
 
 namespace roq {
@@ -9,7 +10,7 @@ namespace binance {
 
 inline auto normalized_symbol(auto const &value) {
   std::string tmp{value};
-  std::transform(std::begin(tmp), std::end(tmp), std::begin(tmp), [](auto c) { return std::tolower(c); });
+  std::ranges::transform(tmp, std::begin(tmp), [](auto item) { return std::tolower(item); });
   return tmp;
 };
 

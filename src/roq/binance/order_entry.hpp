@@ -34,7 +34,7 @@ struct OrderEntry {
 
   OrderEntry(OrderEntry const &) = delete;
 
-  virtual ~OrderEntry() {}
+  virtual ~OrderEntry() = default;
 
   virtual bool ready() const = 0;
 

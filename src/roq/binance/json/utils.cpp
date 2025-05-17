@@ -16,6 +16,8 @@ namespace roq {
 namespace binance {
 namespace json {
 
+// NOLINTBEGIN(readability-magic-numbers)
+
 Error guess_error(int32_t code) {
   switch (code) {
       // https://binance-docs.github.io/apidocs/spot/en/#10xx-general-server-or-network-issues
@@ -112,6 +114,8 @@ Error guess_error(int32_t code) {
   }
   return Error::UNKNOWN;
 }
+
+// NOLINTEND(readability-magic-numbers)
 
 namespace {
 json::OrderType map_order_type(auto &order) {

@@ -97,14 +97,12 @@ struct Shared final {
  private:
   utils::unordered_map<std::string, Instrument> instruments_;
 
- private:
   server::Dispatcher &dispatcher_;
 
  public:
   Settings const &settings;
   API const api;
 
- public:
   core::limit::RateLimiter rate_limiter;
   core::Symbols symbols;
   core::TimerQueue<std::string> depth_request_queue;

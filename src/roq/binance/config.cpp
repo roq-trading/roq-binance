@@ -125,7 +125,7 @@ void Config::operator()(server::config::RequestTemplate request_template, std::s
       json::CreateOrderTemplate create_order_template;
       for (auto &[k, v] : table) {
         auto key = static_cast<std::string_view>(k);
-        if (key.compare("self_trade_prevention_mode"sv) == 0) {
+        if (key == "self_trade_prevention_mode"sv) {
           auto value = *v.template value<std::string_view>();
           create_order_template.self_trade_prevention_mode = value;
           if (create_order_template.self_trade_prevention_mode == json::SelfTradePreventionMode::UNKNOWN_INTERNAL) {
@@ -136,7 +136,7 @@ void Config::operator()(server::config::RequestTemplate request_template, std::s
         }
       }
       log::warn(R"(label="{}", create_order_template={})"sv, label, create_order_template);
-      create_order_templates.try_emplace(label, std::move(create_order_template));
+      create_order_templates.try_emplace(label, create_order_template);
       break;
     }
     case MODIFY_ORDER:
@@ -145,13 +145,13 @@ void Config::operator()(server::config::RequestTemplate request_template, std::s
       json::CancelOrderTemplate cancel_order_template;
       for (auto &[k, v] : table) {
         auto key = static_cast<std::string_view>(k);
-        if (key.compare("cancel_restrictions"sv) == 0) {
+        if (key == "cancel_restrictions"sv) {
           auto value = *v.template value<std::string_view>();
           cancel_order_template.cancel_restrictions = value;
           if (cancel_order_template.cancel_restrictions == json::CancelRestrictions::UNKNOWN_INTERNAL) {
             log::fatal(R"(Unknown: value="{}")"sv, value);
           }
-        } else if (key.compare("cancel_replace_mode"sv) == 0) {
+        } else if (key == "cancel_replace_mode"sv) {
           auto value = *v.template value<std::string_view>();
           cancel_order_template.cancel_replace_mode = value;
           if (cancel_order_template.cancel_replace_mode == json::CancelReplaceMode::UNKNOWN_INTERNAL) {
@@ -162,7 +162,7 @@ void Config::operator()(server::config::RequestTemplate request_template, std::s
         }
       }
       log::warn(R"(label="{}", cancel_order_template={})"sv, label, cancel_order_template);
-      cancel_order_templates.try_emplace(label, std::move(cancel_order_template));
+      cancel_order_templates.try_emplace(label, cancel_order_template);
       break;
     }
   }

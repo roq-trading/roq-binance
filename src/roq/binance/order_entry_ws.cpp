@@ -297,7 +297,7 @@ void OrderEntryWS::user_data_stream_ping(std::chrono::nanoseconds now) {
     if (std::empty(listen_key_)) {
       return;
     }
-    if (listen_key_refresh_ == listen_key_refresh_.zero() || now < listen_key_refresh_) {
+    if (listen_key_refresh_.count() == 0 || now < listen_key_refresh_) {
       return;
     }
     log::info<1>("Refreshing listen key..."sv);
@@ -1007,8 +1007,8 @@ void OrderEntryWS::operator()(Trace<json::WSAPIOrderPlace> const &event, json::W
         }
         auto remaining_quantity = new_order.orig_qty - new_order.executed_qty;
         auto average_traded_price = utils::is_zero(new_order.executed_qty) ? NaN : (new_order.cummulative_quote_qty / new_order.executed_qty);
-        auto last_traded_quantity = double{0.0};  // note! could also use new_order.executed_qty
-        auto tmp = double{0.0};
+        auto last_traded_quantity = 0.0;  // note! could also use new_order.executed_qty
+        auto tmp = 0.0;
         for (auto &item : new_order.fills) {
           last_traded_quantity += item.qty;
           tmp += item.price * item.qty;
@@ -1247,7 +1247,7 @@ void OrderEntryWS::update_rate_limits(auto &event) {
         .limit = item.limit,
         .value = item.count,
     };
-    shared_.rate_limits.emplace_back(std::move(rate_limit));
+    shared_.rate_limits.emplace_back(rate_limit);
   }
   if (!std::empty(shared_.rate_limits)) {
     auto rate_limits_update = RateLimitsUpdate{

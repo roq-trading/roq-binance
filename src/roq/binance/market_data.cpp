@@ -284,14 +284,14 @@ void MarketData::parse(std::string_view const &message) {
   });
 }
 
-void MarketData::operator()(Trace<json::Error> const &event, int32_t id) {
+void MarketData::operator()(Trace<json::Error> const &event, int64_t id) {
   profile_.error([&]() {
     auto &[trace_info, error] = event;
     log::warn("error={}, id={}"sv, error, id);
   });
 }
 
-void MarketData::operator()(Trace<json::Result> const &event, int32_t id) {
+void MarketData::operator()(Trace<json::Result> const &event, int64_t id) {
   profile_.result([&]() {
     auto &[trace_info, result] = event;
     if (std::empty(result.data)) {

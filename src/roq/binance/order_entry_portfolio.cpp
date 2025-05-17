@@ -670,7 +670,7 @@ void OrderEntryPortfolio::refresh_listen_key(std::chrono::nanoseconds now) {
   if (!ready_) {
     return;
   }
-  if (listen_key_refresh_ == listen_key_refresh_.zero() || now < listen_key_refresh_) {
+  if (listen_key_refresh_.count() == 0 || now < listen_key_refresh_) {
     return;
   }
   log::info<1>("Refreshing listen key..."sv);
@@ -720,7 +720,7 @@ void OrderEntryPortfolio::new_order_ack(Trace<web::rest::Response> const &event,
       Trace event_2{event, new_order};
       (*this)(event_2, user_id, order_id, version);
     };
-    auto handle_error = [&](auto origin, auto status, auto error, auto text) {
+    auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       auto response = server::oms::Response{
           .request_type = RequestType::CREATE_ORDER,
           .origin = origin,
@@ -750,8 +750,8 @@ void OrderEntryPortfolio::operator()(Trace<json::NewOrder> const &event, uint8_t
   }
   auto remaining_quantity = new_order.orig_qty - new_order.executed_qty;
   auto average_traded_price = utils::is_zero(new_order.executed_qty) ? NaN : (new_order.cummulative_quote_qty / new_order.executed_qty);
-  auto last_traded_quantity = double{0.0};  // note! could also use new_order.executed_qty
-  auto tmp = double{0.0};
+  auto last_traded_quantity = 0.0;  // note! could also use new_order.executed_qty
+  auto tmp = 0.0;
   for (auto &item : new_order.fills) {
     last_traded_quantity += item.qty;
     tmp += item.price * item.qty;
@@ -850,7 +850,7 @@ void OrderEntryPortfolio::cancel_order_ack(Trace<web::rest::Response> const &eve
       Trace event_2{event, cancel_order};
       (*this)(event_2, user_id, order_id, version);
     };
-    auto handle_error = [&](auto origin, auto status, auto error, auto text) {
+    auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       auto response = server::oms::Response{
           .request_type = RequestType::CANCEL_ORDER,
           .origin = origin,

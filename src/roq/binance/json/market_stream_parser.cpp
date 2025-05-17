@@ -67,14 +67,14 @@ bool MarketStreamParser::dispatch(
           // <symbol>@<stream>[@<freq>]
           auto full_name = std::get<std::string_view>(value);
           auto idx0 = full_name.find('@');  // <symbol>@<stream>
-          if (idx0 == full_name.npos) [[unlikely]] {
+          if (idx0 == std::string_view::npos) [[unlikely]] {
             log::fatal(R"(Unexpected: name="{}")"sv, full_name);
           }
           symbol = std::string_view{std::begin(full_name), idx0};
           // note! convert to uppercase
-          std::transform(std::begin(symbol), std::end(symbol), std::begin(symbol), [](auto c) { return std::toupper(c); });
+          std::ranges::transform(symbol, std::begin(symbol), [](auto item) { return std::toupper(item); });
           auto idx1 = full_name.find('@', idx0 + 1);
-          auto name = std::string_view{std::begin(full_name) + idx0 + 1, (idx1 == full_name.npos) ? std::size(full_name) - idx0 - 1 : idx1 - idx0 - 1};
+          auto name = std::string_view{std::begin(full_name) + idx0 + 1, (idx1 == std::string_view::npos) ? std::size(full_name) - idx0 - 1 : idx1 - idx0 - 1};
           stream = Stream{name};
           break;
         }

@@ -21,7 +21,7 @@ struct DropCopy {
 
   DropCopy(DropCopy const &) = delete;
 
-  virtual ~DropCopy() {}
+  virtual ~DropCopy() = default;
 
   virtual void operator()(Event<Start> const &) = 0;
   virtual void operator()(Event<Stop> const &) = 0;

@@ -21,7 +21,7 @@ auto get_request(auto &message) -> WSAPIRequest {
   core::json::Parser parser{message};
   auto root = parser.root();
   for (auto [key, value] : std::get<core::json::Object>(root)) {
-    if (key.compare("id"sv) == 0) {
+    if (key == "id"sv) {
       auto id = core::json::get<std::string_view>(value);
       return WSAPIRequest::decode(id);
     }
