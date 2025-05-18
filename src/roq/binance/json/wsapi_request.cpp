@@ -14,7 +14,7 @@ namespace json {
 
 // === IMPLEMENTATION ===
 
-// NOLINTBEGIN([readability-container-data-pointer)
+// NOLINTBEGIN(readability-container-data-pointer)
 
 std::string_view WSAPIRequest::encode(std::vector<char> &buffer, WSAPIRequest const &request) {
   std::array<std::byte, 27> data;
@@ -46,7 +46,7 @@ WSAPIRequest WSAPIRequest::decode(std::string_view const &buffer) {
   return result;
 }
 
-// NOLINTEND([readability-container-data-pointer)
+// NOLINTEND(readability-container-data-pointer)
 
 }  // namespace json
 }  // namespace binance
