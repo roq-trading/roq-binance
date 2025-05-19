@@ -541,9 +541,6 @@ void OrderEntryREST::get_open_orders_ack(Trace<web::rest::Response> const &event
   });
 }
 
-// margin:
-// body=[{"symbol":"BTCUSDT","orderId":43109407062,"clientOrderId":"web_26025fbb1554418bb655a2a39e54824c","price":"110000","origQty":"0.0001","executedQty":"0","cummulativeQuoteQty":"0","status":"NEW","timeInForce":"GTC","type":"LIMIT","side":"SELL","stopPrice":"0","icebergQty":"0","time":1747403389646,"updateTime":1747403389646,"isWorking":true,"isIsolated":false,"selfTradePreventionMode":"EXPIRE_MAKER"}]
-
 void OrderEntryREST::operator()(Trace<json::OpenOrders> const &event, bool is_margin) {
   auto &[trace_info, open_orders] = event;
   for (auto &order : open_orders.data) {
@@ -1426,26 +1423,44 @@ void OrderEntryREST::cancel_all_open_orders(Event<CancelAllOrders> const &event,
       if (!std::empty(cancel_all_orders.symbol) && symbol != cancel_all_orders.symbol) {
         continue;
       }
-      auto body = json::cancel_all_open_orders(encode_buffer_, symbol, recv_window);
-      auto now = clock::get_realtime<std::chrono::milliseconds>();
-      auto query = account_.create_query(now, body);
-      auto headers = account_.create_headers();
-      auto request = web::rest::Request{
-          .method = web::http::Method::DELETE,
-          .path = shared_.api.simple.open_orders,
-          .query = query,
-          .accept = web::http::Accept::APPLICATION_JSON,
-          .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
-          .headers = headers,
-          .body = body,
-          .quality_of_service = io::QualityOfService::IMMEDIATE,
+      auto helper = [&](auto margin_mode) {
+        auto path = [&]() -> std::string_view {
+          switch (margin_mode) {
+            using enum MarginMode;
+            case UNDEFINED:
+              return shared_.api.simple.open_orders;
+            case ISOLATED:
+            case CROSS:
+              return shared_.api.simple.open_orders;
+            case PORTFOLIO:
+              throw server::oms::Rejected{Origin::GATEWAY, Error::INVALID_MARGIN_MODE, "internal error"sv};
+          };
+          log::fatal("Unexpected"sv);
+        }();
+        auto body = json::cancel_all_open_orders(encode_buffer_, symbol, margin_mode, recv_window);
+        auto now = clock::get_realtime<std::chrono::milliseconds>();
+        auto query = account_.create_query(now, body);
+        auto headers = account_.create_headers();
+        auto request = web::rest::Request{
+            .method = web::http::Method::DELETE,
+            .path = path,
+            .query = query,
+            .accept = web::http::Accept::APPLICATION_JSON,
+            .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
+            .headers = headers,
+            .body = body,
+            .quality_of_service = io::QualityOfService::IMMEDIATE,
+        };
+        auto callback = [&]([[maybe_unused]] auto &request_id, auto &response) {
+          TraceInfo trace_info{event};
+          Trace event{trace_info, response};
+          cancel_all_open_orders_ack(event, request_id);
+        };
+        (*connection_)(request_id, request, callback);
       };
-      auto callback = [&]([[maybe_unused]] auto &request_id, auto &response) {
-        TraceInfo trace_info{event};
-        Trace event{trace_info, response};
-        cancel_all_open_orders_ack(event, request_id);
-      };
-      (*connection_)(request_id, request, callback);
+      helper(MarginMode::UNDEFINED);
+      helper(MarginMode::ISOLATED);
+      helper(MarginMode::CROSS);
       send_ack(symbol);
     }
   });

@@ -52,7 +52,7 @@ extern std::string_view my_trades(
 
 // cancel-all
 
-extern std::string_view cancel_all_open_orders(std::vector<char> &buffer, std::string_view const &symbol, std::chrono::milliseconds recv_window);
+extern std::string_view cancel_all_open_orders(std::vector<char> &buffer, std::string_view const &symbol, MarginMode, std::chrono::milliseconds recv_window);
 
 // new
 

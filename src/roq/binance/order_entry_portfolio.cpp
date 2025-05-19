@@ -957,7 +957,7 @@ void OrderEntryPortfolio::cancel_all_open_orders(Event<CancelAllOrders> const &e
       if (!std::empty(cancel_all_orders.symbol) && symbol != cancel_all_orders.symbol) {
         continue;
       }
-      auto body = json::cancel_all_open_orders(encode_buffer_, symbol, recv_window);
+      auto body = json::cancel_all_open_orders(encode_buffer_, symbol, MarginMode::PORTFOLIO, recv_window);
       auto now = clock::get_realtime<std::chrono::milliseconds>();
       auto query = account_.create_query(now, body);
       auto headers = account_.create_headers();

@@ -173,8 +173,22 @@ std::string_view my_trades(
 
 // cancel-all
 
-std::string_view cancel_all_open_orders(std::vector<char> &buffer, std::string_view const &symbol, std::chrono::milliseconds recv_window) {
+std::string_view cancel_all_open_orders(
+    std::vector<char> &buffer, std::string_view const &symbol, MarginMode margin_mode, std::chrono::milliseconds recv_window) {
   buffer.clear();
+  switch (margin_mode) {
+    using enum MarginMode;
+    case UNDEFINED:
+      break;
+    case ISOLATED:
+      fmt::format_to(std::back_inserter(buffer), R"(isIsolated=TRUE&)"sv);
+      break;
+    case CROSS:
+      fmt::format_to(std::back_inserter(buffer), R"(isIsolated=FALSE&)"sv);
+      break;
+    case PORTFOLIO:
+      break;
+  }
   fmt::format_to(
       std::back_inserter(buffer),
       R"(symbol={}&)"
