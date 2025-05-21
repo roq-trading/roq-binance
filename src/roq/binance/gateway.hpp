@@ -51,7 +51,7 @@ struct Gateway final : public server::Handler, public Rest::Handler, public Mark
 
   uint16_t operator()(Event<CancelQuotes> const &) override;
 
-  void operator()(metrics::Writer &) override;
+  void operator()(metrics::Writer &) const override;
 
   // many
 
@@ -107,6 +107,9 @@ struct Gateway final : public server::Handler, public Rest::Handler, public Mark
 
     template <typename... Args>
     void operator()(Args &&...);
+
+    template <typename... Args>
+    void operator()(Args &&...) const;
 
     OrderEntry &get_next();
 

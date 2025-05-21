@@ -186,7 +186,7 @@ void OrderEntryPortfolio::operator()(Event<Timer> const &event) {
   }
 }
 
-void OrderEntryPortfolio::operator()(metrics::Writer &writer) {
+void OrderEntryPortfolio::operator()(metrics::Writer &writer) const {
   writer
       // counter
       .write(counter_.disconnect, metrics::Type::COUNTER)

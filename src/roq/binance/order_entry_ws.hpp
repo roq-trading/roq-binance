@@ -44,7 +44,7 @@ struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handl
   void operator()(Event<Stop> const &) override;
   void operator()(Event<Timer> const &) override;
 
-  void operator()(metrics::Writer &) override;
+  void operator()(metrics::Writer &) const override;
 
   void operator()(Event<Disconnected> const &) override;
 

@@ -51,7 +51,7 @@ struct OrderEntryPortfolio final : public OrderEntry, public web::rest::Client::
   void operator()(Event<Stop> const &) override;
   void operator()(Event<Timer> const &) override;
 
-  void operator()(metrics::Writer &) override;
+  void operator()(metrics::Writer &) const override;
 
   void operator()(Event<Disconnected> const &) override;
 

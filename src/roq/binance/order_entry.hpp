@@ -42,7 +42,7 @@ struct OrderEntry {
   virtual void operator()(Event<Stop> const &) = 0;
   virtual void operator()(Event<Timer> const &) = 0;
 
-  virtual void operator()(metrics::Writer &) = 0;
+  virtual void operator()(metrics::Writer &) const = 0;
 
   virtual void operator()(Event<Disconnected> const &) = 0;
 
