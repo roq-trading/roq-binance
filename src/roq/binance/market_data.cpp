@@ -7,6 +7,7 @@
 
 #include "roq/mask.hpp"
 
+#include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
 #include "roq/utils/charconv/to_string.hpp"
@@ -401,7 +402,7 @@ void MarketData::operator()(Trace<json::BookTicker> const &event) {
     log::info<3>("book_ticker={}"sv, book_ticker);
     (*connection_).touch(trace_info.source_receive_time);
     auto &instrument = shared_.get_instrument(book_ticker.symbol);
-    if (!instrument.tob_update(book_ticker.order_book_update_id)) {
+    if (!instrument.tob_update(utils::safe_cast(book_ticker.order_book_update_id))) {
       return;
     }
     auto top_of_book = TopOfBook{
@@ -438,7 +439,7 @@ void MarketData::operator()(Trace<json::DepthUpdate> const &event) {
     auto last_sequence = depth_update.final_update_id;
     auto previous_sequence = first_sequence - 1;
     auto &instrument = shared_.get_instrument(symbol);
-    if (!instrument.mbp_update(depth_update.final_update_id)) {
+    if (!instrument.mbp_update(utils::safe_cast(depth_update.final_update_id))) {
       return;
     }
     auto &sequencer = instrument.sequencer;
