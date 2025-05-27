@@ -78,6 +78,9 @@ struct Gateway final : public server::Handler, public Rest::Handler, public Mark
   template <typename... Args>
   void dispatch(Args &&...);
 
+  template <typename... Args>
+  static void dispatch_helper(auto &self, Args &&...);
+
   Account &get_account(std::string_view const &account);
 
   Request &get_request(std::string_view const &account, MarginMode);
