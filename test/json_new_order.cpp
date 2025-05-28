@@ -128,12 +128,12 @@ TEST_CASE("json_new_order_simple_taker", "[json_new_order]") {
   CHECK(obj.side == json::Side::SELL);
   auto &fills = obj.fills;
   CHECK(std::size(fills) == 1);
-  auto &f0 = fills[0];
-  CHECK(f0.price == 198.5_a);
-  CHECK(f0.qty == 0.1_a);
-  CHECK(f0.commission == 0.0000303_a);
-  CHECK(f0.commission_asset == "BNB"sv);
-  CHECK(f0.trade_id == 207085107);
+  auto &fill_0 = fills[0];
+  CHECK(fill_0.price == 198.5_a);
+  CHECK(fill_0.qty == 0.1_a);
+  CHECK(fill_0.commission == 0.0000303_a);
+  CHECK(fill_0.commission_asset == "BNB"sv);
+  CHECK(fill_0.trade_id == 207085107);
 }
 
 TEST_CASE("json_new_order_create_market", "[json_new_order]") {

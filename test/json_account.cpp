@@ -50,12 +50,12 @@ TEST_CASE("json_account_simple", "[json_account]") {
   CHECK(account.account_type == "MARGIN"sv);
   auto &balances = account.balances;
   REQUIRE(std::size(balances) == 2);
-  auto &b0 = balances[0];
-  CHECK(b0.asset == "BTC"sv);
-  CHECK(b0.free == 0.0_a);
-  CHECK(b0.locked == 0.0_a);
-  auto &b1 = balances[1];
-  CHECK(b1.asset == "LTC"sv);
-  CHECK(b1.free == 0.0_a);
-  CHECK(b1.locked == 0.0_a);
+  auto &balance_0 = balances[0];
+  CHECK(balance_0.asset == "BTC"sv);
+  CHECK(balance_0.free == 0.0_a);
+  CHECK(balance_0.locked == 0.0_a);
+  auto &balance_1 = balances[1];
+  CHECK(balance_1.asset == "LTC"sv);
+  CHECK(balance_1.free == 0.0_a);
+  CHECK(balance_1.locked == 0.0_a);
 }

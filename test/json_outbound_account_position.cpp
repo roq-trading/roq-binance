@@ -41,18 +41,18 @@ TEST_CASE("json_outbound_account_position_simple", "[json_outbound_account_posit
   CHECK(obj.time_of_last_account_update == 1634285425302ms);
   auto &balances = obj.balances;
   REQUIRE(std::size(balances) == 3);
-  auto &b0 = balances[0];
-  CHECK(b0.asset == "BTC"sv);
-  CHECK(b0.free_amount == 0.00004275_a);
-  CHECK(b0.locked_amount == 0.00029725_a);
-  auto &b1 = balances[1];
-  CHECK(b1.asset == "LTC"sv);
-  CHECK(b1.free_amount == 0.0_a);
-  CHECK(b1.locked_amount == 0.0_a);
-  auto &b2 = balances[2];
-  CHECK(b2.asset == "BNB"sv);
-  CHECK(b2.free_amount == 0.00041226_a);
-  CHECK(b2.locked_amount == 0.0_a);
+  auto &balance_0 = balances[0];
+  CHECK(balance_0.asset == "BTC"sv);
+  CHECK(balance_0.free_amount == 0.00004275_a);
+  CHECK(balance_0.locked_amount == 0.00029725_a);
+  auto &balance_1 = balances[1];
+  CHECK(balance_1.asset == "LTC"sv);
+  CHECK(balance_1.free_amount == 0.0_a);
+  CHECK(balance_1.locked_amount == 0.0_a);
+  auto &balance_2 = balances[2];
+  CHECK(balance_2.asset == "BNB"sv);
+  CHECK(balance_2.free_amount == 0.00041226_a);
+  CHECK(balance_2.locked_amount == 0.0_a);
 }
 
 TEST_CASE("json_outbound_account_position_stream", "[json_outbound_account_position]") {
@@ -128,18 +128,18 @@ TEST_CASE("json_outbound_account_position_stream_maker_new", "[json_outbound_acc
       CHECK(obj.time_of_last_account_update == 1634906177360ms);
       auto &balances = obj.balances;
       REQUIRE(std::size(balances) == 3);
-      auto &b0 = balances[0];
-      CHECK(b0.asset == "LTC"sv);
-      CHECK(b0.free_amount == 0.0_a);
-      CHECK(b0.locked_amount == 0.0_a);
-      auto &b1 = balances[1];
-      CHECK(b1.asset == "BNB"sv);
-      CHECK(b1.free_amount == 0.00041226_a);
-      CHECK(b1.locked_amount == 0.0_a);
-      auto &b2 = balances[2];
-      CHECK(b2.asset == "USDT"sv);
-      CHECK(b2.free_amount == 1.31364261_a);
-      CHECK(b2.locked_amount == 19.83_a);
+      auto &balance_0 = balances[0];
+      CHECK(balance_0.asset == "LTC"sv);
+      CHECK(balance_0.free_amount == 0.0_a);
+      CHECK(balance_0.locked_amount == 0.0_a);
+      auto &balance_1 = balances[1];
+      CHECK(balance_1.asset == "BNB"sv);
+      CHECK(balance_1.free_amount == 0.00041226_a);
+      CHECK(balance_1.locked_amount == 0.0_a);
+      auto &balance_2 = balances[2];
+      CHECK(balance_2.asset == "USDT"sv);
+      CHECK(balance_2.free_amount == 1.31364261_a);
+      CHECK(balance_2.locked_amount == 19.83_a);
     }
     void operator()(Trace<json::BalanceUpdate> const &) override { FAIL(); }
     void operator()(Trace<json::ExecutionReport> const &) override { FAIL(); }
@@ -188,18 +188,18 @@ TEST_CASE("json_outbound_account_position_stream_maker_filled", "[json_outbound_
       CHECK(obj.time_of_last_account_update == 1634906229933ms);
       auto &balances = obj.balances;
       REQUIRE(std::size(balances) == 3);
-      auto &b0 = balances[0];
-      CHECK(b0.asset == "LTC"sv);
-      CHECK(b0.free_amount == 0.1_a);
-      CHECK(b0.locked_amount == 0.0_a);
-      auto &b1 = balances[1];
-      CHECK(b1.asset == "BNB"sv);
-      CHECK(b1.free_amount == 0.00038207_a);
-      CHECK(b1.locked_amount == 0.0_a);
-      auto &b2 = balances[2];
-      CHECK(b2.asset == "USDT"sv);
-      CHECK(b2.free_amount == 1.31364261_a);
-      CHECK(b2.locked_amount == 0.0_a);
+      auto &balance_0 = balances[0];
+      CHECK(balance_0.asset == "LTC"sv);
+      CHECK(balance_0.free_amount == 0.1_a);
+      CHECK(balance_0.locked_amount == 0.0_a);
+      auto &balance_1 = balances[1];
+      CHECK(balance_1.asset == "BNB"sv);
+      CHECK(balance_1.free_amount == 0.00038207_a);
+      CHECK(balance_1.locked_amount == 0.0_a);
+      auto &balance_2 = balances[2];
+      CHECK(balance_2.asset == "USDT"sv);
+      CHECK(balance_2.free_amount == 1.31364261_a);
+      CHECK(balance_2.locked_amount == 0.0_a);
     }
     void operator()(Trace<json::BalanceUpdate> const &) override { FAIL(); }
     void operator()(Trace<json::ExecutionReport> const &) override { FAIL(); }

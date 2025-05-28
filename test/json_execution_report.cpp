@@ -63,7 +63,7 @@ TEST_CASE("json_execution_report_simple", "[json_execution_report]") {
   CHECK(obj.stop_price == 0.0_a);
   CHECK(obj.iceberg_quantity == 0.0_a);
   CHECK(obj.order_list_id == -1);
-  CHECK(obj.original_client_order_id == ""sv);
+  CHECK(std::empty(obj.original_client_order_id));
   CHECK(obj.current_execution_type == json::ExecutionType::NEW);
   CHECK(obj.current_order_status == json::OrderStatus::NEW);
   CHECK(obj.order_reject_reason == "NONE"sv);
@@ -72,7 +72,7 @@ TEST_CASE("json_execution_report_simple", "[json_execution_report]") {
   CHECK(obj.cumulative_filled_quantity == 0.0_a);
   CHECK(obj.last_executed_price == 0.0_a);
   CHECK(obj.commission_amount == 0.0_a);
-  CHECK(obj.commission_asset == ""sv);
+  CHECK(std::empty(obj.commission_asset));
   CHECK(obj.transaction_time == 1634211568285ms);
   CHECK(obj.trade_id == -1);
   CHECK(obj.order_on_book == true);
@@ -141,7 +141,7 @@ TEST_CASE("json_execution_report_canceled", "[json_execution_report]") {
   CHECK(obj.cumulative_filled_quantity == 0.0_a);
   CHECK(obj.last_executed_price == 0.0_a);
   CHECK(obj.commission_amount == 0.0_a);
-  CHECK(obj.commission_asset == ""sv);
+  CHECK(std::empty(obj.commission_asset));
   CHECK(obj.transaction_time == 1634215338587ms);
   CHECK(obj.trade_id == -1);
   CHECK(obj.order_on_book == false);
@@ -265,7 +265,7 @@ TEST_CASE("json_execution_report_stream_maker_new", "[json_execution_report]") {
       CHECK(obj.stop_price == 0.0_a);
       CHECK(obj.iceberg_quantity == 0.0_a);
       CHECK(obj.order_list_id == -1);
-      CHECK(obj.original_client_order_id == ""sv);
+      CHECK(std::empty(obj.original_client_order_id));
       CHECK(obj.current_execution_type == json::ExecutionType::NEW);
       CHECK(obj.current_order_status == json::OrderStatus::NEW);
       CHECK(obj.order_reject_reason == "NONE"sv);
@@ -274,7 +274,7 @@ TEST_CASE("json_execution_report_stream_maker_new", "[json_execution_report]") {
       CHECK(obj.cumulative_filled_quantity == 0.0_a);
       CHECK(obj.last_executed_price == 0.0_a);
       CHECK(obj.commission_amount == 0.0_a);
-      CHECK(obj.commission_asset == ""sv);
+      CHECK(std::empty(obj.commission_asset));
       CHECK(obj.transaction_time == 1634906177360ms);
       CHECK(obj.trade_id == -1);
       CHECK(obj.order_on_book == true);
@@ -353,7 +353,7 @@ TEST_CASE("json_execution_report_stream_maker_filled", "[json_execution_report]"
       CHECK(obj.stop_price == 0.0_a);
       CHECK(obj.iceberg_quantity == 0.0_a);
       CHECK(obj.order_list_id == -1);
-      CHECK(obj.original_client_order_id == ""sv);
+      CHECK(std::empty(obj.original_client_order_id));
       CHECK(obj.current_execution_type == json::ExecutionType::TRADE);
       CHECK(obj.current_order_status == json::OrderStatus::FILLED);
       CHECK(obj.order_reject_reason == "NONE"sv);

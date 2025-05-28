@@ -110,40 +110,40 @@ TEST_CASE("json_exchange_info_simple", "[json_exchange_info]") {
   // not parsed: exchange_filters
   auto &symbols = obj.symbols;
   REQUIRE(std::size(obj.symbols) == 2);
-  auto &s0 = symbols[0];
-  CHECK(s0.symbol == "ETHBTC"sv);
-  CHECK(s0.status == json::SymbolStatus::TRADING);
-  CHECK(s0.base_asset == "ETH"sv);
-  CHECK(s0.base_asset_precision == 8);
-  CHECK(s0.quote_asset == "BTC"sv);
-  CHECK(s0.quote_precision == 8);
-  CHECK(s0.quote_asset_precision == 8);
-  CHECK(s0.base_commission_precision == 8);
-  CHECK(s0.quote_commission_precision == 8);
+  auto &symbol_0 = symbols[0];
+  CHECK(symbol_0.symbol == "ETHBTC"sv);
+  CHECK(symbol_0.status == json::SymbolStatus::TRADING);
+  CHECK(symbol_0.base_asset == "ETH"sv);
+  CHECK(symbol_0.base_asset_precision == 8);
+  CHECK(symbol_0.quote_asset == "BTC"sv);
+  CHECK(symbol_0.quote_precision == 8);
+  CHECK(symbol_0.quote_asset_precision == 8);
+  CHECK(symbol_0.base_commission_precision == 8);
+  CHECK(symbol_0.quote_commission_precision == 8);
   // not parsed: order_type
-  CHECK(s0.iceberg_allowed == true);
-  CHECK(s0.oco_allowed == true);
-  CHECK(s0.quote_order_qty_market_allowed == true);
-  CHECK(s0.is_spot_trading_allowed == true);
-  CHECK(s0.is_margin_trading_allowed == true);
+  CHECK(symbol_0.iceberg_allowed == true);
+  CHECK(symbol_0.oco_allowed == true);
+  CHECK(symbol_0.quote_order_qty_market_allowed == true);
+  CHECK(symbol_0.is_spot_trading_allowed == true);
+  CHECK(symbol_0.is_margin_trading_allowed == true);
   // not parsed: filters
   // not parsed: permissions
-  auto &s1 = symbols[1];
-  CHECK(s1.symbol == "LTCBTC"sv);
-  CHECK(s1.status == json::SymbolStatus::TRADING);
-  CHECK(s1.base_asset == "LTC"sv);
-  CHECK(s1.base_asset_precision == 8);
-  CHECK(s1.quote_asset == "BTC"sv);
-  CHECK(s1.quote_precision == 8);
-  CHECK(s1.quote_asset_precision == 8);
-  CHECK(s1.base_commission_precision == 8);
-  CHECK(s1.quote_commission_precision == 8);
+  auto &symbol_1 = symbols[1];
+  CHECK(symbol_1.symbol == "LTCBTC"sv);
+  CHECK(symbol_1.status == json::SymbolStatus::TRADING);
+  CHECK(symbol_1.base_asset == "LTC"sv);
+  CHECK(symbol_1.base_asset_precision == 8);
+  CHECK(symbol_1.quote_asset == "BTC"sv);
+  CHECK(symbol_1.quote_precision == 8);
+  CHECK(symbol_1.quote_asset_precision == 8);
+  CHECK(symbol_1.base_commission_precision == 8);
+  CHECK(symbol_1.quote_commission_precision == 8);
   // not parsed: order_type
-  CHECK(s1.iceberg_allowed == true);
-  CHECK(s1.oco_allowed == true);
-  CHECK(s1.quote_order_qty_market_allowed == true);
-  CHECK(s1.is_spot_trading_allowed == true);
-  CHECK(s1.is_margin_trading_allowed == true);
+  CHECK(symbol_1.iceberg_allowed == true);
+  CHECK(symbol_1.oco_allowed == true);
+  CHECK(symbol_1.quote_order_qty_market_allowed == true);
+  CHECK(symbol_1.is_spot_trading_allowed == true);
+  CHECK(symbol_1.is_margin_trading_allowed == true);
   // not parsed: filters
   // not parsed: permissions
 }
