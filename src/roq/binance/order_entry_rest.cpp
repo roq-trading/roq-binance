@@ -735,7 +735,7 @@ void OrderEntryREST::new_order(Event<CreateOrder> const &event, server::oms::Ord
       };
       log::fatal("Unexpected"sv);
     }();
-    auto side_effect_type = is_margin ? shared_.api.simple.margin_side_effect_type : SideEffectType::UNDEFINED;
+    auto side_effect_type = is_margin ? shared_.api.simple.margin_side_effect_type : json::SideEffectType::UNDEFINED;
     auto body = json::new_order(encode_buffer_, create_order, order, request_id, create_order_template, recv_window, side_effect_type);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = account_.create_query(now, body);

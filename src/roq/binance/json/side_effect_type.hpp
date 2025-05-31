@@ -6,6 +6,7 @@
 
 namespace roq {
 namespace binance {
+namespace json {
 
 enum class SideEffectType {
   UNDEFINED,
@@ -15,5 +16,6 @@ enum class SideEffectType {
   AUTO_BORROW_REPAY,
 };
 
+}  // namespace json
 }  // namespace binance
 }  // namespace roq

@@ -15,10 +15,9 @@
 
 #include "roq/web/http/status.hpp"
 
-#include "roq/binance/side_effect_type.hpp"
-
 #include "roq/binance/json/cancel_order_template.hpp"
 #include "roq/binance/json/create_order_template.hpp"
+#include "roq/binance/json/side_effect_type.hpp"
 
 namespace roq {
 namespace binance {

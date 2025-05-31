@@ -18,9 +18,9 @@ namespace binance {
 namespace {
 auto parse_side_effect_type(auto &side_effect_type) {
   if (std::empty(side_effect_type)) {
-    return SideEffectType::UNDEFINED;
+    return json::SideEffectType::UNDEFINED;
   }
-  return utils::parse_enum<SideEffectType>(side_effect_type);
+  return utils::parse_enum<json::SideEffectType>(side_effect_type);
 }
 }  // namespace
 

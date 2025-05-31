@@ -348,7 +348,7 @@ TEST_CASE("json_new_order_margin", "[json_new_order]") {
   order.price_precision.precision = Precision::_2;
   order.quantity_precision.precision = Precision::_2;
   std::vector<char> buffer;
-  auto body = json::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s, SideEffectType::AUTO_BORROW_REPAY);
+  auto body = json::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s, json::SideEffectType::AUTO_BORROW_REPAY);
   auto expected =
       "newClientOrderId=abc123&"
       "price=123.40&"
