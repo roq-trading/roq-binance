@@ -36,6 +36,7 @@ requirements:
     - roq-logging
     - roq-market
     - roq-oss-benchmark
+    - roq-oss-nameof
     - roq-oss-tomlplusplus
     - roq-oss-unordered_dense
     - roq-server
