@@ -2,16 +2,33 @@
 
 #include "roq/binance/api.hpp"
 
+#include "roq/logging.hpp"
+
 #include "roq/exceptions.hpp"
+
+#include "roq/utils/enum.hpp"
 
 using namespace std::literals;
 
 namespace roq {
 namespace binance {
 
+// === HELPERS ===
+
+namespace {
+auto parse_side_effect_type(auto &side_effect_type) {
+  if (std::empty(side_effect_type)) {
+    return SideEffectType::UNDEFINED;
+  }
+  return utils::parse_enum<SideEffectType>(side_effect_type);
+}
+}  // namespace
+
 // === IMPLEMENTATION ===
 
-API API::create(Settings const &) {
+API API::create(Settings const &settings) {
+  auto side_effect_type = parse_side_effect_type(settings.oms.margin_side_effect_type);
+  log::warn("DEBUG side_effect_type={}"sv, side_effect_type);
   return {
       .market_data{
           .exchange_info = "/api/v3/exchangeInfo"sv,
@@ -27,6 +44,7 @@ API API::create(Settings const &) {
           // margin
           .margin_open_orders = "/sapi/v1/margin/openOrders"sv,
           .margin_order = "/sapi/v1/margin/order"sv,
+          .margin_side_effect_type = side_effect_type,
       },
       .papi{
           .ping_path = "/papi/v1/time"sv,

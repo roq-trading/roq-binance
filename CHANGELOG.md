@@ -6,6 +6,7 @@ All notable changes will be documented in this file.
 
 ### Added
 
+* New flag to control the side-effect for margin trading (#501)
 * Support SAPI (#499)
 
 ## 1.0.6 &ndash; 2025-05-16

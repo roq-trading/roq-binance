@@ -722,23 +722,25 @@ void OrderEntryREST::new_order(Event<CreateOrder> const &event, server::oms::Ord
     open_orders_symbols_.emplace(create_order.symbol);
     auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto body = json::new_order(encode_buffer_, create_order, order, request_id, create_order_template, recv_window);
-    auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = account_.create_query(now, body);
-    auto headers = account_.create_headers();
-    auto path = [&]() -> std::string_view {
+    auto is_margin = [&]() {
       switch (create_order.margin_mode) {
         using enum MarginMode;
         case UNDEFINED:
-          return shared_.api.simple.order;
+          return false;
         case ISOLATED:
         case CROSS:
-          return shared_.api.simple.margin_order;
+          return true;
         case PORTFOLIO:
           throw server::oms::Rejected{Origin::GATEWAY, Error::INVALID_MARGIN_MODE, "internal error"sv};
       };
       log::fatal("Unexpected"sv);
     }();
+    auto side_effect_type = is_margin ? shared_.api.simple.margin_side_effect_type : SideEffectType::UNDEFINED;
+    auto body = json::new_order(encode_buffer_, create_order, order, request_id, create_order_template, recv_window, side_effect_type);
+    auto now = clock::get_realtime<std::chrono::milliseconds>();
+    auto query = account_.create_query(now, body);
+    auto headers = account_.create_headers();
+    auto path = is_margin ? shared_.api.simple.margin_order : shared_.api.simple.order;
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
         .path = path,

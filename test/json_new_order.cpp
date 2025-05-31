@@ -322,3 +322,43 @@ TEST_CASE("json_new_order_create_stop_loss_limit", "[json_new_order]") {
       "type=STOP_LOSS_LIMIT"sv;
   CHECK(body == expected);
 }
+
+TEST_CASE("json_new_order_margin", "[json_new_order]") {
+  auto create_order = CreateOrder{
+      .account = {},
+      .order_id = {},
+      .exchange = {},
+      .symbol = "BTC"sv,
+      .side = Side::BUY,
+      .position_effect = {},
+      .margin_mode = {},
+      .quantity_type = {},
+      .max_show_quantity = NaN,
+      .order_type = OrderType::LIMIT,
+      .time_in_force = TimeInForce::GTC,
+      .execution_instructions = {},
+      .request_template = {},
+      .quantity = 123.4,
+      .price = 123.4,
+      .stop_price = 123.4,
+      .routing_id = {},
+      .strategy_id = {},
+  };
+  server::oms::Order order = {};
+  order.price_precision.precision = Precision::_2;
+  order.quantity_precision.precision = Precision::_2;
+  std::vector<char> buffer;
+  auto body = json::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s, SideEffectType::AUTO_BORROW_REPAY);
+  auto expected =
+      "newClientOrderId=abc123&"
+      "price=123.40&"
+      "quantity=123.40&"
+      "recvWindow=5000&"
+      "side=BUY&"
+      "sideEffectType=AUTO_BORROW_REPAY&"
+      "stopPrice=123.40&"
+      "symbol=BTC&"
+      "timeInForce=GTC&"
+      "type=STOP_LOSS_LIMIT"sv;
+  CHECK(body == expected);
+}

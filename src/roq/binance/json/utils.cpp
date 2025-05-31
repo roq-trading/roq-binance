@@ -208,7 +208,8 @@ std::string_view new_order(
     server::oms::Order const &order,
     std::string_view const &request_id,
     CreateOrderTemplate const &create_order_template,
-    std::chrono::milliseconds recv_window) {
+    std::chrono::milliseconds recv_window,
+    SideEffectType side_effect_type) {
   auto side = map(create_order.side).template get<Side>();
   auto type = map_order_type(create_order);
   auto time_in_force = map_time_in_force(create_order);
@@ -228,6 +229,9 @@ std::string_view new_order(
     writer.write("&selfTradePreventionMode="sv).write(create_order_template.self_trade_prevention_mode.as_raw_text());
   }
   writer.write("&side="sv).write(side.as_raw_text());
+  if (side_effect_type != SideEffectType::UNDEFINED) {
+    writer.write("&sideEffectType="sv).write(magic_enum::enum_name(side_effect_type));
+  }
   if (!std::isnan(create_order.stop_price)) {
     writer.write("&stopPrice="sv).write(Decimal{create_order.stop_price, order.price_precision.precision});
   }

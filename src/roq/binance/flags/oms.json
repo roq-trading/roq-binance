@@ -7,6 +7,11 @@
       "type": "std/bool",
       "default": false,
       "description": "If the cancel request fails, the replacement will not be attempted"
+    },
+    {
+      "name": "margin_side_effect_type",
+      "type": "std/string",
+      "description": "Side effect for margin trading: NO_SIDE_EFFECT, MARGIN_BUY, AUTO_REPAY, AUTO_BORROW_REPAY"
     }
   ]
 }

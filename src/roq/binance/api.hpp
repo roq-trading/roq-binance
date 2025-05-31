@@ -5,6 +5,7 @@
 #include <string_view>
 
 #include "roq/binance/settings.hpp"
+#include "roq/binance/side_effect_type.hpp"
 
 namespace roq {
 namespace binance {
@@ -24,6 +25,7 @@ struct API final {
     // margin
     std::string_view margin_open_orders;
     std::string_view margin_order;
+    SideEffectType margin_side_effect_type = {};
   } simple;
   struct {
     std::string_view ping_path;

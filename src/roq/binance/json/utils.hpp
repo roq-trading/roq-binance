@@ -15,6 +15,8 @@
 
 #include "roq/web/http/status.hpp"
 
+#include "roq/binance/side_effect_type.hpp"
+
 #include "roq/binance/json/cancel_order_template.hpp"
 #include "roq/binance/json/create_order_template.hpp"
 
@@ -62,7 +64,8 @@ extern std::string_view new_order(
     server::oms::Order const &,
     std::string_view const &request_id,
     CreateOrderTemplate const &,
-    std::chrono::milliseconds recv_window);
+    std::chrono::milliseconds recv_window,
+    SideEffectType = {});
 
 extern std::string_view new_order_ws_url(
     std::vector<char> &buffer,
