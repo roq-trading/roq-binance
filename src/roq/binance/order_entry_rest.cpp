@@ -356,10 +356,12 @@ uint32_t OrderEntryREST::download(OrderEntryState state) {
 
 void OrderEntryREST::get_listen_key() {
   profile_.listen_key([&]() {
+    auto path = shared_.api.simple.margin_user_data_stream;
+    log::warn("DEBUG path={}"sv, path);
     auto headers = account_.create_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
-        .path = shared_.api.simple.user_data_stream,
+        .path = path,
         .query = {},
         .accept = web::http::Accept::APPLICATION_JSON,
         .content_type = {},

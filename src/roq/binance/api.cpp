@@ -28,7 +28,6 @@ auto parse_side_effect_type(auto &side_effect_type) {
 
 API API::create(Settings const &settings) {
   auto side_effect_type = parse_side_effect_type(settings.oms.margin_side_effect_type);
-  log::warn("DEBUG side_effect_type={}"sv, side_effect_type);
   return {
       .market_data{
           .exchange_info = "/api/v3/exchangeInfo"sv,
@@ -42,6 +41,7 @@ API API::create(Settings const &settings) {
           .order = "/api/v3/order"sv,
           .order_cancel_replace = "/api/v3/order/cancelReplace"sv,
           // margin
+          .margin_user_data_stream = "/sapi/v1/userDataStream"sv,
           .margin_open_orders = "/sapi/v1/margin/openOrders"sv,
           .margin_order = "/sapi/v1/margin/order"sv,
           .margin_side_effect_type = side_effect_type,

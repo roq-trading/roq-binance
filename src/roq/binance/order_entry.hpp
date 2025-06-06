@@ -17,6 +17,7 @@ struct OrderEntry {
   struct ListenKeyUpdate final {
     std::string_view account;
     MarginMode margin_mode = {};
+    bool is_margin = {};
     std::string_view listen_key;
   };
 

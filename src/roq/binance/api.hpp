@@ -24,6 +24,7 @@ struct API final {
     std::string_view order;
     std::string_view order_cancel_replace;
     // margin
+    std::string_view margin_user_data_stream;
     std::string_view margin_open_orders;
     std::string_view margin_order;
     json::SideEffectType margin_side_effect_type = {};
