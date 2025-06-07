@@ -23,8 +23,11 @@ struct API final {
     std::string_view my_trades;
     std::string_view order;
     std::string_view order_cancel_replace;
-    // margin
+    // margin - isolated
+    std::string_view isolated_margin_user_data_stream;
+    // margin - cross
     std::string_view margin_user_data_stream;
+    // margin
     std::string_view margin_open_orders;
     std::string_view margin_order;
     json::SideEffectType margin_side_effect_type = {};

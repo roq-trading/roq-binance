@@ -684,6 +684,8 @@ Comments
   * The new end-points are selected if the toml config has :code:`margin_mode = "portfolio"`.
     The end-points are then taken from :code:`--rest_pm_uri` and :code:`--ws_pm_uri`.
 
+* We do not currently support isolated margin trading.
+
 References
 ----------
 

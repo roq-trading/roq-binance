@@ -41,6 +41,7 @@ API API::create(Settings const &settings) {
           .order = "/api/v3/order"sv,
           .order_cancel_replace = "/api/v3/order/cancelReplace"sv,
           // margin
+          .isolated_margin_user_data_stream = "/sapi/v1/userDataStream/isolated"sv,
           .margin_user_data_stream = "/sapi/v1/userDataStream"sv,
           .margin_open_orders = "/sapi/v1/margin/openOrders"sv,
           .margin_order = "/sapi/v1/margin/order"sv,

@@ -164,20 +164,31 @@ void OrderEntryREST::operator()(Event<Timer> const &event) {
   (*connection_).refresh(now);
   refresh_listen_key(now);
   if (master_ && ready() && !downloading()) {
+    // spot
     if (!downloading() && request_.respond_account < request_.request_account) {
-      log::info("Download account..."sv);
-      get_account();
+      get_account({});
       download_account_ = true;
     }
     if (!downloading() && request_.respond_orders < request_.request_orders) {
-      log::info("Download orders..."sv);
-      get_open_orders(false);
+      get_open_orders({});
       download_orders_ = true;
     }
     if (!downloading() && request_.respond_trades < request_.request_trades) {
-      log::info("Download trades..."sv);
-      get_trades();
+      get_trades({});
       download_trades_ = true;
+    }
+    // margin cross
+    if (!downloading() && request_.respond_account_cross < request_.request_account_cross) {
+      get_account(MarginMode::CROSS);
+      download_account_cross_ = true;
+    }
+    if (!downloading() && request_.respond_orders_cross < request_.request_orders_cross) {
+      get_open_orders(MarginMode::CROSS);
+      download_orders_cross_ = true;
+    }
+    if (!downloading() && request_.respond_trades_cross < request_.request_trades_cross) {
+      get_trades(MarginMode::CROSS);
+      download_trades_cross_ = true;
     }
   }
 }
@@ -337,7 +348,7 @@ uint32_t OrderEntryREST::download(OrderEntryState state) {
       break;
     case LISTEN_KEY:
       if (master_) {
-        get_listen_key();
+        get_listen_key(MarginMode::UNDEFINED);
         return 1;
       } else {
         return 0;
@@ -354,10 +365,23 @@ uint32_t OrderEntryREST::download(OrderEntryState state) {
 
 // listen-key
 
-void OrderEntryREST::get_listen_key() {
+void OrderEntryREST::get_listen_key(MarginMode margin_mode) {
   profile_.listen_key([&]() {
-    auto path = shared_.api.simple.margin_user_data_stream;
-    log::warn("DEBUG path={}"sv, path);
+    auto path = [&]() {
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          return shared_.api.simple.user_data_stream;
+        case ISOLATED:
+          return shared_.api.simple.isolated_margin_user_data_stream;
+        case CROSS:
+          return shared_.api.simple.margin_user_data_stream;
+        case PORTFOLIO:
+          break;
+      }
+      log::fatal("Unexpected"sv);
+    }();
+    log::warn("DEBUG margin_mode={}, path={}"sv, margin_mode, path);
     auto headers = account_.create_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
@@ -369,23 +393,37 @@ void OrderEntryREST::get_listen_key() {
         .body = {},
         .quality_of_service = {},
     };
-    auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
+    auto callback = [this, margin_mode = margin_mode]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
-      get_listen_key_ack(event);
+      get_listen_key_ack(event, margin_mode);
     };
     (*connection_)("listen_key"sv, request, callback);
   });
 }
 
-void OrderEntryREST::get_listen_key_ack(Trace<web::rest::Response> const &event) {
+void OrderEntryREST::get_listen_key_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
   auto constexpr const STATE = OrderEntryState::LISTEN_KEY;
   profile_.listen_key_ack([&]() {
     auto handle_success = [&](auto &body) {
       json::ListenKey listen_key{body};
       Trace event_2{event, listen_key};
-      (*this)(event_2);
-      download_.check_relaxed(STATE);
+      (*this)(event_2, margin_mode);
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          // get_listen_key(MarginMode::ISOLATED);  // note! for isolated we also need the symbol...
+          get_listen_key(MarginMode::CROSS);  // note! workaround
+          break;
+        case ISOLATED:
+          get_listen_key(MarginMode::CROSS);
+          break;
+        case CROSS:
+          download_.check_relaxed(STATE);  // note! done
+          break;
+        case PORTFOLIO:
+          log::fatal("Unexpected"sv);
+      }
     };
     auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
       log::warn(R"(error={}, text="{}")"sv, error, text);
@@ -397,31 +435,60 @@ void OrderEntryREST::get_listen_key_ack(Trace<web::rest::Response> const &event)
   });
 }
 
-void OrderEntryREST::operator()(Trace<json::ListenKey> const &event) {
+void OrderEntryREST::operator()(Trace<json::ListenKey> const &event, MarginMode margin_mode) {
   auto &[trace_info, listen_key] = event;
   log::info<2>("listen_key={}"sv, listen_key);
-  bool initial = std::empty(listen_key_);
-  if (utils::update(listen_key_, listen_key.listen_key)) {
+  auto dispatch = [&](auto initial) {
     if (initial) {
-      log::info<1>(R"(Listen key has been acquired (value="{}"))"sv, listen_key_);
+      log::warn(R"(DEBUG Listen key has been acquired (margin_mode={}, value="{}"))"sv, margin_mode, listen_key.listen_key);
+      log::info<1>(R"(Listen key has been acquired (margin_mode={}, value="{}"))"sv, margin_mode, listen_key.listen_key);
       auto listen_key_update = ListenKeyUpdate{
           .account = account_.name,
-          .margin_mode = {},
+          .margin_mode = margin_mode,
           .listen_key = listen_key.listen_key,
       };
       create_trace_and_dispatch(handler_, trace_info, listen_key_update);
     } else {
-      log::info<1>("Listen key has been refreshed!"sv);
+      log::info<1>("Listen key has been refreshed! (margin_mode={})"sv, margin_mode);
     }
+  };
+  auto update_spot = [&]() {
+    bool initial = std::empty(listen_key_);
+    if (utils::update(listen_key_, listen_key.listen_key)) {
+      dispatch(initial);
+    }
+    auto now = clock::get_system();
+    listen_key_refresh_ = now + shared_.settings.rest.listen_key_refresh;
+  };
+  auto update_margin_cross = [&]() {
+    bool initial = std::empty(listen_key_cross_);
+    if (utils::update(listen_key_cross_, listen_key.listen_key)) {
+      dispatch(initial);
+    }
+    auto now = clock::get_system();
+    listen_key_refresh_cross_ = now + shared_.settings.rest.listen_key_refresh;
+  };
+  switch (margin_mode) {
+    using enum MarginMode;
+    case UNDEFINED:
+      update_spot();
+      break;
+    case ISOLATED:
+      log::fatal("Unexpected"sv);  // note! not implemented
+      break;
+    case CROSS:
+      update_margin_cross();
+      break;
+    case PORTFOLIO:
+      log::fatal("Unexpected"sv);
   }
-  auto now = clock::get_system();
-  listen_key_refresh_ = now + shared_.settings.rest.listen_key_refresh;
 }
 
 // account
 
-void OrderEntryREST::get_account() {
+void OrderEntryREST::get_account(MarginMode margin_mode) {
   profile_.account([&]() {
+    log::info("Download account... (margin_mode={})"sv, margin_mode);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = account_.create_query(now);
     auto headers = account_.create_headers();
@@ -435,34 +502,61 @@ void OrderEntryREST::get_account() {
         .body = {},
         .quality_of_service = {},
     };
-    auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
+    auto callback = [this, margin_mode = margin_mode]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
-      get_account_ack(event);
+      get_account_ack(event, margin_mode);
     };
     (*connection_)("account"sv, request, callback);
   });
 }
 
-void OrderEntryREST::get_account_ack(Trace<web::rest::Response> const &event) {
+void OrderEntryREST::get_account_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
   profile_.account_ack([&]() {
     auto handle_success = [&](auto &body) {
       json::Account account{body, decode_buffer_};
       Trace event_2{event, account};
-      (*this)(event_2);
-      request_.respond_account = clock::get_system();  // completion
-      download_account_ = false;
+      (*this)(event_2, margin_mode);
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          request_.respond_account = clock::get_system();  // completion
+          download_account_ = false;
+          break;
+        case ISOLATED:
+          log::fatal("Unexpected"sv);  // note! not implemented
+        case CROSS:
+          request_.respond_account_cross = clock::get_system();  // completion
+          download_account_cross_ = false;
+          break;
+        case PORTFOLIO:
+          log::fatal("Unexpected"sv);
+      }
     };
     auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
       log::warn(R"(error={}, text="{}")"sv, error, text);
-      request_.respond_account = clock::get_system();  // completion
-      download_account_ = false;
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          request_.respond_account = clock::get_system();  // completion
+          download_account_ = false;
+          break;
+        case ISOLATED:
+          log::fatal("Unexpected"sv);  // note! not implemented
+          break;
+        case CROSS:
+          request_.respond_account_cross = clock::get_system();  // completion
+          download_account_cross_ = false;
+          break;
+        case PORTFOLIO:
+          log::fatal("Unexpected"sv);
+      }
     };
     process_response(event, handle_success, handle_error);
   });
 }
 
-void OrderEntryREST::operator()(Trace<json::Account> const &event) {
+void OrderEntryREST::operator()(Trace<json::Account> const &event, MarginMode margin_mode) {
   auto &[trace_info, account] = event;
   log::info<2>("account={}"sv, account);
   for (auto &item : account.balances) {
@@ -470,7 +564,7 @@ void OrderEntryREST::operator()(Trace<json::Account> const &event) {
         .stream_id = stream_id_,
         .account = account_.name,
         .currency = item.asset,
-        .margin_mode = {},
+        .margin_mode = margin_mode,
         .balance = item.free,
         .hold = item.locked,
         .external_account = {},
@@ -484,9 +578,24 @@ void OrderEntryREST::operator()(Trace<json::Account> const &event) {
 
 // orders
 
-void OrderEntryREST::get_open_orders(bool is_margin) {
+// XXX FIXME TODO for margin => isIsolated true/false
+void OrderEntryREST::get_open_orders(MarginMode margin_mode) {
   profile_.open_orders([&]() {
-    auto path = is_margin ? shared_.api.simple.margin_open_orders : shared_.api.simple.open_orders;
+    log::info("Download open orders... (margin_mode={})"sv, margin_mode);
+    auto path = [&]() {
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          return shared_.api.simple.open_orders;
+        case ISOLATED:
+          break;  // note! not implemented
+        case CROSS:
+          return shared_.api.simple.margin_open_orders;
+        case PORTFOLIO:
+          break;
+      };
+      log::fatal("Unexpected"sv);
+    }();
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = account_.create_query(now);
     auto headers = account_.create_headers();
@@ -509,41 +618,61 @@ void OrderEntryREST::get_open_orders(bool is_margin) {
         .body = {},
         .quality_of_service = {},
     };
-    auto callback = [this](auto &request_id, auto &response) {
-      auto is_margin = request_id == "margin_open_orders"sv;
+    auto callback = [this, margin_mode = margin_mode]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
-      get_open_orders_ack(event, is_margin);
+      get_open_orders_ack(event, margin_mode);
     };
-    auto request_id = is_margin ? "margin_open_orders"sv : "open_orders"sv;
-    (*connection_)(request_id, request, callback);
+    (*connection_)("open_orders"sv, request, callback);
   });
 }
 
-void OrderEntryREST::get_open_orders_ack(Trace<web::rest::Response> const &event, bool is_margin) {
+void OrderEntryREST::get_open_orders_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
   profile_.open_orders_ack([&]() {
     auto handle_success = [&](auto &body) {
       log::debug("body={}"sv, body);
       json::OpenOrders open_orders{body, decode_buffer_};
       Trace event_2{event, open_orders};
-      (*this)(event_2, is_margin);
-      if (is_margin) {
-        request_.respond_orders = clock::get_system();  // completion
-        download_orders_ = false;
-      } else {
-        get_open_orders(true);
+      (*this)(event_2, margin_mode);
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          request_.respond_orders = clock::get_system();  // completion
+          download_orders_ = false;
+          break;
+        case ISOLATED:
+          log::fatal("Unexpected"sv);  // note! not implemented
+        case CROSS:
+          request_.respond_orders_cross = clock::get_system();  // completion
+          download_orders_cross_ = false;
+          break;
+        case PORTFOLIO:
+          log::fatal("Unexpected"sv);
       }
     };
     auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
       log::warn(R"(error={}, text="{}")"sv, error, text);
-      request_.respond_orders = clock::get_system();  // completion
-      download_orders_ = false;
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          request_.respond_orders = clock::get_system();  // completion
+          download_orders_ = false;
+          break;
+        case ISOLATED:
+          log::fatal("Unexpected"sv);  // note! not implemented
+        case CROSS:
+          request_.respond_orders_cross = clock::get_system();  // completion
+          download_orders_cross_ = false;
+          break;
+        case PORTFOLIO:
+          log::fatal("Unexpected"sv);
+      }
     };
     process_response(event, handle_success, handle_error);
   });
 }
 
-void OrderEntryREST::operator()(Trace<json::OpenOrders> const &event, bool is_margin) {
+void OrderEntryREST::operator()(Trace<json::OpenOrders> const &event, MarginMode margin_mode) {
   auto &[trace_info, open_orders] = event;
   for (auto &order : open_orders.data) {
     log::info<2>("order={}"sv, order);
@@ -551,12 +680,7 @@ void OrderEntryREST::operator()(Trace<json::OpenOrders> const &event, bool is_ma
       continue;
     }
     open_orders_symbols_.emplace(order.symbol);
-    auto margin_mode = [&]() -> MarginMode {
-      if (is_margin) {
-        return order.is_isolated ? MarginMode::ISOLATED : MarginMode::CROSS;
-      }
-      return {};
-    }();
+    // XXX FIXME TODO validate order.is_isolated for margin_mode isolated + cross
     auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
     auto order_update = server::oms::OrderUpdate{
         .account = account_.name,
@@ -598,8 +722,11 @@ void OrderEntryREST::operator()(Trace<json::OpenOrders> const &event, bool is_ma
 
 // trades
 
-void OrderEntryREST::get_trades() {
+// XXX FIXME TODO download margin => isIsolated true/false
+
+void OrderEntryREST::get_trades(MarginMode margin_mode) {
   profile_.trades([&]() {
+    log::info("Download trades... (margin_mode={})"sv, margin_mode);
     auto &symbols = shared_.settings.download.symbols;
     for (auto &symbol : symbols) {
       auto now = clock::get_realtime<std::chrono::milliseconds>();
@@ -618,36 +745,63 @@ void OrderEntryREST::get_trades() {
           .body = body,
           .quality_of_service = {},
       };
-      auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
+      auto callback = [this, margin_mode = margin_mode]([[maybe_unused]] auto &request_id, auto &response) {
         TraceInfo trace_info;
         Trace event{trace_info, response};
-        get_trades_ack(event);
+        get_trades_ack(event, margin_mode);
       };
       (*connection_)("my-trades"sv, request, callback);
     }
   });
 }
 
-void OrderEntryREST::get_trades_ack(Trace<web::rest::Response> const &event) {
+void OrderEntryREST::get_trades_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
   profile_.trades_ack([&]() {
     auto handle_success = [&](auto &body) {
       json::Trades trades{body, decode_buffer_};
       Trace event_2{event, trades};
-      (*this)(event_2);
-      request_.respond_trades = clock::get_system();  // completion
-      download_trades_ = false;
-      download_trades_is_first_ = false;
+      (*this)(event_2, margin_mode);
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          request_.respond_trades = clock::get_system();  // completion
+          download_trades_ = false;
+          download_trades_is_first_ = false;
+          break;
+        case ISOLATED:
+          log::fatal("Unexpected"sv);  // note! not implemented
+        case CROSS:
+          request_.respond_trades_cross = clock::get_system();  // completion
+          download_trades_cross_ = false;
+          download_trades_cross_is_first_ = false;
+          break;
+        case PORTFOLIO:
+          log::fatal("Unexpected"sv);
+      }
     };
     auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
       log::warn(R"(error={}, text="{}")"sv, error, text);
-      request_.respond_trades = clock::get_system();  // completion
-      download_trades_ = false;
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          request_.respond_trades = clock::get_system();  // completion
+          download_trades_ = false;
+          break;
+        case ISOLATED:
+          log::fatal("Unexpected"sv);  // note! not implemented
+        case CROSS:
+          request_.respond_trades_cross = clock::get_system();  // completion
+          download_trades_cross_ = false;
+          break;
+        case PORTFOLIO:
+          log::fatal("Unexpected"sv);
+      }
     };
     process_response(event, handle_success, handle_error);
   });
 }
 
-void OrderEntryREST::operator()(Trace<json::Trades> const &event) {
+void OrderEntryREST::operator()(Trace<json::Trades> const &event, MarginMode) {
   auto &[trace_info, trades] = event;
   for (auto &trade : trades.data) {
     log::info<2>("trade={}"sv, trade);
@@ -666,7 +820,7 @@ void OrderEntryREST::operator()(Trace<json::Trades> const &event) {
         .symbol = order.symbol,
         .side = side,
         .position_effect = {},
-        .margin_mode={},
+        .margin_mode = margin_mode,
         .max_show_quantity = NaN,
         .order_type = order_type,
         .time_in_force = time_in_force,
@@ -705,12 +859,16 @@ void OrderEntryREST::refresh_listen_key(std::chrono::nanoseconds now) {
   if (!ready_) {
     return;
   }
-  if (listen_key_refresh_.count() == 0 || now < listen_key_refresh_) {
-    return;
+  if (listen_key_refresh_.count() != 0 && listen_key_refresh_ < now) {
+    log::info<1>("Refreshing listen key..."sv);
+    listen_key_refresh_ = now + shared_.settings.rest.listen_key_refresh;
+    get_listen_key(MarginMode::UNDEFINED);
   }
-  log::info<1>("Refreshing listen key..."sv);
-  listen_key_refresh_ = now + shared_.settings.rest.listen_key_refresh;
-  get_listen_key();
+  if (listen_key_refresh_cross_.count() != 0 && listen_key_refresh_cross_ < now) {
+    log::info<1>("Refreshing listen key..."sv);
+    listen_key_refresh_cross_ = now + shared_.settings.rest.listen_key_refresh;
+    get_listen_key(MarginMode::CROSS);
+  }
 }
 
 // new-order

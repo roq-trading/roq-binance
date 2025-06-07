@@ -123,10 +123,10 @@ struct Gateway final : public server::Handler, public Rest::Handler, public Mark
   // streams
   Rest rest_;
   utils::unordered_map<std::string, OrderEntryRR> order_entry_;
-  utils::unordered_map<std::string, std::unique_ptr<DropCopy>> drop_copy_;
+  utils::unordered_map<std::string, utils::unordered_map<MarginMode, std::unique_ptr<DropCopy>>> drop_copy_;
   // - papi
   utils::unordered_map<std::string, std::unique_ptr<OrderEntry>> order_entry_portfolio_;
-  utils::unordered_map<std::string, std::unique_ptr<DropCopy>> drop_copy_portfolio_;
+  utils::unordered_map<std::string, utils::unordered_map<MarginMode, std::unique_ptr<DropCopy>>> drop_copy_portfolio_;
   std::vector<std::unique_ptr<MarketData>> market_data_1_, market_data_2_;
   // cache
   std::vector<MBPUpdate> bids_, asks_;

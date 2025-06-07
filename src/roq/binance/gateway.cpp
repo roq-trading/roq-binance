@@ -96,7 +96,10 @@ R create_drop_copy(auto &accounts) {
   result_type result;
   for (auto &[_, item] : accounts) {
     auto &account = *item;
-    result.try_emplace(account.name, nullptr);
+    auto &tmp = result[account.name];
+    tmp.try_emplace({}, nullptr);
+    tmp.try_emplace(MarginMode::ISOLATED, nullptr);
+    tmp.try_emplace(MarginMode::CROSS, nullptr);
   }
   return result;
 }
@@ -124,7 +127,8 @@ R create_drop_copy_portfolio(auto &accounts) {
   for (auto &[_, item] : accounts) {
     auto &account = *item;
     if (account.margin_mode == MarginMode::PORTFOLIO) {
-      result.try_emplace(account.name, nullptr);
+      auto &tmp = result[account.name];
+      tmp.try_emplace(account.margin_mode, nullptr);
     }
   }
   return result;
@@ -278,20 +282,25 @@ void Gateway::operator()(OrderEntry::ListenKeyUpdate const &listen_key_update) {
 
 template <typename T>
 void Gateway::create_drop_copy_from_listen_key_update(auto &drop_copy, auto &listen_key_update) {
-  auto &account = listen_key_update.account;
-  auto iter = drop_copy.find(account);
-  if (iter == std::end(drop_copy)) {
-    log::fatal(R"(Unexpected: account="{}")"sv, account);
+  auto iter_1 = drop_copy.find(listen_key_update.account);
+  if (iter_1 == std::end(drop_copy)) {
+    log::fatal(R"(Unexpected: account="{}")"sv, listen_key_update.account);
   }
-  if (!static_cast<bool>((*iter).second)) {
-    log::info(R"(Create drop-copy (user-stream) for account="{}", margin_mode={})"sv, account, listen_key_update.margin_mode);
-    auto &account_2 = get_account(account);
-    auto &request = get_request(account, listen_key_update.margin_mode);
-    auto obj = std::make_unique<T>(*this, context_, ++stream_id_, account_2, shared_, request, listen_key_update.listen_key);
+  auto &tmp = (*iter_1).second;
+  auto iter_2 = tmp.find(listen_key_update.margin_mode);
+  if (iter_2 == std::end(tmp)) {
+    log::fatal(R"(Unexpected: account="{}", margin_mode={})"sv, listen_key_update.account, listen_key_update.margin_mode);
+  }
+  auto &instance = (*iter_2).second;
+  if (instance == nullptr) {
+    log::info(R"(Create drop-copy (user-stream) for account="{}", margin_mode={})"sv, listen_key_update.account, listen_key_update.margin_mode);
+    auto &account_2 = get_account(listen_key_update.account);
+    auto &request = get_request(listen_key_update.account, listen_key_update.margin_mode);
+    auto obj = std::make_unique<T>(*this, context_, ++stream_id_, account_2, shared_, request, listen_key_update.listen_key, listen_key_update.margin_mode);
     MessageInfo message_info;
     Start start;
     create_event_and_dispatch(*obj, message_info, start);
-    (*iter).second = std::move(obj);
+    instance = std::move(obj);
   }
 }
 
@@ -351,17 +360,21 @@ void Gateway::dispatch_helper(auto &self, Args &&...args) {
   for (auto &[_, item] : self.order_entry_) {
     helper(item);
   }
-  for (auto &[_, item] : self.drop_copy_) {
-    if (static_cast<bool>(item)) {
-      helper(*item);
+  for (auto &[_, item_1] : self.drop_copy_) {
+    for (auto &[_, item_2] : item_1) {
+      if (item_2 != nullptr) {
+        helper(*item_2);
+      }
     }
   }
   for (auto &[_, item] : self.order_entry_portfolio_) {
     helper(*item);
   }
-  for (auto &[_, item] : self.drop_copy_portfolio_) {
-    if (static_cast<bool>(item)) {
-      helper(*item);
+  for (auto &[_, item_1] : self.drop_copy_portfolio_) {
+    for (auto &[_, item_2] : item_1) {
+      if (item_2 != nullptr) {
+        helper(*item_2);
+      }
     }
   }
   for (auto &item : self.market_data_1_) {
@@ -428,11 +441,16 @@ OrderEntry &Gateway::get_order_entry(std::string_view const &account, MarginMode
 
 DropCopy &Gateway::get_drop_copy(std::string_view const &account, MarginMode margin_mode) {
   auto helper = [&](auto &drop_copy) -> auto & {
-    auto iter = drop_copy.find(account);
-    if (iter == std::end(drop_copy)) [[unlikely]] {
+    auto iter_1 = drop_copy.find(account);
+    if (iter_1 == std::end(drop_copy)) [[unlikely]] {
       throw RuntimeError{R"(Unknown account="{}")"sv, account};
     }
-    return *(*iter).second;
+    auto &tmp = (*iter_1).second;
+    auto iter_2 = tmp.find(margin_mode);
+    if (iter_2 == std::end(tmp)) {
+      throw RuntimeError{R"(Unknown account="{}", margin_mode={})"sv, account, margin_mode};
+    }
+    return *(*iter_2).second;
   };
   switch (margin_mode) {
     using enum MarginMode;

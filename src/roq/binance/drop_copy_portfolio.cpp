@@ -86,7 +86,8 @@ DropCopyPortfolio::DropCopyPortfolio(
     Account &account,
     Shared &shared,
     Request &request,
-    std::string_view const &listen_key)
+    std::string_view const &listen_key,
+    [[maybe_unused]] MarginMode margin_mode)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)},
       connection_{create_connection(*this, shared.settings, context, listen_key)}, decode_buffer_(shared.settings.misc.decode_buffer_size),
       counter_{
@@ -105,6 +106,7 @@ DropCopyPortfolio::DropCopyPortfolio(
       },
       account_{account}, shared_{shared}, request_{request}, download_{{}, [this](auto state) { return download(state); }} {
   log::info<5>(R"(stream_id={}, account="{}", listen_key="{}")"sv, stream_id_, account_.name, listen_key);
+  assert(margin_mode == MarginMode::PORTFOLIO);
 }
 
 void DropCopyPortfolio::operator()(Event<Start> const &) {

@@ -34,8 +34,8 @@ auto const SUPPORTS = Mask{
 // === HELPERS ===
 
 namespace {
-auto create_name(auto stream_id, auto &account) {
-  return fmt::format("{}:{}:{}"sv, stream_id, NAME, account);
+auto create_name(auto stream_id, auto &account, auto margin_mode) {
+  return fmt::format("{}:{}:{}:{}"sv, stream_id, NAME, account, margin_mode);
 }
 
 auto create_connection(auto &handler, auto &settings, auto &context, auto &listen_key) {
@@ -80,8 +80,9 @@ DropCopySimple::DropCopySimple(
     Account &account,
     Shared &shared,
     Request &request,
-    std::string_view const &listen_key)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)},
+    std::string_view const &listen_key,
+    MarginMode margin_mode)
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name, margin_mode)}, margin_mode_{margin_mode},
       connection_{create_connection(*this, shared.settings, context, listen_key)}, decode_buffer_(shared.settings.misc.decode_buffer_size),
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -243,7 +244,7 @@ void DropCopySimple::operator()(Trace<json::OutboundAccountPosition> const &even
           .stream_id = stream_id_,
           .account = account_.name,
           .currency = item.asset,
-          .margin_mode = {},
+          .margin_mode = margin_mode_,
           .balance = item.free_amount,
           .hold = item.locked_amount,
           .external_account = {},
@@ -281,7 +282,7 @@ void DropCopySimple::operator()(Trace<json::ExecutionReport> const &event) {
         .symbol = execution_report.symbol,
         .side = map(execution_report.side),
         .position_effect = {},
-        .margin_mode = {},
+        .margin_mode = margin_mode_,
         .max_show_quantity = NaN,
         .order_type = map(execution_report.order_type),
         .time_in_force = map(execution_report.time_in_force),
@@ -341,7 +342,7 @@ void DropCopySimple::operator()(Trace<json::ExecutionReport> const &event) {
         .symbol = execution_report.symbol,
         .side = map(execution_report.side),
         .position_effect = {},
-        .margin_mode = {},
+        .margin_mode = margin_mode_,
         .quantity_type = {},
         .create_time_utc = execution_report.transaction_time,
         .update_time_utc = execution_report.transaction_time,
@@ -367,46 +368,130 @@ void DropCopySimple::operator()(Trace<json::ListStatus> const &event) {
 }
 
 void DropCopySimple::request_account() {
-  log::info("Requesting account download..."sv);
-  request_.request_account = clock::get_system();
+  log::info("Requesting account download... (margin_mode={})"sv, margin_mode_);
+  switch (margin_mode_) {
+    using enum MarginMode;
+    case UNDEFINED:
+      request_.request_account = clock::get_system();
+      break;
+    case ISOLATED:
+      log::fatal("Unexpected"sv);  // note! not implemented
+      break;
+    case CROSS:
+      request_.request_account_cross = clock::get_system();
+      break;
+    case PORTFOLIO:
+      log::fatal("Unexpected"sv);
+  }
 }
 
 void DropCopySimple::check_response_account() {
   if (download_.state() != DropCopyState::ACCOUNT) {
     return;
   }
-  if (request_.request_account < request_.respond_account) {
-    log::info("Account download has completed!"sv);
+  auto has_completed = [&]() {
+    switch (margin_mode_) {
+      using enum MarginMode;
+      case UNDEFINED:
+        return request_.request_account < request_.respond_account;
+      case ISOLATED:
+        break;  // note! not implemented
+      case CROSS:
+        return request_.request_account_cross < request_.respond_account_cross;
+        break;
+      case PORTFOLIO:
+        break;
+    }
+    log::fatal("Unexpected"sv);
+  };
+  if (has_completed()) {
+    log::info("Account download has completed! (margin_mode={})"sv, margin_mode_);
     download_.check(DropCopyState::ACCOUNT);
   }
 }
 
 void DropCopySimple::request_orders() {
-  log::info("Requesting order download..."sv);
-  request_.request_orders = clock::get_system();
+  log::info("Requesting order download... (margin_mode={})"sv, margin_mode_);
+  switch (margin_mode_) {
+    using enum MarginMode;
+    case UNDEFINED:
+      request_.request_orders = clock::get_system();
+      break;
+    case ISOLATED:
+      log::fatal("Unexpected"sv);  // note! not implemented
+      break;
+    case CROSS:
+      request_.request_orders_cross = clock::get_system();
+      break;
+    case PORTFOLIO:
+      log::fatal("Unexpected"sv);
+  }
 }
 
 void DropCopySimple::check_response_orders() {
   if (download_.state() != DropCopyState::ORDERS) {
     return;
   }
-  if (request_.request_orders < request_.respond_orders) {
-    log::info("Order download has completed!"sv);
+  auto has_completed = [&]() {
+    switch (margin_mode_) {
+      using enum MarginMode;
+      case UNDEFINED:
+        return request_.request_orders < request_.respond_orders;
+      case ISOLATED:
+        break;  // note! not implemented
+      case CROSS:
+        return request_.request_orders_cross < request_.respond_orders_cross;
+        break;
+      case PORTFOLIO:
+        break;
+    }
+    log::fatal("Unexpected"sv);
+  };
+  if (has_completed()) {
+    log::info("Order download has completed! (margin_mode={})"sv, margin_mode_);
     download_.check(DropCopyState::ORDERS);
   }
 }
 
 void DropCopySimple::request_trades() {
-  log::info("Requesting trades download..."sv);
-  request_.request_trades = clock::get_system();
+  log::info("Requesting trades download... (margin_mode={})"sv, margin_mode_);
+  switch (margin_mode_) {
+    using enum MarginMode;
+    case UNDEFINED:
+      request_.request_trades = clock::get_system();
+      break;
+    case ISOLATED:
+      log::fatal("Unexpected"sv);  // note! not implemented
+      break;
+    case CROSS:
+      request_.request_trades_cross = clock::get_system();
+      break;
+    case PORTFOLIO:
+      log::fatal("Unexpected"sv);
+  }
 }
 
 void DropCopySimple::check_response_trades() {
   if (download_.state() != DropCopyState::TRADES) {
     return;
   }
-  if (request_.request_trades < request_.respond_trades) {
-    log::info("Trade download has completed!"sv);
+  auto has_completed = [&]() {
+    switch (margin_mode_) {
+      using enum MarginMode;
+      case UNDEFINED:
+        return request_.request_trades < request_.respond_trades;
+      case ISOLATED:
+        break;  // note! not implemented
+      case CROSS:
+        return request_.request_trades_cross < request_.respond_trades_cross;
+        break;
+      case PORTFOLIO:
+        break;
+    }
+    log::fatal("Unexpected"sv);
+  };
+  if (has_completed()) {
+    log::info("Trade download has completed! (margin_mode={})"sv, margin_mode_);
     download_.check(DropCopyState::TRADES);
   }
 }

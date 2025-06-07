@@ -65,7 +65,9 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
   uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id) override;
 
  protected:
-  bool downloading() const { return download_account_ || download_orders_ || download_trades_; }
+  bool downloading() const {
+    return download_account_ || download_orders_ || download_trades_ || download_account_cross_ || download_orders_cross_ || download_trades_cross_;
+  }
 
   // web::rest::Client::Handler
   void operator()(Trace<web::rest::Client::Connected> const &) override;
@@ -77,21 +79,21 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
 
   uint32_t download(OrderEntryState state);
 
-  void get_listen_key();
-  void get_listen_key_ack(Trace<web::rest::Response> const &);
-  void operator()(Trace<json::ListenKey> const &);
+  void get_listen_key(MarginMode);
+  void get_listen_key_ack(Trace<web::rest::Response> const &, MarginMode);
+  void operator()(Trace<json::ListenKey> const &, MarginMode);
 
-  void get_account();
-  void get_account_ack(Trace<web::rest::Response> const &);
-  void operator()(Trace<json::Account> const &);
+  void get_account(MarginMode);
+  void get_account_ack(Trace<web::rest::Response> const &, MarginMode);
+  void operator()(Trace<json::Account> const &, MarginMode);
 
-  void get_open_orders(bool is_margin);
-  void get_open_orders_ack(Trace<web::rest::Response> const &, bool is_margin);
-  void operator()(Trace<json::OpenOrders> const &, bool is_margin);
+  void get_open_orders(MarginMode);
+  void get_open_orders_ack(Trace<web::rest::Response> const &, MarginMode);
+  void operator()(Trace<json::OpenOrders> const &, MarginMode);
 
-  void get_trades();
-  void get_trades_ack(Trace<web::rest::Response> const &);
-  void operator()(Trace<json::Trades> const &);
+  void get_trades(MarginMode);
+  void get_trades_ack(Trace<web::rest::Response> const &, MarginMode);
+  void operator()(Trace<json::Trades> const &, MarginMode);
 
   void refresh_listen_key(std::chrono::nanoseconds now);
 
@@ -181,9 +183,11 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
   Shared &shared_;
   Request &request_;
   std::string listen_key_;
+  std::string listen_key_cross_;
   // state
   bool ready_ = false;
   std::chrono::nanoseconds listen_key_refresh_ = {};
+  std::chrono::nanoseconds listen_key_refresh_cross_ = {};
   ConnectionStatus status_ = {};
   core::Download<OrderEntryState> download_;
   // experimental
@@ -191,8 +195,12 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
   bool download_account_ = false;
   bool download_orders_ = false;
   bool download_trades_ = false;
+  bool download_account_cross_ = false;
+  bool download_orders_cross_ = false;
+  bool download_trades_cross_ = false;
   std::vector<char> encode_buffer_;
   bool download_trades_is_first_ = true;
+  bool download_trades_cross_is_first_ = true;
 };
 
 }  // namespace binance
