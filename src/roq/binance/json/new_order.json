@@ -76,6 +76,10 @@
     {
       "name": "selfTradePreventionMode",
       "type": "std/string_view"
+    },
+    {
+      "name": "isIsolated",
+      "type": "std/bool"
     }
   ]
 }
