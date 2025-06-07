@@ -9,8 +9,8 @@ set(AUTOGEN_SCHEMAS
     agg_trade.json
     balance2.json
     balance.json
-    balances.json
     balances_item.json
+    balances.json
     balance_update.json
     book_ticker.json
     cancel_all_open_orders.json
@@ -19,6 +19,7 @@ set(AUTOGEN_SCHEMAS
     cancel_replace_order_error.json
     cancel_replace_order.json
     cancel_restrictions.json
+    cross_margin_account.json
     depth_item.json
     depth.json
     depth_update.json
@@ -58,6 +59,7 @@ set(AUTOGEN_SCHEMAS
     trade2.json
     trade.json
     trades.json
+    user_asset.json
     user_stream.json
     wsapi_account.json
     wsapi_cancel_open_orders.json

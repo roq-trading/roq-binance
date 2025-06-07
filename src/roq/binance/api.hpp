@@ -26,6 +26,7 @@ struct API final {
     // margin - isolated
     std::string_view isolated_margin_user_data_stream;
     // margin - cross
+    std::string_view cross_account;
     std::string_view margin_user_data_stream;
     // margin
     std::string_view margin_open_orders;
@@ -67,7 +68,13 @@ struct fmt::formatter<roq::binance::API> {
         R"(open_orders="{}", )"
         R"(my_trades="{}", )"
         R"(order="{}", )"
-        R"(order_cancel_replace="{}")"
+        R"(order_cancel_replace="{}", )"
+        R"(isolated_margin_user_data_stream="{}", )"
+        R"(cross_account="{}", )"
+        R"(margin_user_data_stream="{}", )"
+        R"(margin_open_orders="{}", )"
+        R"(margin_order="{}", )"
+        R"(margin_side_effect_type="{}")"
         R"(}}, )"
         R"(papi={{)"
         R"(ping_path="{}", )"
@@ -89,6 +96,12 @@ struct fmt::formatter<roq::binance::API> {
         value.simple.my_trades,
         value.simple.order,
         value.simple.order_cancel_replace,
+        value.simple.isolated_margin_user_data_stream,
+        value.simple.cross_account,
+        value.simple.margin_user_data_stream,
+        value.simple.margin_open_orders,
+        value.simple.margin_order,
+        value.simple.margin_side_effect_type,
         // papi
         value.papi.ping_path,
         value.papi.listen_key,

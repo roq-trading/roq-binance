@@ -490,11 +490,27 @@ void OrderEntryREST::get_account(MarginMode margin_mode) {
   profile_.account([&]() {
     log::info("Download account... (margin_mode={})"sv, margin_mode);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
+    auto path = [&]() {
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          return shared_.api.simple.account;
+          break;
+        case ISOLATED:
+          log::fatal("Unexpected"sv);  // note! not implemented
+          break;
+        case CROSS:
+          return shared_.api.simple.cross_account;
+        case PORTFOLIO:
+          break;
+      }
+      log::fatal("Unexpected"sv);
+    }();
     auto query = account_.create_query(now);
     auto headers = account_.create_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
-        .path = shared_.api.simple.account,
+        .path = path,
         .query = query,
         .accept = web::http::Accept::APPLICATION_JSON,
         .content_type = {},
@@ -514,21 +530,26 @@ void OrderEntryREST::get_account(MarginMode margin_mode) {
 void OrderEntryREST::get_account_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
   profile_.account_ack([&]() {
     auto handle_success = [&](auto &body) {
-      json::Account account{body, decode_buffer_};
-      Trace event_2{event, account};
-      (*this)(event_2, margin_mode);
       switch (margin_mode) {
         using enum MarginMode;
-        case UNDEFINED:
+        case UNDEFINED: {
+          json::Account account{body, decode_buffer_};
+          Trace event_2{event, account};
+          (*this)(event_2, margin_mode);
           request_.respond_account = clock::get_system();  // completion
           download_account_ = false;
           break;
+        }
         case ISOLATED:
           log::fatal("Unexpected"sv);  // note! not implemented
-        case CROSS:
+        case CROSS: {
+          json::CrossMarginAccount account{body, decode_buffer_};
+          Trace event_2{event, account};
+          (*this)(event_2, margin_mode);
           request_.respond_account_cross = clock::get_system();  // completion
           download_account_cross_ = false;
           break;
+        }
         case PORTFOLIO:
           log::fatal("Unexpected"sv);
       }
@@ -571,6 +592,26 @@ void OrderEntryREST::operator()(Trace<json::Account> const &event, MarginMode ma
         .update_type = UpdateType::SNAPSHOT,
         .exchange_time_utc = account.update_time,
         .sending_time_utc = account.update_time,
+    };
+    create_trace_and_dispatch(handler_, trace_info, funds_update, true);
+  }
+}
+
+void OrderEntryREST::operator()(Trace<json::CrossMarginAccount> const &event, MarginMode margin_mode) {
+  auto &[trace_info, account] = event;
+  log::info<2>("account={}"sv, account);
+  for (auto &item : account.user_assets) {
+    auto funds_update = FundsUpdate{
+        .stream_id = stream_id_,
+        .account = account_.name,
+        .currency = item.asset,
+        .margin_mode = margin_mode,
+        .balance = item.free,
+        .hold = item.locked,
+        .external_account = {},
+        .update_type = UpdateType::SNAPSHOT,
+        .exchange_time_utc = {},
+        .sending_time_utc = {},
     };
     create_trace_and_dispatch(handler_, trace_info, funds_update, true);
   }

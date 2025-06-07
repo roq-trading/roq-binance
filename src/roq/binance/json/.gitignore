@@ -4,8 +4,8 @@ account.hpp
 agg_trade.hpp
 balance2.hpp
 balance.hpp
-balances.hpp
 balances_item.hpp
+balances.hpp
 balance_update.hpp
 book_ticker.hpp
 cancel_all_open_orders.hpp
@@ -14,6 +14,7 @@ cancel_replace_mode.hpp
 cancel_replace_order_error.hpp
 cancel_replace_order.hpp
 cancel_restrictions.hpp
+cross_margin_account.hpp
 depth_item.hpp
 depth.hpp
 depth_update.hpp
@@ -53,6 +54,7 @@ time_in_force.hpp
 trade2.hpp
 trade.hpp
 trades.hpp
+user_asset.hpp
 user_stream.hpp
 wsapi_account.hpp
 wsapi_cancel_open_orders.hpp
@@ -68,8 +70,8 @@ account.cpp
 agg_trade.cpp
 balance2.cpp
 balance.cpp
-balances.cpp
 balances_item.cpp
+balances.cpp
 balance_update.cpp
 book_ticker.cpp
 cancel_all_open_orders.cpp
@@ -78,6 +80,7 @@ cancel_replace_mode.cpp
 cancel_replace_order_error.cpp
 cancel_replace_order.cpp
 cancel_restrictions.cpp
+cross_margin_account.cpp
 depth_item.cpp
 depth.cpp
 depth_update.cpp
@@ -117,6 +120,7 @@ time_in_force.cpp
 trade2.cpp
 trade.cpp
 trades.cpp
+user_asset.cpp
 user_stream.cpp
 wsapi_account.cpp
 wsapi_cancel_open_orders.cpp
