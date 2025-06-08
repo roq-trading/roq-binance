@@ -794,6 +794,7 @@ void OrderEntryWS::operator()(Trace<json::WSAPIAccount> const &event, json::WSAP
               .margin_mode = {},
               .balance = item.free,
               .hold = item.locked,
+              .borrowed = NaN,
               .external_account = {},
               .update_type = UpdateType::SNAPSHOT,
               .exchange_time_utc = account.update_time,

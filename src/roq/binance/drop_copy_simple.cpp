@@ -247,6 +247,7 @@ void DropCopySimple::operator()(Trace<json::OutboundAccountPosition> const &even
           .margin_mode = margin_mode_,
           .balance = item.free_amount,
           .hold = item.locked_amount,
+          .borrowed = NaN,
           .external_account = {},
           .update_type = UpdateType::INCREMENTAL,
           .exchange_time_utc = outbound_account_position.time_of_last_account_update,

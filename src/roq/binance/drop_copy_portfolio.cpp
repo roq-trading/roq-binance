@@ -254,6 +254,7 @@ void DropCopyPortfolio::operator()(Trace<json::OutboundAccountPosition> const &e
           .margin_mode = MarginMode::PORTFOLIO,
           .balance = item.free_amount,
           .hold = item.locked_amount,
+          .borrowed = NaN,
           .external_account = {},
           .update_type = UpdateType::INCREMENTAL,
           .exchange_time_utc = outbound_account_position.time_of_last_account_update,
