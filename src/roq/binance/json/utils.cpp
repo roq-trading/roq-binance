@@ -112,6 +112,7 @@ Error guess_error(int32_t code) {
       // https://binance-docs.github.io/apidocs/spot/en/#6xxx-savings-issues
       // ...
   }
+  log::warn<2>("DEBUG Unable to map error code={}"sv, code);
   return Error::UNKNOWN;
 }
 
