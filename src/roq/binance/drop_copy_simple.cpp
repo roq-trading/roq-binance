@@ -268,9 +268,7 @@ void DropCopySimple::operator()(Trace<json::BalanceUpdate> const &event) {
 
 void DropCopySimple::operator()(Trace<json::ExecutionReport> const &event) {
   profile_.execution_report([&]() {
-    auto &trace_info = event.trace_info;
-    auto &execution_report = event.value;
-    log::info<2>("stream_id={}"sv, stream_id_);
+    auto &[trace_info, execution_report] = event;
     log::info<2>("execution_report={}"sv, execution_report);
     auto external_order_id = fmt::format("{}"sv, execution_report.order_id);  // alloc
     auto average_traded_price = utils::is_zero(execution_report.cumulative_filled_quantity)

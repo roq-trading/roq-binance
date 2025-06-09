@@ -130,10 +130,10 @@ void Rest::operator()(Event<Stop> const &) {
 }
 
 void Rest::operator()(Event<Timer> const &event) {
-  auto now = event.value.now;
-  (*connection_).refresh(now);
+  auto &[message_info, timer] = event;
+  (*connection_).refresh(timer.now);
   if (ready()) {
-    check_request_queue(now);
+    check_request_queue(timer.now);
   }
 }
 
@@ -186,7 +186,7 @@ void Rest::operator()(Trace<web::rest::Client::MessageBegin> const &) {
 }
 
 void Rest::operator()(Trace<web::rest::Client::Header> const &event) {
-  auto &header = event.value;
+  auto &[trace_info, header] = event;
   if (utils::case_insensitive_compare(header.name, X_MBX_USED_WEIGHT_1M) == 0) {
     try {
       auto value = utils::charconv::from_string_relaxed<uint32_t>(header.value);
@@ -530,8 +530,7 @@ void Rest::get_depth_ack(Trace<web::rest::Response> const &event, std::string_vi
 }
 
 void Rest::operator()(Trace<json::Depth> const &event, std::string_view const &symbol) {
-  auto &trace_info = event.trace_info;
-  auto &depth = event.value;
+  auto &[trace_info, depth] = event;
   log::info<4>(R"(depth={}, symbol="{}")"sv, depth, symbol);
   auto sequence = depth.last_update_id;
   auto &mbp = shared_.get_mbp();

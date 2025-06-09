@@ -160,9 +160,9 @@ void OrderEntryREST::operator()(Event<Stop> const &) {
 }
 
 void OrderEntryREST::operator()(Event<Timer> const &event) {
-  auto now = event.value.now;
-  (*connection_).refresh(now);
-  refresh_listen_key(now);
+  auto &[message_info, timer] = event;
+  (*connection_).refresh(timer.now);
+  refresh_listen_key(timer.now);
   if (master_ && ready() && !downloading()) {
     // spot
     if (!downloading() && request_.respond_account < request_.request_account) {
@@ -226,7 +226,7 @@ void OrderEntryREST::operator()(Event<Disconnected> const &event) {
 }
 
 uint16_t OrderEntryREST::operator()(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
-  auto &message_info = event.message_info;
+  auto &[message_info, create_order] = event;
   auto &tmp = account_.cancel_order_request_buffer_[message_info.source];
   if (!tmp) {
     new_order(event, order, request_id);
@@ -296,7 +296,7 @@ void OrderEntryREST::operator()(Trace<web::rest::Client::Disconnected> const &) 
 }
 
 void OrderEntryREST::operator()(Trace<web::rest::Client::Header> const &event) {
-  auto &header = event.value;
+  auto &[trace_info, header] = event;
   if (utils::case_insensitive_compare(header.name, "x-mbx-used-weight-1m"sv) == 0) {
     try {
       auto value = utils::charconv::from_string_relaxed<int64_t>(header.value);

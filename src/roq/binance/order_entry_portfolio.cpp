@@ -164,9 +164,9 @@ void OrderEntryPortfolio::operator()(Event<Stop> const &) {
 }
 
 void OrderEntryPortfolio::operator()(Event<Timer> const &event) {
-  auto now = event.value.now;
-  (*connection_).refresh(now);
-  refresh_listen_key(now);
+  auto &[message_info, timer] = event;
+  (*connection_).refresh(timer.now);
+  refresh_listen_key(timer.now);
   if (master_ && ready() && !downloading()) {
     if (!downloading() && request_.respond_account < request_.request_account) {
       log::info("Download account..."sv);
@@ -263,7 +263,7 @@ void OrderEntryPortfolio::operator()(Trace<web::rest::Client::Disconnected> cons
 }
 
 void OrderEntryPortfolio::operator()(Trace<web::rest::Client::Header> const &event) {
-  auto &header = event.value;
+  auto &[trace_info, header] = event;
   if (utils::case_insensitive_compare(header.name, X_MBX_USED_WEIGHT_1M) == 0) {
     try {
       auto value = utils::charconv::from_string_relaxed<int64_t>(header.value);
@@ -929,7 +929,7 @@ void OrderEntryPortfolio::cancel_all_open_orders(Event<CancelAllOrders> const &e
     if (!ready()) [[unlikely]] {
       throw server::oms::NotReady{"not ready"sv};
     }
-    auto &cancel_all_orders = event.value;
+    auto &[message_info, cancel_all_orders] = event;
     auto send_ack = [&](auto &symbol) {
       auto cancel_all_orders_ack = CancelAllOrdersAck{
           .stream_id = stream_id_,

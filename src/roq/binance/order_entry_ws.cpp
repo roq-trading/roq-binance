@@ -153,9 +153,9 @@ void OrderEntryWS::operator()(Event<Stop> const &) {
 }
 
 void OrderEntryWS::operator()(Event<Timer> const &event) {
-  auto now = event.value.now;
-  (*connection_).refresh(now);
-  user_data_stream_ping(now);
+  auto &[message_info, timer] = event;
+  (*connection_).refresh(timer.now);
+  user_data_stream_ping(timer.now);
   if (master_ && ready() && !downloading()) {
     if (!downloading() && request_.respond_account < request_.request_account) {
       log::info("Download account..."sv);
@@ -214,7 +214,7 @@ void OrderEntryWS::operator()(Event<Disconnected> const &event) {
 }
 
 uint16_t OrderEntryWS::operator()(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
-  auto &message_info = event.message_info;
+  auto &[message_info, create_order] = event;
   auto &tmp = account_.cancel_order_request_buffer_[message_info.source];
   if (!tmp) {
     order_place(event, order, request_id);
@@ -459,8 +459,7 @@ void OrderEntryWS::open_orders_cancel_all(Event<CancelAllOrders> const &event, s
     if (!ready()) [[unlikely]] {
       throw server::oms::NotReady{"not ready"sv};
     }
-    auto &message_info = event.message_info;
-    auto &cancel_all_orders = event.value;
+    auto &[message_info, cancel_all_orders] = event;
     auto send_ack = [&](auto &symbol) {
       auto cancel_all_orders_ack = CancelAllOrdersAck{
           .stream_id = stream_id_,
@@ -1269,8 +1268,7 @@ void OrderEntryWS::update_helper(
     [[maybe_unused]] int32_t status,
     int32_t error_code,
     std::string_view const &error_msg) {
-  auto &trace_info = event.trace_info;
-  auto &cancel_replace_order = event.value;
+  auto &[trace_info, cancel_replace_order] = event;
   // cancel
   auto dispatch_cancel_error = [&]() {
     auto &cancel_order = cancel_replace_order.cancel_response;

@@ -305,14 +305,14 @@ void Gateway::create_drop_copy_from_listen_key_update(auto &drop_copy, auto &lis
 }
 
 uint16_t Gateway::operator()(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
-  auto &create_order = event.value;
+  auto &[message_info, create_order] = event;
   assert(!std::empty(create_order.account));
   return get_order_entry(create_order.account, create_order.margin_mode)(event, order, request_id);
 }
 
 uint16_t Gateway::operator()(
     Event<ModifyOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
-  auto &modify_order = event.value;
+  auto &[message_info, modify_order] = event;
   assert(!std::empty(modify_order.account));
   assert(modify_order.account == order.account);
   return get_order_entry(modify_order.account, order.margin_mode)(event, order, request_id, previous_request_id);
@@ -320,14 +320,14 @@ uint16_t Gateway::operator()(
 
 uint16_t Gateway::operator()(
     Event<CancelOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
-  auto &cancel_order = event.value;
+  auto &[message_info, cancel_order] = event;
   assert(!std::empty(cancel_order.account));
   assert(cancel_order.account == order.account);
   return get_order_entry(cancel_order.account, order.margin_mode)(event, order, request_id, previous_request_id);
 }
 
 uint16_t Gateway::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
-  auto &cancel_all_orders = event.value;
+  auto &[message_info, cancel_all_orders] = event;
   assert(!std::empty(cancel_all_orders.account));
   auto &account = get_account(cancel_all_orders.account);
   if (account.margin_mode == MarginMode::PORTFOLIO) {
