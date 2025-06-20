@@ -169,6 +169,16 @@
       "raw": "V",
       "name": "self_trade_prevention",
       "type": "std/string_view"
+    },
+    {
+      "raw": "j",
+      "name": "strategy_id",
+      "type": "std/int64"
+    },
+    {
+      "raw": "J",
+      "name": "strategy_type",
+      "type": "std/int32"
     }
   ]
 }
