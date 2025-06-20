@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Changed
+
+* Download cross margin borrowed on timer (#510)
+
 ### Added
 
 * New flag to control the side-effect for margin trading (#501)

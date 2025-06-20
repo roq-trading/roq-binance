@@ -190,6 +190,12 @@ void OrderEntryREST::operator()(Event<Timer> const &event) {
       get_trades(MarginMode::CROSS);
       download_trades_cross_ = true;
     }
+    // timer
+    if (!downloading() && shared_.settings.rest.download_borrowed_freq.count() && (next_poll_borrowed_ < timer.now || next_poll_borrowed_.count() == 0)) {
+      get_account_cross_on_timer();
+      download_account_cross_on_timer_ = true;
+      next_poll_borrowed_ = timer.now + shared_.settings.rest.download_borrowed_freq;
+    }
   }
 }
 
@@ -293,6 +299,11 @@ void OrderEntryREST::operator()(Trace<web::rest::Client::Disconnected> const &) 
   }
   download_account_ = false;
   download_orders_ = false;
+  download_trades_ = false;
+  download_account_cross_ = false;
+  download_orders_cross_ = false;
+  download_trades_cross_ = false;
+  download_account_cross_on_timer_ = false;
 }
 
 void OrderEntryREST::operator()(Trace<web::rest::Client::Header> const &event) {
@@ -530,6 +541,7 @@ void OrderEntryREST::get_account(MarginMode margin_mode) {
 void OrderEntryREST::get_account_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
   profile_.account_ack([&]() {
     auto handle_success = [&](auto &body) {
+      log::warn(R"(DEBUG body="{}")"sv, body);
       switch (margin_mode) {
         using enum MarginMode;
         case UNDEFINED: {
@@ -893,6 +905,74 @@ void OrderEntryREST::operator()(Trace<json::Trades> const &event, MarginMode) {
     Trace event_2{trace_info, order_update};
     (*this)(event_2, order.client_order_id);
     */
+  }
+}
+
+// timer
+
+void OrderEntryREST::get_account_cross_on_timer() {
+  profile_.account([&]() {
+    log::warn("DEBUG Download borrowed amount ON TIMER..."sv);
+    auto now = clock::get_realtime<std::chrono::milliseconds>();
+    auto path = shared_.api.simple.cross_account;
+    auto query = account_.create_query(now);
+    auto headers = account_.create_headers();
+    auto request = web::rest::Request{
+        .method = web::http::Method::GET,
+        .path = path,
+        .query = query,
+        .accept = web::http::Accept::APPLICATION_JSON,
+        .content_type = {},
+        .headers = headers,
+        .body = {},
+        .quality_of_service = {},
+    };
+    auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
+      TraceInfo trace_info;
+      Trace event{trace_info, response};
+      get_account_cross_on_timer_ack(event);
+    };
+    (*connection_)("account"sv, request, callback);
+  });
+}
+
+void OrderEntryREST::get_account_cross_on_timer_ack(Trace<web::rest::Response> const &event) {
+  profile_.account_ack([&]() {
+    auto handle_success = [&](auto &body) {
+      log::warn(R"(DEBUG body="{}")"sv, body);
+      json::CrossMarginAccount account{body, decode_buffer_};
+      Trace event_2{event, account};
+      (*this)(event_2);
+      request_.respond_account_cross = clock::get_system();  // completion
+      download_account_cross_on_timer_ = false;
+    };
+    auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
+      log::warn(R"(error={}, text="{}")"sv, error, text);
+      request_.respond_account_cross = clock::get_system();  // completion
+      download_account_cross_on_timer_ = false;
+    };
+    process_response(event, handle_success, handle_error);
+  });
+}
+
+void OrderEntryREST::operator()(Trace<json::CrossMarginAccount> const &event) {
+  auto &[trace_info, account] = event;
+  log::info<2>("account={}"sv, account);
+  for (auto &item : account.user_assets) {
+    auto funds_update = FundsUpdate{
+        .stream_id = stream_id_,
+        .account = account_.name,
+        .currency = item.asset,
+        .margin_mode = MarginMode::CROSS,
+        .balance = NaN,             // note!
+        .hold = NaN,                // note!
+        .borrowed = item.borrowed,  // note!
+        .external_account = {},
+        .update_type = UpdateType::INCREMENTAL,  // note! avoid replacing other fields
+        .exchange_time_utc = {},
+        .sending_time_utc = {},
+    };
+    create_trace_and_dispatch(handler_, trace_info, funds_update, true);
   }
 }
 

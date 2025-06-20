@@ -67,7 +67,8 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
 
  protected:
   bool downloading() const {
-    return download_account_ || download_orders_ || download_trades_ || download_account_cross_ || download_orders_cross_ || download_trades_cross_;
+    return download_account_ || download_orders_ || download_trades_ || download_account_cross_ || download_orders_cross_ || download_trades_cross_ ||
+           download_account_cross_on_timer_;
   }
 
   // web::rest::Client::Handler
@@ -96,6 +97,10 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
   void get_trades(MarginMode);
   void get_trades_ack(Trace<web::rest::Response> const &, MarginMode);
   void operator()(Trace<json::Trades> const &, MarginMode);
+
+  void get_account_cross_on_timer();
+  void get_account_cross_on_timer_ack(Trace<web::rest::Response> const &);
+  void operator()(Trace<json::CrossMarginAccount> const &);
 
   void refresh_listen_key(std::chrono::nanoseconds now);
 
@@ -200,9 +205,12 @@ struct OrderEntryREST final : public OrderEntry, public web::rest::Client::Handl
   bool download_account_cross_ = false;
   bool download_orders_cross_ = false;
   bool download_trades_cross_ = false;
+  bool download_account_cross_on_timer_ = false;
   std::vector<char> encode_buffer_;
   bool download_trades_is_first_ = true;
   bool download_trades_cross_is_first_ = true;
+  //
+  std::chrono::nanoseconds next_poll_borrowed_ = {};
 };
 
 }  // namespace binance
