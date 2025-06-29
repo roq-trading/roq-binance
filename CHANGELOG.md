@@ -4,6 +4,8 @@ All notable changes will be documented in this file.
 
 ## Head
 
+## 1.0.7 &ndash; 2025-07-02
+
 ### Changed
 
 * Download cross margin borrowed on timer (#510)
