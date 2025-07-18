@@ -328,9 +328,11 @@ void DropCopySimple::operator()(Trace<json::ExecutionReport> const &event) {
         .quantity = execution_report.last_executed_quantity,
         .price = execution_report.last_executed_price,
         .liquidity = last_liquidity,
-        .quote_quantity = execution_report.last_quote_asset_transacted_quantity,
-        .commission_quantity = execution_report.commission_amount,
+        .base_amount = NaN,
+        .quote_amount = execution_report.last_quote_asset_transacted_quantity,
+        .commission_amount = execution_report.commission_amount,
         .commission_currency = execution_report.commission_asset,
+        .profit_loss_amount = NaN,
     };
     fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"sv, execution_report.trade_id);
     auto trade_update = TradeUpdate{
