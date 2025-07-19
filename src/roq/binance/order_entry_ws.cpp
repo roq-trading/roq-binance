@@ -895,7 +895,7 @@ void OrderEntryWS::operator()(Trace<json::WSAPITrades> const &event, json::WSAPI
               .quote_amount = item.quote_qty,
               .commission_amount = item.commission,
               .commission_currency = item.commission_asset,
-              .profit_loss_amount = NaN,
+              .profit_loss_cost_amount = NaN,
           };
           auto side = item.is_buyer ? Side::BUY : Side::SELL;
           fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"sv, item.id);

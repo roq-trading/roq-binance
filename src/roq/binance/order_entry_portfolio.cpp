@@ -635,7 +635,7 @@ void OrderEntryPortfolio::operator()(Trace<json::Trades> const &event) {
         .quote_amount = item.quote_qty,
         .commission_amount = item.commission,
         .commission_currency = item.commission_asset,
-        .profit_loss_amount = NaN,
+        .profit_loss_cost_amount = NaN,
     };
     fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"sv, item.id);
     auto external_order_id = fmt::format("{}"sv, item.order_id);  // alloc
