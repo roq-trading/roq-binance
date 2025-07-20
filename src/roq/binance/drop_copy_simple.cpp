@@ -333,10 +333,10 @@ void DropCopySimple::operator()(Trace<json::ExecutionReport> const &event) {
         .quantity = execution_report.last_executed_quantity,
         .price = execution_report.last_executed_price,
         .liquidity = last_liquidity,
-        .base_amount = NaN,
-        .quote_amount = execution_report.last_quote_asset_transacted_quantity,
         .commission_amount = execution_report.commission_amount,
         .commission_currency = execution_report.commission_asset,
+        .base_amount = NaN,
+        .quote_amount = execution_report.last_quote_asset_transacted_quantity,
         .profit_loss_amount = profit_loss_amount,
     };
     fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"sv, execution_report.trade_id);
