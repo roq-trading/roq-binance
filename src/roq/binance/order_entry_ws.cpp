@@ -889,7 +889,7 @@ void OrderEntryWS::operator()(Trace<json::WSAPITrades> const &event, json::WSAPI
           auto liquidity = item.is_maker ? Liquidity::MAKER : Liquidity::TAKER;
           auto side = item.is_buyer ? Side::BUY : Side::SELL;
           auto ref_data = shared_.get_ref_data(shared_.settings.exchange, item.symbol);
-          auto profit_loss_cost_amount = utils::compute_profit_loss_cost_amount(side, item.qty, item.price, ref_data.multiplier);
+          auto profit_loss_amount = utils::compute_profit_loss_amount(side, item.qty, item.price, ref_data.multiplier);
           auto fill = Fill{
               .external_trade_id = {},
               .quantity = item.qty,  // XXX FIXME quote_qty ???
@@ -899,7 +899,7 @@ void OrderEntryWS::operator()(Trace<json::WSAPITrades> const &event, json::WSAPI
               .quote_amount = item.quote_qty,
               .commission_amount = item.commission,
               .commission_currency = item.commission_asset,
-              .profit_loss_cost_amount = profit_loss_cost_amount,
+              .profit_loss_amount = profit_loss_amount,
           };
           fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"sv, item.id);
           auto external_order_id = fmt::format("{}"sv, item.order_id);
