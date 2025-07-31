@@ -695,7 +695,8 @@ void OrderEntryPortfolio::new_order(Event<CreateOrder> const &event, server::oms
     open_orders_symbols_.emplace(create_order.symbol);
     auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto body = json::new_order(encode_buffer_, create_order, order, request_id, create_order_template, recv_window);
+    auto body =
+        json::new_order(encode_buffer_, create_order, order, request_id, create_order_template, recv_window, shared_.api.simple.margin_side_effect_type);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = account_.create_query(now, body);
     auto headers = account_.create_headers();
