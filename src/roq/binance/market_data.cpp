@@ -252,6 +252,9 @@ void MarketData::subscribe(std::span<Symbol const> const &symbols) {
   auto frequency = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.ws.subscribe_depth_freq);
   auto depth = fmt::format(R"(depth@{}ms)"sv, frequency.count());
   subscribe(symbols, depth);
+  if (shared_.settings.download.time_series_lookback.count()) {
+    subscribe(symbols, "kline_1m"sv);
+  }
 }
 
 void MarketData::subscribe(std::span<Symbol const> const &symbols, std::string_view const &channel) {
