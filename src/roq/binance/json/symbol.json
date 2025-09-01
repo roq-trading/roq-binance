@@ -93,6 +93,10 @@
     {
       "name": "amendAllowed",
       "type": "std/bool"
+    },
+    {
+      "name": "pegInstructionsAllowed",
+      "type": "std/bool"
     }
   ]
 }

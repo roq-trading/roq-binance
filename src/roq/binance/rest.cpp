@@ -425,6 +425,10 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
           break;
         case NOTIONAL:
           break;
+        case MAX_NUM_ORDER_LISTS:
+          break;
+        case MAX_NUM_ORDER_AMENDS:
+          break;
       }
     }
     auto reference_data = ReferenceData{

@@ -135,6 +135,16 @@
       "name": "applyMaxToMarket",
       "type": "std/bool",
       "comment": "NOTIONAL?"
+    },
+    {
+      "name": "maxNumOrderLists",
+      "type": "std/int32",
+      "comment": "MAX_NUM_ORDER_LISTS"
+    },
+    {
+      "name": "maxNumOrderAmends",
+      "type": "std/int32",
+      "comment": "MAX_NUM_ORDER_AMENDS"
     }
   ]
 }

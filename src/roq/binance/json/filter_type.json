@@ -46,6 +46,12 @@
     },
     {
       "name": "NOTIONAL"
+    },
+    {
+      "name": "MAX_NUM_ORDER_LISTS"
+    },
+    {
+      "name": "MAX_NUM_ORDER_AMENDS"
     }
   ]
 }
