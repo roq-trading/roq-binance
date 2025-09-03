@@ -19,6 +19,8 @@
 
 #include "roq/core/download.hpp"
 
+#include "roq/core/json/buffer_stack.hpp"
+
 #include "roq/server.hpp"
 
 #include "roq/binance/rest_state.hpp"
@@ -95,7 +97,7 @@ struct Rest final : public web::rest::Client::Handler {
   // connection
   std::unique_ptr<web::rest::Client> connection_;
   // buffers
-  std::vector<std::byte> decode_buffer_;
+  core::json::BufferStack decode_buffer_;
   std::vector<std::byte> decode_buffer_2_;  // note! decode nested arrays (ExchangeInfo)
   // metrics
   struct {

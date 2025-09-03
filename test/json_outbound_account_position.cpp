@@ -2,6 +2,7 @@
 
 #include <catch2/catch_all.hpp>
 
+#include "roq/core/json/buffer_stack.hpp"
 #include "roq/core/json/parser.hpp"
 
 #include "roq/binance/json/user_stream_parser.hpp"
@@ -34,7 +35,7 @@ TEST_CASE("json_outbound_account_position_simple", "[json_outbound_account_posit
                  R"(})"
                  R"(])"
                  R"(})";
-  std::vector<std::byte> buffer(8192);
+  core::json::BufferStack buffer{8192, 1};
   json::OutboundAccountPosition obj{message, buffer};
   CHECK(obj.event_type == json::EventType::OUTBOUND_ACCOUNT_POSITION);
   CHECK(obj.event_time == 1634285425303ms);
@@ -78,7 +79,7 @@ TEST_CASE("json_outbound_account_position_stream", "[json_outbound_account_posit
                  R"(])"
                  R"(})"
                  R"(})";
-  std::vector<std::byte> buffer(8192);
+  core::json::BufferStack buffer{8192, 1};
   TraceInfo trace_info;
   struct MyHandler final : public json::UserStreamParser::Handler {
     void operator()(Trace<json::OutboundAccountPosition> const &) override { found_ = true; }
@@ -117,7 +118,7 @@ TEST_CASE("json_outbound_account_position_stream_maker_new", "[json_outbound_acc
                  R"(])"
                  R"(})"
                  R"(})";
-  std::vector<std::byte> buffer(8192);
+  core::json::BufferStack buffer{8192, 1};
   TraceInfo trace_info;
   struct MyHandler final : public json::UserStreamParser::Handler {
     void operator()(Trace<json::OutboundAccountPosition> const &event) override {
@@ -177,7 +178,7 @@ TEST_CASE("json_outbound_account_position_stream_maker_filled", "[json_outbound_
                  R"(])"
                  R"(})"
                  R"(})";
-  std::vector<std::byte> buffer(8192);
+  core::json::BufferStack buffer{8192, 1};
   TraceInfo trace_info;
   struct MyHandler final : public json::UserStreamParser::Handler {
     void operator()(Trace<json::OutboundAccountPosition> const &event) override {

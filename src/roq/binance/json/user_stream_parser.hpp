@@ -7,6 +7,8 @@
 
 #include "roq/trace_info.hpp"
 
+#include "roq/core/json/buffer_stack.hpp"
+
 #include "roq/binance/json/event_type.hpp"
 
 #include "roq/binance/json/balance_update.hpp"
@@ -27,13 +29,13 @@ struct UserStreamParser final {
   };
 
   // traditional
-  static bool dispatch(Handler &, std::string_view const &message, std::span<std::byte> const &, TraceInfo const &);
+  static bool dispatch(Handler &, std::string_view const &message, core::json::BufferStack &, TraceInfo const &);
 
   // papi
-  static bool dispatch_papi(Handler &, std::string_view const &message, std::span<std::byte> const &, TraceInfo const &);
+  static bool dispatch_papi(Handler &, std::string_view const &message, core::json::BufferStack &, TraceInfo const &);
 
  private:
-  static bool try_dispatch(UserStreamParser::Handler &, std::string_view const &message, std::span<std::byte> const &, EventType, TraceInfo const &);
+  static bool try_dispatch(UserStreamParser::Handler &, std::string_view const &message, core::json::BufferStack &, EventType, TraceInfo const &);
 };
 
 }  // namespace json

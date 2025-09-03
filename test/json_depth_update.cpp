@@ -2,6 +2,7 @@
 
 #include <catch2/catch_all.hpp>
 
+#include "roq/core/json/buffer_stack.hpp"
 #include "roq/core/json/parser.hpp"
 
 #include "roq/binance/json/market_stream_parser.hpp"
@@ -75,7 +76,7 @@ TEST_CASE("json_depth_update_simple", "[json_depth_update]") {
                  R"(])"
                  R"(})"
                  R"(})";
-  std::vector<std::byte> buffer(65536);
+  core::json::BufferStack buffer_stack{65536, 1};
   struct Handler : public json::MarketStreamParser::Handler {
     size_t counter = 0;
     void operator()(Trace<json::Error> const &, [[maybe_unused]] int64_t id) override { FAIL(); }
@@ -88,6 +89,6 @@ TEST_CASE("json_depth_update_simple", "[json_depth_update]") {
     void operator()(Trace<json::DepthUpdate> const &) override { ++counter; }
   } handler;
   TraceInfo trace_info;
-  json::MarketStreamParser::dispatch(handler, message, buffer, trace_info);
+  json::MarketStreamParser::dispatch(handler, message, buffer_stack, trace_info);
   CHECK(handler.counter == 1);
 }

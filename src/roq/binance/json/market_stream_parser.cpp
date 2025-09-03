@@ -22,7 +22,7 @@ namespace binance {
 namespace json {
 
 bool MarketStreamParser::dispatch(
-    MarketStreamParser::Handler &handler, std::string_view const &message, std::span<std::byte> const &buffer, TraceInfo const &trace_info) {
+    MarketStreamParser::Handler &handler, std::string_view const &message, core::json::BufferStack &buffer_stack, TraceInfo const &trace_info) {
   int64_t id = -1;
   std::string symbol;  // allocating because we need uppercase
   auto stream = Stream::UNDEFINED_INTERNAL;
@@ -53,8 +53,7 @@ bool MarketStreamParser::dispatch(
           break;
         case RESULT:
           if (id >= 0) {
-            core::json::Buffer buffer_2{buffer};
-            Result result{value, buffer_2};
+            Result result{value, buffer_stack};
             Trace event{trace_info, result};
             dispatched = true;
             handler(event, id);
@@ -120,8 +119,7 @@ bool MarketStreamParser::dispatch(
             case DEPTH10:
             case DEPTH20: {
               assert(!std::empty(symbol));
-              core::json::Buffer buffer_2{buffer};
-              Depth depth{value, buffer_2};
+              Depth depth{value, buffer_stack};
               dispatched = true;
               Trace event{trace_info, depth};
               handler(event, symbol);
@@ -129,8 +127,7 @@ bool MarketStreamParser::dispatch(
             }
             case DEPTH: {
               assert(!std::empty(symbol));
-              core::json::Buffer buffer_2{buffer};
-              DepthUpdate depth_update{value, buffer_2};
+              DepthUpdate depth_update{value, buffer_stack};
               dispatched = true;
               Trace event{trace_info, depth_update};
               handler(event);

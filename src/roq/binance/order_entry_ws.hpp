@@ -19,6 +19,8 @@
 
 #include "roq/core/download.hpp"
 
+#include "roq/core/json/buffer_stack.hpp"
+
 #include "roq/server.hpp"
 
 #include "roq/server/cache/cancel_order_request.hpp"
@@ -114,7 +116,7 @@ struct OrderEntryWS final : public OrderEntry, public web::socket::Client::Handl
   // web socket
   std::unique_ptr<web::socket::Client> connection_;
   // buffers
-  std::vector<std::byte> decode_buffer_;
+  core::json::BufferStack decode_buffer_;
   // metrics
   struct {
     utils::metrics::Counter disconnect;

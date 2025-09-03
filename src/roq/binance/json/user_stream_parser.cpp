@@ -15,10 +15,10 @@ namespace binance {
 namespace json {
 
 bool UserStreamParser::dispatch(
-    UserStreamParser::Handler &handler, std::string_view const &message, std::span<std::byte> const &buffer, TraceInfo const &trace_info) {
+    UserStreamParser::Handler &handler, std::string_view const &message, core::json::BufferStack &buffer_stack, TraceInfo const &trace_info) {
   // XXX this is bad... 3 levels of parsing
-  // XXX buffer will not be used for first iteration
-  UserStream user_stream{message, buffer};
+  // XXX buffer_stack will not be used for first iteration
+  UserStream user_stream{message, buffer_stack};
   auto &data = user_stream.data;
   core::json::Parser parser{data};
   auto root = parser.root();
@@ -27,7 +27,7 @@ bool UserStreamParser::dispatch(
       continue;
     }
     EventType event_type{value};
-    if (try_dispatch(handler, data, buffer, event_type, trace_info)) {
+    if (try_dispatch(handler, data, buffer_stack, event_type, trace_info)) {
       return true;
     }
     break;
@@ -36,7 +36,7 @@ bool UserStreamParser::dispatch(
 }
 
 bool UserStreamParser::dispatch_papi(
-    UserStreamParser::Handler &handler, std::string_view const &message, std::span<std::byte> const &buffer, TraceInfo const &trace_info) {
+    UserStreamParser::Handler &handler, std::string_view const &message, core::json::BufferStack &buffer_stack, TraceInfo const &trace_info) {
   core::json::Parser parser{message};
   auto root = parser.root();
   for (auto [key, value] : std::get<core::json::Object>(root)) {
@@ -44,7 +44,7 @@ bool UserStreamParser::dispatch_papi(
       continue;
     }
     EventType event_type{value};
-    if (try_dispatch(handler, message, buffer, event_type, trace_info)) {
+    if (try_dispatch(handler, message, buffer_stack, event_type, trace_info)) {
       return true;
     }
     break;
@@ -55,7 +55,7 @@ bool UserStreamParser::dispatch_papi(
 bool UserStreamParser::try_dispatch(
     UserStreamParser::Handler &handler,
     std::string_view const &message,
-    std::span<std::byte> const &buffer,
+    core::json::BufferStack &buffer_stack,
     EventType event_type,
     TraceInfo const &trace_info) {
   switch (event_type) {
@@ -70,7 +70,7 @@ bool UserStreamParser::try_dispatch(
       log::fatal("Unexpected"sv);
       break;
     case OUTBOUND_ACCOUNT_POSITION: {
-      OutboundAccountPosition outbound_account_position{message, buffer};
+      OutboundAccountPosition outbound_account_position{message, buffer_stack};
       Trace event{trace_info, outbound_account_position};
       handler(event);
       break;
@@ -88,13 +88,13 @@ bool UserStreamParser::try_dispatch(
       break;
     }
     case LIST_STATUS: {
-      ListStatus list_status{message, buffer};
+      ListStatus list_status{message, buffer_stack};
       Trace event{trace_info, list_status};
       handler(event);
       break;
     }
     case OPEN_ORDER_LOSS: {
-      // OpenOrderLoss open_order_loss{message, buffer};
+      // OpenOrderLoss open_order_loss{message, buffer_stack};
       // Trace event{trace_info, open_order_loss};
       // handler(event);
       break;

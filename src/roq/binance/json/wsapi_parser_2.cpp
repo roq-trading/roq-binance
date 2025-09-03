@@ -30,14 +30,15 @@ auto get_request(auto &message) -> WSAPIRequest {
 }
 
 template <typename T>
-bool dispatch_helper(auto &handler, auto &message, auto &buffer, auto &trace_info, auto &request) {
-  T obj{message, buffer};
+bool dispatch_helper(auto &handler, auto &message, auto &buffer_stack, auto &trace_info, auto &request) {
+  T obj{message, buffer_stack};
   create_trace_and_dispatch(handler, trace_info, obj, request);
   return true;
 }
 }  // namespace
 
-bool WSAPIParser2::dispatch(WSAPIParser2::Handler &handler, std::string_view const &message, std::span<std::byte> const &buffer, TraceInfo const &trace_info) {
+bool WSAPIParser2::dispatch(
+    WSAPIParser2::Handler &handler, std::string_view const &message, core::json::BufferStack &buffer_stack, TraceInfo const &trace_info) {
   auto request = get_request(message);
   switch (request.type) {
     using enum WSAPIType::type_t;
@@ -45,23 +46,23 @@ bool WSAPIParser2::dispatch(WSAPIParser2::Handler &handler, std::string_view con
     case UNKNOWN_INTERNAL:
       break;
     case LISTEN_KEY_CREATE:
-      return dispatch_helper<WSAPIListenKey>(handler, message, buffer, trace_info, request);
+      return dispatch_helper<WSAPIListenKey>(handler, message, buffer_stack, trace_info, request);
     case LISTEN_KEY_PING:
       return true;  // note!
     case ACCOUNT_STATUS:
-      return dispatch_helper<WSAPIAccount>(handler, message, buffer, trace_info, request);
+      return dispatch_helper<WSAPIAccount>(handler, message, buffer_stack, trace_info, request);
     case OPEN_ORDERS_STATUS:
-      return dispatch_helper<WSAPIOpenOrders>(handler, message, buffer, trace_info, request);
+      return dispatch_helper<WSAPIOpenOrders>(handler, message, buffer_stack, trace_info, request);
     case MY_TRADES:
-      return dispatch_helper<WSAPITrades>(handler, message, buffer, trace_info, request);
+      return dispatch_helper<WSAPITrades>(handler, message, buffer_stack, trace_info, request);
     case OPEN_ORDERS_CANCEL_ALL:
-      return dispatch_helper<WSAPICancelOpenOrders>(handler, message, buffer, trace_info, request);
+      return dispatch_helper<WSAPICancelOpenOrders>(handler, message, buffer_stack, trace_info, request);
     case ORDER_PLACE:
-      return dispatch_helper<WSAPIOrderPlace>(handler, message, buffer, trace_info, request);
+      return dispatch_helper<WSAPIOrderPlace>(handler, message, buffer_stack, trace_info, request);
     case ORDER_CANCEL:
-      return dispatch_helper<WSAPICancelOrder>(handler, message, buffer, trace_info, request);
+      return dispatch_helper<WSAPICancelOrder>(handler, message, buffer_stack, trace_info, request);
     case ORDER_CANCEL_REPLACE:
-      return dispatch_helper<WSAPICancelReplaceOrder>(handler, message, buffer, trace_info, request);
+      return dispatch_helper<WSAPICancelReplaceOrder>(handler, message, buffer_stack, trace_info, request);
   }
   return false;
 }

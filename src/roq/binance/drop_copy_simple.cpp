@@ -30,6 +30,8 @@ auto const SUPPORTS = Mask{
     SupportType::TRADE,
     SupportType::FUNDS,
 };
+
+size_t const MAX_DECODE_BUFFER_DEPTH = 1;
 }  // namespace
 
 // === HELPERS ===
@@ -84,7 +86,8 @@ DropCopySimple::DropCopySimple(
     std::string_view const &listen_key,
     MarginMode margin_mode)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name, margin_mode)}, margin_mode_{margin_mode},
-      connection_{create_connection(*this, shared.settings, context, listen_key)}, decode_buffer_(shared.settings.misc.decode_buffer_size),
+      connection_{create_connection(*this, shared.settings, context, listen_key)},
+      decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
