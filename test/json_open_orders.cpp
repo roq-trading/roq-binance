@@ -2,6 +2,7 @@
 
 #include <catch2/catch_all.hpp>
 
+#include "roq/core/json/buffer_stack.hpp"
 #include "roq/core/json/parser.hpp"
 
 #include "roq/binance/json/open_orders.hpp"
@@ -16,7 +17,7 @@ using namespace Catch::literals;
 
 TEST_CASE("json_open_orders_simple_empty", "[json_open_orders]") {
   auto message = R"([])";
-  std::vector<std::byte> buffer(8192);
+  core::json::BufferStack buffer{8192, 1};
   json::OpenOrders obj{message, buffer};
   REQUIRE(std::size(obj.data) == 0);
 }
@@ -43,7 +44,7 @@ TEST_CASE("json_open_orders_simple", "[json_open_orders]") {
                  R"("origQuoteOrderQty":"0.00000000")"
                  R"(})"
                  R"(])";
-  std::vector<std::byte> buffer(8192);
+  core::json::BufferStack buffer{8192, 1};
   json::OpenOrders obj{message, buffer};
   auto &data = obj.data;
   REQUIRE(std::size(data) == 1);

@@ -98,7 +98,7 @@ struct Rest final : public web::rest::Client::Handler {
   std::unique_ptr<web::rest::Client> connection_;
   // buffers
   core::json::BufferStack decode_buffer_;
-  std::vector<std::byte> decode_buffer_2_;  // note! decode nested arrays (ExchangeInfo)
+  core::json::BufferStack decode_buffer_2_;  // XXX FIXME can't we roll this into decode_buffer_2 now ???
   // metrics
   struct {
     utils::metrics::Counter disconnect;

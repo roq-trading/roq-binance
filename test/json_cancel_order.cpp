@@ -2,6 +2,7 @@
 
 #include <catch2/catch_all.hpp>
 
+#include "roq/core/json/buffer_stack.hpp"
 #include "roq/core/json/parser.hpp"
 
 #include "roq/binance/json/cancel_order.hpp"
@@ -30,7 +31,7 @@ TEST_CASE("json_cancel_order_simple", "[json_cancel_order]") {
                  R"("type":"LIMIT",)"
                  R"("side":"BUY")"
                  R"(})";
-  std::vector<std::byte> buffer(8192);
+  core::json::BufferStack buffer{8192, 1};
   json::CancelOrder obj{message, buffer};
   CHECK(obj.symbol == "LTCBTC"sv);
   CHECK(obj.orig_client_order_id == "OgAC6QMAAQAACt7PDZQW"sv);

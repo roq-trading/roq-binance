@@ -2,6 +2,7 @@
 
 #include <catch2/catch_all.hpp>
 
+#include "roq/core/json/buffer_stack.hpp"
 #include "roq/core/json/parser.hpp"
 
 #include "roq/binance/json/cancel_replace_order.hpp"
@@ -50,7 +51,7 @@ TEST_CASE("json_cancel_replace_order_simple", "[json_cancel_replace_order]") {
                  R"("fills":[])"
                  R"(})"
                  R"(})";
-  std::vector<std::byte> buffer(8192);
+  core::json::BufferStack buffer{8192, 1};
   json::CancelReplaceOrder obj{message, buffer};
   CHECK(obj.cancel_result == json::SuccessOrFailure::SUCCESS);
   CHECK(obj.new_order_result == json::SuccessOrFailure::SUCCESS);

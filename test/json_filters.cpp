@@ -2,6 +2,7 @@
 
 #include <catch2/catch_all.hpp>
 
+#include "roq/core/json/buffer_stack.hpp"
 #include "roq/core/json/parser.hpp"
 
 #include "roq/binance/json/filters.hpp"
@@ -51,7 +52,7 @@ TEST_CASE("json_filters_simple_1", "[json_filters]") {
                  R"("maxNumAlgoOrders":5)"
                  R"(})"
                  R"(])";
-  std::vector<std::byte> buffer(8192);
+  core::json::BufferStack buffer{8192, 1};
   json::Filters obj{message, buffer};
   auto &data = obj.data;
   REQUIRE(std::size(data) == 8);
@@ -131,7 +132,7 @@ TEST_CASE("json_filters_simple_2", "[json_filters]") {
                  R"("maxNumAlgoOrders":5)"
                  R"(})"
                  R"(])";
-  std::vector<std::byte> buffer(8192);
+  core::json::BufferStack buffer{8192, 1};
   json::Filters obj{message, buffer};
   auto &data = obj.data;
   REQUIRE(std::size(data) == 9);

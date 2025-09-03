@@ -2,6 +2,7 @@
 
 #include <catch2/catch_all.hpp>
 
+#include "roq/core/json/buffer_stack.hpp"
 #include "roq/core/json/parser.hpp"
 
 #include "roq/binance/json/account.hpp"
@@ -37,7 +38,7 @@ TEST_CASE("json_account_simple", "[json_account]") {
                  R"(})"
                  R"(])"
                  R"(})";
-  std::vector<std::byte> buffer(8192);
+  core::json::BufferStack buffer{8192, 1};
   json::Account account{message, buffer};
   CHECK(account.maker_commission == 10.0_a);
   CHECK(account.taker_commission == 10.0_a);
