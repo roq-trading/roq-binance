@@ -1,6 +1,6 @@
 {
   "name": "roq/binance/json/Symbol",
-  "type": "item",
+  "type": "dictionary",
   "values": [
     {
       "name": "symbol",

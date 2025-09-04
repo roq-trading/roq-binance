@@ -1,6 +1,6 @@
 {
   "name": "roq/binance/json/DepthUpdate",
-  "type": "comp",
+  "type": "dictionary",
   "values": [
     {
       "raw": "e",

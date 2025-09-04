@@ -1,6 +1,6 @@
 {
   "name": "roq/binance/json/Fill",
-  "type": "item",
+  "type": "dictionary",
   "values": [
     {
       "name": "price",

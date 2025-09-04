@@ -1,6 +1,6 @@
 {
   "name": "roq/binance/json/WSAPIAccount",
-  "type": "comp",
+  "type": "dictionary",
   "values": [
     {
       "name": "id",

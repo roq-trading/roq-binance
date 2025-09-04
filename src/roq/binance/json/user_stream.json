@@ -1,6 +1,6 @@
 {
   "name": "roq/binance/json/UserStream",
-  "type": "comp",
+  "type": "dictionary",
   "values": [
     {
       "name": "stream",

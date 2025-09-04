@@ -1,6 +1,6 @@
 {
   "name": "roq/binance/json/Trade",
-  "type": "item",
+  "type": "dictionary",
   "values": [
     {
       "raw": "e",

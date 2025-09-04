@@ -1,6 +1,6 @@
 {
   "name": "roq/binance/json/DepthItem",
-  "type": "array_item",
+  "type": "by_index",
   "values": [
     {
       "name": "price",

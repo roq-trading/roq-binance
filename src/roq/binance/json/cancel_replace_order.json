@@ -1,6 +1,6 @@
 {
   "name": "roq/binance/json/CancelReplaceOrder",
-  "type": "comp",
+  "type": "dictionary",
   "values": [
     {
       "name": "cancelResult",

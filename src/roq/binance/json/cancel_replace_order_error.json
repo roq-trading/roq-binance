@@ -1,6 +1,6 @@
 {
   "name": "roq/binance/json/CancelReplaceOrderError",
-  "type": "comp",
+  "type": "dictionary",
   "values": [
     {
       "name": "code",

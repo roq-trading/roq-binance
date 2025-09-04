@@ -1,6 +1,6 @@
 {
   "name": "roq/binance/json/RateLimitsItem",
-  "type": "item",
+  "type": "dictionary",
   "values": [
     {
       "name": "rateLimitType",

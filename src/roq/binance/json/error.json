@@ -1,6 +1,6 @@
 {
   "name": "roq/binance/json/Error",
-  "type": "item",
+  "type": "dictionary",
   "values": [
     {
       "name": "code",

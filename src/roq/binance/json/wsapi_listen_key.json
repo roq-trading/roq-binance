@@ -1,6 +1,6 @@
 {
   "name": "roq/binance/json/WSAPIListenKey",
-  "type": "comp",
+  "type": "dictionary",
   "values": [
     {
       "name": "id",

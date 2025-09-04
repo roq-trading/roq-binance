@@ -1,6 +1,6 @@
 {
   "name": "roq/binance/json/OutboundAccountPosition",
-  "type": "comp",
+  "type": "dictionary",
   "values": [
     {
       "raw": "e",

@@ -1,6 +1,6 @@
 {
   "name": "roq/binance/json/CancelOrder",
-  "type": "item",
+  "type": "dictionary",
   "values": [
     {
       "name": "symbol",

@@ -1,6 +1,6 @@
 {
   "name": "roq/binance/json/Filter",
-  "type": "item",
+  "type": "dictionary",
   "values": [
     {
       "name": "filterType",

@@ -1,6 +1,6 @@
 {
   "name": "roq/binance/json/MiniTicker",
-  "type": "item",
+  "type": "dictionary",
   "values": [
     {
       "raw": "e",

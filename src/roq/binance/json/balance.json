@@ -1,6 +1,6 @@
 {
   "name": "roq/binance/json/Balance",
-  "type": "item",
+  "type": "dictionary",
   "values": [
     {
       "name": "asset",

@@ -1,6 +1,6 @@
 {
   "name": "roq/binance/json/Trade2",
-  "type": "item",
+  "type": "dictionary",
   "values": [
     {
       "name": "symbol",

@@ -1,6 +1,6 @@
 {
   "name": "roq/binance/json/NewOrder",
-  "type": "comp",
+  "type": "dictionary",
   "values": [
     {
       "name": "symbol",
