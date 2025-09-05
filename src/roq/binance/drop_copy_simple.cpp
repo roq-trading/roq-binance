@@ -229,7 +229,7 @@ void DropCopySimple::parse(std::string_view const &message) {
     auto log_message = [&]() { log::warn(R"(message="{}")"sv, message); };
     try {
       TraceInfo trace_info;
-      if (!json::UserStreamParser::dispatch(*this, message, decode_buffer_, trace_info)) {
+      if (!json::UserStreamParser::dispatch(*this, message, decode_buffer_, trace_info, shared_.settings.misc.continue_with_unknown_event_type)) {
         log_message();
       }
     } catch (...) {

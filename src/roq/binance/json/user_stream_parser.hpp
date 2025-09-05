@@ -29,13 +29,20 @@ struct UserStreamParser final {
   };
 
   // traditional
-  static bool dispatch(Handler &, std::string_view const &message, core::json::BufferStack &, TraceInfo const &);
+  static bool dispatch(Handler &, std::string_view const &message, core::json::BufferStack &, TraceInfo const &, bool continue_with_unknown_event_type = false);
 
   // papi
-  static bool dispatch_papi(Handler &, std::string_view const &message, core::json::BufferStack &, TraceInfo const &);
+  static bool dispatch_papi(
+      Handler &, std::string_view const &message, core::json::BufferStack &, TraceInfo const &, bool continue_with_unknown_event_type = false);
 
  private:
-  static bool try_dispatch(UserStreamParser::Handler &, std::string_view const &message, core::json::BufferStack &, EventType, TraceInfo const &);
+  static bool try_dispatch(
+      UserStreamParser::Handler &,
+      std::string_view const &message,
+      core::json::BufferStack &,
+      EventType,
+      TraceInfo const &,
+      bool continue_with_unknown_event_type);
 };
 
 }  // namespace json

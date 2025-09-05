@@ -15,7 +15,11 @@ namespace binance {
 namespace json {
 
 bool UserStreamParser::dispatch(
-    UserStreamParser::Handler &handler, std::string_view const &message, core::json::BufferStack &buffer_stack, TraceInfo const &trace_info) {
+    UserStreamParser::Handler &handler,
+    std::string_view const &message,
+    core::json::BufferStack &buffer_stack,
+    TraceInfo const &trace_info,
+    bool continue_with_unknown_event_type) {
   // XXX this is bad... 3 levels of parsing
   // XXX buffer_stack will not be used for first iteration
   UserStream user_stream{message, buffer_stack};
@@ -27,7 +31,7 @@ bool UserStreamParser::dispatch(
       continue;
     }
     EventType event_type{value};
-    if (try_dispatch(handler, data, buffer_stack, event_type, trace_info)) {
+    if (try_dispatch(handler, data, buffer_stack, event_type, trace_info, continue_with_unknown_event_type)) {
       return true;
     }
     break;
@@ -36,7 +40,11 @@ bool UserStreamParser::dispatch(
 }
 
 bool UserStreamParser::dispatch_papi(
-    UserStreamParser::Handler &handler, std::string_view const &message, core::json::BufferStack &buffer_stack, TraceInfo const &trace_info) {
+    UserStreamParser::Handler &handler,
+    std::string_view const &message,
+    core::json::BufferStack &buffer_stack,
+    TraceInfo const &trace_info,
+    bool continue_with_unknown_event_type) {
   core::json::Parser parser{message};
   auto root = parser.root();
   for (auto [key, value] : std::get<core::json::Object>(root)) {
@@ -44,7 +52,7 @@ bool UserStreamParser::dispatch_papi(
       continue;
     }
     EventType event_type{value};
-    if (try_dispatch(handler, message, buffer_stack, event_type, trace_info)) {
+    if (try_dispatch(handler, message, buffer_stack, event_type, trace_info, continue_with_unknown_event_type)) {
       return true;
     }
     break;
@@ -57,11 +65,16 @@ bool UserStreamParser::try_dispatch(
     std::string_view const &message,
     core::json::BufferStack &buffer_stack,
     EventType event_type,
-    TraceInfo const &trace_info) {
+    TraceInfo const &trace_info,
+    bool continue_with_unknown_event_type) {
   switch (event_type) {
     using enum EventType::type_t;
-    case UNDEFINED_INTERNAL:
     case UNKNOWN_INTERNAL:
+      if (!continue_with_unknown_event_type) {
+        log::fatal("Unexpected"sv);
+      }
+      return false;
+    case UNDEFINED_INTERNAL:
     case AGG_TRADE:
     case TRADE:
     case _24HR_MINI_TICKER:

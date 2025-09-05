@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Fixed
+
+* New event-type "liabilityChange" (#519)
+
 ## 1.0.8 &ndash; 2025-08-16
 
 ## 1.0.7 &ndash; 2025-07-02

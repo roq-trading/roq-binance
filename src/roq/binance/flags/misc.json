@@ -15,6 +15,12 @@
       "required": true,
       "default": 1048576,
       "description": "Encode buffer size"
+    },
+    {
+      "name": "continue_with_unknown_event_type",
+      "type": "std/bool",
+      "default": false,
+      "description": "Continue when receiving updates for unexpected event-types?"
     }
   ]
 }
