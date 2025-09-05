@@ -40,7 +40,7 @@ auto const SUPPORTS = Mask{
 
 auto const X_MBX_USED_WEIGHT_1M = "x-mbx-used-weight-1m"sv;
 
-size_t const MAX_DECODE_BUFFER_DEPTH = 1;
+size_t const MAX_DECODE_BUFFER_DEPTH = 2;
 }  // namespace
 
 // === HELPERS ===
@@ -105,7 +105,6 @@ auto get_retry_after(auto &response) {
 Rest::Rest(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, connection_{create_connection(*this, shared.settings, context)},
       decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
-      decode_buffer_2_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -384,9 +383,7 @@ void Rest::operator()(Trace<json::ExchangeInfo> const &event) {
     auto max_trade_vol = NaN;
     auto trade_vol_step_size = min_trade_vol;
     auto min_notional = NaN;
-    // parse filters and update
-    json::Filters filters{item.filters, decode_buffer_2_};
-    for (auto &filter : filters.data) {
+    for (auto &filter : item.filters) {
       switch (filter.filter_type) {
         using enum json::FilterType::type_t;
         case UNDEFINED_INTERNAL:

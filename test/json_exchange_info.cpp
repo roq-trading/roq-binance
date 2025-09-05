@@ -103,7 +103,7 @@ TEST_CASE("json_exchange_info_simple", "[json_exchange_info]") {
                  R"(})"
                  R"(])"
                  R"(})";
-  core::json::BufferStack buffer{65536, 1};
+  core::json::BufferStack buffer{65536, 2};
   json::ExchangeInfo obj{message, buffer};
   CHECK(obj.timezone == "UTC"sv);
   CHECK(obj.server_time == 1634180185607ms);

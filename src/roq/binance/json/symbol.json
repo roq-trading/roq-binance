@@ -63,7 +63,8 @@
     },
     {
       "name": "filters",
-      "type": "std/string_view"
+      "type": "roq/binance/json/Filter",
+      "array": "std/span"
     },
     {
       "name": "permissions"
