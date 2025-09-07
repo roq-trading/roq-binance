@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <span>
 #include <string_view>
 
 #include "roq/trace.hpp"
@@ -36,7 +35,7 @@ struct WSAPIParser2 final {
     virtual void operator()(Trace<WSAPICancelReplaceOrder> const &, WSAPIRequest const &) = 0;
   };
 
-  static bool dispatch(Handler &, std::string_view const &message, core::json::BufferStack &, TraceInfo const &);
+  static bool dispatch(Handler &, std::string_view const &message, core::json::BufferStack &, TraceInfo const &, bool allow_unknown_event_types = false);
 };
 
 }  // namespace json

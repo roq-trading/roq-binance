@@ -6,6 +6,7 @@
 
 #include "roq/core/json/parser.hpp"
 
+#include "roq/binance/json/event_type.hpp"
 #include "roq/binance/json/user_stream.hpp"
 
 using namespace std::literals;
@@ -14,24 +15,78 @@ namespace roq {
 namespace binance {
 namespace json {
 
+// === CONSTANTS ===
+
+namespace {
+auto const EVENT_TYPE = "e"sv;
+}
+
+// === HELPERS ===
+
+namespace {
+template <typename T>
+void dispatch_helper(auto &handler, auto &message, auto &buffer_stack, auto &trace_info) {
+  T obj{message, buffer_stack};
+  create_trace_and_dispatch(handler, trace_info, obj);
+}
+
+bool try_dispatch(auto &handler, auto &message, auto &buffer_stack, auto event_type, auto &trace_info, auto allow_unknown_event_types) {
+  switch (event_type) {
+    using enum EventType::type_t;
+    case UNDEFINED_INTERNAL:
+      break;
+    case UNKNOWN_INTERNAL:
+      if (allow_unknown_event_types) {
+        return false;
+      }
+      break;
+    case AGG_TRADE:
+    case TRADE:
+    case _24HR_MINI_TICKER:
+    case BOOK_TICKER:
+    case DEPTH_UPDATE:
+      log::fatal("Unexpected"sv);
+      break;
+    case OUTBOUND_ACCOUNT_POSITION:
+      dispatch_helper<OutboundAccountPosition>(handler, message, buffer_stack, trace_info);
+      return true;
+    case BALANCE_UPDATE:
+      dispatch_helper<BalanceUpdate>(handler, message, buffer_stack, trace_info);
+      return true;
+    case EXECUTION_REPORT:
+      dispatch_helper<ExecutionReport>(handler, message, buffer_stack, trace_info);
+      return true;
+    case LIST_STATUS:
+      dispatch_helper<ListStatus>(handler, message, buffer_stack, trace_info);
+      return true;
+    case OPEN_ORDER_LOSS: {
+      // dispatch_helper<OpenOrderLoss>(handler, message, buffer_stack, trace_info);
+      return true;
+    }
+  }
+  log::fatal(R"(Unexpected: message="{}")"sv, message);
+}
+
+}  // namespace
+
+// === IMPLEMENTATION ===
+
 bool UserStreamParser::dispatch(
     UserStreamParser::Handler &handler,
     std::string_view const &message,
     core::json::BufferStack &buffer_stack,
     TraceInfo const &trace_info,
-    bool continue_with_unknown_event_type) {
-  // XXX this is bad... 3 levels of parsing
-  // XXX buffer_stack will not be used for first iteration
+    bool allow_unknown_event_types) {
   UserStream user_stream{message, buffer_stack};
   auto &data = user_stream.data;
   core::json::Parser parser{data};
   auto root = parser.root();
   for (auto [key, value] : std::get<core::json::Object>(root)) {
-    if (key != "e"sv) {
+    if (key != EVENT_TYPE) {
       continue;
     }
     EventType event_type{value};
-    if (try_dispatch(handler, data, buffer_stack, event_type, trace_info, continue_with_unknown_event_type)) {
+    if (try_dispatch(handler, data, buffer_stack, event_type, trace_info, allow_unknown_event_types)) {
       return true;
     }
     break;
@@ -44,78 +99,20 @@ bool UserStreamParser::dispatch_papi(
     std::string_view const &message,
     core::json::BufferStack &buffer_stack,
     TraceInfo const &trace_info,
-    bool continue_with_unknown_event_type) {
+    bool allow_unknown_event_types) {
   core::json::Parser parser{message};
   auto root = parser.root();
   for (auto [key, value] : std::get<core::json::Object>(root)) {
-    if (key != "e"sv) {
+    if (key != EVENT_TYPE) {
       continue;
     }
     EventType event_type{value};
-    if (try_dispatch(handler, message, buffer_stack, event_type, trace_info, continue_with_unknown_event_type)) {
+    if (try_dispatch(handler, message, buffer_stack, event_type, trace_info, allow_unknown_event_types)) {
       return true;
     }
     break;
   }
   return false;
-}
-
-bool UserStreamParser::try_dispatch(
-    UserStreamParser::Handler &handler,
-    std::string_view const &message,
-    core::json::BufferStack &buffer_stack,
-    EventType event_type,
-    TraceInfo const &trace_info,
-    bool continue_with_unknown_event_type) {
-  switch (event_type) {
-    using enum EventType::type_t;
-    case UNKNOWN_INTERNAL:
-      if (!continue_with_unknown_event_type) {
-        log::fatal("Unexpected"sv);
-      }
-      return false;
-    case UNDEFINED_INTERNAL:
-    case AGG_TRADE:
-    case TRADE:
-    case _24HR_MINI_TICKER:
-    case BOOK_TICKER:
-    case DEPTH_UPDATE:
-      log::fatal("Unexpected"sv);
-      break;
-    case OUTBOUND_ACCOUNT_POSITION: {
-      OutboundAccountPosition outbound_account_position{message, buffer_stack};
-      Trace event{trace_info, outbound_account_position};
-      handler(event);
-      break;
-    }
-    case BALANCE_UPDATE: {
-      BalanceUpdate balance_update{message};
-      Trace event{trace_info, balance_update};
-      handler(event);
-      break;
-    }
-    case EXECUTION_REPORT: {
-      ExecutionReport execution_report{message};
-      Trace event{trace_info, execution_report};
-      handler(event);
-      break;
-    }
-    case LIST_STATUS: {
-      ListStatus list_status{message, buffer_stack};
-      Trace event{trace_info, list_status};
-      handler(event);
-      break;
-    }
-    case OPEN_ORDER_LOSS: {
-      // OpenOrderLoss open_order_loss{message, buffer_stack};
-      // Trace event{trace_info, open_order_loss};
-      // handler(event);
-      break;
-    }
-    default:
-      return false;
-  }
-  return true;
 }
 
 }  // namespace json

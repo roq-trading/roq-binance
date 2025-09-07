@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <span>
 #include <string_view>
 
 #include "roq/trace_info.hpp"
@@ -25,10 +24,9 @@ namespace json {
 
 struct MarketStreamParser final {
   struct Handler {
-    // response
     virtual void operator()(Trace<Error> const &, int64_t id) = 0;
     virtual void operator()(Trace<Result> const &, int64_t id) = 0;
-    // update
+
     virtual void operator()(Trace<AggTrade> const &) = 0;
     virtual void operator()(Trace<Trade> const &) = 0;
     virtual void operator()(Trace<MiniTicker> const &) = 0;
@@ -37,7 +35,7 @@ struct MarketStreamParser final {
     virtual void operator()(Trace<DepthUpdate> const &) = 0;
   };
 
-  static bool dispatch(Handler &, std::string_view const &message, core::json::BufferStack &, TraceInfo const &);
+  static bool dispatch(Handler &, std::string_view const &message, core::json::BufferStack &, TraceInfo const &, bool allow_unknown_event_types = false);
 };
 
 }  // namespace json

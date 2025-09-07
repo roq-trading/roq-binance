@@ -126,6 +126,8 @@ struct Shared final {
     uint32_t create_order_1d = {};
   } limits;
   std::vector<RateLimit> rate_limits;
+
+  bool const allow_unknown_event_types;
 };
 
 }  // namespace binance

@@ -2,14 +2,11 @@
 
 #pragma once
 
-#include <span>
 #include <string_view>
 
 #include "roq/trace_info.hpp"
 
 #include "roq/core/json/buffer_stack.hpp"
-
-#include "roq/binance/json/event_type.hpp"
 
 #include "roq/binance/json/balance_update.hpp"
 #include "roq/binance/json/execution_report.hpp"
@@ -28,21 +25,8 @@ struct UserStreamParser final {
     virtual void operator()(Trace<ListStatus> const &) = 0;
   };
 
-  // traditional
-  static bool dispatch(Handler &, std::string_view const &message, core::json::BufferStack &, TraceInfo const &, bool continue_with_unknown_event_type = false);
-
-  // papi
-  static bool dispatch_papi(
-      Handler &, std::string_view const &message, core::json::BufferStack &, TraceInfo const &, bool continue_with_unknown_event_type = false);
-
- private:
-  static bool try_dispatch(
-      UserStreamParser::Handler &,
-      std::string_view const &message,
-      core::json::BufferStack &,
-      EventType,
-      TraceInfo const &,
-      bool continue_with_unknown_event_type);
+  static bool dispatch(Handler &, std::string_view const &message, core::json::BufferStack &, TraceInfo const &, bool allow_unknown_event_types = false);
+  static bool dispatch_papi(Handler &, std::string_view const &message, core::json::BufferStack &, TraceInfo const &, bool allow_unknown_event_types = false);
 };
 
 }  // namespace json

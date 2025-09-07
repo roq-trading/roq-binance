@@ -226,10 +226,10 @@ uint32_t DropCopySimple::download(DropCopyState state) {
 
 void DropCopySimple::parse(std::string_view const &message) {
   profile_.parse([&]() {
-    auto log_message = [&]() { log::warn(R"(message="{}")"sv, message); };
+    auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     try {
       TraceInfo trace_info;
-      if (!json::UserStreamParser::dispatch(*this, message, decode_buffer_, trace_info, shared_.settings.misc.continue_with_unknown_event_type)) {
+      if (!json::UserStreamParser::dispatch(*this, message, decode_buffer_, trace_info, shared_.allow_unknown_event_types)) {
         log_message();
       }
     } catch (...) {
