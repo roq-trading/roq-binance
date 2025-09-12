@@ -417,8 +417,14 @@ void OrderEntryREST::get_listen_key(MarginMode margin_mode) {
 }
 
 void OrderEntryREST::get_listen_key_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
-  auto constexpr const STATE = OrderEntryState::LISTEN_KEY;
+  auto const STATE = OrderEntryState::LISTEN_KEY;
   profile_.listen_key_ack([&]() {
+    auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
+      log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      if (download_.downloading()) {
+        download_.retry(STATE);
+      }
+    };
     auto handle_success = [&](auto &body) {
       json::ListenKey listen_key{body};
       Trace event_2{event, listen_key};
@@ -439,13 +445,7 @@ void OrderEntryREST::get_listen_key_ack(Trace<web::rest::Response> const &event,
           log::fatal("Unexpected"sv);
       }
     };
-    auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
-      log::warn(R"(error={}, text="{}")"sv, error, text);
-      if (download_.downloading()) {
-        download_.retry(STATE);
-      }
-    };
-    process_response(event, handle_success, handle_error);
+    process_response(event, handle_error, handle_success);
   });
 }
 
@@ -543,6 +543,25 @@ void OrderEntryREST::get_account(MarginMode margin_mode) {
 
 void OrderEntryREST::get_account_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
   profile_.account_ack([&]() {
+    auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
+      log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          request_.respond_account = clock::get_system();  // completion
+          download_account_ = false;
+          break;
+        case ISOLATED:
+          log::fatal("Unexpected"sv);  // note! not implemented
+          break;
+        case CROSS:
+          request_.respond_account_cross = clock::get_system();  // completion
+          download_account_cross_ = false;
+          break;
+        case PORTFOLIO:
+          log::fatal("Unexpected"sv);
+      }
+    };
     auto handle_success = [&](auto &body) {
       log::warn(R"(DEBUG body="{}")"sv, body);
       switch (margin_mode) {
@@ -569,26 +588,7 @@ void OrderEntryREST::get_account_ack(Trace<web::rest::Response> const &event, Ma
           log::fatal("Unexpected"sv);
       }
     };
-    auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
-      log::warn(R"(error={}, text="{}")"sv, error, text);
-      switch (margin_mode) {
-        using enum MarginMode;
-        case UNDEFINED:
-          request_.respond_account = clock::get_system();  // completion
-          download_account_ = false;
-          break;
-        case ISOLATED:
-          log::fatal("Unexpected"sv);  // note! not implemented
-          break;
-        case CROSS:
-          request_.respond_account_cross = clock::get_system();  // completion
-          download_account_cross_ = false;
-          break;
-        case PORTFOLIO:
-          log::fatal("Unexpected"sv);
-      }
-    };
-    process_response(event, handle_success, handle_error);
+    process_response(event, handle_error, handle_success);
   });
 }
 
@@ -687,6 +687,24 @@ void OrderEntryREST::get_open_orders(MarginMode margin_mode) {
 
 void OrderEntryREST::get_open_orders_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
   profile_.open_orders_ack([&]() {
+    auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
+      log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          request_.respond_orders = clock::get_system();  // completion
+          download_orders_ = false;
+          break;
+        case ISOLATED:
+          log::fatal("Unexpected"sv);  // note! not implemented
+        case CROSS:
+          request_.respond_orders_cross = clock::get_system();  // completion
+          download_orders_cross_ = false;
+          break;
+        case PORTFOLIO:
+          log::fatal("Unexpected"sv);
+      }
+    };
     auto handle_success = [&](auto &body) {
       log::debug("body={}"sv, body);
       json::OpenOrders open_orders{body, decode_buffer_};
@@ -708,25 +726,7 @@ void OrderEntryREST::get_open_orders_ack(Trace<web::rest::Response> const &event
           log::fatal("Unexpected"sv);
       }
     };
-    auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
-      log::warn(R"(error={}, text="{}")"sv, error, text);
-      switch (margin_mode) {
-        using enum MarginMode;
-        case UNDEFINED:
-          request_.respond_orders = clock::get_system();  // completion
-          download_orders_ = false;
-          break;
-        case ISOLATED:
-          log::fatal("Unexpected"sv);  // note! not implemented
-        case CROSS:
-          request_.respond_orders_cross = clock::get_system();  // completion
-          download_orders_cross_ = false;
-          break;
-        case PORTFOLIO:
-          log::fatal("Unexpected"sv);
-      }
-    };
-    process_response(event, handle_success, handle_error);
+    process_response(event, handle_error, handle_success);
   });
 }
 
@@ -815,6 +815,24 @@ void OrderEntryREST::get_trades(MarginMode margin_mode) {
 
 void OrderEntryREST::get_trades_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
   profile_.trades_ack([&]() {
+    auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
+      log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          request_.respond_trades = clock::get_system();  // completion
+          download_trades_ = false;
+          break;
+        case ISOLATED:
+          log::fatal("Unexpected"sv);  // note! not implemented
+        case CROSS:
+          request_.respond_trades_cross = clock::get_system();  // completion
+          download_trades_cross_ = false;
+          break;
+        case PORTFOLIO:
+          log::fatal("Unexpected"sv);
+      }
+    };
     auto handle_success = [&](auto &body) {
       json::Trades trades{body, decode_buffer_};
       Trace event_2{event, trades};
@@ -837,25 +855,7 @@ void OrderEntryREST::get_trades_ack(Trace<web::rest::Response> const &event, Mar
           log::fatal("Unexpected"sv);
       }
     };
-    auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
-      log::warn(R"(error={}, text="{}")"sv, error, text);
-      switch (margin_mode) {
-        using enum MarginMode;
-        case UNDEFINED:
-          request_.respond_trades = clock::get_system();  // completion
-          download_trades_ = false;
-          break;
-        case ISOLATED:
-          log::fatal("Unexpected"sv);  // note! not implemented
-        case CROSS:
-          request_.respond_trades_cross = clock::get_system();  // completion
-          download_trades_cross_ = false;
-          break;
-        case PORTFOLIO:
-          log::fatal("Unexpected"sv);
-      }
-    };
-    process_response(event, handle_success, handle_error);
+    process_response(event, handle_error, handle_success);
   });
 }
 
@@ -941,6 +941,11 @@ void OrderEntryREST::get_account_cross_on_timer() {
 
 void OrderEntryREST::get_account_cross_on_timer_ack(Trace<web::rest::Response> const &event) {
   profile_.account_ack([&]() {
+    auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
+      log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      request_.respond_account_cross = clock::get_system();  // completion
+      download_account_cross_on_timer_ = false;
+    };
     auto handle_success = [&](auto &body) {
       log::warn(R"(DEBUG body="{}")"sv, body);
       json::CrossMarginAccount account{body, decode_buffer_};
@@ -949,12 +954,7 @@ void OrderEntryREST::get_account_cross_on_timer_ack(Trace<web::rest::Response> c
       request_.respond_account_cross = clock::get_system();  // completion
       download_account_cross_on_timer_ = false;
     };
-    auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
-      log::warn(R"(error={}, text="{}")"sv, error, text);
-      request_.respond_account_cross = clock::get_system();  // completion
-      download_account_cross_on_timer_ = false;
-    };
-    process_response(event, handle_success, handle_error);
+    process_response(event, handle_error, handle_success);
   });
 }
 
@@ -1049,11 +1049,6 @@ void OrderEntryREST::new_order(Event<CreateOrder> const &event, server::oms::Ord
 
 void OrderEntryREST::new_order_ack(Trace<web::rest::Response> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
   profile_.new_order_ack([&]() {
-    auto handle_success = [&](auto &body) {
-      json::NewOrder new_order{body, decode_buffer_};
-      Trace event_2{event, new_order};
-      (*this)(event_2, user_id, order_id, version);
-    };
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       auto response = server::oms::Response{
           .request_type = RequestType::CREATE_ORDER,
@@ -1069,7 +1064,12 @@ void OrderEntryREST::new_order_ack(Trace<web::rest::Response> const &event, uint
       Trace event_2{event, response};
       (*this)(event_2, user_id, order_id);
     };
-    process_response(event, handle_success, handle_error);
+    auto handle_success = [&](auto &body) {
+      json::NewOrder new_order{body, decode_buffer_};
+      Trace event_2{event, new_order};
+      (*this)(event_2, user_id, order_id, version);
+    };
+    process_response(event, handle_error, handle_success);
   });
 }
 
@@ -1601,11 +1601,6 @@ void OrderEntryREST::cancel_order(
 
 void OrderEntryREST::cancel_order_ack(Trace<web::rest::Response> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
   profile_.cancel_order_ack([&]() {
-    auto handle_success = [&](auto &body) {
-      json::CancelOrder cancel_order{body};
-      Trace event_2{event, cancel_order};
-      (*this)(event_2, user_id, order_id, version);
-    };
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       auto response = server::oms::Response{
           .request_type = RequestType::CANCEL_ORDER,
@@ -1621,7 +1616,12 @@ void OrderEntryREST::cancel_order_ack(Trace<web::rest::Response> const &event, u
       Trace event_2{event, response};
       (*this)(event_2, user_id, order_id);
     };
-    process_response(event, handle_success, handle_error);
+    auto handle_success = [&](auto &body) {
+      json::CancelOrder cancel_order{body};
+      Trace event_2{event, cancel_order};
+      (*this)(event_2, user_id, order_id, version);
+    };
+    process_response(event, handle_error, handle_success);
   });
 }
 
@@ -1778,23 +1778,23 @@ void OrderEntryREST::cancel_all_open_orders_ack(Trace<web::rest::Response> const
       Trace event_2{event, cancel_all_orders_ack};
       shared_(event_2);
     };
+    auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
+      switch (error) {
+        using enum Error;
+        case TOO_LATE_TO_MODIFY_OR_CANCEL:
+          break;
+        default:
+          log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      }
+      send_ack(RequestStatus::REJECTED, error, text);
+    };
     auto handle_success = [&](auto &body) {
       json::CancelAllOpenOrders cancel_all_open_orders{body, decode_buffer_};
       Trace event_2{event, cancel_all_open_orders};
       (*this)(event_2);
       send_ack(RequestStatus::ACCEPTED, {}, {});
     };
-    auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
-      switch (error) {
-        using enum Error;
-        case TOO_LATE_TO_MODIFY_OR_CANCEL:
-          break;
-        default:
-          log::warn(R"(error={}, text="{}")"sv, error, text);
-      }
-      send_ack(RequestStatus::REJECTED, error, text);
-    };
-    process_response(event, handle_success, handle_error);
+    process_response(event, handle_error, handle_success);
   });
 }
 
@@ -1843,16 +1843,21 @@ void OrderEntryREST::operator()(Trace<json::CancelAllOpenOrders> const &event) {
   }
 }
 
-template <typename SuccessHandler, typename ErrorHandler>
-void OrderEntryREST::process_response(web::rest::Response const &response, SuccessHandler success_handler, ErrorHandler error_handler) {
+void OrderEntryREST::process_response(web::rest::Response const &response, auto error_handler, auto success_handler) {
   try {
     auto [status, category, body] = response.result();
     switch (category) {
       using enum web::http::Category;
-      case SUCCESS:  // 2xx
+      case UNKNOWN:
+      case INFORMATIONAL_RESPONSE:
+        response.expect(web::http::Status::OK);  // throws
+        break;
+      case SUCCESS:
         success_handler(body);
         break;
-      case CLIENT_ERROR:  // 4xx
+      case REDIRECTION:
+        log::fatal("Unexpected: URL is being redirected"sv);
+      case CLIENT_ERROR:
         switch (status) {
           using enum web::http::Status;
           case FORBIDDEN:           // 403
@@ -1860,8 +1865,8 @@ void OrderEntryREST::process_response(web::rest::Response const &response, Succe
             [[fallthrough]];
           case I_AM_A_TEAPOT:        // 418
           case TOO_MANY_REQUESTS: {  // 429
-            auto text = fmt::format("{}"sv, status);
-            error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, text);
+            auto message = fmt::format("{}"sv, status);
+            error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, message);
             break;
           }
           case CONFLICT:  // 409
@@ -1873,13 +1878,11 @@ void OrderEntryREST::process_response(web::rest::Response const &response, Succe
           }
         }
         break;
-      case SERVER_ERROR: {  // 5xx
-        auto text = fmt::format("{}"sv, status);
-        error_handler(Origin::EXCHANGE, RequestStatus::ERROR, Error::UNKNOWN, text);
+      case SERVER_ERROR: {
+        auto message = fmt::format("{}"sv, status);
+        error_handler(Origin::EXCHANGE, RequestStatus::ERROR, Error::UNKNOWN, message);
         break;
       }
-      default:
-        response.expect(web::http::Status::OK);  // throws
     }
   } catch (server::oms::Exception &e) {
     log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
