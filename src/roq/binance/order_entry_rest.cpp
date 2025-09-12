@@ -19,6 +19,7 @@
 
 #include "roq/server/oms/exceptions.hpp"
 
+#include "roq/binance/json/encoder.hpp"
 #include "roq/binance/json/error.hpp"
 #include "roq/binance/json/map.hpp"
 #include "roq/binance/json/utils.hpp"
@@ -791,7 +792,7 @@ void OrderEntryREST::get_trades(MarginMode margin_mode) {
       auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
       log::info<1>("Download trades: lookback={}"sv, lookback);
       auto headers = account_.create_headers();
-      auto body = json::my_trades(encode_buffer_, symbol, lookback, shared_.settings.download.trades_limit, now);
+      auto body = json::Encoder::my_trades(encode_buffer_, symbol, lookback, shared_.settings.download.trades_limit, now);
       auto query = account_.create_query(now, body);
       auto request = web::rest::Request{
           .method = web::http::Method::GET,
@@ -1022,7 +1023,7 @@ void OrderEntryREST::new_order(Event<CreateOrder> const &event, server::oms::Ord
       log::fatal("Unexpected"sv);
     }();
     auto side_effect_type = is_margin ? shared_.api.simple.margin_side_effect_type : json::SideEffectType::UNDEFINED;
-    auto body = json::new_order(encode_buffer_, create_order, order, request_id, create_order_template, recv_window, side_effect_type);
+    auto body = json::Encoder::new_order(encode_buffer_, create_order, order, request_id, create_order_template, recv_window, side_effect_type);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = account_.create_query(now, body);
     auto headers = account_.create_headers();
@@ -1157,7 +1158,7 @@ void OrderEntryREST::cancel_replace_order(
           auto &[message_info, create_order] = event;
           auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order_request.cancel_order.request_template);
           auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
-          auto body = json::cancel_replace_order(
+          auto body = json::Encoder::cancel_replace_order(
               encode_buffer_,
               cancel_order_request.request_id,
               cancel_order_request.previous_request_id,
@@ -1562,7 +1563,7 @@ void OrderEntryREST::cancel_order(
     auto &[message_info, cancel_order] = event;
     auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto body = json::cancel_order(encode_buffer_, cancel_order, order, request_id, previous_request_id, cancel_order_template, recv_window);
+    auto body = json::Encoder::cancel_order(encode_buffer_, cancel_order, order, request_id, previous_request_id, cancel_order_template, recv_window);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = account_.create_query(now, body);
     auto headers = account_.create_headers();
@@ -1725,7 +1726,7 @@ void OrderEntryREST::cancel_all_open_orders(Event<CancelAllOrders> const &event,
           };
           log::fatal("Unexpected"sv);
         }();
-        auto body = json::cancel_all_open_orders(encode_buffer_, symbol, margin_mode, recv_window);
+        auto body = json::Encoder::cancel_all_open_orders(encode_buffer_, symbol, margin_mode, recv_window);
         auto now = clock::get_realtime<std::chrono::milliseconds>();
         auto query = account_.create_query(now, body);
         auto headers = account_.create_headers();

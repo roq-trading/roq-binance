@@ -20,6 +20,7 @@
 
 #include "roq/server/oms/exceptions.hpp"
 
+#include "roq/binance/json/encoder.hpp"
 #include "roq/binance/json/map.hpp"
 #include "roq/binance/json/utils.hpp"
 #include "roq/binance/json/wsapi_type.hpp"
@@ -538,10 +539,10 @@ void OrderEntryWS::order_place(Event<CreateOrder> const &event, server::oms::Ord
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto message_for_signature =
-        json::new_order_ws_url(encode_buffer_, create_order, order, request_id, create_order_template, recv_window, account_.get_key(), now);
+        json::Encoder::new_order_ws_url(encode_buffer_, create_order, order, request_id, create_order_template, recv_window, account_.get_key(), now);
     auto signature = account_.create_ws_api_signature(message_for_signature);
-    auto params =
-        json::new_order_ws_json(encode_buffer_, create_order, order, request_id, create_order_template, recv_window, account_.get_key(), now, signature);
+    auto params = json::Encoder::new_order_ws_json(
+        encode_buffer_, create_order, order, request_id, create_order_template, recv_window, account_.get_key(), now, signature);
     auto request = json::WSAPIRequest{
         .sequence = ++request_id_,
         .type = json::WSAPIType::ORDER_PLACE,
@@ -575,10 +576,10 @@ void OrderEntryWS::order_cancel(
     auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto message_for_signature = json::cancel_order_ws_url(
+    auto message_for_signature = json::Encoder::cancel_order_ws_url(
         encode_buffer_, cancel_order, order, request_id, previous_request_id, cancel_order_template, recv_window, account_.get_key(), now);
     auto signature = account_.create_ws_api_signature(message_for_signature);
-    auto params = json::cancel_order_ws_json(
+    auto params = json::Encoder::cancel_order_ws_json(
         encode_buffer_, cancel_order, order, request_id, previous_request_id, cancel_order_template, recv_window, account_.get_key(), now, signature);
     auto request = json::WSAPIRequest{
         .sequence = ++request_id_,
@@ -617,7 +618,7 @@ void OrderEntryWS::order_cancel_replace(
           auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order_request.cancel_order.request_template);
           auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
           auto now = clock::get_realtime<std::chrono::milliseconds>();
-          auto message_for_signature = json::cancel_replace_order_ws_url(
+          auto message_for_signature = json::Encoder::cancel_replace_order_ws_url(
               encode_buffer_,
               cancel_order_request.request_id,
               cancel_order_request.previous_request_id,
@@ -632,7 +633,7 @@ void OrderEntryWS::order_cancel_replace(
               account_.get_key(),
               now);
           auto signature = account_.create_ws_api_signature(message_for_signature);
-          auto params = json::cancel_replace_order_ws_json(
+          auto params = json::Encoder::cancel_replace_order_ws_json(
               encode_buffer_,
               cancel_order_request.request_id,
               cancel_order_request.previous_request_id,

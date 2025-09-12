@@ -5,8 +5,8 @@
 #include "roq/core/json/buffer_stack.hpp"
 #include "roq/core/json/parser.hpp"
 
+#include "roq/binance/json/encoder.hpp"
 #include "roq/binance/json/new_order.hpp"
-#include "roq/binance/json/utils.hpp"
 
 using namespace roq;
 using namespace roq::binance;
@@ -162,7 +162,7 @@ TEST_CASE("json_new_order_create_market", "[json_new_order]") {
   order.price_precision.precision = Precision::_2;
   order.quantity_precision.precision = Precision::_2;
   std::vector<char> buffer;
-  auto body = json::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s);
+  auto body = json::Encoder::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s);
   auto expected =
       "newClientOrderId=abc123&"
       "quantity=123.40&"
@@ -198,7 +198,7 @@ TEST_CASE("json_new_order_create_limit", "[json_new_order]") {
   order.price_precision.precision = Precision::_2;
   order.quantity_precision.precision = Precision::_2;
   std::vector<char> buffer;
-  auto body = json::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s);
+  auto body = json::Encoder::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s);
   auto expected =
       "newClientOrderId=abc123&"
       "price=123.40&"
@@ -236,7 +236,7 @@ TEST_CASE("json_new_order_create_limit_maker", "[json_new_order]") {
   order.price_precision.precision = Precision::_2;
   order.quantity_precision.precision = Precision::_2;
   std::vector<char> buffer;
-  auto body = json::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s);
+  auto body = json::Encoder::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s);
   auto expected =
       "newClientOrderId=abc123&"
       "price=123.40&"
@@ -273,7 +273,7 @@ TEST_CASE("json_new_order_create_stop_loss", "[json_new_order]") {
   order.price_precision.precision = Precision::_2;
   order.quantity_precision.precision = Precision::_2;
   std::vector<char> buffer;
-  auto body = json::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s);
+  auto body = json::Encoder::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s);
   auto expected =
       "newClientOrderId=abc123&"
       "quantity=123.40&"
@@ -310,7 +310,7 @@ TEST_CASE("json_new_order_create_stop_loss_limit", "[json_new_order]") {
   order.price_precision.precision = Precision::_2;
   order.quantity_precision.precision = Precision::_2;
   std::vector<char> buffer;
-  auto body = json::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s);
+  auto body = json::Encoder::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s);
   auto expected =
       "newClientOrderId=abc123&"
       "price=123.40&"
@@ -349,7 +349,7 @@ TEST_CASE("json_new_order_margin", "[json_new_order]") {
   order.price_precision.precision = Precision::_2;
   order.quantity_precision.precision = Precision::_2;
   std::vector<char> buffer;
-  auto body = json::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s, json::SideEffectType::AUTO_BORROW_REPAY);
+  auto body = json::Encoder::new_order(buffer, create_order, order, "abc123"sv, CREATE_ORDER_TEMPLATE, 5s, json::SideEffectType::AUTO_BORROW_REPAY);
   auto expected =
       "newClientOrderId=abc123&"
       "price=123.40&"
