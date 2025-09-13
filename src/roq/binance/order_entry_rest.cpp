@@ -1257,14 +1257,20 @@ void OrderEntryREST::cancel_replace_order_ack(
       test(status);
       switch (category) {
         using enum web::http::Category;
-        case SUCCESS: {  // 2xx
+        case UNKNOWN:
+        case INFORMATIONAL_RESPONSE:
+          response.expect(web::http::Status::OK);  // throws
+          break;
+        case SUCCESS: {
           json::CancelReplaceOrder cancel_replace_order{body, decode_buffer_};
           Trace event{trace_info, cancel_replace_order};
           (*this)(event, user_id, cancel_order_id, cancel_version, create_order_id, create_version);
           break;
         }
-        case CLIENT_ERROR:    // 4xx
-        case SERVER_ERROR: {  // 5xx
+        case REDIRECTION:
+          log::fatal("Unexpected: URL is being redirected"sv);
+        case CLIENT_ERROR:
+        case SERVER_ERROR: {
           auto parse = [&]() {
             json::CancelReplaceOrderError cancel_replace_order_error{body, decode_buffer_};
             Trace event{trace_info, cancel_replace_order_error};
@@ -1308,8 +1314,6 @@ void OrderEntryREST::cancel_replace_order_ack(
           });
           break;
         }
-        default:
-          response.expect(web::http::Status::OK);  // throws
       }
     } catch (NetworkError &e) {
       log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
@@ -1927,7 +1931,7 @@ void OrderEntryREST::dispatch_error_2(
     case REDIRECTION:
       assert(false);
       break;
-    case CLIENT_ERROR:  // 4xx
+    case CLIENT_ERROR:
       try {
         // HTTP 4XX return codes are used for malformed requests; the issue is on the sender's side.
         // HTTP 403 return code is used when the WAF Limit (Web Application Firewall) has been violated.
@@ -1959,7 +1963,7 @@ void OrderEntryREST::dispatch_error_2(
         callback(RequestStatus::ERROR, Error::UNKNOWN, e.what());
       }
       break;
-    case SERVER_ERROR: {  // 5xx
+    case SERVER_ERROR: {
       // HTTP 5XX return codes are used for internal errors; the issue is on Binance's side.
       //   It is important to NOT treat this as a failure operation; the execution status is UNKNOWN
       //   and could have been a success.
