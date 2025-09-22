@@ -133,10 +133,6 @@ Flags
 
    .. include:: flags/ws_api.rstinc
 
-.. tab:: Download
-
-   .. include:: flags/download.rstinc
-
 .. tab:: MBP
 
    .. include:: flags/mbp.rstinc

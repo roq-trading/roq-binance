@@ -8,7 +8,6 @@
 
 #include "roq/server/flags/settings.hpp"
 
-#include "roq/binance/flags/download.hpp"
 #include "roq/binance/flags/flags.hpp"
 #include "roq/binance/flags/mbp.hpp"
 #include "roq/binance/flags/misc.hpp"
@@ -28,7 +27,6 @@ struct Settings final : public server::flags::Settings, public flags::Flags {
   flags::REST rest;
   flags::WS ws;
   flags::WS_API ws_api_2;  // note! overlapping with flags::Flags
-  flags::Download download;
   flags::MBP mbp;
   flags::OMS oms;
   flags::Request request;
@@ -51,7 +49,6 @@ struct fmt::formatter<roq::binance::Settings> {
         R"(rest={}, )"
         R"(ws={}, )"
         R"(ws_api={}, )"
-        R"(download={}, )"
         R"(mbp={}, )"
         R"(oms={}, )"
         R"(request={}, )"
@@ -63,7 +60,6 @@ struct fmt::formatter<roq::binance::Settings> {
         value.rest,
         value.ws,
         value.ws_api_2,
-        value.download,
         value.mbp,
         value.oms,
         value.request,

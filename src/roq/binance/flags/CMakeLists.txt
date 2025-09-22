@@ -5,7 +5,6 @@ include(RoqAutogen)
 set(NAMESPACE "roq/binance/flags")
 
 set(AUTOGEN_SCHEMAS
-    download.json
     flags.json
     mbp.json
     misc.json

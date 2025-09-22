@@ -46,6 +46,8 @@ auto const SUPPORTS = Mask{
 auto const X_MBX_USED_WEIGHT_1M = "x-mbx-used-weight-1m"sv;
 
 size_t const MAX_DECODE_BUFFER_DEPTH = 1;
+
+size_t const DOWNLOAD_TRADES_LIMIT = 1000;
 }  // namespace
 
 // === HELPERS ===
@@ -580,9 +582,10 @@ void OrderEntryPortfolio::get_trades() {
     for (auto &symbol : symbols) {
       auto now = clock::get_realtime<std::chrono::milliseconds>();
       auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
+      auto limit = shared_.settings.download.trades_limit ? shared_.settings.download.trades_limit : DOWNLOAD_TRADES_LIMIT;
       log::info<1>("Download trades: lookback={}"sv, lookback);
       auto headers = account_.create_headers();
-      auto body = json::Encoder::my_trades(encode_buffer_, symbol, lookback, shared_.settings.download.trades_limit, now);
+      auto body = json::Encoder::my_trades(encode_buffer_, symbol, lookback, limit, now);
       auto query = account_.create_query_2(now, body);
       auto request = web::rest::Request{
           .method = web::http::Method::GET,

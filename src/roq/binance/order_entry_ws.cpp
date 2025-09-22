@@ -46,6 +46,8 @@ auto const SUPPORTS = Mask{
 uint32_t const REQUEST_ID = 1'000'000;
 
 size_t const MAX_DECODE_BUFFER_DEPTH = 1;
+
+size_t const DOWNLOAD_TRADES_LIMIT = 1000;
 }  // namespace
 
 // === HELPERS ===
@@ -408,6 +410,7 @@ void OrderEntryWS::my_trades() {
     for (auto &symbol : symbols) {
       auto now = clock::get_realtime<std::chrono::milliseconds>();
       auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
+      auto limit = shared_.settings.download.trades_limit ? shared_.settings.download.trades_limit : DOWNLOAD_TRADES_LIMIT;
       log::info<1>("Download trades: lookback={}"sv, lookback);
       auto start_time = std::chrono::duration_cast<std::chrono::milliseconds>(now - lookback);
       // note! remember to sort
@@ -418,7 +421,7 @@ void OrderEntryWS::my_trades() {
           "symbol={}&"
           "timestamp={}"sv,
           account_.get_key(),
-          shared_.settings.download.trades_limit,
+          limit,
           start_time.count(),
           symbol,
           now.count());
@@ -447,7 +450,7 @@ void OrderEntryWS::my_trades() {
           R"(}})"sv,
           request_id,
           account_.get_key(),
-          shared_.settings.download.trades_limit,
+          limit,
           start_time.count(),
           symbol,
           now.count(),
