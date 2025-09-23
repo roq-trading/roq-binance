@@ -1888,7 +1888,7 @@ void OrderEntryREST::process_response(web::rest::Response const &response, auto 
         break;
       case SERVER_ERROR: {
         auto message = fmt::format("{}"sv, status);
-        error_handler(Origin::EXCHANGE, RequestStatus::ERROR, Error::UNKNOWN, message);
+        error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, Error::UNKNOWN, message);
         break;
       }
     }
@@ -1971,7 +1971,7 @@ void OrderEntryREST::dispatch_error_2(
       //   It is important to NOT treat this as a failure operation; the execution status is UNKNOWN
       //   and could have been a success.
       auto text = fmt::format("{}"sv, status);
-      callback(RequestStatus::ERROR, Error::UNKNOWN, text);
+      callback(RequestStatus::REJECTED, Error::UNKNOWN, text);
       break;
     }
   }

@@ -6,6 +6,7 @@ All notable changes will be documented in this file.
 
 ### Fixed
 
+* HTTP response with status code 503 (service unavailable) should map to `RequestStatus::REJECTED` (#522)
 * New event-type "liabilityChange" (#519)
 
 ## 1.0.8 &ndash; 2025-08-16
