@@ -365,7 +365,7 @@ void OrderEntryPortfolio::get_listen_key_ack(Trace<web::rest::Response> const &e
   auto const STATE = OrderEntryState::LISTEN_KEY;
   profile_.listen_key_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
-      log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
       if (download_.downloading()) {
         download_.retry(STATE);
       }
@@ -430,7 +430,7 @@ void OrderEntryPortfolio::get_account() {
 void OrderEntryPortfolio::get_account_ack(Trace<web::rest::Response> const &event) {
   profile_.account_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
-      log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
       // completion
       request_.respond_account = clock::get_system();
       download_account_ = false;
@@ -507,7 +507,7 @@ void OrderEntryPortfolio::get_open_orders() {
 void OrderEntryPortfolio::get_open_orders_ack(Trace<web::rest::Response> const &event) {
   profile_.open_orders_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
-      log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
       // completion
       request_.respond_orders = clock::get_system();
       download_orders_ = false;
@@ -610,7 +610,7 @@ void OrderEntryPortfolio::get_trades() {
 void OrderEntryPortfolio::get_trades_ack(Trace<web::rest::Response> const &event) {
   profile_.trades_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
-      log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
       // completion
       request_.respond_trades = clock::get_system();
       download_trades_ = false;

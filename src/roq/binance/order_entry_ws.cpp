@@ -779,7 +779,7 @@ void OrderEntryWS::operator()(Trace<json::WSAPIListenKey> const &event, json::WS
       default:
         switch (message.error.code) {
           case -2015:  // invalid key
-            log::error("Unexpected: error={}"sv, message.error);
+            log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, message.error);
         }
     }
     update_rate_limits(event);
@@ -812,7 +812,7 @@ void OrderEntryWS::operator()(Trace<json::WSAPIAccount> const &event, json::WSAP
         break;
       }
       default:
-        log::error("Unexpected: error={}"sv, message.error);
+        log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, message.error);
     }
     // completion
     request_.respond_account = clock::get_system();
@@ -874,7 +874,7 @@ void OrderEntryWS::operator()(Trace<json::WSAPIOpenOrders> const &event, json::W
         break;
       }
       default:
-        log::error("Unexpected: error={}"sv, message.error);
+        log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, message.error);
     }
     // completion
     request_.respond_orders = clock::get_system();
@@ -938,7 +938,7 @@ void OrderEntryWS::operator()(Trace<json::WSAPITrades> const &event, json::WSAPI
         break;
       }
       default:
-        log::error("Unexpected: error={}"sv, message.error);
+        log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, message.error);
     }
     // completion
     request_.respond_trades = clock::get_system();
@@ -998,7 +998,7 @@ void OrderEntryWS::operator()(Trace<json::WSAPICancelOpenOrders> const &event, j
         break;
       }
       default:
-        log::error("Unexpected: error={}"sv, message.error);
+        log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, message.error);
     }
     update_rate_limits(event);
   });
@@ -1187,7 +1187,7 @@ void OrderEntryWS::operator()(Trace<json::WSAPICancelReplaceOrder> const &event,
       break;
     }
     default:
-      log::error("Unexpected: error={}"sv, message.error);
+      log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, message.error);
   }
   update_rate_limits(event);
 }

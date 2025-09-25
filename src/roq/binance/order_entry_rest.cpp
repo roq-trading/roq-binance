@@ -423,7 +423,7 @@ void OrderEntryREST::get_listen_key_ack(Trace<web::rest::Response> const &event,
   auto const STATE = OrderEntryState::LISTEN_KEY;
   profile_.listen_key_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
-      log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
       if (download_.downloading()) {
         download_.retry(STATE);
       }
@@ -547,7 +547,7 @@ void OrderEntryREST::get_account(MarginMode margin_mode) {
 void OrderEntryREST::get_account_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
   profile_.account_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
-      log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
       switch (margin_mode) {
         using enum MarginMode;
         case UNDEFINED:
@@ -691,7 +691,7 @@ void OrderEntryREST::get_open_orders(MarginMode margin_mode) {
 void OrderEntryREST::get_open_orders_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
   profile_.open_orders_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
-      log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
       switch (margin_mode) {
         using enum MarginMode;
         case UNDEFINED:
@@ -820,7 +820,7 @@ void OrderEntryREST::get_trades(MarginMode margin_mode) {
 void OrderEntryREST::get_trades_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
   profile_.trades_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
-      log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
       switch (margin_mode) {
         using enum MarginMode;
         case UNDEFINED:
@@ -946,7 +946,7 @@ void OrderEntryREST::get_account_cross_on_timer() {
 void OrderEntryREST::get_account_cross_on_timer_ack(Trace<web::rest::Response> const &event) {
   profile_.account_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
-      log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
       request_.respond_account_cross = clock::get_system();  // completion
       download_account_cross_on_timer_ = false;
     };
