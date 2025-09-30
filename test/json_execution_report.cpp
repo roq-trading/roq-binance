@@ -204,7 +204,7 @@ TEST_CASE("json_execution_report_stream", "[json_execution_report]") {
    private:
     bool found_ = false;
   } handler;
-  json::UserStreamParser::dispatch(handler, message, buffer, trace_info);
+  json::UserStreamParser::dispatch(handler, message, buffer, trace_info, false);
   CHECK(static_cast<bool>(handler) == true);
 }
 
@@ -292,7 +292,7 @@ TEST_CASE("json_execution_report_stream_maker_new", "[json_execution_report]") {
    private:
     bool found_ = false;
   } handler;
-  json::UserStreamParser::dispatch(handler, message, buffer, trace_info);
+  json::UserStreamParser::dispatch(handler, message, buffer, trace_info, false);
   CHECK(static_cast<bool>(handler) == true);
 }
 
@@ -380,6 +380,6 @@ TEST_CASE("json_execution_report_stream_maker_filled", "[json_execution_report]"
    private:
     bool found_ = false;
   } handler;
-  json::UserStreamParser::dispatch(handler, message, buffer, trace_info);
+  json::UserStreamParser::dispatch(handler, message, buffer, trace_info, false);
   CHECK(static_cast<bool>(handler) == true);
 }

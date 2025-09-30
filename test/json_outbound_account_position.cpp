@@ -92,7 +92,7 @@ TEST_CASE("json_outbound_account_position_stream", "[json_outbound_account_posit
    private:
     bool found_ = false;
   } handler;
-  json::UserStreamParser::dispatch(handler, message, buffer, trace_info);
+  json::UserStreamParser::dispatch(handler, message, buffer, trace_info, false);
   CHECK(static_cast<bool>(handler) == true);
 }
 
@@ -151,7 +151,7 @@ TEST_CASE("json_outbound_account_position_stream_maker_new", "[json_outbound_acc
    private:
     bool found_ = false;
   } handler;
-  json::UserStreamParser::dispatch(handler, message, buffer, trace_info);
+  json::UserStreamParser::dispatch(handler, message, buffer, trace_info, false);
   CHECK(static_cast<bool>(handler) == true);
 }
 
@@ -211,6 +211,6 @@ TEST_CASE("json_outbound_account_position_stream_maker_filled", "[json_outbound_
    private:
     bool found_ = false;
   } handler;
-  json::UserStreamParser::dispatch(handler, message, buffer, trace_info);
+  json::UserStreamParser::dispatch(handler, message, buffer, trace_info, false);
   CHECK(static_cast<bool>(handler) == true);
 }

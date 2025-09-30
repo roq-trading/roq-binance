@@ -89,6 +89,6 @@ TEST_CASE("json_depth_update_simple", "[json_depth_update]") {
     void operator()(Trace<json::DepthUpdate> const &) override { ++counter; }
   } handler;
   TraceInfo trace_info;
-  json::MarketStreamParser::dispatch(handler, message, buffer_stack, trace_info);
+  json::MarketStreamParser::dispatch(handler, message, buffer_stack, trace_info, false);
   CHECK(handler.counter == 1);
 }
