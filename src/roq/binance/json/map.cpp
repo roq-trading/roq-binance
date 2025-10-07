@@ -73,9 +73,9 @@ constexpr Helper<binance::json::OrderType>::operator std::optional<roq::OrderTyp
     case MARKET:
       return roq::OrderType::MARKET;
     case STOP_LOSS:
-      return roq::OrderType::UNDEFINED;
+      return roq::OrderType::MARKET;
     case STOP_LOSS_LIMIT:
-      return roq::OrderType::UNDEFINED;
+      return roq::OrderType::LIMIT;
     case TAKE_PROFIT:
       return roq::OrderType::UNDEFINED;
     case TAKE_PROFIT_LIMIT:
@@ -89,8 +89,8 @@ constexpr Helper<binance::json::OrderType>::operator std::optional<roq::OrderTyp
 static_assert(Helper{binance::json::OrderType{binance::json::OrderType::UNDEFINED_INTERNAL}} == roq::OrderType::UNDEFINED);
 static_assert(Helper{binance::json::OrderType{binance::json::OrderType::LIMIT}} == roq::OrderType::LIMIT);
 static_assert(Helper{binance::json::OrderType{binance::json::OrderType::MARKET}} == roq::OrderType::MARKET);
-static_assert(Helper{binance::json::OrderType{binance::json::OrderType::STOP_LOSS}} == roq::OrderType::UNDEFINED);
-static_assert(Helper{binance::json::OrderType{binance::json::OrderType::STOP_LOSS_LIMIT}} == roq::OrderType::UNDEFINED);
+static_assert(Helper{binance::json::OrderType{binance::json::OrderType::STOP_LOSS}} == roq::OrderType::MARKET);
+static_assert(Helper{binance::json::OrderType{binance::json::OrderType::STOP_LOSS_LIMIT}} == roq::OrderType::LIMIT);
 static_assert(Helper{binance::json::OrderType{binance::json::OrderType::TAKE_PROFIT}} == roq::OrderType::UNDEFINED);
 static_assert(Helper{binance::json::OrderType{binance::json::OrderType::TAKE_PROFIT_LIMIT}} == roq::OrderType::UNDEFINED);
 static_assert(Helper{binance::json::OrderType{binance::json::OrderType::LIMIT_MAKER}} == roq::OrderType::LIMIT);

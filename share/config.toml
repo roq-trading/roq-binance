@@ -1,3 +1,5 @@
+# config template for the roq-binance gateway
+
 symbols = [
   "^BTCUSD[A-Z]?$",
   "^ETHUSD[A-Z]?$"
