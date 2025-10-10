@@ -1,0 +1,36 @@
+{
+  "name": "roq/binance/json/OutboundAccountPosition",
+  "type": "dictionary",
+  "values": [
+    {
+      "raw": "e",
+      "name": "event_type",
+      "type": "roq/binance/json/EventType"
+    },
+    {
+      "raw": "E",
+      "name": "event_time",
+      "type": "std/milliseconds"
+    },
+    {
+      "raw": "u",
+      "name": "time_of_last_account_update",
+      "type": "std/milliseconds"
+    },
+    {
+      "raw": "U",
+      "name": "event_update_id",
+      "type": "std/uint64"
+    },
+    {
+      "raw": "B",
+      "name": "balances",
+      "type": "roq/binance/json/BalancesItem",
+      "array": "std/span"
+    },
+    {
+      "raw": "P",
+      "name": "permissions"
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "name": "roq/binance/flags/REST",
+  "type": "flags",
+  "prefix": "rest_",
+  "values": [
+    {
+      "name": "network_interfaces",
+      "type": "std/string",
+      "array": "std/vector",
+      "description": "Network interfaces"
+    },
+    {
+      "name": "uri",
+      "type": "roq/io/web/URI",
+      "validator": "roq/core/flags/URI",
+      "default": "https://testnet.binance.com",
+      "description": "Exchange end-point"
+    },
+    {
+      "name": "host",
+      "type": "std/string",
+      "description": "Host (when URI is an IP address)"
+    },
+    {
+      "name": "pm_uri",
+      "type": "roq/io/web/URI",
+      "validator": "roq/core/flags/URI",
+      "default": "https://testnet.binance.com",
+      "description": "Exchange end-point"
+    },
+    {
+      "name": "pm_host",
+      "type": "std/string",
+      "description": "Host (when URI is an IP address)"
+    },
+    {
+      "name": "proxy",
+      "type": "roq/io/web/URI",
+      "validator": "roq/core/flags/URI",
+      "description": "Proxy end-point"
+    },
+    {
+      "name": "ping_freq",
+      "type": "std/nanoseconds",
+      "validator": "roq/flags/validators/TimePeriod",
+      "default": "5s",
+      "description": "Ping frequency"
+    },
+    {
+      "name": "ping_path",
+      "type": "std/string",
+      "validator": "roq/flags/validators/Path",
+      "default": "/api/v3/time",
+      "description": "Ping path"
+    },
+    {
+      "name": "request_timeout",
+      "type": "std/nanoseconds",
+      "validator": "roq/flags/validators/TimePeriod",
+      "default": "30s",
+      "description": "Request timeout"
+    },
+    {
+      "name": "listen_key_refresh",
+      "type": "std/nanoseconds",
+      "validator": "roq/flags/validators/TimePeriod",
+      "default": "1800s",
+      "description": "Listen key refresh period"
+    },
+    {
+      "name": "order_recv_window",
+      "type": "std/nanoseconds",
+      "validator": "roq/flags/validators/TimePeriod",
+      "default": "5000ms",
+      "description": "Receive window (please refer to exchange documentation)"
+    },
+    {
+      "name": "cancel_on_disconnect",
+      "type": "std/bool",
+      "default": false,
+      "description": "Auto-cancel orders on disconnect?"
+    },
+    {
+      "name": "terminate_on_403",
+      "type": "std/bool",
+      "default": false,
+      "description": "(TEST) Trigger program termination after receiving a 403 response code?"
+    },
+    {
+      "name": "back_off_delay",
+      "type": "std/nanoseconds",
+      "validator": "roq/flags/validators/TimePeriod",
+      "default": "300s",
+      "description": "(TEST) Time to wait before retrying a rejected request"
+    },
+    {
+      "name": "download_borrowed_freq",
+      "type": "std/nanoseconds",
+      "validator": "roq/flags/validators/TimePeriod",
+      "default": "0s",
+      "description": "(TEST) Download frequency for CROSS borrowed"
+    }
+  ]
+}

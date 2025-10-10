@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+if [ "$1" == "debug" ]; then
+  PREFIX="gdb --args"
+else
+  PREFIX=
+fi
+
+NAME="binance"
+
+CONFIG="${CONFIG:-$NAME}"
+
+CONFIG_FILE="$ROQ_CONFIG_PATH/roq-binance/$CONFIG.toml"
+
+URI="binance.com"
+
+REST_URI="https://api.$URI"
+WS_URI="wss://stream.$URI:9443/stream"
+
+$PREFIX ./roq-binance \
+  --name "$NAME" \
+  --config_file "$CONFIG_FILE" \
+  --cache_dir "$HOME/var/lib/roq/cache" \
+  --event_log_dir "$HOME/var/lib/roq/data" \
+  --event_log_symlink true \
+  --client_listen_address "$HOME/run/$NAME.sock" \
+  --service_listen_address "$HOME/run/metrics/${NAME}.sock" \
+  --ws_uri "$WS_URI" \
+  --rest_uri "$REST_URI" \
+  --ws_api=true \
+  --download_symbols="BTCUSDT,ETHUSDT" \
+  --download_trades_lookback=24h \
+  $@

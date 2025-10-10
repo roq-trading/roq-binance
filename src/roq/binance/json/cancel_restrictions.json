@@ -1,0 +1,12 @@
+{
+  "name": "roq/binance/json/CancelRestrictions",
+  "type": "enum",
+  "values": [
+    {
+      "name": "ONLY_NEW"
+    },
+    {
+      "name": "ONLY_PARTIALLY_FILLED"
+    }
+  ]
+}

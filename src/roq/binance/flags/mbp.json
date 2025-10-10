@@ -1,0 +1,25 @@
+{
+  "name": "roq/binance/flags/MBP",
+  "type": "flags",
+  "prefix": "mbp_",
+  "values": [
+    {
+      "name": "max_depth",
+      "type": "std/uint16",
+      "description": "Maximum depth"
+    },
+    {
+      "name": "sequencer_timeout",
+      "type": "std/nanoseconds",
+      "validator": "roq/flags/validators/TimePeriod",
+      "default": "120s",
+      "description": "Sequencer timeout"
+    },
+    {
+      "name": "allow_price_inversion",
+      "type": "std/bool",
+      "default": false,
+      "description": "Allow price inversion?"
+    }
+  ]
+}

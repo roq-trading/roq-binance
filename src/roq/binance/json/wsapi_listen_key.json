@@ -1,0 +1,27 @@
+{
+  "name": "roq/binance/json/WSAPIListenKey",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "id",
+      "type": "std/string_view"
+    },
+    {
+      "name": "status",
+      "type": "std/int32"
+    },
+    {
+      "name": "result",
+      "type": "roq/binance/json/ListenKey"
+    },
+    {
+      "name": "error",
+      "type": "roq/binance/json/Error"
+    },
+    {
+      "name": "rateLimits",
+      "type": "roq/binance/json/WSAPIRateLimitsItem",
+      "array": "std/span"
+    }
+  ]
+}

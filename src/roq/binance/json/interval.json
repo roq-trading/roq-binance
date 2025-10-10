@@ -1,0 +1,15 @@
+{
+  "name": "roq/binance/json/Interval",
+  "type": "enum",
+  "values": [
+    {
+      "name": "SECOND"
+    },
+    {
+      "name": "MINUTE"
+    },
+    {
+      "name": "DAY"
+    }
+  ]
+}

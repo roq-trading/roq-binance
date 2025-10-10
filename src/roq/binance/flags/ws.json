@@ -1,0 +1,83 @@
+{
+  "name": "roq/binance/flags/WS",
+  "type": "flags",
+  "prefix": "ws_",
+  "values": [
+    {
+      "name": "uri",
+      "type": "roq/io/web/URI",
+      "validator": "roq/core/flags/URI",
+      "default": "wss://testnet.binance.com/realtime",
+      "description": "Exchange end-point"
+    },
+    {
+      "name": "host",
+      "type": "std/string",
+      "description": "Host (when URI is an IP address)"
+    },
+    {
+      "name": "pm_uri",
+      "type": "roq/io/web/URI",
+      "validator": "roq/core/flags/URI",
+      "default": "wss://testnet.binance.com/realtime",
+      "description": "Exchange end-point"
+    },
+    {
+      "name": "pm_host",
+      "type": "std/string",
+      "description": "Host (when URI is an IP address)"
+    },
+    {
+      "name": "ping_freq",
+      "type": "std/nanoseconds",
+      "validator": "roq/flags/validators/TimePeriod",
+      "default": "5s",
+      "description": "Ping frequency"
+    },
+    {
+      "name": "max_subscriptions_per_stream",
+      "type": "std/uint32",
+      "required": true,
+      "default": 128,
+      "description": "Maximum number of symbols per connection"
+    },
+    {
+      "name": "subscribe_depth_levels",
+      "type": "std/uint32",
+      "default": 1000,
+      "description": "Depth levels to subscribe"
+    },
+    {
+      "name": "subscribe_depth_freq",
+      "type": "std/nanoseconds",
+      "validator": "roq/flags/validators/TimePeriod",
+      "default": "100ms",
+      "description": "Depth update frequency"
+    },
+    {
+      "name": "mbp_request_delay",
+      "type": "std/nanoseconds",
+      "validator": "roq/flags/validators/TimePeriod",
+      "default": "10s",
+      "description": "Delay before requesting depth snapshot"
+    },
+    {
+      "name": "mbp_request_max_retries",
+      "type": "std/uint32",
+      "default": 0,
+      "description": "Maximum number of retries before giving up"
+    },
+    {
+      "name": "subscribe_trade_details",
+      "type": "std/bool",
+      "default": false,
+      "description": "Should trade summary reports include individual matches?"
+    },
+    {
+      "name": "enable_secondary",
+      "type": "std/bool",
+      "default": false,
+      "description": "Create secondary market data connection?"
+    }
+  ]
+}

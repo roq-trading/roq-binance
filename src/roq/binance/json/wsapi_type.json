@@ -1,0 +1,33 @@
+{
+  "name": "roq/binance/json/WSAPIType",
+  "type": "enum",
+  "values": [
+    {
+      "name": "LISTEN_KEY_CREATE"
+    },
+    {
+      "name": "LISTEN_KEY_PING"
+    },
+    {
+      "name": "ACCOUNT_STATUS"
+    },
+    {
+      "name": "OPEN_ORDERS_STATUS"
+    },
+    {
+      "name": "OPEN_ORDERS_CANCEL_ALL"
+    },
+    {
+      "name": "ORDER_PLACE"
+    },
+    {
+      "name": "ORDER_CANCEL"
+    },
+    {
+      "name": "ORDER_CANCEL_REPLACE"
+    },
+    {
+      "name": "MY_TRADES"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "name": "roq/binance/json/WSAPICancelReplaceOrder",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "id",
+      "type": "std/string_view"
+    },
+    {
+      "name": "status",
+      "type": "std/int32"
+    },
+    {
+      "name": "result",
+      "type": "roq/binance/json/CancelReplaceOrder"
+    },
+    {
+      "name": "error",
+      "type": "roq/binance/json/CancelReplaceOrderError"
+    },
+    {
+      "name": "rateLimits",
+      "type": "roq/binance/json/WSAPIRateLimitsItem",
+      "array": "std/span"
+    }
+  ]
+}

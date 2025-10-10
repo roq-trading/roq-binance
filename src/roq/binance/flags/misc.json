@@ -1,0 +1,26 @@
+{
+  "name": "roq/binance/flags/Misc",
+  "type": "flags",
+  "values": [
+    {
+      "name": "decode_buffer_size",
+      "type": "std/uint32",
+      "required": true,
+      "default": 33554432,
+      "description": "Decode buffer size"
+    },
+    {
+      "name": "encode_buffer_size",
+      "type": "std/uint32",
+      "required": true,
+      "default": 1048576,
+      "description": "Encode buffer size"
+    },
+    {
+      "name": "continue_with_unknown_event_type",
+      "type": "std/bool",
+      "default": false,
+      "description": "Continue when receiving updates for unexpected event-types?"
+    }
+  ]
+}

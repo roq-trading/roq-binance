@@ -1,0 +1,15 @@
+{
+  "name": "roq/binance/json/RateLimitType",
+  "type": "enum",
+  "values": [
+    {
+      "name": "ORDERS"
+    },
+    {
+      "name": "REQUEST_WEIGHT"
+    },
+    {
+      "name": "RAW_REQUESTS"
+    }
+  ]
+}

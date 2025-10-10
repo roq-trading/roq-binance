@@ -1,0 +1,22 @@
+{
+  "name": "roq/binance/json/CancelReplaceOrder",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "cancelResult",
+      "type": "roq/binance/json/SuccessOrFailure"
+    },
+    {
+      "name": "newOrderResult",
+      "type": "roq/binance/json/SuccessOrFailure"
+    },
+    {
+      "name": "cancelResponse",
+      "type": "roq/binance/json/CancelOrder"
+    },
+    {
+      "name": "newOrderResponse",
+      "type": "roq/binance/json/NewOrder"
+    }
+  ]
+}

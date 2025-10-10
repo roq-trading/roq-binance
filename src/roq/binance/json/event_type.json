@@ -1,0 +1,36 @@
+{
+  "name": "roq/binance/json/EventType",
+  "type": "enum",
+  "values": [
+    {
+      "name": "aggTrade"
+    },
+    {
+      "name": "trade"
+    },
+    {
+      "name": "24hrMiniTicker"
+    },
+    {
+      "name": "bookTicker"
+    },
+    {
+      "name": "depthUpdate"
+    },
+    {
+      "name": "outboundAccountPosition"
+    },
+    {
+      "name": "balanceUpdate"
+    },
+    {
+      "name": "executionReport"
+    },
+    {
+      "name": "listStatus"
+    },
+    {
+      "name": "openOrderLoss"
+    }
+  ]
+}

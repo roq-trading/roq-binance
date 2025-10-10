@@ -1,0 +1,11 @@
+{
+  "name": "roq/binance/json/Filters",
+  "type": "array",
+  "values": [
+    {
+      "name": "data",
+      "type": "roq/binance/json/Filter",
+      "array": "std/span"
+    }
+  ]
+}

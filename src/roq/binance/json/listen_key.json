@@ -1,0 +1,10 @@
+{
+  "name": "roq/binance/json/ListenKey",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "listenKey",
+      "type": "std/string_view"
+    }
+  ]
+}

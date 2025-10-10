@@ -1,0 +1,22 @@
+{
+  "name": "roq/binance/json/ExchangeFilter",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "filterType",
+      "type": "roq/binance/json/FilterType"
+    },
+    {
+      "name": "minNotional",
+      "type": "std/double"
+    },
+    {
+      "name": "applyToMarket",
+      "type": "std/bool"
+    },
+    {
+      "name": "avgPriceMins",
+      "type": "std/int32"
+    }
+  ]
+}

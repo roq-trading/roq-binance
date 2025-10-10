@@ -1,0 +1,14 @@
+{
+  "name": "roq/binance/json/DepthItem",
+  "type": "by_index",
+  "values": [
+    {
+      "name": "price",
+      "type": "std/double"
+    },
+    {
+      "name": "qty",
+      "type": "std/double"
+    }
+  ]
+}

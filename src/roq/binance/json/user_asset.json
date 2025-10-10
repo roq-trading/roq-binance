@@ -1,0 +1,30 @@
+{
+  "name": "roq/binance/json/UserAsset",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "asset",
+      "type": "std/string_view"
+    },
+    {
+      "name": "borrowed",
+      "type": "std/double"
+    },
+    {
+      "name": "free",
+      "type": "std/double"
+    },
+    {
+      "name": "interest",
+      "type": "std/double"
+    },
+    {
+      "name": "locked",
+      "type": "std/double"
+    },
+    {
+      "name": "netAsset",
+      "type": "std/double"
+    }
+  ]
+}

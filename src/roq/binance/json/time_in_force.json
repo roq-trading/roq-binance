@@ -1,0 +1,15 @@
+{
+  "name": "roq/binance/json/TimeInForce",
+  "type": "enum",
+  "values": [
+    {
+      "name": "GTC"
+    },
+    {
+      "name": "IOC"
+    },
+    {
+      "name": "FOK"
+    }
+  ]
+}
