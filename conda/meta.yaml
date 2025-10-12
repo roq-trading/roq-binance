@@ -26,7 +26,8 @@ requirements:
     - libabseil
     - magic_enum
     - roq-api
-    - roq-binance-sbe
+    - roq-binance-sbe-spot
+    - roq-binance-sbe-stream
     - roq-cache
     - roq-codec
     - roq-core
