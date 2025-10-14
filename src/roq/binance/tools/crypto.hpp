@@ -2,13 +2,14 @@
 
 #pragma once
 
-#include <array>
 #include <chrono>
 #include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
-#include "roq/utils/mac/hmac.hpp"
+#include "roq/utils/sign/context.hpp"
+#include "roq/utils/sign/pkey.hpp"
 
 namespace roq {
 namespace binance {
@@ -28,7 +29,7 @@ struct Crypto final {
 
   // WS API
 
-  std::string_view create_ws_api_signature(std::span<std::byte> const &buffer, std::string_view const &body);
+  std::string_view create_ws_api_signature(std::string &result, std::string_view const &body);
 
   static constexpr auto const QUERY_BUFFER_LENGTH = 128uz;  // note! expected length == 99
 
@@ -37,13 +38,12 @@ struct Crypto final {
   std::string create_query_2(std::chrono::milliseconds now, std::string_view const &body);
 
  private:
-  using MAC = utils::mac::HMAC<utils::hash::SHA256>;
-  using Digest = std::array<std::byte, MAC::DIGEST_LENGTH>;
-
   std::string const key_;
-  MAC mac_;
-  Digest digest_;
   std::string const headers_;
+  //
+  utils::sign::PKey pkey_;
+  utils::sign::Context context_;
+  std::vector<std::byte> digest_;
 };
 
 }  // namespace tools

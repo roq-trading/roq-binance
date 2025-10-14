@@ -10,7 +10,7 @@
 
 #include "roq/utils/safe_cast.hpp"
 
-#include "roq/utils/codec/hex.hpp"
+#include "roq/utils/codec/base64.hpp"
 
 #include "roq/utils/text/writer.hpp"
 
@@ -36,7 +36,7 @@ auto create_headers_helper(auto const &key) {
 
 // === IMPLEMENTATION ===
 
-Crypto::Crypto(std::string_view const &key, std::string_view const &secret) : key_{key}, mac_{secret}, headers_{create_headers_helper(key_)} {
+Crypto::Crypto(std::string_view const &key, std::string_view const &secret) : key_{key}, headers_{create_headers_helper(key_)}, pkey_{secret} {
 }
 
 std::string_view Crypto::create_query(std::span<std::byte> const &buffer, std::chrono::milliseconds now, std::string_view const &body) {
@@ -53,13 +53,11 @@ std::string_view Crypto::create_query(std::span<std::byte> const &buffer, std::c
   return writer.finish();
 }
 
-std::string_view Crypto::create_ws_api_signature(std::span<std::byte> const &buffer, std::string_view const &body) {
-  mac_.clear();
-  mac_.update(body);
-  auto digest = mac_.final(digest_);
-  utils::text::Writer writer{buffer};
-  writer.write(utils::codec::Hex{digest});
-  return writer.finish();
+std::string_view Crypto::create_ws_api_signature(std::string &buffer, std::string_view const &body) {
+  digest_.clear();
+  context_.reset();
+  pkey_.sign(digest_, body, context_);
+  utils::codec::Base64::encode(buffer, digest_, false, false);
 }
 
 std::string Crypto::create_query_2(std::chrono::milliseconds now, std::string_view const &body) {

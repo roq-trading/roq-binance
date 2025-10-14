@@ -16,7 +16,7 @@ FLAGFILE="../../../share/flags/test/flags.cfg"
 
 DOWNLOAD_SYMBOLS="BTCUSDT,ETHUSDT"
 
-WS_API=false
+WS_API=true
 
 $PREFIX ./roq-binance \
   --name "$NAME" \
