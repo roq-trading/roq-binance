@@ -15,7 +15,6 @@
 
 #include "roq/binance/account.hpp"
 #include "roq/binance/config.hpp"
-#include "roq/binance/drop_copy.hpp"
 #include "roq/binance/market_data.hpp"
 #include "roq/binance/order_entry.hpp"
 #include "roq/binance/request.hpp"
@@ -26,7 +25,7 @@
 namespace roq {
 namespace binance {
 
-struct Gateway final : public server::Handler, public Rest::Handler, public MarketData::Handler, public OrderEntry::Handler, public DropCopy::Handler {
+struct Gateway final : public server::Handler, public Rest::Handler, public MarketData::Handler, public OrderEntry::Handler {
   Gateway(server::Dispatcher &, Settings const &, Config const &, io::Context &);
 
   Gateway(Gateway const &) = delete;
@@ -71,8 +70,6 @@ struct Gateway final : public server::Handler, public Rest::Handler, public Mark
 
   void ensure_symbol_slices(size_t size);
 
-  void operator()(OrderEntry::ListenKeyUpdate const &) override;
-
   // utilities
 
   template <typename... Args>
@@ -86,11 +83,6 @@ struct Gateway final : public server::Handler, public Rest::Handler, public Mark
   Request &get_request(std::string_view const &account, MarginMode);
 
   OrderEntry &get_order_entry(std::string_view const &account, MarginMode);
-
-  DropCopy &get_drop_copy(std::string_view const &account, MarginMode);
-
-  template <typename T>
-  void create_drop_copy_from_listen_key_update(auto &drop_copy, auto &listen_key_update);
 
  private:
   server::Dispatcher &dispatcher_;
@@ -123,10 +115,6 @@ struct Gateway final : public server::Handler, public Rest::Handler, public Mark
   // streams
   Rest rest_;
   utils::unordered_map<std::string, OrderEntryRR> order_entry_;
-  utils::unordered_map<std::string, utils::unordered_map<MarginMode, std::unique_ptr<DropCopy>>> drop_copy_;
-  // - papi
-  utils::unordered_map<std::string, std::unique_ptr<OrderEntry>> order_entry_portfolio_;
-  utils::unordered_map<std::string, utils::unordered_map<MarginMode, std::unique_ptr<DropCopy>>> drop_copy_portfolio_;
   std::vector<std::unique_ptr<MarketData>> market_data_1_, market_data_2_;
   // cache
   std::vector<MBPUpdate> bids_, asks_;

@@ -765,12 +765,14 @@ void OrderEntryWS::operator()(Trace<json::WSAPIListenKey> const &event, json::WS
         auto &listen_key = message.result;
         listen_key_ = listen_key.listen_key;
         log::info<1>(R"(Listen key has been acquired (value="{}"))"sv, listen_key_);
+        /*
         auto listen_key_update = ListenKeyUpdate{
             .account = account_.name,
             .margin_mode = {},
             .listen_key = listen_key_,
         };
         create_trace_and_dispatch(handler_, trace_info, listen_key_update);
+        */
         (*this)(ConnectionStatus::READY);
         auto now = clock::get_system();
         listen_key_refresh_ = now + shared_.settings.rest.listen_key_refresh;

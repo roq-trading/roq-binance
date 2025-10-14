@@ -20,12 +20,6 @@ namespace roq {
 namespace binance {
 namespace tools {
 
-// === VALIDATION ===
-
-namespace {
-static_assert(Crypto::QUERY_BUFFER_LENGTH % 64 == 0);
-}  // namespace
-
 // === HELPERS ===
 
 namespace {
@@ -40,17 +34,7 @@ Crypto::Crypto(std::string_view const &key, std::string_view const &secret) : ke
 }
 
 std::string_view Crypto::create_query(std::span<std::byte> const &buffer, std::chrono::milliseconds now, std::string_view const &body) {
-  utils::text::Writer writer{buffer};
-  writer.write("?timestamp="sv).write(now.count());
-  mac_.clear();
-  auto tmp = static_cast<std::string_view>(writer).substr(1);
-  mac_.update(tmp);
-  if (!std::empty(body)) {
-    mac_.update(body);
-  }
-  auto digest = mac_.final(digest_);
-  writer.write("&signature="sv).write(utils::codec::Hex{digest});
-  return writer.finish();
+  throw RuntimeError{"XXX"sv};
 }
 
 std::string_view Crypto::create_ws_api_signature(std::string &buffer, std::string_view const &body) {
@@ -58,16 +42,6 @@ std::string_view Crypto::create_ws_api_signature(std::string &buffer, std::strin
   context_.reset();
   pkey_.sign(digest_, body, context_);
   utils::codec::Base64::encode(buffer, digest_, false, false);
-}
-
-std::string Crypto::create_query_2(std::chrono::milliseconds now, std::string_view const &body) {
-  auto tmp = fmt::format("{}&timestamp={}"sv, body, now.count());
-  mac_.clear();
-  mac_.update(tmp);
-  auto digest = mac_.final(digest_);
-  std::string signature;
-  utils::codec::Hex::encode(signature, digest);
-  return fmt::format("?{}&signature={}"sv, tmp, signature);
 }
 
 }  // namespace tools

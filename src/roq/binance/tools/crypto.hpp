@@ -8,8 +8,8 @@
 #include <string_view>
 #include <vector>
 
-#include "roq/utils/sign/context.hpp"
-#include "roq/utils/sign/pkey.hpp"
+#include "roq/utils/signature/context.hpp"
+#include "roq/utils/signature/pkey.hpp"
 
 namespace roq {
 namespace binance {
@@ -31,18 +31,12 @@ struct Crypto final {
 
   std::string_view create_ws_api_signature(std::string &result, std::string_view const &body);
 
-  static constexpr auto const QUERY_BUFFER_LENGTH = 128uz;  // note! expected length == 99
-
-  // PAPI
-
-  std::string create_query_2(std::chrono::milliseconds now, std::string_view const &body);
-
  private:
   std::string const key_;
   std::string const headers_;
   //
-  utils::sign::PKey pkey_;
-  utils::sign::Context context_;
+  utils::signature::PKey pkey_;
+  utils::signature::Context context_;
   std::vector<std::byte> digest_;
 };
 

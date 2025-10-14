@@ -7,11 +7,8 @@ set(SOURCES
     api.cpp
     application.cpp
     config.cpp
-    drop_copy_portfolio.cpp
-    drop_copy_simple.cpp
     gateway.cpp
     market_data.cpp
-    order_entry_portfolio.cpp
     order_entry_rest.cpp
     order_entry_ws.cpp
     rest.cpp
@@ -24,7 +21,7 @@ add_subdirectory(tools)
 
 include(RoqAutogen)
 
-set(AUTOGEN_SCHEMAS drop_copy_state.json order_entry_state.json rest_state.json)
+set(AUTOGEN_SCHEMAS order_entry_state.json rest_state.json)
 
 roq_autogen_hpp(
   OUTPUT

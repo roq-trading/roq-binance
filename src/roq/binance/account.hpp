@@ -29,9 +29,7 @@ struct Account final {
 
   std::string_view create_headers() const { return crypto_.create_headers(); }
 
-  std::string_view create_ws_api_signature(std::string_view const &body) { return crypto_.create_ws_api_signature(query_encode_buffer_, body); }
-
-  std::string create_query_2(std::chrono::milliseconds now, std::string_view const &body) { return crypto_.create_query_2(now, body); }
+  std::string_view create_ws_api_signature(std::string_view const &body) { return crypto_.create_ws_api_signature(sign_buffer_, body); }
 
   std::string const name;
   MarginMode const margin_mode;
@@ -39,6 +37,7 @@ struct Account final {
  private:
   tools::Crypto crypto_;
   std::vector<std::byte> query_encode_buffer_;
+  std::string sign_buffer_;
 
  public:
   std::vector<std::unique_ptr<server::cache::CancelOrderRequest>> cancel_order_request_buffer_;

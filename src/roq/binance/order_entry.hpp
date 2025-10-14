@@ -14,21 +14,12 @@ namespace roq {
 namespace binance {
 
 struct OrderEntry {
-  struct ListenKeyUpdate final {
-    std::string_view account;
-    MarginMode margin_mode = {};
-    bool is_margin = {};
-    std::string_view listen_key;
-  };
-
   struct Handler {
     virtual void operator()(Trace<StreamStatus> const &) = 0;
     virtual void operator()(Trace<ExternalLatency> const &) = 0;
     virtual void operator()(Trace<RateLimitsUpdate> const &) = 0;
     virtual void operator()(Trace<TradeUpdate> const &, bool is_last, uint8_t user_id, std::string_view const &request_id) = 0;
     virtual void operator()(Trace<FundsUpdate> const &, bool is_last) = 0;
-    // cross-communication
-    virtual void operator()(ListenKeyUpdate const &) = 0;
   };
 
   OrderEntry() = default;

@@ -459,12 +459,14 @@ void OrderEntryREST::operator()(Trace<json::ListenKey> const &event, MarginMode 
     if (initial) {
       log::warn(R"(DEBUG Listen key has been acquired (margin_mode={}, value="{}"))"sv, margin_mode, listen_key.listen_key);
       log::info<1>(R"(Listen key has been acquired (margin_mode={}, value="{}"))"sv, margin_mode, listen_key.listen_key);
+      /*
       auto listen_key_update = ListenKeyUpdate{
           .account = account_.name,
           .margin_mode = margin_mode,
           .listen_key = listen_key.listen_key,
       };
       create_trace_and_dispatch(handler_, trace_info, listen_key_update);
+      */
     } else {
       log::info<1>("Listen key has been refreshed! (margin_mode={})"sv, margin_mode);
     }
