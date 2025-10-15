@@ -14,6 +14,13 @@ namespace roq {
 namespace binance {
 
 struct OrderEntry {
+  struct ListenKeyUpdate final {
+    std::string_view account;
+    MarginMode margin_mode = {};
+    bool is_margin = {};
+    std::string_view listen_key;
+  };
+
   struct Handler {
     virtual void operator()(Trace<StreamStatus> const &) = 0;
     virtual void operator()(Trace<ExternalLatency> const &) = 0;
@@ -28,7 +35,7 @@ struct OrderEntry {
 
   virtual ~OrderEntry() = default;
 
-  virtual bool ready() const = 0;
+  // virtual bool ready() const = 0;
 
   virtual void operator()(Event<Start> const &) = 0;
   virtual void operator()(Event<Stop> const &) = 0;
@@ -36,7 +43,7 @@ struct OrderEntry {
 
   virtual void operator()(metrics::Writer &) const = 0;
 
-  virtual void operator()(Event<Disconnected> const &) = 0;
+  // virtual void operator()(Event<Disconnected> const &) = 0;
 
   virtual uint16_t operator()(Event<CreateOrder> const &, server::oms::Order const &, std::string_view const &request_id) = 0;
   virtual uint16_t operator()(

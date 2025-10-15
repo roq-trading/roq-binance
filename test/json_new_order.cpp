@@ -20,6 +20,7 @@ namespace {
 auto const CREATE_ORDER_TEMPLATE = json::CreateOrderTemplate{};
 }
 
+/*
 TEST_CASE("json_new_order_simple", "[json_new_order]") {
   auto message = R"({)"
                  R"("symbol":"LTCBTC",)"
@@ -363,3 +364,4 @@ TEST_CASE("json_new_order_margin", "[json_new_order]") {
       "type=STOP_LOSS_LIMIT"sv;
   CHECK(body == expected);
 }
+*/

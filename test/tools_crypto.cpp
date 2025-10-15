@@ -24,18 +24,17 @@ using namespace Catch::literals;
 // === CONSTANTS ===
 
 namespace {
-auto const KEY = "sSzUA6j8tGDfmLoFrOPhWHY3VeXbC3NrApp94Ci4H4XvcjuCuvOXp8gH89XzMPDe"sv;
-auto const SECRET = "tHurnNFWLFkm97xVRqoESdujAiq1ilNjnY52tDej5RilUbTVZXT2YB5eo7txFLHk"sv;
+auto const KEY = "IUA8RM0EJObe4X7UWxy74jAp6s2TJL2flZgDoxzx5AU3ws1I81Gr8ID3MVwfnYVD"sv;
+auto const SECRET = "MC4CAQAwBQYDK2VwBCIEIKpUYyNZ0pOcbuqxHgXnmrV2veFbP/dEJosCjJXalt22"sv;
 }  // namespace
 
 // === IMPLEMENTATION ===
 
 TEST_CASE("simple", "[tools_crypto]") {
   tools::Crypto crypto{KEY, SECRET};
-  std::vector<std::byte> buffer(4096);
+  std::string buffer;
   auto now = 1674303865s;
-  auto body = "abc=123&def=456"sv;
-  auto query = crypto.create_query(buffer, now, body);
-  auto expected = "?timestamp=1674303865000&signature=fa3ec135cd0ca6fd1267e30feb51147885209b0ee6c997ace0a6c7694b29736f"sv;
+  auto query = crypto.create_session_logon_signature(buffer, now);
+  auto expected = "imcEenTd/ElJ8eQ0n7Hx2QGTd4lX+/uJFRG/8HqdzOkMhyyFG8h5MtjqucuBPnTFbBiAkVXqt5QvVK0r4kFxDA=="sv;
   CHECK(query == expected);
 }

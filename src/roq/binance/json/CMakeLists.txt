@@ -69,15 +69,20 @@ set(AUTOGEN_SCHEMAS
     user_asset.json
     user_stream.json
     wsapi_account.json
+    wsapi_balance_update.json
     wsapi_cancel_open_orders.json
     wsapi_cancel_order.json
-    wsapi_cancel_replace_order.json
-    wsapi_listen_key.json
+    wsapi_execution_report.json
     wsapi_open_orders.json
     wsapi_order_place.json
+    wsapi_outbound_account_position.json
     wsapi_rate_limits_item.json
+    wsapi_session_logon.json
+    wsapi_session_logon_result.json
     wsapi_trades.json
-    wsapi_type.json)
+    wsapi_type.json
+    wsapi_user_data_stream_subscribe.json
+    wsapi_user_data_stream_subscribe_result.json)
 
 roq_autogen_hpp(
   OUTPUT

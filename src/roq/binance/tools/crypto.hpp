@@ -23,13 +23,7 @@ struct Crypto final {
 
   std::string_view get_key() const { return key_; }
 
-  std::string_view create_query(std::span<std::byte> const &buffer, std::chrono::milliseconds now, std::string_view const &body);
-
-  std::string_view create_headers() const { return headers_; }
-
-  // WS API
-
-  std::string_view create_ws_api_signature(std::string &result, std::string_view const &body);
+  std::string_view create_session_logon_signature(std::string &buffer, std::chrono::milliseconds timestamp);
 
  private:
   std::string const key_;

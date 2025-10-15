@@ -9,8 +9,7 @@ set(SOURCES
     config.cpp
     gateway.cpp
     market_data.cpp
-    order_entry_rest.cpp
-    order_entry_ws.cpp
+    order_entry_wsapi.cpp
     rest.cpp
     settings.cpp
     shared.cpp

@@ -3,7 +3,19 @@
   "type": "enum",
   "values": [
     {
-      "name": "listen_key"
+      "name": "session_logon"
+    },
+    {
+      "name": "user_data_stream_subscribe"
+    },
+    {
+      "name": "account_status"
+    },
+    {
+      "name": "open_orders_status"
+    },
+    {
+      "name": "my_trades"
     },
     {
       "name": "done"

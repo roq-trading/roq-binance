@@ -1,5 +1,5 @@
 {
-  "name": "roq/binance/json/WSAPICancelReplaceOrder",
+  "name": "roq/binance/json/WSAPIUserDataStreamSubscribe",
   "type": "dictionary",
   "values": [
     {
@@ -12,11 +12,11 @@
     },
     {
       "name": "result",
-      "type": "roq/binance/json/CancelReplaceOrder"
+      "type": "roq/binance/json/WSAPIUserDataStreamSubscribeResult"
     },
     {
       "name": "error",
-      "type": "roq/binance/json/CancelReplaceOrderError"
+      "type": "roq/binance/json/Error"
     },
     {
       "name": "rateLimits",

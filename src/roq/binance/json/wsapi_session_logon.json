@@ -1,5 +1,5 @@
 {
-  "name": "roq/binance/json/WSAPIListenKey",
+  "name": "roq/binance/json/WSAPISessionLogon",
   "type": "dictionary",
   "values": [
     {
@@ -12,7 +12,7 @@
     },
     {
       "name": "result",
-      "type": "roq/binance/json/ListenKey"
+      "type": "roq/binance/json/WSAPISessionLogonResult"
     },
     {
       "name": "error",

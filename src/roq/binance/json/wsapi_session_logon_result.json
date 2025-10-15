@@ -1,0 +1,30 @@
+{
+  "name": "roq/binance/json/WSAPISessionLogonResult",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "apiKey",
+      "type": "std/string_view"
+    },
+    {
+      "name": "authorizedSince",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "connectedSince",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "returnRateLimits",
+      "type": "std/bool"
+    },
+    {
+      "name": "serverTime",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "userDataStream",
+      "type": "std/bool"
+    }
+  ]
+}

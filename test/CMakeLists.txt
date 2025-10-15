@@ -15,7 +15,7 @@ set(SOURCES
     json_new_order.cpp
     json_open_orders.cpp
     json_outbound_account_position.cpp
-    json_wsapi_request.cpp
+    json_session_logon.cpp
     tools_crypto.cpp
     main.cpp)
 

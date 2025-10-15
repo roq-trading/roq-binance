@@ -1,0 +1,14 @@
+{
+  "name": "roq/binance/json/WSAPIExecutionReport",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "subscriptionId",
+      "type": "std/int32"
+    },
+    {
+      "name": "event",
+      "type": "roq/binance/json/ExecutionReport"
+    }
+  ]
+}
