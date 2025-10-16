@@ -94,6 +94,8 @@ bool dispatch_event(auto &handler, auto &message, auto &buffer_stack, auto &trac
       break;
     case OPEN_ORDER_LOSS:
       break;
+    case ORDER_TRADE_UPDATE:
+      break;
   }
   log::fatal(R"(Unexpected: message="{}")"sv, message);
 }

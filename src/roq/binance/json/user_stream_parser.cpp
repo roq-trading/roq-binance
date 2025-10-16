@@ -59,10 +59,12 @@ bool try_dispatch(auto &handler, auto &message, auto &buffer_stack, auto event_t
     case LIST_STATUS:
       dispatch_helper<ListStatus>(handler, message, buffer_stack, trace_info);
       return true;
-    case OPEN_ORDER_LOSS: {
+    case OPEN_ORDER_LOSS:
       // dispatch_helper<OpenOrderLoss>(handler, message, buffer_stack, trace_info);
       return true;
-    }
+    case ORDER_TRADE_UPDATE:
+      // dispatch_helper<OrderTradeUpdate>(handler, message, buffer_stack, trace_info);
+      return true;
   }
   log::fatal(R"(Unexpected: message="{}")"sv, message);
 }
