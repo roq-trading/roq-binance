@@ -12,7 +12,7 @@
 
 #include "roq/server/oms/exceptions.hpp"
 
-#include "roq/binance/order_entry_wsapi.hpp"
+#include "roq/binance/web_socket.hpp"
 
 #include "roq/binance/json/utils.hpp"
 
@@ -41,8 +41,8 @@ R create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &accoun
   result_type result;
   for (auto &[_, item] : accounts) {
     auto &account = *item;
-    auto order_entry = std::make_unique<OrderEntryWSAPI>(gateway, context, ++stream_id, account, shared);
-    result.try_emplace(account.name, std::move(order_entry));
+    auto web_socket = std::make_unique<WebSocket>(gateway, context, ++stream_id, account, shared);
+    result.try_emplace(account.name, std::move(web_socket));
   }
   return result;
 }

@@ -9,10 +9,10 @@ set(SOURCES
     config.cpp
     gateway.cpp
     market_data.cpp
-    order_entry_wsapi.cpp
     rest.cpp
     settings.cpp
     shared.cpp
+    web_socket.cpp
     main.cpp)
 
 add_subdirectory(json)
@@ -20,7 +20,7 @@ add_subdirectory(tools)
 
 include(RoqAutogen)
 
-set(AUTOGEN_SCHEMAS order_entry_state.json rest_state.json)
+set(AUTOGEN_SCHEMAS rest_state.json web_socket_state.json)
 
 roq_autogen_hpp(
   OUTPUT

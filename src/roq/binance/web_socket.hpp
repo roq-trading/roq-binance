@@ -27,18 +27,18 @@
 
 #include "roq/binance/account.hpp"
 #include "roq/binance/order_entry.hpp"
-#include "roq/binance/order_entry_state.hpp"
 #include "roq/binance/shared.hpp"
+#include "roq/binance/web_socket_state.hpp"
 
 #include "roq/binance/json/wsapi_parser_2.hpp"
 
 namespace roq {
 namespace binance {
 
-struct OrderEntryWSAPI final : public OrderEntry, public web::socket::Client::Handler, public json::WSAPIParser2::Handler {
-  OrderEntryWSAPI(OrderEntry::Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, std::string_view const &interface = {});
+struct WebSocket final : public OrderEntry, public web::socket::Client::Handler, public json::WSAPIParser2::Handler {
+  WebSocket(OrderEntry::Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, std::string_view const &interface = {});
 
-  OrderEntryWSAPI(OrderEntryWSAPI const &) = delete;
+  WebSocket(WebSocket const &) = delete;
 
  protected:
   void operator()(Event<Start> const &) override;
@@ -79,7 +79,7 @@ struct OrderEntryWSAPI final : public OrderEntry, public web::socket::Client::Ha
 
   void operator()(ConnectionStatus);
 
-  uint32_t download(OrderEntryState);
+  uint32_t download(WebSocketState);
 
   void parse(std::string_view const &message);
 
@@ -154,7 +154,7 @@ struct OrderEntryWSAPI final : public OrderEntry, public web::socket::Client::Ha
   // state
   bool ready_ = false;
   ConnectionStatus status_ = {};
-  core::Download<OrderEntryState> download_;
+  core::Download<WebSocketState> download_;
   bool download_trades_is_first_ = true;  // note! lookback depends on it
 };
 

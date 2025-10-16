@@ -1,5 +1,5 @@
 {
-  "name": "roq/binance/OrderEntryState",
+  "name": "roq/binance/WebSocketState",
   "type": "enum",
   "values": [
     {
