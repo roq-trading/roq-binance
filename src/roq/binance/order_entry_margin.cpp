@@ -1,13 +1,12 @@
 /* Copyright (c) 2017-2025, Hans Erik Thrane */
 
-#include "roq/binance/order_entry_portfolio.hpp"
+#include "roq/binance/order_entry_margin.hpp"
 
 #include <tuple>
 #include <utility>
 
 #include "roq/mask.hpp"
 
-#include "roq/utils/common.hpp"
 #include "roq/utils/compare.hpp"
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
@@ -43,8 +42,6 @@ auto const SUPPORTS = Mask{
     SupportType::FUNDS,
 };
 
-auto const X_MBX_USED_WEIGHT_1M = "x-mbx-used-weight-1m"sv;
-
 size_t const MAX_DECODE_BUFFER_DEPTH = 1;
 
 size_t const DOWNLOAD_TRADES_LIMIT = 1000;
@@ -53,19 +50,18 @@ size_t const DOWNLOAD_TRADES_LIMIT = 1000;
 // === HELPERS ===
 
 namespace {
-auto create_name(auto stream_id, auto const &account) {
+auto create_name(auto stream_id, auto &account) {
   return fmt::format("{}:{}:{}"sv, stream_id, NAME, account);
 }
 
-auto create_connection(auto &handler, auto &settings, auto &shared, auto &context, auto &interface) {
-  auto uri = settings.rest.pm_uri;
-  auto ping_path = shared.api.papi.ping_path;
+auto create_connection(auto &handler, auto &settings, auto &context, auto &interface) {
+  auto uri = settings.rest.uri;
   auto config = web::rest::Client::Config{
       // connection
       .interface = interface,
       .proxy = settings.rest.proxy,
       .uris = {&uri, 1},
-      .host = settings.rest.pm_host,
+      .host = settings.rest.host,
       .validate_certificate = settings.net.tls_validate_certificate,
       // connection manager
       .connection_timeout = {},
@@ -80,7 +76,7 @@ auto create_connection(auto &handler, auto &settings, auto &shared, auto &contex
       .query = {},
       .user_agent = ROQ_PACKAGE_NAME,
       .ping_frequency = settings.rest.ping_freq,
-      .ping_path = ping_path,
+      .ping_path = settings.rest.ping_path,
       // implementation
       .decode_buffer_size = settings.misc.decode_buffer_size,
       .encode_buffer_size = settings.misc.encode_buffer_size,
@@ -93,7 +89,7 @@ struct create_metrics final : public utils::metrics::Factory {
   create_metrics(auto &settings, auto &group, auto const &function, auto const &params) : utils::metrics::Factory{settings.app.name, group, function, params} {}
 };
 
-auto get_download_trades_lookback(auto const &settings, auto download_trades_is_first) {
+auto get_download_trades_lookback(auto &settings, auto download_trades_is_first) {
   if (download_trades_is_first) {
     if (settings.download.trades_lookback_on_restart.count()) {
       return settings.download.trades_lookback_on_restart;
@@ -119,7 +115,7 @@ auto get_retry_after(auto &response) {
 
 // === IMPLEMENTATION ===
 
-OrderEntryPortfolio::OrderEntryPortfolio(
+OrderEntryMargin::OrderEntryMargin(
     OrderEntry::Handler &handler,
     io::Context &context,
     uint16_t stream_id,
@@ -129,7 +125,7 @@ OrderEntryPortfolio::OrderEntryPortfolio(
     bool master,
     std::string_view const &interface)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)}, master_{master},
-      connection_{create_connection(*this, shared.settings, shared, context, interface)},
+      connection_{create_connection(*this, shared.settings, context, interface)},
       decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -145,8 +141,6 @@ OrderEntryPortfolio::OrderEntryPortfolio(
           .trades_ack = create_metrics(shared.settings, name_, "trades_ack"sv),
           .new_order = create_metrics(shared.settings, name_, "new_order"sv),
           .new_order_ack = create_metrics(shared.settings, name_, "new_order_ack"sv),
-          .cancel_replace_order = create_metrics(shared.settings, name_, "cancel_replace_order"sv),
-          .cancel_replace_order_ack = create_metrics(shared.settings, name_, "cancel_replace_order_ack"sv),
           .cancel_order = create_metrics(shared.settings, name_, "cancel_order"sv),
           .cancel_order_ack = create_metrics(shared.settings, name_, "cancel_order_ack"sv),
           .cancel_all_open_orders = create_metrics(shared.settings, name_, "cancel_all_open_orders"sv),
@@ -159,41 +153,57 @@ OrderEntryPortfolio::OrderEntryPortfolio(
           .requests_1m = create_metrics(shared.settings, name_, "requests"sv, "1m"sv),
       },
       account_{account}, shared_{shared}, request_{request}, download_{shared.settings.rest.request_timeout, [this](auto state) { return download(state); }} {
-  log::info<5>(R"(stream_id={}, account="{}")"sv, stream_id_, account_.name);
 }
 
-void OrderEntryPortfolio::operator()(Event<Start> const &) {
+void OrderEntryMargin::operator()(Event<Start> const &) {
   (*connection_).start();
 }
 
-void OrderEntryPortfolio::operator()(Event<Stop> const &) {
+void OrderEntryMargin::operator()(Event<Stop> const &) {
   (*connection_).stop();
 }
 
-void OrderEntryPortfolio::operator()(Event<Timer> const &event) {
+void OrderEntryMargin::operator()(Event<Timer> const &event) {
   auto &[message_info, timer] = event;
   (*connection_).refresh(timer.now);
   refresh_listen_key(timer.now);
   if (master_ && ready() && !downloading()) {
+    // spot
     if (!downloading() && request_.respond_account < request_.request_account) {
-      log::info("Download account..."sv);
-      get_account();
+      get_account({});
       download_account_ = true;
     }
     if (!downloading() && request_.respond_orders < request_.request_orders) {
-      log::info("Download orders..."sv);
-      get_open_orders();
+      get_open_orders({});
       download_orders_ = true;
     }
     if (!downloading() && request_.respond_trades < request_.request_trades) {
-      log::info("Download trades..."sv);
-      get_trades();
+      get_trades({});
       download_trades_ = true;
+    }
+    // margin cross
+    if (!downloading() && request_.respond_account_cross < request_.request_account_cross) {
+      get_account(MarginMode::CROSS);
+      download_account_cross_ = true;
+    }
+    if (!downloading() && request_.respond_orders_cross < request_.request_orders_cross) {
+      get_open_orders(MarginMode::CROSS);
+      download_orders_cross_ = true;
+    }
+    if (!downloading() && request_.respond_trades_cross < request_.request_trades_cross) {
+      get_trades(MarginMode::CROSS);
+      download_trades_cross_ = true;
+    }
+    // timer
+    if (!downloading() && shared_.settings.rest.download_borrowed_freq.count() && (next_poll_borrowed_ < timer.now || next_poll_borrowed_.count() == 0)) {
+      get_account_cross_on_timer();
+      download_account_cross_on_timer_ = true;
+      next_poll_borrowed_ = timer.now + shared_.settings.rest.download_borrowed_freq;
     }
   }
 }
 
-void OrderEntryPortfolio::operator()(metrics::Writer &writer) const {
+void OrderEntryMargin::operator()(metrics::Writer &writer) const {
   writer
       // counter
       .write(counter_.disconnect, metrics::Type::COUNTER)
@@ -208,8 +218,6 @@ void OrderEntryPortfolio::operator()(metrics::Writer &writer) const {
       .write(profile_.trades_ack, metrics::Type::PROFILE)
       .write(profile_.new_order, metrics::Type::PROFILE)
       .write(profile_.new_order_ack, metrics::Type::PROFILE)
-      .write(profile_.cancel_replace_order, metrics::Type::PROFILE)
-      .write(profile_.cancel_replace_order_ack, metrics::Type::PROFILE)
       .write(profile_.cancel_order, metrics::Type::PROFILE)
       .write(profile_.cancel_order_ack, metrics::Type::PROFILE)
       .write(profile_.cancel_all_open_orders, metrics::Type::PROFILE)
@@ -220,12 +228,12 @@ void OrderEntryPortfolio::operator()(metrics::Writer &writer) const {
       .write(rate_limiter_.requests_1m, metrics::Type::RATE_LIMITER);
 }
 
-uint16_t OrderEntryPortfolio::operator()(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
+uint16_t OrderEntryMargin::operator()(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
   new_order(event, order, request_id);
   return stream_id_;
 }
 
-uint16_t OrderEntryPortfolio::operator()(
+uint16_t OrderEntryMargin::operator()(
     Event<ModifyOrder> const &,
     server::oms::Order const &,
     [[maybe_unused]] std::string_view const &request_id,
@@ -234,18 +242,18 @@ uint16_t OrderEntryPortfolio::operator()(
   return stream_id_;
 }
 
-uint16_t OrderEntryPortfolio::operator()(
+uint16_t OrderEntryMargin::operator()(
     Event<CancelOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
-  cancel_order(event, order, request_id, previous_request_id);
+  (*this).cancel_order(event, order, request_id, previous_request_id);
   return stream_id_;
 }
 
-uint16_t OrderEntryPortfolio::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
+uint16_t OrderEntryMargin::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
   cancel_all_open_orders(event, request_id);
   return stream_id_;
 }
 
-void OrderEntryPortfolio::operator()(Trace<web::rest::Client::Connected> const &) {
+void OrderEntryMargin::operator()(Trace<web::rest::Client::Connected> const &) {
   if (download_.downloading()) {
     download_.bump();
   } else {
@@ -254,7 +262,7 @@ void OrderEntryPortfolio::operator()(Trace<web::rest::Client::Connected> const &
   }
 }
 
-void OrderEntryPortfolio::operator()(Trace<web::rest::Client::Disconnected> const &) {
+void OrderEntryMargin::operator()(Trace<web::rest::Client::Disconnected> const &) {
   ++counter_.disconnect;
   ready_ = false;
   (*this)(ConnectionStatus::DISCONNECTED);
@@ -264,11 +272,15 @@ void OrderEntryPortfolio::operator()(Trace<web::rest::Client::Disconnected> cons
   download_account_ = false;
   download_orders_ = false;
   download_trades_ = false;
+  download_account_cross_ = false;
+  download_orders_cross_ = false;
+  download_trades_cross_ = false;
+  download_account_cross_on_timer_ = false;
 }
 
-void OrderEntryPortfolio::operator()(Trace<web::rest::Client::Header> const &event) {
+void OrderEntryMargin::operator()(Trace<web::rest::Client::Header> const &event) {
   auto &[trace_info, header] = event;
-  if (utils::case_insensitive_compare(header.name, X_MBX_USED_WEIGHT_1M) == 0) {
+  if (utils::case_insensitive_compare(header.name, "x-mbx-used-weight-1m"sv) == 0) {
     try {
       auto value = utils::charconv::from_string_relaxed<int64_t>(header.value);
       rate_limiter_.requests_1m.set(value);
@@ -278,7 +290,7 @@ void OrderEntryPortfolio::operator()(Trace<web::rest::Client::Header> const &eve
   }
 }
 
-void OrderEntryPortfolio::operator()(Trace<web::rest::Client::Latency> const &event) {
+void OrderEntryMargin::operator()(Trace<web::rest::Client::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
       .stream_id = stream_id_,
@@ -289,7 +301,7 @@ void OrderEntryPortfolio::operator()(Trace<web::rest::Client::Latency> const &ev
   latency_.ping.update(latency.sample);
 }
 
-void OrderEntryPortfolio::operator()(ConnectionStatus status) {
+void OrderEntryMargin::operator()(ConnectionStatus status) {
   if (utils::update(status_, status)) {
     TraceInfo trace_info;
     auto stream_status = StreamStatus{
@@ -311,7 +323,7 @@ void OrderEntryPortfolio::operator()(ConnectionStatus status) {
   }
 }
 
-uint32_t OrderEntryPortfolio::download(OrderEntryState state) {
+uint32_t OrderEntryMargin::download(OrderEntryState state) {
   switch (state) {
     using enum OrderEntryState;
     case UNDEFINED:
@@ -319,7 +331,7 @@ uint32_t OrderEntryPortfolio::download(OrderEntryState state) {
       break;
     case LISTEN_KEY:
       if (master_) {
-        get_listen_key();
+        get_listen_key(MarginMode::UNDEFINED);
         return 1;
       } else {
         return 0;
@@ -336,12 +348,27 @@ uint32_t OrderEntryPortfolio::download(OrderEntryState state) {
 
 // listen-key
 
-void OrderEntryPortfolio::get_listen_key() {
+void OrderEntryMargin::get_listen_key(MarginMode margin_mode) {
   profile_.listen_key([&]() {
+    auto path = [&]() {
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          break;
+        case ISOLATED:
+          return shared_.api.sapi.isolated_margin_user_data_stream;
+        case CROSS:
+          return shared_.api.sapi.margin_user_data_stream;
+        case PORTFOLIO:
+          break;
+      }
+      log::fatal("Unexpected"sv);
+    }();
+    log::warn("DEBUG margin_mode={}, path={}"sv, margin_mode, path);
     auto headers = account_.get_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
-        .path = shared_.api.papi.listen_key,
+        .path = path,
         .query = {},
         .accept = web::http::Accept::APPLICATION_JSON,
         .content_type = {},
@@ -349,16 +376,16 @@ void OrderEntryPortfolio::get_listen_key() {
         .body = {},
         .quality_of_service = {},
     };
-    auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
+    auto callback = [this, margin_mode = margin_mode]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
-      get_listen_key_ack(event);
+      get_listen_key_ack(event, margin_mode);
     };
-    (*connection_)("listen-key"sv, request, callback);
+    (*connection_)("listen_key"sv, request, callback);
   });
 }
 
-void OrderEntryPortfolio::get_listen_key_ack(Trace<web::rest::Response> const &event) {
+void OrderEntryMargin::get_listen_key_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
   auto const STATE = OrderEntryState::LISTEN_KEY;
   profile_.listen_key_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
@@ -370,44 +397,103 @@ void OrderEntryPortfolio::get_listen_key_ack(Trace<web::rest::Response> const &e
     auto handle_success = [&](auto &body) {
       json::ListenKey listen_key{body};
       Trace event_2{event, listen_key};
-      (*this)(event_2);
-      download_.check_relaxed(STATE);
+      (*this)(event_2, margin_mode);
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          // get_listen_key(MarginMode::ISOLATED);  // note! for isolated we also need the symbol...
+          get_listen_key(MarginMode::CROSS);  // note! workaround
+          break;
+        case ISOLATED:
+          get_listen_key(MarginMode::CROSS);
+          break;
+        case CROSS:
+          download_.check_relaxed(STATE);  // note! done
+          break;
+        case PORTFOLIO:
+          log::fatal("Unexpected"sv);
+      }
     };
     process_response(event, handle_error, handle_success);
   });
 }
 
-void OrderEntryPortfolio::operator()(Trace<json::ListenKey> const &event) {
+void OrderEntryMargin::operator()(Trace<json::ListenKey> const &event, MarginMode margin_mode) {
   auto &[trace_info, listen_key] = event;
   log::info<2>("listen_key={}"sv, listen_key);
-  bool initial = std::empty(listen_key_);
-  if (utils::update(listen_key_, listen_key.listen_key)) {
+  auto dispatch = [&](auto initial) {
     if (initial) {
-      log::info<1>(R"(Listen key has been acquired (value="{}"))"sv, listen_key_);
+      log::warn(R"(DEBUG Listen key has been acquired (margin_mode={}, value="{}"))"sv, margin_mode, listen_key.listen_key);
+      log::info<1>(R"(Listen key has been acquired (margin_mode={}, value="{}"))"sv, margin_mode, listen_key.listen_key);
       auto listen_key_update = ListenKeyUpdate{
           .account = account_.name,
-          .margin_mode = MarginMode::PORTFOLIO,
+          .margin_mode = margin_mode,
           .listen_key = listen_key.listen_key,
       };
       create_trace_and_dispatch(handler_, trace_info, listen_key_update);
     } else {
-      log::info<1>("Listen key has been refreshed!"sv);
+      log::info<1>("Listen key has been refreshed! (margin_mode={})"sv, margin_mode);
     }
+  };
+  auto update_spot = [&]() {
+    bool initial = std::empty(listen_key_);
+    if (utils::update(listen_key_, listen_key.listen_key)) {
+      dispatch(initial);
+    }
+    auto now = clock::get_system();
+    listen_key_refresh_ = now + shared_.settings.rest.listen_key_refresh;
+  };
+  auto update_margin_cross = [&]() {
+    bool initial = std::empty(listen_key_cross_);
+    if (utils::update(listen_key_cross_, listen_key.listen_key)) {
+      dispatch(initial);
+    }
+    auto now = clock::get_system();
+    listen_key_refresh_cross_ = now + shared_.settings.rest.listen_key_refresh;
+  };
+  switch (margin_mode) {
+    using enum MarginMode;
+    case UNDEFINED:
+      update_spot();
+      break;
+    case ISOLATED:
+      log::fatal("Unexpected"sv);  // note! not implemented
+      break;
+    case CROSS:
+      update_margin_cross();
+      break;
+    case PORTFOLIO:
+      log::fatal("Unexpected"sv);
   }
-  auto now = clock::get_system();
-  listen_key_refresh_ = now + shared_.settings.rest.listen_key_refresh;
 }
 
 // account
 
-void OrderEntryPortfolio::get_account() {
+void OrderEntryMargin::get_account(MarginMode margin_mode) {
   profile_.account([&]() {
+    log::info("Download account... (margin_mode={})"sv, margin_mode);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
+    auto path = [&]() {
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          log::fatal("Unexpected"sv);  // check return shared_.api.sapi.account;
+          break;
+        case ISOLATED:
+          log::fatal("Unexpected"sv);  // note! not implemented
+          break;
+        case CROSS:
+          return shared_.api.sapi.cross_account;
+        case PORTFOLIO:
+          break;
+      }
+      log::fatal("Unexpected"sv);
+    }();
     auto query = account_.create_query(now);
     auto headers = account_.get_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
-        .path = shared_.api.papi.balance,
+        .path = path,
         .query = query,
         .accept = web::http::Accept::APPLICATION_JSON,
         .content_type = {},
@@ -415,50 +501,102 @@ void OrderEntryPortfolio::get_account() {
         .body = {},
         .quality_of_service = {},
     };
-    auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
+    auto callback = [this, margin_mode = margin_mode]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
-      get_account_ack(event);
+      get_account_ack(event, margin_mode);
     };
-    (*connection_)("balance"sv, request, callback);
+    (*connection_)("account"sv, request, callback);
   });
 }
 
-void OrderEntryPortfolio::get_account_ack(Trace<web::rest::Response> const &event) {
+void OrderEntryMargin::get_account_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
   profile_.account_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
-      // completion
-      request_.respond_account = clock::get_system();
-      download_account_ = false;
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          request_.respond_account = clock::get_system();  // completion
+          download_account_ = false;
+          break;
+        case ISOLATED:
+          log::fatal("Unexpected"sv);  // note! not implemented
+          break;
+        case CROSS:
+          request_.respond_account_cross = clock::get_system();  // completion
+          download_account_cross_ = false;
+          break;
+        case PORTFOLIO:
+          log::fatal("Unexpected"sv);
+      }
     };
     auto handle_success = [&](auto &body) {
-      json::Balances account{body, decode_buffer_};
-      Trace event_2{event, account};
-      (*this)(event_2);
-      // completion
-      request_.respond_account = clock::get_system();
-      download_account_ = false;
+      log::warn(R"(DEBUG body="{}")"sv, body);
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED: {
+          json::Account account{body, decode_buffer_};
+          Trace event_2{event, account};
+          (*this)(event_2, margin_mode);
+          request_.respond_account = clock::get_system();  // completion
+          download_account_ = false;
+          break;
+        }
+        case ISOLATED:
+          log::fatal("Unexpected"sv);  // note! not implemented
+        case CROSS: {
+          json::CrossMarginAccount account{body, decode_buffer_};
+          Trace event_2{event, account};
+          (*this)(event_2, margin_mode);
+          request_.respond_account_cross = clock::get_system();  // completion
+          download_account_cross_ = false;
+          break;
+        }
+        case PORTFOLIO:
+          log::fatal("Unexpected"sv);
+      }
     };
     process_response(event, handle_error, handle_success);
   });
 }
 
-void OrderEntryPortfolio::operator()(Trace<json::Balances> const &event) {
-  auto &[trace_info, balances] = event;
-  for (auto &item : balances.data) {
-    log::info<2>("item={}"sv, item);
+void OrderEntryMargin::operator()(Trace<json::Account> const &event, MarginMode margin_mode) {
+  auto &[trace_info, account] = event;
+  log::info<2>("account={}"sv, account);
+  for (auto &item : account.balances) {
     auto funds_update = FundsUpdate{
         .stream_id = stream_id_,
         .account = account_.name,
         .currency = item.asset,
-        .margin_mode = MarginMode::PORTFOLIO,
-        .balance = item.total_wallet_balance,
-        .hold = NaN,
+        .margin_mode = margin_mode,
+        .balance = item.free,
+        .hold = item.locked,
         .borrowed = NaN,
         .external_account = {},
         .update_type = UpdateType::SNAPSHOT,
-        .exchange_time_utc = item.update_time,
+        .exchange_time_utc = account.update_time,
+        .sending_time_utc = account.update_time,
+    };
+    create_trace_and_dispatch(handler_, trace_info, funds_update, true);
+  }
+}
+
+void OrderEntryMargin::operator()(Trace<json::CrossMarginAccount> const &event, MarginMode margin_mode) {
+  auto &[trace_info, account] = event;
+  log::info<2>("account={}"sv, account);
+  for (auto &item : account.user_assets) {
+    auto funds_update = FundsUpdate{
+        .stream_id = stream_id_,
+        .account = account_.name,
+        .currency = item.asset,
+        .margin_mode = margin_mode,
+        .balance = item.free,
+        .hold = item.locked,
+        .borrowed = item.borrowed,
+        .external_account = {},
+        .update_type = UpdateType::SNAPSHOT,
+        .exchange_time_utc = {},
         .sending_time_utc = {},
     };
     create_trace_and_dispatch(handler_, trace_info, funds_update, true);
@@ -467,9 +605,24 @@ void OrderEntryPortfolio::operator()(Trace<json::Balances> const &event) {
 
 // orders
 
-// XXX should prefer to add filter on symbol -- cost is multiplied by number of symbols traded on exchange
-void OrderEntryPortfolio::get_open_orders() {
+// XXX FIXME TODO for margin => isIsolated true/false
+void OrderEntryMargin::get_open_orders(MarginMode margin_mode) {
   profile_.open_orders([&]() {
+    log::info("Download open orders... (margin_mode={})"sv, margin_mode);
+    auto path = [&]() {
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          break;
+        case ISOLATED:
+          break;  // note! not implemented
+        case CROSS:
+          return shared_.api.sapi.margin_open_orders;
+        case PORTFOLIO:
+          break;
+      };
+      log::fatal("Unexpected"sv);
+    }();
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = account_.create_query(now);
     auto headers = account_.get_headers();
@@ -481,10 +634,10 @@ void OrderEntryPortfolio::get_open_orders() {
         R"("timestamp":{})"
         R"(}})"sv,
         timestamp.count());
-    std::string body{std::data(encode_buffer_), std::size(encode_buffer_)};  // XXX not used ???
+    std::string body{std::data(encode_buffer_), std::size(encode_buffer_)};
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
-        .path = shared_.api.papi.margin_open_orders,
+        .path = path,
         .query = query,
         .accept = web::http::Accept::APPLICATION_JSON,
         .content_type = {},
@@ -492,68 +645,92 @@ void OrderEntryPortfolio::get_open_orders() {
         .body = {},
         .quality_of_service = {},
     };
-    auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
+    auto callback = [this, margin_mode = margin_mode]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
-      get_open_orders_ack(event);
+      get_open_orders_ack(event, margin_mode);
     };
-    (*connection_)("margin-open-orders"sv, request, callback);
+    (*connection_)("open_orders"sv, request, callback);
   });
 }
 
-void OrderEntryPortfolio::get_open_orders_ack(Trace<web::rest::Response> const &event) {
+void OrderEntryMargin::get_open_orders_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
   profile_.open_orders_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
-      // completion
-      request_.respond_orders = clock::get_system();
-      download_orders_ = false;
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          request_.respond_orders = clock::get_system();  // completion
+          download_orders_ = false;
+          break;
+        case ISOLATED:
+          log::fatal("Unexpected"sv);  // note! not implemented
+        case CROSS:
+          request_.respond_orders_cross = clock::get_system();  // completion
+          download_orders_cross_ = false;
+          break;
+        case PORTFOLIO:
+          log::fatal("Unexpected"sv);
+      }
     };
     auto handle_success = [&](auto &body) {
+      log::debug("body={}"sv, body);
       json::OpenOrders open_orders{body, decode_buffer_};
       Trace event_2{event, open_orders};
-      (*this)(event_2);
-      // completion
-      request_.respond_orders = clock::get_system();
-      download_orders_ = false;
+      (*this)(event_2, margin_mode);
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          request_.respond_orders = clock::get_system();  // completion
+          download_orders_ = false;
+          break;
+        case ISOLATED:
+          log::fatal("Unexpected"sv);  // note! not implemented
+        case CROSS:
+          request_.respond_orders_cross = clock::get_system();  // completion
+          download_orders_cross_ = false;
+          break;
+        case PORTFOLIO:
+          log::fatal("Unexpected"sv);
+      }
     };
     process_response(event, handle_error, handle_success);
   });
 }
 
-void OrderEntryPortfolio::operator()(Trace<json::OpenOrders> const &event) {
+void OrderEntryMargin::operator()(Trace<json::OpenOrders> const &event, MarginMode margin_mode) {
   auto &[trace_info, open_orders] = event;
-  for (auto &item : open_orders.data) {
-    log::info<2>("item={}"sv, item);
-    if (std::empty(item.client_order_id)) {
+  for (auto &order : open_orders.data) {
+    log::info<2>("order={}"sv, order);
+    if (std::empty(order.client_order_id)) {
       continue;
     }
-    open_orders_symbols_.emplace(item.symbol);
-    auto external_order_id = fmt::format("{}"sv, item.order_id);  // alloc
-    auto stop_price = utils::compare(item.stop_price, 0.0) == 0 ? NaN : item.stop_price;
-    auto remaining_quantity = item.orig_qty - item.executed_qty;
+    open_orders_symbols_.emplace(order.symbol);
+    // XXX FIXME TODO validate order.is_isolated for margin_mode isolated + cross
+    auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
     auto order_update = server::oms::OrderUpdate{
         .account = account_.name,
         .exchange = shared_.settings.exchange,
-        .symbol = item.symbol,
-        .side = map(item.side),
+        .symbol = order.symbol,
+        .side = map(order.side),
         .position_effect = {},
-        .margin_mode = MarginMode::PORTFOLIO,
+        .margin_mode = margin_mode,
         .max_show_quantity = NaN,
-        .order_type = map(item.type),
-        .time_in_force = map(item.time_in_force),
+        .order_type = map(order.type),
+        .time_in_force = map(order.time_in_force),
         .execution_instructions = {},
-        .create_time_utc = item.time,
-        .update_time_utc = item.update_time,
+        .create_time_utc = order.time,
+        .update_time_utc = order.update_time,
         .external_account = {},
         .external_order_id = external_order_id,
-        .client_order_id = item.client_order_id,
-        .order_status = map(item.status),
-        .quantity = item.orig_qty,
-        .price = item.price,
-        .stop_price = stop_price,
-        .remaining_quantity = remaining_quantity,
-        .traded_quantity = item.executed_qty,
+        .client_order_id = {},
+        .order_status = map(order.status),
+        .quantity = order.orig_qty,
+        .price = order.price,
+        .stop_price = order.stop_price,
+        .remaining_quantity = NaN,
+        .traded_quantity = order.executed_qty,
         .average_traded_price = {},
         .last_traded_quantity = {},
         .last_traded_price = {},
@@ -566,15 +743,17 @@ void OrderEntryPortfolio::operator()(Trace<json::OpenOrders> const &event) {
         .sending_time_utc = {},
     };
     Trace event_2{trace_info, order_update};
-    (*this)(event_2, item.client_order_id);
+    (*this)(event_2, order.client_order_id);
   }
 }
 
 // trades
 
-// note! GET only supports query string (no body)
-void OrderEntryPortfolio::get_trades() {
+// XXX FIXME TODO download margin => isIsolated true/false
+
+void OrderEntryMargin::get_trades(MarginMode margin_mode) {
   profile_.trades([&]() {
+    log::info("Download trades... (margin_mode={})"sv, margin_mode);
     auto &symbols = shared_.settings.download.symbols;
     for (auto &symbol : symbols) {
       auto now = clock::get_realtime<std::chrono::milliseconds>();
@@ -583,114 +762,214 @@ void OrderEntryPortfolio::get_trades() {
       log::info<1>("Download trades: lookback={}"sv, lookback);
       auto headers = account_.get_headers();
       auto body = json::Encoder::my_trades(encode_buffer_, symbol, lookback, limit, now);
-      auto query = account_.create_query_2(now, body);
+      auto query = account_.create_query(now, body);
       auto request = web::rest::Request{
           .method = web::http::Method::GET,
-          .path = shared_.api.papi.margin_my_trades,
+          .path = shared_.api.sapi.margin_my_trades,
           .query = query,
           .accept = web::http::Accept::APPLICATION_JSON,
           .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
           .headers = headers,
-          .body = {},
+          .body = body,
           .quality_of_service = {},
       };
-      auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
+      auto callback = [this, margin_mode = margin_mode]([[maybe_unused]] auto &request_id, auto &response) {
         TraceInfo trace_info;
         Trace event{trace_info, response};
-        get_trades_ack(event);
+        get_trades_ack(event, margin_mode);
       };
-      (*connection_)("margin-my-trades"sv, request, callback);
+      (*connection_)("my-trades"sv, request, callback);
     }
   });
 }
 
-void OrderEntryPortfolio::get_trades_ack(Trace<web::rest::Response> const &event) {
+void OrderEntryMargin::get_trades_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
   profile_.trades_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
-      // completion
-      request_.respond_trades = clock::get_system();
-      download_trades_ = false;
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          request_.respond_trades = clock::get_system();  // completion
+          download_trades_ = false;
+          break;
+        case ISOLATED:
+          log::fatal("Unexpected"sv);  // note! not implemented
+        case CROSS:
+          request_.respond_trades_cross = clock::get_system();  // completion
+          download_trades_cross_ = false;
+          break;
+        case PORTFOLIO:
+          log::fatal("Unexpected"sv);
+      }
     };
     auto handle_success = [&](auto &body) {
       json::Trades trades{body, decode_buffer_};
       Trace event_2{event, trades};
-      (*this)(event_2);
-      // completion
-      request_.respond_trades = clock::get_system();
-      download_trades_ = false;
-      download_trades_is_first_ = false;
+      (*this)(event_2, margin_mode);
+      switch (margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          request_.respond_trades = clock::get_system();  // completion
+          download_trades_ = false;
+          download_trades_is_first_ = false;
+          break;
+        case ISOLATED:
+          log::fatal("Unexpected"sv);  // note! not implemented
+        case CROSS:
+          request_.respond_trades_cross = clock::get_system();  // completion
+          download_trades_cross_ = false;
+          download_trades_cross_is_first_ = false;
+          break;
+        case PORTFOLIO:
+          log::fatal("Unexpected"sv);
+      }
     };
     process_response(event, handle_error, handle_success);
   });
 }
 
-void OrderEntryPortfolio::operator()(Trace<json::Trades> const &event) {
+void OrderEntryMargin::operator()(Trace<json::Trades> const &event, MarginMode) {
   auto &[trace_info, trades] = event;
-  for (auto &item : trades.data) {
-    log::info<2>("item={}"sv, item);
-    auto liquidity = item.is_maker ? Liquidity::MAKER : Liquidity::TAKER;
-    auto side = item.is_buyer ? Side::BUY : Side::SELL;
-    auto ref_data = shared_.get_ref_data(shared_.settings.exchange, item.symbol);
-    auto profit_loss_amount = utils::compute_profit_loss_amount(side, item.qty, item.price, ref_data.multiplier);
-    auto fill = Fill{
-        .exchange_time_utc = item.time,
-        .external_trade_id = {},
-        .quantity = item.qty,
-        .price = item.price,
-        .liquidity = liquidity,
-        .commission_amount = item.commission,
-        .commission_currency = item.commission_asset,
-        .base_amount = NaN,
-        .quote_amount = item.quote_qty,
-        .profit_loss_amount = profit_loss_amount,
-    };
-    fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"sv, item.id);
-    auto external_order_id = fmt::format("{}"sv, item.order_id);  // alloc
-    auto trade_update = TradeUpdate{
-        .stream_id = stream_id_,
+  for (auto &trade : trades.data) {
+    log::info<2>("trade={}"sv, trade);
+    /*
+    if (std::empty(order.client_order_id))
+      continue;
+    open_orders_symbols_.emplace(order.symbol);
+    auto side = json::map(order.side);
+    auto order_type = json::map(order.type);
+    auto time_in_force = json::map(order.time_in_force);
+    auto external_order_id = fmt::format("{}"sv, order.order_id);  // alloc
+    auto order_status = json::map(order.status);
+    auto order_update = server::oms::OrderUpdate{
         .account = account_.name,
-        .order_id = {},
         .exchange = shared_.settings.exchange,
-        .symbol = item.symbol,
+        .symbol = order.symbol,
         .side = side,
         .position_effect = {},
-        .margin_mode = MarginMode::PORTFOLIO,
-        .quantity_type = {},
-        .create_time_utc = item.time,
-        .update_time_utc = item.time,
+        .margin_mode = margin_mode,
+        .max_show_quantity = NaN,
+        .order_type = order_type,
+        .time_in_force = time_in_force,
+        .execution_instructions = {},
+        .create_time_utc = order.time,
+        .update_time_utc = order.update_time,
         .external_account = {},
         .external_order_id = external_order_id,
         .client_order_id = {},
-        .fills = {&fill, 1},
+        .order_status = order_status,
+        .quantity = order.orig_qty,
+        .price = order.price,
+        .stop_price = order.stop_price,
+        .remaining_quantity = NaN,
+        .traded_quantity = order.executed_qty,
+        .average_traded_price = {},
+        .last_traded_quantity = {},
+        .last_traded_price = {},
+        .last_liquidity = {},
         .routing_id = {},
+        .max_request_version = {},
+        .max_response_version = {},
+        .max_accepted_version = {},
         .update_type = UpdateType::SNAPSHOT,
         .sending_time_utc = {},
-        .user = {},
-        .strategy_id = {},
     };
-    std::string_view client_order_id;  // note! unavailable
-    create_trace_and_dispatch(handler_, trace_info, trade_update, true, SOURCE_NONE, client_order_id);
+    Trace event_2{trace_info, order_update};
+    (*this)(event_2, order.client_order_id);
+    */
+  }
+}
+
+// timer
+
+void OrderEntryMargin::get_account_cross_on_timer() {
+  profile_.account([&]() {
+    log::warn("DEBUG Download borrowed amount ON TIMER..."sv);
+    auto now = clock::get_realtime<std::chrono::milliseconds>();
+    auto path = shared_.api.sapi.cross_account;
+    auto query = account_.create_query(now);
+    auto headers = account_.get_headers();
+    auto request = web::rest::Request{
+        .method = web::http::Method::GET,
+        .path = path,
+        .query = query,
+        .accept = web::http::Accept::APPLICATION_JSON,
+        .content_type = {},
+        .headers = headers,
+        .body = {},
+        .quality_of_service = {},
+    };
+    auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
+      TraceInfo trace_info;
+      Trace event{trace_info, response};
+      get_account_cross_on_timer_ack(event);
+    };
+    (*connection_)("account"sv, request, callback);
+  });
+}
+
+void OrderEntryMargin::get_account_cross_on_timer_ack(Trace<web::rest::Response> const &event) {
+  profile_.account_ack([&]() {
+    auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
+      log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
+      request_.respond_account_cross = clock::get_system();  // completion
+      download_account_cross_on_timer_ = false;
+    };
+    auto handle_success = [&](auto &body) {
+      log::warn(R"(DEBUG body="{}")"sv, body);
+      json::CrossMarginAccount account{body, decode_buffer_};
+      Trace event_2{event, account};
+      (*this)(event_2);
+      request_.respond_account_cross = clock::get_system();  // completion
+      download_account_cross_on_timer_ = false;
+    };
+    process_response(event, handle_error, handle_success);
+  });
+}
+
+void OrderEntryMargin::operator()(Trace<json::CrossMarginAccount> const &event) {
+  auto &[trace_info, account] = event;
+  log::info<2>("account={}"sv, account);
+  for (auto &item : account.user_assets) {
+    auto funds_update = FundsUpdate{
+        .stream_id = stream_id_,
+        .account = account_.name,
+        .currency = item.asset,
+        .margin_mode = MarginMode::CROSS,
+        .balance = NaN,             // note!
+        .hold = NaN,                // note!
+        .borrowed = item.borrowed,  // note!
+        .external_account = {},
+        .update_type = UpdateType::INCREMENTAL,  // note! avoid replacing other fields
+        .exchange_time_utc = {},
+        .sending_time_utc = {},
+    };
+    create_trace_and_dispatch(handler_, trace_info, funds_update, true);
   }
 }
 
 // ...
 
-void OrderEntryPortfolio::refresh_listen_key(std::chrono::nanoseconds now) {
+void OrderEntryMargin::refresh_listen_key(std::chrono::nanoseconds now) {
   if (!ready_) {
     return;
   }
-  if (listen_key_refresh_.count() == 0 || now < listen_key_refresh_) {
-    return;
+  if (listen_key_refresh_.count() != 0 && listen_key_refresh_ < now) {
+    log::info<1>("Refreshing listen key..."sv);
+    listen_key_refresh_ = now + shared_.settings.rest.listen_key_refresh;
+    get_listen_key(MarginMode::UNDEFINED);
   }
-  log::info<1>("Refreshing listen key..."sv);
-  listen_key_refresh_ = now + shared_.settings.rest.listen_key_refresh;
-  get_listen_key();
+  if (listen_key_refresh_cross_.count() != 0 && listen_key_refresh_cross_ < now) {
+    log::info<1>("Refreshing listen key..."sv);
+    listen_key_refresh_cross_ = now + shared_.settings.rest.listen_key_refresh;
+    get_listen_key(MarginMode::CROSS);
+  }
 }
 
 // new-order
 
-void OrderEntryPortfolio::new_order(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
+void OrderEntryMargin::new_order(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
   profile_.new_order([&]() {
     if (!ready()) {
       throw server::oms::NotReady{"not ready"sv};
@@ -704,9 +983,10 @@ void OrderEntryPortfolio::new_order(Event<CreateOrder> const &event, server::oms
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = account_.create_query(now, body);
     auto headers = account_.get_headers();
+    auto path = shared_.api.sapi.margin_order;
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
-        .path = shared_.api.papi.margin_order,
+        .path = path,
         .query = query,
         .accept = web::http::Accept::APPLICATION_JSON,
         .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
@@ -724,7 +1004,7 @@ void OrderEntryPortfolio::new_order(Event<CreateOrder> const &event, server::oms
   });
 }
 
-void OrderEntryPortfolio::new_order_ack(Trace<web::rest::Response> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
+void OrderEntryMargin::new_order_ack(Trace<web::rest::Response> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
   profile_.new_order_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       auto response = server::oms::Response{
@@ -750,7 +1030,7 @@ void OrderEntryPortfolio::new_order_ack(Trace<web::rest::Response> const &event,
   });
 }
 
-void OrderEntryPortfolio::operator()(Trace<json::NewOrder> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
+void OrderEntryMargin::operator()(Trace<json::NewOrder> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
   auto &[trace_info, new_order] = event;
   log::info<2>("new_order={}, user_id={}, order_id={}, version={}"sv, new_order, user_id, order_id, version);
   auto external_order_id = fmt::format("{}"sv, new_order.order_id);  // alloc
@@ -788,7 +1068,7 @@ void OrderEntryPortfolio::operator()(Trace<json::NewOrder> const &event, uint8_t
       .symbol = new_order.symbol,
       .side = map(new_order.side),
       .position_effect = {},
-      .margin_mode = MarginMode::PORTFOLIO,
+      .margin_mode = {},
       .max_show_quantity = NaN,
       .order_type = map(new_order.type),
       .time_in_force = map(new_order.time_in_force),
@@ -821,7 +1101,7 @@ void OrderEntryPortfolio::operator()(Trace<json::NewOrder> const &event, uint8_t
 
 // cancel-order
 
-void OrderEntryPortfolio::cancel_order(
+void OrderEntryMargin::cancel_order(
     Event<CancelOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
   profile_.cancel_order([&]() {
     if (!ready()) {
@@ -834,9 +1114,22 @@ void OrderEntryPortfolio::cancel_order(
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = account_.create_query(now, body);
     auto headers = account_.get_headers();
+    auto path = [&]() -> std::string_view {
+      switch (order.margin_mode) {
+        using enum MarginMode;
+        case UNDEFINED:
+          return shared_.api.sapi.margin_order;
+        case ISOLATED:
+        case CROSS:
+          return shared_.api.sapi.margin_order;
+        case PORTFOLIO:
+          throw server::oms::Rejected{Origin::GATEWAY, Error::INVALID_MARGIN_MODE, "internal error"sv};
+      };
+      log::fatal("Unexpected"sv);
+    }();
     auto request = web::rest::Request{
         .method = web::http::Method::DELETE,
-        .path = shared_.api.papi.margin_order,
+        .path = path,
         .query = query,
         .accept = web::http::Accept::APPLICATION_JSON,
         .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
@@ -854,7 +1147,7 @@ void OrderEntryPortfolio::cancel_order(
   });
 }
 
-void OrderEntryPortfolio::cancel_order_ack(Trace<web::rest::Response> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
+void OrderEntryMargin::cancel_order_ack(Trace<web::rest::Response> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
   profile_.cancel_order_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       auto response = server::oms::Response{
@@ -880,7 +1173,7 @@ void OrderEntryPortfolio::cancel_order_ack(Trace<web::rest::Response> const &eve
   });
 }
 
-void OrderEntryPortfolio::operator()(Trace<json::CancelOrder> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
+void OrderEntryMargin::operator()(Trace<json::CancelOrder> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
   auto &[trace_info, cancel_order] = event;
   log::info<2>("cancel_order={}, user_id={}, order_id={}, version={}"sv, cancel_order, user_id, order_id, version);
   auto external_order_id = fmt::format("{}"sv, cancel_order.order_id);  // alloc
@@ -901,7 +1194,7 @@ void OrderEntryPortfolio::operator()(Trace<json::CancelOrder> const &event, uint
       .symbol = cancel_order.symbol,
       .side = map(cancel_order.side),
       .position_effect = {},
-      .margin_mode = MarginMode::PORTFOLIO,
+      .margin_mode = {},
       .max_show_quantity = NaN,
       .order_type = map(cancel_order.type),
       .time_in_force = map(cancel_order.time_in_force),
@@ -932,9 +1225,7 @@ void OrderEntryPortfolio::operator()(Trace<json::CancelOrder> const &event, uint
   (*this)(event_2, user_id, order_id, order_update);
 }
 
-// cancel-all-orders
-
-void OrderEntryPortfolio::cancel_all_open_orders(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
+void OrderEntryMargin::cancel_all_open_orders(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
   profile_.cancel_all_open_orders([&]() {
     if (!ready()) [[unlikely]] {
       throw server::oms::NotReady{"not ready"sv};
@@ -959,7 +1250,7 @@ void OrderEntryPortfolio::cancel_all_open_orders(Event<CancelAllOrders> const &e
           .user = {},
           .strategy_id = cancel_all_orders.strategy_id,
       };
-      TraceInfo trace_info{event};
+      TraceInfo trace_info{message_info};
       Trace event_2{trace_info, cancel_all_orders_ack};
       shared_(event_2);
     };
@@ -968,32 +1259,50 @@ void OrderEntryPortfolio::cancel_all_open_orders(Event<CancelAllOrders> const &e
       if (!std::empty(cancel_all_orders.symbol) && symbol != cancel_all_orders.symbol) {
         continue;
       }
-      auto body = json::Encoder::cancel_all_open_orders(encode_buffer_, symbol, MarginMode::PORTFOLIO, recv_window);
-      auto now = clock::get_realtime<std::chrono::milliseconds>();
-      auto query = account_.create_query(now, body);
-      auto headers = account_.get_headers();
-      auto request = web::rest::Request{
-          .method = web::http::Method::DELETE,
-          .path = shared_.api.papi.margin_all_open_orders,
-          .query = query,
-          .accept = web::http::Accept::APPLICATION_JSON,
-          .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
-          .headers = headers,
-          .body = body,
-          .quality_of_service = io::QualityOfService::IMMEDIATE,
+      auto helper = [&](auto margin_mode) {
+        auto path = [&]() -> std::string_view {
+          switch (margin_mode) {
+            using enum MarginMode;
+            case UNDEFINED:
+              return shared_.api.sapi.margin_open_orders;  // XXX FIXME TODO maybe fail
+            case ISOLATED:
+            case CROSS:
+              return shared_.api.sapi.margin_open_orders;
+            case PORTFOLIO:
+              throw server::oms::Rejected{Origin::GATEWAY, Error::INVALID_MARGIN_MODE, "internal error"sv};
+          };
+          log::fatal("Unexpected"sv);
+        }();
+        auto body = json::Encoder::cancel_all_open_orders(encode_buffer_, symbol, margin_mode, recv_window);
+        auto now = clock::get_realtime<std::chrono::milliseconds>();
+        auto query = account_.create_query(now, body);
+        auto headers = account_.get_headers();
+        auto request = web::rest::Request{
+            .method = web::http::Method::DELETE,
+            .path = path,
+            .query = query,
+            .accept = web::http::Accept::APPLICATION_JSON,
+            .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
+            .headers = headers,
+            .body = body,
+            .quality_of_service = io::QualityOfService::IMMEDIATE,
+        };
+        auto callback = [&]([[maybe_unused]] auto &request_id, auto &response) {
+          TraceInfo trace_info{event};
+          Trace event{trace_info, response};
+          cancel_all_open_orders_ack(event, request_id);
+        };
+        (*connection_)(request_id, request, callback);
       };
-      auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
-        TraceInfo trace_info;
-        Trace event{trace_info, response};
-        cancel_all_open_orders_ack(event, request_id);
-      };
-      (*connection_)(request_id, request, callback);
+      helper(MarginMode::UNDEFINED);
+      helper(MarginMode::ISOLATED);
+      helper(MarginMode::CROSS);
       send_ack(symbol);
     }
   });
 }
 
-void OrderEntryPortfolio::cancel_all_open_orders_ack(Trace<web::rest::Response> const &event, std::string_view const &request_id) {
+void OrderEntryMargin::cancel_all_open_orders_ack(Trace<web::rest::Response> const &event, std::string_view const &request_id) {
   profile_.cancel_all_open_orders_ack([&]() {
     auto send_ack = [&](auto status, Error error, std::string_view const &text) {
       auto cancel_all_orders_ack = CancelAllOrdersAck{
@@ -1037,7 +1346,7 @@ void OrderEntryPortfolio::cancel_all_open_orders_ack(Trace<web::rest::Response> 
   });
 }
 
-void OrderEntryPortfolio::operator()(Trace<json::CancelAllOpenOrders> const &event) {
+void OrderEntryMargin::operator()(Trace<json::CancelAllOpenOrders> const &event) {
   auto &[trace_info, cancel_all_open_orders] = event;
   log::info<2>("cancel_all_open_orders={}"sv, cancel_all_open_orders);
   for (auto &order : cancel_all_open_orders.data) {
@@ -1051,7 +1360,7 @@ void OrderEntryPortfolio::operator()(Trace<json::CancelAllOpenOrders> const &eve
         .symbol = order.symbol,
         .side = map(order.side),
         .position_effect = {},
-        .margin_mode = MarginMode::PORTFOLIO,
+        .margin_mode = {},
         .max_show_quantity = NaN,
         .order_type = map(order.type),
         .time_in_force = map(order.time_in_force),
@@ -1078,14 +1387,11 @@ void OrderEntryPortfolio::operator()(Trace<json::CancelAllOpenOrders> const &eve
         .update_type = UpdateType::INCREMENTAL,
         .sending_time_utc = {},
     };
-    // note! client_order_id is auto-generated by exchange
-    shared_.update_order(order.orig_client_order_id, stream_id_, trace_info, order_update, []([[maybe_unused]] auto &order) {});
+    shared_.update_order(order.client_order_id, stream_id_, trace_info, order_update, []([[maybe_unused]] auto &order) {});
   }
 }
 
-// helpers
-
-void OrderEntryPortfolio::process_response(web::rest::Response const &response, auto error_handler, auto success_handler) {
+void OrderEntryMargin::process_response(web::rest::Response const &response, auto error_handler, auto success_handler) {
   try {
     auto [status, category, body] = response.result();
     switch (category) {
@@ -1107,11 +1413,7 @@ void OrderEntryPortfolio::process_response(web::rest::Response const &response, 
             [[fallthrough]];
           case I_AM_A_TEAPOT:        // 418
           case TOO_MANY_REQUESTS: {  // 429
-            auto retry_after = get_retry_after(response);
-            if (retry_after.count()) {
-              (*connection_).suspend(retry_after);
-            }
-            auto message = fmt::format("{}"sv, status);  // alloc
+            auto message = fmt::format("{}"sv, status);
             error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, message);
             break;
           }
@@ -1125,7 +1427,7 @@ void OrderEntryPortfolio::process_response(web::rest::Response const &response, 
         }
         break;
       case SERVER_ERROR: {
-        auto message = fmt::format("{}"sv, status);  // alloc
+        auto message = fmt::format("{}"sv, status);
         error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, Error::UNKNOWN, message);
         break;
       }
@@ -1143,7 +1445,7 @@ void OrderEntryPortfolio::process_response(web::rest::Response const &response, 
 }
 
 template <typename... Args>
-void OrderEntryPortfolio::operator()(Trace<server::oms::Response> const &event, uint8_t user_id, uint64_t order_id, Args &&...args) {
+void OrderEntryMargin::operator()(Trace<server::oms::Response> const &event, uint8_t user_id, uint64_t order_id, Args &&...args) {
   auto &[trace_info, response] = event;
   if (shared_.update_order(user_id, order_id, stream_id_, trace_info, response, std::forward<Args>(args)..., []([[maybe_unused]] auto &order) {})) {
   } else {
@@ -1151,7 +1453,7 @@ void OrderEntryPortfolio::operator()(Trace<server::oms::Response> const &event, 
   }
 }
 
-void OrderEntryPortfolio::operator()(Trace<server::oms::OrderUpdate> const &event, std::string_view const &client_order_id) {
+void OrderEntryMargin::operator()(Trace<server::oms::OrderUpdate> const &event, std::string_view const &client_order_id) {
   auto &[trace_info, order_update] = event;
   if (shared_.update_order(client_order_id, stream_id_, trace_info, order_update, [&]([[maybe_unused]] auto &order) {})) {
   } else {
@@ -1159,7 +1461,70 @@ void OrderEntryPortfolio::operator()(Trace<server::oms::OrderUpdate> const &even
   }
 }
 
-void OrderEntryPortfolio::waf_limit_violation() {
+// note! used by cancel-replace
+template <typename Parse, typename Callback>
+void OrderEntryMargin::dispatch_error_2(
+    web::rest::Response const &response, web::http::Category category, web::http::Status status, Parse parse, Callback callback) {
+  switch (category) {
+    using enum web::http::Category;
+    case UNKNOWN:
+      break;
+    case INFORMATIONAL_RESPONSE:
+    case SUCCESS:
+    case REDIRECTION:
+      assert(false);
+      break;
+    case CLIENT_ERROR:
+      try {
+        // HTTP 4XX return codes are used for malformed requests; the issue is on the sender's side.
+        // HTTP 403 return code is used when the WAF Limit (Web Application Firewall) has been violated.
+        // HTTP 409 return code is used when a cancelReplace order partially succeeds. (e.g. if the
+        //   cancellation of the order fails but the new order placement succeeds.)
+        // HTTP 418 return code is used when an IP has been auto-banned for continuing to send requests
+        //   after receiving 429 codes.
+        // HTTP 429 return code is used when breaking a request rate limit.
+        switch (status) {
+          using enum web::http::Status;
+          case FORBIDDEN:            // 403
+          case I_AM_A_TEAPOT:        // 418
+          case TOO_MANY_REQUESTS: {  // 429
+            auto retry_after = get_retry_after(response);
+            if (retry_after.count()) {
+              (*connection_).suspend(retry_after);
+            }
+            auto text = fmt::format("{}"sv, status);
+            callback(RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, text);
+            break;
+          }
+          case CONFLICT:  // 409
+            assert(false);
+            [[fallthrough]];
+          default:
+            parse();
+        }
+      } catch (std::exception &e) {  // parse error
+        callback(RequestStatus::ERROR, Error::UNKNOWN, e.what());
+      }
+      break;
+    case SERVER_ERROR: {
+      // HTTP 5XX return codes are used for internal errors; the issue is on Binance's side.
+      //   It is important to NOT treat this as a failure operation; the execution status is UNKNOWN
+      //   and could have been a success.
+      auto text = fmt::format("{}"sv, status);
+      callback(RequestStatus::REJECTED, Error::UNKNOWN, text);
+      break;
+    }
+  }
+}
+
+void OrderEntryMargin::test(web::http::Status status) {
+  if (status != web::http::Status::FORBIDDEN) [[likely]] {
+    return;
+  }
+  waf_limit_violation();
+}
+
+void OrderEntryMargin::waf_limit_violation() {
   if (shared_.settings.rest.terminate_on_403) {
     log::fatal("WAF limit violation"sv);
   } else {

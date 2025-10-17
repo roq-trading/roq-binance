@@ -17,12 +17,7 @@ struct API final {
     std::string_view depth;
   } market_data;
   struct {
-    // std::string_view user_data_stream;
-    // std::string_view account;
-    // std::string_view open_orders;
-    // std::string_view my_trades;
-    // std::string_view order;
-    // std::string_view order_cancel_replace;
+    std::string_view listen_key;
     // margin - isolated
     std::string_view isolated_margin_user_data_stream;
     // margin - cross
@@ -30,9 +25,9 @@ struct API final {
     std::string_view margin_user_data_stream;
     // margin
     std::string_view margin_open_orders;
+    std::string_view margin_my_trades;
     std::string_view margin_order;
-    json::SideEffectType margin_side_effect_type = {};
-  } simple;
+  } sapi;
   struct {
     std::string_view ping_path;
     std::string_view listen_key;
@@ -42,6 +37,7 @@ struct API final {
     std::string_view margin_order;
     std::string_view margin_all_open_orders;
   } papi;
+  json::SideEffectType margin_side_effect_type = {};
 
   // factory
   static API create(Settings const &);
@@ -62,19 +58,13 @@ struct fmt::formatter<roq::binance::API> {
         R"(exchange_info="{}", )"
         R"(depth="{}")"
         R"(}}, )"
-        R"(simple={{)"
-        // R"(user_data_stream="{}", )"
-        // R"(account="{}", )"
-        // R"(open_orders="{}", )"
-        // R"(my_trades="{}", )"
-        // R"(order="{}", )"
-        // R"(order_cancel_replace="{}", )"
+        R"(sapi={{)"
+        R"(listen_key="{}", )"
         R"(isolated_margin_user_data_stream="{}", )"
         R"(cross_account="{}", )"
         R"(margin_user_data_stream="{}", )"
         R"(margin_open_orders="{}", )"
-        R"(margin_order="{}", )"
-        R"(margin_side_effect_type="{}")"
+        R"(margin_order="{}")"
         R"(}}, )"
         R"(papi={{)"
         R"(ping_path="{}", )"
@@ -84,24 +74,19 @@ struct fmt::formatter<roq::binance::API> {
         R"(margin_my_trades="{}", )"
         R"(margin_order="{}", )"
         R"(margin_all_open_orders="{}")"
-        R"(}})"
+        R"(}}, )"
+        R"(margin_side_effect_type="{}")"
         R"(}})"sv,
         // market_data
         value.market_data.exchange_info,
         value.market_data.depth,
-        // simple
-        // value.simple.user_data_stream,
-        // value.simple.account,
-        // value.simple.open_orders,
-        // value.simple.my_trades,
-        // value.simple.order,
-        // value.simple.order_cancel_replace,
-        value.simple.isolated_margin_user_data_stream,
-        value.simple.cross_account,
-        value.simple.margin_user_data_stream,
-        value.simple.margin_open_orders,
-        value.simple.margin_order,
-        value.simple.margin_side_effect_type,
+        // sapi
+        value.sapi.listen_key,
+        value.sapi.isolated_margin_user_data_stream,
+        value.sapi.cross_account,
+        value.sapi.margin_user_data_stream,
+        value.sapi.margin_open_orders,
+        value.sapi.margin_order,
         // papi
         value.papi.ping_path,
         value.papi.listen_key,
@@ -109,6 +94,8 @@ struct fmt::formatter<roq::binance::API> {
         value.papi.margin_open_orders,
         value.papi.margin_my_trades,
         value.papi.margin_order,
-        value.papi.margin_all_open_orders);
+        value.papi.margin_all_open_orders,
+        //
+        value.margin_side_effect_type);
   }
 };

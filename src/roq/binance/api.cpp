@@ -33,20 +33,14 @@ API API::create(Settings const &settings) {
           .exchange_info = "/api/v3/exchangeInfo"sv,
           .depth = "/api/v3/depth"sv,
       },
-      .simple{
-          // .user_data_stream = "/api/v3/userDataStream"sv,
-          // .account = "/api/v3/account"sv,
-          // .open_orders = "/api/v3/openOrders"sv,
-          // .my_trades = "/api/v3/myTrades"sv,
-          // .order = "/api/v3/order"sv,
-          // .order_cancel_replace = "/api/v3/order/cancelReplace"sv,
-          // margin
+      .sapi{
+          .listen_key = "/sapi/v1/margin/listen-key"sv,
           .isolated_margin_user_data_stream = "/sapi/v1/userDataStream/isolated"sv,
           .cross_account = "/sapi/v1/margin/account"sv,
           .margin_user_data_stream = "/sapi/v1/userDataStream"sv,
           .margin_open_orders = "/sapi/v1/margin/openOrders"sv,
+          .margin_my_trades = "/sapi/v1/margin/myTrades"sv,
           .margin_order = "/sapi/v1/margin/order"sv,
-          .margin_side_effect_type = side_effect_type,
       },
       .papi{
           .ping_path = "/papi/v1/time"sv,
@@ -57,6 +51,7 @@ API API::create(Settings const &settings) {
           .margin_order = "/papi/v1/margin/order"sv,
           .margin_all_open_orders = "/papi/v1/margin/allOpenOrders"sv,
       },
+      .margin_side_effect_type = side_effect_type,
   };
 }
 
