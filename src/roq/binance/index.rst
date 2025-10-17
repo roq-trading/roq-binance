@@ -209,15 +209,6 @@ Environments
    .. include:: flags/test/flags.cfg
      :code: shell
 
-.. tab:: Prod (US)
-
-   .. code-block:: shell
-
-      $ $CONDA_PREFIX/share/roq-binance/flags/prod-us/flags.cfg
-
-   .. include:: flags/prod-us/flags.cfg
-     :code: shell
-
 
 Configuration
 -------------
@@ -600,6 +591,10 @@ Comments
 * We do not currently support isolated margin trading.
 
 * Auto-Cancel only available with the REST API.
+
+* WSAPI keys must be ED25519
+
+* PAPI keys must be HMAC / SHA256
 
 
 References
