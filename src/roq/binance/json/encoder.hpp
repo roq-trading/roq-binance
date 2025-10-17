@@ -36,6 +36,16 @@ struct Encoder final {
       std::chrono::milliseconds recv_window,
       std::chrono::milliseconds now);
 
+  // papi
+  static std::string_view new_order(
+      std::vector<char> &buffer,
+      CreateOrder const &,
+      server::oms::Order const &,
+      std::string_view const &request_id,
+      CreateOrderTemplate const &,
+      std::chrono::milliseconds recv_window,
+      SideEffectType = {});
+
   // cancel
 
   static std::string_view cancel_order_ws_json(
@@ -47,6 +57,25 @@ struct Encoder final {
       CancelOrderTemplate const &,
       std::chrono::milliseconds recv_window,
       std::chrono::milliseconds now);
+
+  // papi
+  static std::string_view cancel_order(
+      std::vector<char> &buffer,
+      roq::CancelOrder const &,
+      server::oms::Order const &,
+      std::string_view const &request_id,
+      std::string_view const &previous_request_id,
+      CancelOrderTemplate const &,
+      std::chrono::milliseconds recv_window);
+
+  // cancel-all
+
+  // papi
+  static std::string_view cancel_all_open_orders(std::vector<char> &buffer, std::string_view const &symbol, MarginMode, std::chrono::milliseconds recv_window);
+
+  // papi
+  static std::string_view my_trades(
+      std::vector<char> &buffer, std::string_view const &symbol, std::chrono::nanoseconds lookback, uint32_t limit, std::chrono::milliseconds now);
 };
 
 }  // namespace json

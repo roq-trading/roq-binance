@@ -10,7 +10,7 @@ NAME="binance"
 
 CONFIG="${CONFIG:-$NAME}"
 
-CONFIG_FILE="$ROQ_CONFIG_PATH/roq-binance/$CONFIG.toml"
+CONFIG_FILE="$ROQ_CONFIG_PATH/roq-binance-2/$CONFIG.toml"
 
 FLAGFILE="../../../share/flags/prod/flags.cfg"
 

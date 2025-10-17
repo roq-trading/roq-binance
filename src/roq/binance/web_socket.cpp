@@ -82,8 +82,7 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &inter
       .decode_buffer_size = settings.misc.decode_buffer_size,
       .encode_buffer_size = settings.misc.encode_buffer_size,
   };
-  auto header = fmt::format("X-MBX-APIKEY: {}\r\n"sv, account.get_key());
-  return web::socket::Client::create(handler, context, config, [header = std::string{header}]() { return header; });
+  return web::socket::Client::create(handler, context, config, [headers = std::string{account.get_headers()}]() { return headers; });
 }
 
 struct create_metrics final : public utils::metrics::Factory {

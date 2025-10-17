@@ -12,6 +12,8 @@
 
 #include "roq/server/oms/exceptions.hpp"
 
+#include "roq/binance/drop_copy_portfolio.hpp"
+#include "roq/binance/order_entry_portfolio.hpp"
 #include "roq/binance/web_socket.hpp"
 
 #include "roq/binance/json/utils.hpp"
@@ -29,20 +31,43 @@ R create_accounts(auto &config) {
   using result_type = std::remove_cvref_t<R>;
   result_type result;
   for (auto &[_, account] : config.accounts) {
-    auto obj = std::make_unique<Account>(config, account.name);
+    auto obj = std::make_unique<Account>(config, account.name, account.margin_mode);
     result.try_emplace(static_cast<std::string_view>(account.name), std::move(obj));
   }
   return result;
 }
 
 template <typename R>
-R create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared) {
+R create_request(auto &config) {
+  using result_type = std::remove_cvref_t<R>;
+  result_type result;
+  for (auto &[_, account] : config.accounts) {
+    result.try_emplace(static_cast<std::string_view>(account.name), Request{});
+  }
+  return result;
+}
+
+template <typename R>
+R create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared, auto &request) {
   using result_type = std::remove_cvref_t<R>;
   result_type result;
   for (auto &[_, item] : accounts) {
     auto &account = *item;
-    auto web_socket = std::make_unique<WebSocket>(gateway, context, ++stream_id, account, shared);
-    result.try_emplace(account.name, std::move(web_socket));
+    switch (account.margin_mode) {
+      using enum MarginMode;
+      case UNDEFINED:
+      case ISOLATED:
+      case CROSS: {
+        auto web_socket = std::make_unique<WebSocket>(gateway, context, ++stream_id, account, shared);
+        result.try_emplace(account.name, std::move(web_socket));
+        break;
+      }
+      case PORTFOLIO: {
+        auto order_entry_portfolio = std::make_unique<OrderEntryPortfolio>(gateway, context, ++stream_id, account, shared, request[account.name]);
+        result.try_emplace(account.name, std::move(order_entry_portfolio));
+        break;
+      }
+    }
   }
   return result;
 }
@@ -52,7 +77,8 @@ R create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &accoun
 
 Gateway::Gateway(server::Dispatcher &dispatcher, Settings const &settings, Config const &config, io::Context &context)
     : dispatcher_{dispatcher}, accounts_(create_accounts<decltype(accounts_)>(config)), context_{context}, shared_{dispatcher, settings, config},
-      rest_{*this, context_, ++stream_id_, shared_}, order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_)} {
+      rest_{*this, context_, ++stream_id_, shared_}, request_{create_request<decltype(request_)>(config)},
+      order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_, request_)} {
   if (settings.rest.cancel_on_disconnect) {
     log::fatal("Exchange does *NOT* support cancel on disconnect"sv);
   }
@@ -141,6 +167,39 @@ void Gateway::operator()(Trace<FundsUpdate> const &event, bool is_last) {
   dispatcher_(event, is_last);
 }
 
+void Gateway::operator()(OrderEntry::ListenKeyUpdate const &listen_key_update) {
+  switch (listen_key_update.margin_mode) {
+    using enum MarginMode;
+    case UNDEFINED:
+    case ISOLATED:
+    case CROSS:
+      log::fatal("Unexpected"sv);
+      break;
+    case PORTFOLIO:
+      create_drop_copy_from_listen_key_update<DropCopyPortfolio>(listen_key_update);
+      break;
+  }
+}
+
+template <typename T>
+void Gateway::create_drop_copy_from_listen_key_update(auto &listen_key_update) {
+  auto iter_1 = drop_copy_.find(listen_key_update.account);
+  if (iter_1 == std::end(drop_copy_)) {
+    log::fatal(R"(Unexpected: account="{}")"sv, listen_key_update.account);
+  }
+  auto &instance = (*iter_1).second;
+  if (instance == nullptr) {
+    log::info(R"(Create drop-copy (user-stream) for account="{}", margin_mode={})"sv, listen_key_update.account, listen_key_update.margin_mode);
+    auto &account_2 = get_account(listen_key_update.account);
+    auto &request = request_[listen_key_update.account];
+    auto obj = std::make_unique<T>(*this, context_, ++stream_id_, account_2, shared_, request, listen_key_update.listen_key, listen_key_update.margin_mode);
+    MessageInfo message_info;
+    Start start;
+    create_event_and_dispatch(*obj, message_info, start);
+    instance = std::move(obj);
+  }
+}
+
 void Gateway::operator()(Rest::SymbolsUpdate &symbols_update) {
   auto [size, start_from] = shared_.symbols(symbols_update.symbols);
   ensure_symbol_slices(size);
@@ -223,13 +282,16 @@ template <typename... Args>
 void Gateway::dispatch_helper(auto &self, Args &&...args) {
   auto helper = [&](auto &target) { target(args...); };
   helper(self.rest_);
-  for (auto &[_, item] : self.order_entry_) {
-    helper(*item);
-  }
   for (auto &item : self.market_data_1_) {
     helper(*item);
   }
   for (auto &item : self.market_data_2_) {
+    helper(*item);
+  }
+  for (auto &[_, item] : self.order_entry_) {
+    helper(*item);
+  }
+  for (auto &[_, item] : self.drop_copy_) {
     helper(*item);
   }
 }

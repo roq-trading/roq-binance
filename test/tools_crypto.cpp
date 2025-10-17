@@ -30,8 +30,8 @@ auto const SECRET = "MC4CAQAwBQYDK2VwBCIEIKpUYyNZ0pOcbuqxHgXnmrV2veFbP/dEJosCjJX
 
 // === IMPLEMENTATION ===
 
-TEST_CASE("simple", "[tools_crypto]") {
-  tools::Crypto crypto{KEY, SECRET};
+TEST_CASE("simple_ed25519", "[tools_crypto]") {
+  tools::Crypto crypto{KEY, SECRET, MarginMode::UNDEFINED};
   std::string buffer;
   auto now = 1674303865s;
   auto query = crypto.create_session_logon_signature(buffer, now);
