@@ -17,12 +17,12 @@ struct API final {
     std::string_view depth;
   } market_data;
   struct {
-    std::string_view user_data_stream;
-    std::string_view account;
-    std::string_view open_orders;
-    std::string_view my_trades;
-    std::string_view order;
-    std::string_view order_cancel_replace;
+    // std::string_view user_data_stream;
+    // std::string_view account;
+    // std::string_view open_orders;
+    // std::string_view my_trades;
+    // std::string_view order;
+    // std::string_view order_cancel_replace;
     // margin - isolated
     std::string_view isolated_margin_user_data_stream;
     // margin - cross
@@ -63,12 +63,12 @@ struct fmt::formatter<roq::binance::API> {
         R"(depth="{}")"
         R"(}}, )"
         R"(simple={{)"
-        R"(user_data_stream="{}", )"
-        R"(account="{}", )"
-        R"(open_orders="{}", )"
-        R"(my_trades="{}", )"
-        R"(order="{}", )"
-        R"(order_cancel_replace="{}", )"
+        // R"(user_data_stream="{}", )"
+        // R"(account="{}", )"
+        // R"(open_orders="{}", )"
+        // R"(my_trades="{}", )"
+        // R"(order="{}", )"
+        // R"(order_cancel_replace="{}", )"
         R"(isolated_margin_user_data_stream="{}", )"
         R"(cross_account="{}", )"
         R"(margin_user_data_stream="{}", )"
@@ -90,12 +90,12 @@ struct fmt::formatter<roq::binance::API> {
         value.market_data.exchange_info,
         value.market_data.depth,
         // simple
-        value.simple.user_data_stream,
-        value.simple.account,
-        value.simple.open_orders,
-        value.simple.my_trades,
-        value.simple.order,
-        value.simple.order_cancel_replace,
+        // value.simple.user_data_stream,
+        // value.simple.account,
+        // value.simple.open_orders,
+        // value.simple.my_trades,
+        // value.simple.order,
+        // value.simple.order_cancel_replace,
         value.simple.isolated_margin_user_data_stream,
         value.simple.cross_account,
         value.simple.margin_user_data_stream,

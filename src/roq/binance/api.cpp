@@ -34,12 +34,12 @@ API API::create(Settings const &settings) {
           .depth = "/api/v3/depth"sv,
       },
       .simple{
-          .user_data_stream = "/api/v3/userDataStream"sv,
-          .account = "/api/v3/account"sv,
-          .open_orders = "/api/v3/openOrders"sv,
-          .my_trades = "/api/v3/myTrades"sv,
-          .order = "/api/v3/order"sv,
-          .order_cancel_replace = "/api/v3/order/cancelReplace"sv,
+          // .user_data_stream = "/api/v3/userDataStream"sv,
+          // .account = "/api/v3/account"sv,
+          // .open_orders = "/api/v3/openOrders"sv,
+          // .my_trades = "/api/v3/myTrades"sv,
+          // .order = "/api/v3/order"sv,
+          // .order_cancel_replace = "/api/v3/order/cancelReplace"sv,
           // margin
           .isolated_margin_user_data_stream = "/sapi/v1/userDataStream/isolated"sv,
           .cross_account = "/sapi/v1/margin/account"sv,

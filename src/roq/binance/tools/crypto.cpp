@@ -33,7 +33,6 @@ auto create_headers_helper(auto const &key) {
 
 template <typename R>
 auto create_ed25519(auto &secret, auto margin_mode) {
-  log::warn("{}"sv, margin_mode);
   using result_type = std::remove_cvref_t<R>;
   if (margin_mode != MarginMode::PORTFOLIO) {
     return result_type{secret};
@@ -43,7 +42,6 @@ auto create_ed25519(auto &secret, auto margin_mode) {
 
 template <typename R>
 auto create_hmac_sha256(auto &secret, auto margin_mode) {
-  log::warn("{}"sv, margin_mode);
   using result_type = std::remove_cvref_t<R>;
   if (margin_mode == MarginMode::PORTFOLIO) {
     return result_type{secret};

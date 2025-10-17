@@ -71,6 +71,10 @@
     {
       "name": "transactTime",
       "type": "std/milliseconds"
+    },
+    {
+      "name": "origQuoteOrderQty",
+      "type": "std/double"
     }
   ]
 }
