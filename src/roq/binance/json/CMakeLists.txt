@@ -14,6 +14,7 @@ include(RoqAutogen)
 set(AUTOGEN_SCHEMAS
     account.json
     agg_trade.json
+    amended_order.json
     balance2.json
     balance.json
     balances_item.json
@@ -48,6 +49,7 @@ set(AUTOGEN_SCHEMAS
     mini_ticker.json
     new_order.json
     open_orders.json
+    order_amend_keep_priority.json
     order.json
     order_status.json
     order_type.json
@@ -74,6 +76,7 @@ set(AUTOGEN_SCHEMAS
     wsapi_cancel_order.json
     wsapi_execution_report.json
     wsapi_open_orders.json
+    wsapi_order_amend_keep_priority.json
     wsapi_order_place.json
     wsapi_outbound_account_position.json
     wsapi_rate_limits_item.json

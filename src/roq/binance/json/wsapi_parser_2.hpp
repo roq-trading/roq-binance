@@ -20,6 +20,7 @@
 
 #include "roq/binance/json/wsapi_cancel_open_orders.hpp"
 #include "roq/binance/json/wsapi_cancel_order.hpp"
+#include "roq/binance/json/wsapi_order_amend_keep_priority.hpp"
 #include "roq/binance/json/wsapi_order_place.hpp"
 
 #include "roq/binance/json/wsapi_balance_update.hpp"
@@ -32,17 +33,18 @@ namespace json {
 
 struct WSAPIParser2 final {
   struct Handler {
-    virtual void operator()(Trace<WSAPISessionLogon> const &, WSAPIRequest const &) = 0;
+    virtual void operator()(Trace<WSAPISessionLogon> const &) = 0;
     //
-    virtual void operator()(Trace<WSAPIUserDataStreamSubscribe> const &, WSAPIRequest const &) = 0;
+    virtual void operator()(Trace<WSAPIUserDataStreamSubscribe> const &) = 0;
     //
-    virtual void operator()(Trace<WSAPIAccount> const &, WSAPIRequest const &) = 0;
-    virtual void operator()(Trace<WSAPIOpenOrders> const &, WSAPIRequest const &) = 0;
-    virtual void operator()(Trace<WSAPITrades> const &, WSAPIRequest const &) = 0;
+    virtual void operator()(Trace<WSAPIAccount> const &) = 0;
+    virtual void operator()(Trace<WSAPIOpenOrders> const &) = 0;
+    virtual void operator()(Trace<WSAPITrades> const &) = 0;
     //
-    virtual void operator()(Trace<WSAPICancelOpenOrders> const &, WSAPIRequest const &) = 0;
     virtual void operator()(Trace<WSAPIOrderPlace> const &, WSAPIRequest const &) = 0;
+    virtual void operator()(Trace<WSAPIOrderAmendKeepPriority> const &, WSAPIRequest const &) = 0;
     virtual void operator()(Trace<WSAPICancelOrder> const &, WSAPIRequest const &) = 0;
+    virtual void operator()(Trace<WSAPICancelOpenOrders> const &, WSAPIRequest const &) = 0;
     //
     virtual void operator()(Trace<WSAPIOutboundAccountPosition> const &) = 0;
     virtual void operator()(Trace<WSAPIBalanceUpdate> const &) = 0;

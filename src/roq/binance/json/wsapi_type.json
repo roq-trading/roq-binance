@@ -18,13 +18,16 @@
       "name": "MY_TRADES"
     },
     {
-      "name": "OPEN_ORDERS_CANCEL_ALL"
-    },
-    {
       "name": "ORDER_PLACE"
     },
     {
+      "name": "ORDER_AMEND_KEEP_PRIORITY"
+    },
+    {
       "name": "ORDER_CANCEL"
+    },
+    {
+      "name": "OPEN_ORDERS_CANCEL_ALL"
     }
   ]
 }

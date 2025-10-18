@@ -37,7 +37,7 @@ auto const NAME = "ws"sv;
 
 auto const SUPPORTS = Mask{
     SupportType::CREATE_ORDER,
-    // SupportType::MODIFY_ORDER,
+    SupportType::MODIFY_ORDER,
     SupportType::CANCEL_ORDER,
     SupportType::ORDER_ACK,
     SupportType::ORDER,
@@ -123,6 +123,8 @@ WebSocket::WebSocket(
           //
           .order_place = create_metrics(shared.settings, name_, "order_place"sv),
           .order_place_ack = create_metrics(shared.settings, name_, "order_place_ack"sv),
+          .order_amend_keep_priority = create_metrics(shared.settings, name_, "order_amend_keep_priority"sv),
+          .order_amend_keep_priority_ack = create_metrics(shared.settings, name_, "order_amend_keep_priority_ack"sv),
           .order_cancel = create_metrics(shared.settings, name_, "order_cancel"sv),
           .order_cancel_ack = create_metrics(shared.settings, name_, "order_cancel_ack"sv),
           .open_orders_cancel_all = create_metrics(shared.settings, name_, "open_orders_cancel_all"sv),
@@ -176,6 +178,8 @@ void WebSocket::operator()(metrics::Writer &writer) const {
       //
       .write(profile_.order_place, metrics::Type::PROFILE)
       .write(profile_.order_place_ack, metrics::Type::PROFILE)
+      .write(profile_.order_amend_keep_priority, metrics::Type::PROFILE)
+      .write(profile_.order_amend_keep_priority_ack, metrics::Type::PROFILE)
       .write(profile_.order_cancel, metrics::Type::PROFILE)
       .write(profile_.order_cancel_ack, metrics::Type::PROFILE)
       .write(profile_.open_orders_cancel_all, metrics::Type::PROFILE)
@@ -199,11 +203,9 @@ uint16_t WebSocket::operator()(Event<CreateOrder> const &event, server::oms::Ord
 }
 
 uint16_t WebSocket::operator()(
-    Event<ModifyOrder> const &,
-    server::oms::Order const &,
-    [[maybe_unused]] std::string_view const &request_id,
-    [[maybe_unused]] std::string_view const &previous_request_id) {
-  throw server::oms::NotSupported{"not supported"sv};
+    Event<ModifyOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
+  order_amend_keep_priority(event, order, request_id, previous_request_id);
+  return stream_id_;
 }
 
 uint16_t WebSocket::operator()(
@@ -218,6 +220,7 @@ uint16_t WebSocket::operator()(Event<CancelAllOrders> const &event, std::string_
 }
 
 // session-logon
+// weight: 2
 
 void WebSocket::session_logon() {
   auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
@@ -250,6 +253,7 @@ void WebSocket::session_logon() {
 }
 
 // user-data-stream-subscribe
+// weight: 2
 
 void WebSocket::user_data_stream_subscribe() {
   auto request = json::WSAPIRequest{
@@ -272,6 +276,7 @@ void WebSocket::user_data_stream_subscribe() {
 }
 
 // account-status
+// weight: 20
 
 void WebSocket::account_status() {
   auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
@@ -299,6 +304,7 @@ void WebSocket::account_status() {
 }
 
 // open-orders
+// weight: 80 (symbol=none)
 
 void WebSocket::open_orders_status() {
   auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
@@ -327,6 +333,7 @@ void WebSocket::open_orders_status() {
 
 // my-trades
 // note! one request per symbol
+// weight: 20 (without orderId)
 
 void WebSocket::my_trades() {
   auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
@@ -365,8 +372,114 @@ void WebSocket::my_trades() {
   }
 }
 
+// order-place
+// weight: 1
+
+void WebSocket::order_place(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
+  profile_.order_place([&]() {
+    if (!ready()) {
+      throw server::oms::NotReady{"not ready"sv};
+    }
+    auto &[message_info, create_order] = event;
+    open_orders_symbols_.emplace(create_order.symbol);
+    auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
+    auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
+    auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
+    auto params = json::Encoder::wsapi_place_order(encode_buffer_, create_order, order, request_id, create_order_template, recv_window, timestamp);
+    auto request = json::WSAPIRequest{
+        .sequence = ++request_id_,
+        .type = json::WSAPIType::ORDER_PLACE,
+        .user_id = message_info.source,
+        .order_id = create_order.order_id,
+        .version = 1,
+        .order_id_2 = {},
+    };
+    auto request_id_2 = json::WSAPIRequest::encode(request_encode_buffer_, request);
+    auto message = fmt::format(
+        R"({{)"
+        R"("id":"{}",)"
+        R"("method":"order.place",)"
+        R"("params":{})"
+        R"(}})"sv,
+        request_id_2,
+        params);
+    (*connection_).send_text(message);
+  });
+}
+
+// order-amend-keep-priority
+// weight: 4
+
+void WebSocket::order_amend_keep_priority(
+    Event<ModifyOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
+  profile_.order_amend_keep_priority([&]() {
+    if (!ready()) {
+      throw server::oms::NotReady{"not ready"sv};
+    }
+    auto &[message_info, modify_order] = event;
+    auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
+    auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
+    auto params = json::Encoder::wsapi_amend_order_keep_priority(encode_buffer_, modify_order, order, request_id, previous_request_id, recv_window, timestamp);
+    auto request = json::WSAPIRequest{
+        .sequence = ++request_id_,
+        .type = json::WSAPIType::ORDER_AMEND_KEEP_PRIORITY,
+        .user_id = message_info.source,
+        .order_id = modify_order.order_id,
+        .version = modify_order.version,
+        .order_id_2 = {},
+    };
+    auto request_id_2 = json::WSAPIRequest::encode(request_encode_buffer_, request);
+    auto message = fmt::format(
+        R"({{)"
+        R"("id":"{}",)"
+        R"("method":"order.amend.keepPriority",)"
+        R"("params":{})"
+        R"(}})"sv,
+        request_id_2,
+        params);
+    (*connection_).send_text(message);
+  });
+}
+
+// order-cancel
+// weight: 1
+
+void WebSocket::order_cancel(
+    Event<CancelOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
+  profile_.order_cancel([&]() {
+    if (!ready()) {
+      throw server::oms::NotReady{"not ready"sv};
+    }
+    auto &[message_info, cancel_order] = event;
+    auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
+    auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
+    auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
+    auto params =
+        json::Encoder::wsapi_cancel_order(encode_buffer_, cancel_order, order, request_id, previous_request_id, cancel_order_template, recv_window, timestamp);
+    auto request = json::WSAPIRequest{
+        .sequence = ++request_id_,
+        .type = json::WSAPIType::ORDER_CANCEL,
+        .user_id = message_info.source,
+        .order_id = cancel_order.order_id,
+        .version = cancel_order.version,
+        .order_id_2 = {},
+    };
+    auto request_id_2 = json::WSAPIRequest::encode(request_encode_buffer_, request);
+    auto message = fmt::format(
+        R"({{)"
+        R"("id":"{}",)"
+        R"("method":"order.cancel",)"
+        R"("params":{})"
+        R"(}})"sv,
+        request_id_2,
+        params);
+    (*connection_).send_text(message);
+  });
+}
+
 // open-orders-cancel-all
 // note! one request per symbol
+// weight: 1
 
 void WebSocket::open_orders_cancel_all(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
   profile_.open_orders_cancel_all([&]() {
@@ -427,75 +540,6 @@ void WebSocket::open_orders_cancel_all(Event<CancelAllOrders> const &event, std:
       (*connection_).send_text(message);
       send_ack(symbol);
     }
-  });
-}
-
-// order-place
-
-void WebSocket::order_place(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
-  profile_.order_place([&]() {
-    if (!ready()) {
-      throw server::oms::NotReady{"not ready"sv};
-    }
-    auto &[message_info, create_order] = event;
-    open_orders_symbols_.emplace(create_order.symbol);
-    auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
-    auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
-    auto params = json::Encoder::new_order_ws_json(encode_buffer_, create_order, order, request_id, create_order_template, recv_window, timestamp);
-    auto request = json::WSAPIRequest{
-        .sequence = ++request_id_,
-        .type = json::WSAPIType::ORDER_PLACE,
-        .user_id = message_info.source,
-        .order_id = create_order.order_id,
-        .version = 1,
-        .order_id_2 = {},
-    };
-    auto request_id_2 = json::WSAPIRequest::encode(request_encode_buffer_, request);
-    auto message = fmt::format(
-        R"({{)"
-        R"("id":"{}",)"
-        R"("method":"order.place",)"
-        R"("params":{})"
-        R"(}})"sv,
-        request_id_2,
-        params);
-    (*connection_).send_text(message);
-  });
-}
-
-// order-cancel
-
-void WebSocket::order_cancel(
-    Event<CancelOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
-  profile_.order_cancel([&]() {
-    if (!ready()) {
-      throw server::oms::NotReady{"not ready"sv};
-    }
-    auto &[message_info, cancel_order] = event;
-    auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
-    auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
-    auto params = json::Encoder::cancel_order_ws_json(
-        encode_buffer_, cancel_order, order, request_id, previous_request_id, cancel_order_template, recv_window, timestamp);
-    auto request = json::WSAPIRequest{
-        .sequence = ++request_id_,
-        .type = json::WSAPIType::ORDER_CANCEL,
-        .user_id = message_info.source,
-        .order_id = cancel_order.order_id,
-        .version = cancel_order.version,
-        .order_id_2 = {},
-    };
-    auto request_id_2 = json::WSAPIRequest::encode(request_encode_buffer_, request);
-    auto message = fmt::format(
-        R"({{)"
-        R"("id":"{}",)"
-        R"("method":"order.cancel",)"
-        R"("params":{})"
-        R"(}})"sv,
-        request_id_2,
-        params);
-    (*connection_).send_text(message);
   });
 }
 
@@ -606,11 +650,11 @@ void WebSocket::parse(std::string_view const &message) {
 
 // json::WSAPIParser2::Handler
 
-void WebSocket::operator()(Trace<json::WSAPISessionLogon> const &event, json::WSAPIRequest const &request) {
+void WebSocket::operator()(Trace<json::WSAPISessionLogon> const &event) {
   auto const STATE = WebSocketState::SESSION_LOGON;
   profile_.session_logon([&]() {
     auto &[trace_info, session_logon] = event;
-    log::info<2>("session_logon={}, request={}"sv, session_logon, request);
+    log::info<2>("session_logon={}"sv, session_logon);
     if (session_logon.status == 200) {
       auto &result = session_logon.result;
       download_.check_relaxed(STATE);
@@ -626,11 +670,11 @@ void WebSocket::operator()(Trace<json::WSAPISessionLogon> const &event, json::WS
   });
 }
 
-void WebSocket::operator()(Trace<json::WSAPIUserDataStreamSubscribe> const &event, json::WSAPIRequest const &request) {
+void WebSocket::operator()(Trace<json::WSAPIUserDataStreamSubscribe> const &event) {
   auto const STATE = WebSocketState::USER_DATA_STREAM_SUBSCRIBE;
   profile_.user_data_stream_subscribe([&]() {
     auto &[trace_info, user_data_stream_subscribe] = event;
-    log::info<2>("user_data_stream_subscribe={}, request={}"sv, user_data_stream_subscribe, request);
+    log::info<2>("user_data_stream_subscribe={}"sv, user_data_stream_subscribe);
     if (user_data_stream_subscribe.status == 200) {
       download_.check_relaxed(STATE);
     } else {
@@ -645,11 +689,11 @@ void WebSocket::operator()(Trace<json::WSAPIUserDataStreamSubscribe> const &even
   });
 }
 
-void WebSocket::operator()(Trace<json::WSAPIAccount> const &event, json::WSAPIRequest const &request) {
+void WebSocket::operator()(Trace<json::WSAPIAccount> const &event) {
   auto const STATE = WebSocketState::ACCOUNT_STATUS;
   profile_.account_status([&]() {
     auto &[trace_info, message] = event;
-    log::info<2>("message={}, request={}"sv, message, request);
+    log::info<2>("message={}"sv, message);
     if (message.status == 200) {
       auto &account = message.result;
       for (auto &item : account.balances) {
@@ -680,11 +724,11 @@ void WebSocket::operator()(Trace<json::WSAPIAccount> const &event, json::WSAPIRe
   });
 }
 
-void WebSocket::operator()(Trace<json::WSAPIOpenOrders> const &event, json::WSAPIRequest const &request) {
+void WebSocket::operator()(Trace<json::WSAPIOpenOrders> const &event) {
   auto const STATE = WebSocketState::OPEN_ORDERS_STATUS;
   profile_.open_orders_status([&]() {
     auto &[trace_info, message] = event;
-    log::info<2>("message={}, request={}"sv, message, request);
+    log::info<2>("message={}"sv, message);
     if (message.status == 200) {
       auto &open_orders = message.result;
       for (auto &item : open_orders) {
@@ -742,11 +786,11 @@ void WebSocket::operator()(Trace<json::WSAPIOpenOrders> const &event, json::WSAP
   });
 }
 
-void WebSocket::operator()(Trace<json::WSAPITrades> const &event, json::WSAPIRequest const &request) {
+void WebSocket::operator()(Trace<json::WSAPITrades> const &event) {
   auto const STATE = WebSocketState::MY_TRADES;
   profile_.my_trades([&]() {
     auto &[trace_info, message] = event;
-    log::info<2>("message={}, request={}"sv, message, request);
+    log::info<2>("message={}"sv, message);
     if (message.status == 200) {
       download_trades_is_first_ = false;  // after first successful
       auto &trades = message.result;
@@ -803,60 +847,6 @@ void WebSocket::operator()(Trace<json::WSAPITrades> const &event, json::WSAPIReq
       if (download_.downloading()) {
         download_.retry(STATE);
       }
-    }
-    update_rate_limits(event);
-  });
-}
-
-void WebSocket::operator()(Trace<json::WSAPICancelOpenOrders> const &event, json::WSAPIRequest const &request) {
-  profile_.open_orders_cancel_all_ack([&]() {
-    auto &[trace_info, message] = event;
-    log::info<2>("message={}, request={}"sv, message, request);
-    if (message.status == 200) {
-      auto &cancel_all_open_orders = message.result;
-      for (auto &item : cancel_all_open_orders) {
-        log::info<2>("item={}"sv, item);
-        if (std::empty(item.client_order_id)) {
-          continue;
-        }
-        auto external_order_id = fmt::format("{}"sv, item.order_id);  // alloc
-        auto order_update = server::oms::OrderUpdate{
-            .account = account_.name,
-            .exchange = shared_.settings.exchange,
-            .symbol = item.symbol,
-            .side = map(item.side),
-            .position_effect = {},
-            .margin_mode = {},
-            .max_show_quantity = NaN,
-            .order_type = map(item.type),
-            .time_in_force = map(item.time_in_force),
-            .execution_instructions = {},
-            .create_time_utc = item.time,
-            .update_time_utc = item.update_time,
-            .external_account = {},
-            .external_order_id = external_order_id,
-            .client_order_id = {},
-            .order_status = map(item.status),
-            .quantity = item.orig_qty,
-            .price = item.price,
-            .stop_price = item.stop_price,
-            .remaining_quantity = NaN,
-            .traded_quantity = item.executed_qty,
-            .average_traded_price = {},
-            .last_traded_quantity = {},
-            .last_traded_price = {},
-            .last_liquidity = {},
-            .routing_id = {},
-            .max_request_version = {},
-            .max_response_version = {},
-            .max_accepted_version = {},
-            .update_type = UpdateType::INCREMENTAL,
-            .sending_time_utc = {},
-        };
-        shared_.update_order(item.client_order_id, stream_id_, trace_info, order_update, []([[maybe_unused]] auto &order) {});
-      }
-    } else {
-      log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, message.error);
     }
     update_rate_limits(event);
   });
@@ -953,6 +943,81 @@ void WebSocket::operator()(Trace<json::WSAPIOrderPlace> const &event, json::WSAP
   });
 }
 
+void WebSocket::operator()(Trace<json::WSAPIOrderAmendKeepPriority> const &event, json::WSAPIRequest const &request) {
+  profile_.order_amend_keep_priority_ack([&]() {
+    auto &[trace_info, message] = event;
+    log::info<2>("message={}, request={}"sv, message, request);
+    if (message.status == 200) {
+      auto &order_amend_keep_priority = message.result;
+      auto &amended_order = order_amend_keep_priority.amended_order;
+      auto external_order_id = fmt::format("{}"sv, amended_order.order_id);  // alloc
+      auto response = server::oms::Response{
+          .request_type = RequestType::MODIFY_ORDER,
+          .origin = Origin::EXCHANGE,
+          .request_status = RequestStatus::ACCEPTED,
+          .error = {},
+          .text = {},
+          .version = request.version,
+          .request_id = {},
+          .quantity = NaN,
+          .price = NaN,
+      };
+      auto order_update = server::oms::OrderUpdate{
+          .account = account_.name,
+          .exchange = shared_.settings.exchange,
+          .symbol = amended_order.symbol,
+          .side = map(amended_order.side),
+          .position_effect = {},
+          .margin_mode = {},
+          .max_show_quantity = NaN,
+          .order_type = map(amended_order.type),
+          .time_in_force = map(amended_order.time_in_force),
+          .execution_instructions = {},
+          .create_time_utc = {},
+          .update_time_utc = order_amend_keep_priority.transact_time,
+          .external_account = {},
+          .external_order_id = external_order_id,
+          .client_order_id = {},
+          .order_status = map(amended_order.status),
+          .quantity = amended_order.qty,
+          .price = amended_order.price,
+          .stop_price = NaN,
+          .remaining_quantity = NaN,
+          .traded_quantity = amended_order.executed_qty,  // cumulative_qty ???
+          .average_traded_price = NaN,
+          .last_traded_quantity = NaN,
+          .last_traded_price = NaN,
+          .last_liquidity = {},
+          .routing_id = {},
+          .max_request_version = {},
+          .max_response_version = {},
+          .max_accepted_version = {},
+          .update_type = UpdateType::INCREMENTAL,
+          .sending_time_utc = {},
+      };
+      Trace event_2{trace_info, response};
+      (*this)(event_2, request.user_id, request.order_id, order_update);
+    } else {
+      auto &error = message.error;
+      auto error_2 = json::guess_error(error.code);
+      auto response = server::oms::Response{
+          .request_type = RequestType::CANCEL_ORDER,
+          .origin = Origin::EXCHANGE,
+          .request_status = RequestStatus::REJECTED,
+          .error = error_2,
+          .text = error.msg,
+          .version = request.version,
+          .request_id = {},
+          .quantity = NaN,
+          .price = NaN,
+      };
+      Trace event_2{event, response};
+      (*this)(event_2, request.user_id, request.order_id);
+    }
+    update_rate_limits(event);
+  });
+}
+
 void WebSocket::operator()(Trace<json::WSAPICancelOrder> const &event, json::WSAPIRequest const &request) {
   profile_.order_cancel_ack([&]() {
     auto &[trace_info, message] = event;
@@ -1022,6 +1087,60 @@ void WebSocket::operator()(Trace<json::WSAPICancelOrder> const &event, json::WSA
       };
       Trace event_2{event, response};
       (*this)(event_2, request.user_id, request.order_id);
+    }
+    update_rate_limits(event);
+  });
+}
+
+void WebSocket::operator()(Trace<json::WSAPICancelOpenOrders> const &event, json::WSAPIRequest const &request) {
+  profile_.open_orders_cancel_all_ack([&]() {
+    auto &[trace_info, message] = event;
+    log::info<2>("message={}, request={}"sv, message, request);
+    if (message.status == 200) {
+      auto &cancel_all_open_orders = message.result;
+      for (auto &item : cancel_all_open_orders) {
+        log::info<2>("item={}"sv, item);
+        if (std::empty(item.client_order_id)) {
+          continue;
+        }
+        auto external_order_id = fmt::format("{}"sv, item.order_id);  // alloc
+        auto order_update = server::oms::OrderUpdate{
+            .account = account_.name,
+            .exchange = shared_.settings.exchange,
+            .symbol = item.symbol,
+            .side = map(item.side),
+            .position_effect = {},
+            .margin_mode = {},
+            .max_show_quantity = NaN,
+            .order_type = map(item.type),
+            .time_in_force = map(item.time_in_force),
+            .execution_instructions = {},
+            .create_time_utc = item.time,
+            .update_time_utc = item.update_time,
+            .external_account = {},
+            .external_order_id = external_order_id,
+            .client_order_id = {},
+            .order_status = map(item.status),
+            .quantity = item.orig_qty,
+            .price = item.price,
+            .stop_price = item.stop_price,
+            .remaining_quantity = NaN,
+            .traded_quantity = item.executed_qty,
+            .average_traded_price = {},
+            .last_traded_quantity = {},
+            .last_traded_price = {},
+            .last_liquidity = {},
+            .routing_id = {},
+            .max_request_version = {},
+            .max_response_version = {},
+            .max_accepted_version = {},
+            .update_type = UpdateType::INCREMENTAL,
+            .sending_time_utc = {},
+        };
+        shared_.update_order(item.client_order_id, stream_id_, trace_info, order_update, []([[maybe_unused]] auto &order) {});
+      }
+    } else {
+      log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, message.error);
     }
     update_rate_limits(event);
   });

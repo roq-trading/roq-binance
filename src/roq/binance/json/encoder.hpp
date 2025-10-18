@@ -25,9 +25,9 @@ namespace binance {
 namespace json {
 
 struct Encoder final {
-  // new
+  // wsapi
 
-  static std::string_view new_order_ws_json(
+  static std::string_view wsapi_place_order(
       std::vector<char> &buffer,
       CreateOrder const &,
       server::oms::Order const &,
@@ -36,7 +36,30 @@ struct Encoder final {
       std::chrono::milliseconds recv_window,
       std::chrono::milliseconds now);
 
-  // papi
+  static std::string_view wsapi_amend_order_keep_priority(
+      std::vector<char> &buffer,
+      ModifyOrder const &,
+      server::oms::Order const &,
+      std::string_view const &request_id,
+      std::string_view const &previous_request_id,
+      std::chrono::milliseconds recv_window,
+      std::chrono::milliseconds now);
+
+  static std::string_view wsapi_cancel_order(
+      std::vector<char> &buffer,
+      roq::CancelOrder const &,
+      server::oms::Order const &,
+      std::string_view const &request_id,
+      std::string_view const &previous_request_id,
+      CancelOrderTemplate const &,
+      std::chrono::milliseconds recv_window,
+      std::chrono::milliseconds now);
+
+  // sapi+papi
+
+  static std::string_view my_trades(
+      std::vector<char> &buffer, std::string_view const &symbol, std::chrono::nanoseconds lookback, uint32_t limit, std::chrono::milliseconds now);
+
   static std::string_view new_order(
       std::vector<char> &buffer,
       CreateOrder const &,
@@ -46,19 +69,6 @@ struct Encoder final {
       std::chrono::milliseconds recv_window,
       SideEffectType = {});
 
-  // cancel
-
-  static std::string_view cancel_order_ws_json(
-      std::vector<char> &buffer,
-      roq::CancelOrder const &,
-      server::oms::Order const &,
-      std::string_view const &request_id,
-      std::string_view const &previous_request_id,
-      CancelOrderTemplate const &,
-      std::chrono::milliseconds recv_window,
-      std::chrono::milliseconds now);
-
-  // papi
   static std::string_view cancel_order(
       std::vector<char> &buffer,
       roq::CancelOrder const &,
@@ -68,14 +78,7 @@ struct Encoder final {
       CancelOrderTemplate const &,
       std::chrono::milliseconds recv_window);
 
-  // cancel-all
-
-  // papi
   static std::string_view cancel_all_open_orders(std::vector<char> &buffer, std::string_view const &symbol, MarginMode, std::chrono::milliseconds recv_window);
-
-  // papi
-  static std::string_view my_trades(
-      std::vector<char> &buffer, std::string_view const &symbol, std::chrono::nanoseconds lookback, uint32_t limit, std::chrono::milliseconds now);
 };
 
 }  // namespace json

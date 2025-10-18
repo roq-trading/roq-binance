@@ -34,28 +34,31 @@ bool dispatch_response(auto &handler, auto &message, auto &buffer_stack, auto &t
       }
       break;
     case SESSION_LOGON:
-      dispatch_helper<WSAPISessionLogon>(handler, message, buffer_stack, trace_info, request);
+      dispatch_helper<WSAPISessionLogon>(handler, message, buffer_stack, trace_info);
       return true;
     case USER_DATA_STREAM_SUBSCRIBE:
-      dispatch_helper<WSAPIUserDataStreamSubscribe>(handler, message, buffer_stack, trace_info, request);
+      dispatch_helper<WSAPIUserDataStreamSubscribe>(handler, message, buffer_stack, trace_info);
       return true;
     case ACCOUNT_STATUS:
-      dispatch_helper<WSAPIAccount>(handler, message, buffer_stack, trace_info, request);
+      dispatch_helper<WSAPIAccount>(handler, message, buffer_stack, trace_info);
       return true;
     case OPEN_ORDERS_STATUS:
-      dispatch_helper<WSAPIOpenOrders>(handler, message, buffer_stack, trace_info, request);
+      dispatch_helper<WSAPIOpenOrders>(handler, message, buffer_stack, trace_info);
       return true;
     case MY_TRADES:
-      dispatch_helper<WSAPITrades>(handler, message, buffer_stack, trace_info, request);
-      return true;
-    case OPEN_ORDERS_CANCEL_ALL:
-      dispatch_helper<WSAPICancelOpenOrders>(handler, message, buffer_stack, trace_info, request);
+      dispatch_helper<WSAPITrades>(handler, message, buffer_stack, trace_info);
       return true;
     case ORDER_PLACE:
       dispatch_helper<WSAPIOrderPlace>(handler, message, buffer_stack, trace_info, request);
       return true;
+    case ORDER_AMEND_KEEP_PRIORITY:
+      dispatch_helper<WSAPIOrderAmendKeepPriority>(handler, message, buffer_stack, trace_info, request);
+      return true;
     case ORDER_CANCEL:
       dispatch_helper<WSAPICancelOrder>(handler, message, buffer_stack, trace_info, request);
+      return true;
+    case OPEN_ORDERS_CANCEL_ALL:
+      dispatch_helper<WSAPICancelOpenOrders>(handler, message, buffer_stack, trace_info, request);
       return true;
   }
   log::fatal(R"(Unexpected: message="{}")"sv, message);

@@ -2,6 +2,7 @@
 roq-binance-json
 account.hpp
 agg_trade.hpp
+amended_order.hpp
 balance2.hpp
 balance.hpp
 balances_item.hpp
@@ -36,6 +37,7 @@ list_status.hpp
 mini_ticker.hpp
 new_order.hpp
 open_orders.hpp
+order_amend_keep_priority.hpp
 order.hpp
 order_status.hpp
 order_type.hpp
@@ -62,6 +64,7 @@ wsapi_cancel_open_orders.hpp
 wsapi_cancel_order.hpp
 wsapi_execution_report.hpp
 wsapi_open_orders.hpp
+wsapi_order_amend_keep_priority.hpp
 wsapi_order_place.hpp
 wsapi_outbound_account_position.hpp
 wsapi_rate_limits_item.hpp
@@ -73,6 +76,7 @@ wsapi_user_data_stream_subscribe.hpp
 wsapi_user_data_stream_subscribe_result.hpp
 account.cpp
 agg_trade.cpp
+amended_order.cpp
 balance2.cpp
 balance.cpp
 balances_item.cpp
@@ -107,6 +111,7 @@ list_status.cpp
 mini_ticker.cpp
 new_order.cpp
 open_orders.cpp
+order_amend_keep_priority.cpp
 order.cpp
 order_status.cpp
 order_type.cpp
@@ -133,6 +138,7 @@ wsapi_cancel_open_orders.cpp
 wsapi_cancel_order.cpp
 wsapi_execution_report.cpp
 wsapi_open_orders.cpp
+wsapi_order_amend_keep_priority.cpp
 wsapi_order_place.cpp
 wsapi_outbound_account_position.cpp
 wsapi_rate_limits_item.cpp

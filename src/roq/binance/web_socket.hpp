@@ -65,6 +65,8 @@ struct WebSocket final : public OrderEntry, public web::socket::Client::Handler,
   void my_trades();
 
   void order_place(Event<CreateOrder> const &, server::oms::Order const &, std::string_view const &request_id);
+  void order_amend_keep_priority(
+      Event<ModifyOrder> const &, server::oms::Order const &, std::string_view const &request_id, std::string_view const &previous_request_id);
   void order_cancel(Event<CancelOrder> const &, server::oms::Order const &, std::string_view const &request_id, std::string_view const &previous_request_id);
   void open_orders_cancel_all(Event<CancelAllOrders> const &, std::string_view const &request_id);
 
@@ -84,17 +86,18 @@ struct WebSocket final : public OrderEntry, public web::socket::Client::Handler,
   void parse(std::string_view const &message);
 
   // json::WSAPIParser2::Handler
-  void operator()(Trace<json::WSAPISessionLogon> const &, json::WSAPIRequest const &) override;
+  void operator()(Trace<json::WSAPISessionLogon> const &) override;
   //
-  void operator()(Trace<json::WSAPIUserDataStreamSubscribe> const &, json::WSAPIRequest const &) override;
+  void operator()(Trace<json::WSAPIUserDataStreamSubscribe> const &) override;
   //
-  void operator()(Trace<json::WSAPIAccount> const &, json::WSAPIRequest const &) override;
-  void operator()(Trace<json::WSAPIOpenOrders> const &, json::WSAPIRequest const &) override;
-  void operator()(Trace<json::WSAPITrades> const &, json::WSAPIRequest const &) override;
+  void operator()(Trace<json::WSAPIAccount> const &) override;
+  void operator()(Trace<json::WSAPIOpenOrders> const &) override;
+  void operator()(Trace<json::WSAPITrades> const &) override;
   //
-  void operator()(Trace<json::WSAPICancelOpenOrders> const &, json::WSAPIRequest const &) override;
   void operator()(Trace<json::WSAPIOrderPlace> const &, json::WSAPIRequest const &) override;
+  void operator()(Trace<json::WSAPIOrderAmendKeepPriority> const &, json::WSAPIRequest const &) override;
   void operator()(Trace<json::WSAPICancelOrder> const &, json::WSAPIRequest const &) override;
+  void operator()(Trace<json::WSAPICancelOpenOrders> const &, json::WSAPIRequest const &) override;
   //
   void operator()(Trace<json::WSAPIOutboundAccountPosition> const &) override;
   void operator()(Trace<json::WSAPIBalanceUpdate> const &) override;
@@ -125,15 +128,16 @@ struct WebSocket final : public OrderEntry, public web::socket::Client::Handler,
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile parse,                      //
-        session_logon,                                  //
-        user_data_stream_subscribe,                     //
-        account_status, open_orders_status, my_trades,  //
-        order_place, order_place_ack,                   //
-        order_cancel, order_cancel_ack,                 //
-        open_orders_cancel_all, open_orders_cancel_all_ack,
-        outbound_account_position,  //
-        balance_update,             //
+    utils::metrics::Profile parse,                                 //
+        session_logon,                                             //
+        user_data_stream_subscribe,                                //
+        account_status, open_orders_status, my_trades,             //
+        order_place, order_place_ack,                              //
+        order_amend_keep_priority, order_amend_keep_priority_ack,  //
+        order_cancel, order_cancel_ack,                            //
+        open_orders_cancel_all, open_orders_cancel_all_ack,        //
+        outbound_account_position,                                 //
+        balance_update,                                            //
         execution_report;
   } profile_;
   struct {
