@@ -26,15 +26,22 @@ struct Crypto final {
   Crypto(Crypto const &) = delete;
 
   std::string_view get_key() const { return key_; }
-  std::string_view get_headers() const { return headers_; }
+
+  std::string_view get_rest_headers() const { return headers_; }
 
   // ed25519
+
   std::string_view create_session_logon_signature(std::string &buffer, std::chrono::milliseconds timestamp);
 
-  // legacy
+  // classic
+
   static constexpr auto const QUERY_BUFFER_LENGTH = 128uz;  // note! expected length == 99
-  std::string_view create_query(std::span<std::byte> const &buffer, std::chrono::milliseconds now, std::string_view const &body);
-  std::string create_query_2(std::chrono::milliseconds now, std::string_view const &body);
+                                                            //
+  std::string_view create_rest_signature(std::span<std::byte> const &buffer, std::chrono::milliseconds now_utc);
+
+  std::string_view create_rest_signature_body(std::span<std::byte> const &buffer, std::chrono::milliseconds now_utc, std::string_view const &body);
+
+  std::string create_rest_signature_query(std::chrono::milliseconds now_utc, std::string_view const &message);
 
  private:
   std::string const key_;

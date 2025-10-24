@@ -365,7 +365,7 @@ void OrderEntryMargin::get_listen_key(MarginMode margin_mode) {
       log::fatal("Unexpected"sv);
     }();
     log::warn("DEBUG margin_mode={}, path={}"sv, margin_mode, path);
-    auto headers = account_.get_headers();
+    auto headers = account_.get_rest_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
         .path = path,
@@ -489,8 +489,8 @@ void OrderEntryMargin::get_account(MarginMode margin_mode) {
       }
       log::fatal("Unexpected"sv);
     }();
-    auto query = account_.create_query(now);
-    auto headers = account_.get_headers();
+    auto query = account_.create_rest_signature(now);
+    auto headers = account_.get_rest_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
         .path = path,
@@ -624,8 +624,8 @@ void OrderEntryMargin::get_open_orders(MarginMode margin_mode) {
       log::fatal("Unexpected"sv);
     }();
     auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = account_.create_query(now);
-    auto headers = account_.get_headers();
+    auto query = account_.create_rest_signature(now);
+    auto headers = account_.get_rest_headers();
     auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
     encode_buffer_.clear();
     fmt::format_to(
@@ -760,9 +760,9 @@ void OrderEntryMargin::get_trades(MarginMode margin_mode) {
       auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
       auto limit = shared_.settings.download.trades_limit ? shared_.settings.download.trades_limit : DOWNLOAD_TRADES_LIMIT;
       log::info<1>("Download trades: lookback={}"sv, lookback);
-      auto headers = account_.get_headers();
+      auto headers = account_.get_rest_headers();
       auto body = json::Encoder::my_trades(encode_buffer_, symbol, lookback, limit, now);
-      auto query = account_.create_query(now, body);
+      auto query = account_.create_rest_signature_body(now, body);
       auto request = web::rest::Request{
           .method = web::http::Method::GET,
           .path = shared_.api.sapi.margin_my_trades,
@@ -888,8 +888,8 @@ void OrderEntryMargin::get_account_cross_on_timer() {
     log::warn("DEBUG Download borrowed amount ON TIMER..."sv);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto path = shared_.api.sapi.cross_account;
-    auto query = account_.create_query(now);
-    auto headers = account_.get_headers();
+    auto query = account_.create_rest_signature(now);
+    auto headers = account_.get_rest_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
         .path = path,
@@ -981,8 +981,8 @@ void OrderEntryMargin::new_order(Event<CreateOrder> const &event, server::oms::O
     auto body =
         json::Encoder::new_order(encode_buffer_, create_order, order, request_id, create_order_template, recv_window, shared_.api.margin_side_effect_type);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = account_.create_query(now, body);
-    auto headers = account_.get_headers();
+    auto query = account_.create_rest_signature_body(now, body);
+    auto headers = account_.get_rest_headers();
     auto path = shared_.api.sapi.margin_order;
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
@@ -1112,8 +1112,8 @@ void OrderEntryMargin::cancel_order(
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto body = json::Encoder::cancel_order(encode_buffer_, cancel_order, order, request_id, previous_request_id, cancel_order_template, recv_window);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = account_.create_query(now, body);
-    auto headers = account_.get_headers();
+    auto query = account_.create_rest_signature_body(now, body);
+    auto headers = account_.get_rest_headers();
     auto path = [&]() -> std::string_view {
       switch (order.margin_mode) {
         using enum MarginMode;
@@ -1275,8 +1275,8 @@ void OrderEntryMargin::cancel_all_open_orders(Event<CancelAllOrders> const &even
         }();
         auto body = json::Encoder::cancel_all_open_orders(encode_buffer_, symbol, margin_mode, recv_window);
         auto now = clock::get_realtime<std::chrono::milliseconds>();
-        auto query = account_.create_query(now, body);
-        auto headers = account_.get_headers();
+        auto query = account_.create_rest_signature_body(now, body);
+        auto headers = account_.get_rest_headers();
         auto request = web::rest::Request{
             .method = web::http::Method::DELETE,
             .path = path,

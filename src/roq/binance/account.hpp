@@ -20,17 +20,26 @@ struct Account final {
   Account(Account const &) = delete;
 
   std::string_view get_key() const { return crypto_.get_key(); }
-  std::string_view get_headers() const { return crypto_.get_headers(); }
+
+  std::string_view get_rest_headers() const { return crypto_.get_rest_headers(); }
 
   // ed25519
+
   std::string_view create_session_logon_signature(std::chrono::milliseconds timestamp) {
     return crypto_.create_session_logon_signature(sign_buffer_, timestamp);
   }
 
-  // legacy
-  std::string_view create_query(std::chrono::milliseconds now, std::string_view const &body) { return crypto_.create_query(query_encode_buffer_, now, body); }
-  std::string_view create_query(std::chrono::milliseconds now) { return create_query(now, {}); }
-  std::string create_query_2(std::chrono::milliseconds now, std::string_view const &body) { return crypto_.create_query_2(now, body); }
+  // classic
+
+  std::string_view create_rest_signature(std::chrono::milliseconds now_utc) { return crypto_.create_rest_signature(query_encode_buffer_, now_utc); }
+
+  std::string_view create_rest_signature_body(std::chrono::milliseconds now_utc, std::string_view const &body) {
+    return crypto_.create_rest_signature_body(query_encode_buffer_, now_utc, body);
+  }
+
+  std::string create_rest_signature_query(std::chrono::milliseconds now_utc, std::string_view const &query) {
+    return crypto_.create_rest_signature_query(now_utc, query);
+  }
 
   std::string const name;
   MarginMode const margin_mode;

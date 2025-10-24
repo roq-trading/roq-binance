@@ -338,7 +338,7 @@ uint32_t OrderEntryPortfolio::download(OrderEntryState state) {
 
 void OrderEntryPortfolio::get_listen_key() {
   profile_.listen_key([&]() {
-    auto headers = account_.get_headers();
+    auto headers = account_.get_rest_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
         .path = shared_.api.papi.listen_key,
@@ -403,8 +403,8 @@ void OrderEntryPortfolio::operator()(Trace<json::ListenKey> const &event) {
 void OrderEntryPortfolio::get_account() {
   profile_.account([&]() {
     auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = account_.create_query(now);
-    auto headers = account_.get_headers();
+    auto query = account_.create_rest_signature(now);
+    auto headers = account_.get_rest_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
         .path = shared_.api.papi.balance,
@@ -471,8 +471,8 @@ void OrderEntryPortfolio::operator()(Trace<json::Balances> const &event) {
 void OrderEntryPortfolio::get_open_orders() {
   profile_.open_orders([&]() {
     auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = account_.create_query(now);
-    auto headers = account_.get_headers();
+    auto query = account_.create_rest_signature(now);
+    auto headers = account_.get_rest_headers();
     auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
     encode_buffer_.clear();
     fmt::format_to(
@@ -581,9 +581,9 @@ void OrderEntryPortfolio::get_trades() {
       auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
       auto limit = shared_.settings.download.trades_limit ? shared_.settings.download.trades_limit : DOWNLOAD_TRADES_LIMIT;
       log::info<1>("Download trades: lookback={}"sv, lookback);
-      auto headers = account_.get_headers();
+      auto headers = account_.get_rest_headers();
       auto body = json::Encoder::my_trades(encode_buffer_, symbol, lookback, limit, now);
-      auto query = account_.create_query_2(now, body);
+      auto query = account_.create_rest_signature_query(now, body);
       auto request = web::rest::Request{
           .method = web::http::Method::GET,
           .path = shared_.api.papi.margin_my_trades,
@@ -702,8 +702,8 @@ void OrderEntryPortfolio::new_order(Event<CreateOrder> const &event, server::oms
     auto body =
         json::Encoder::new_order(encode_buffer_, create_order, order, request_id, create_order_template, recv_window, shared_.api.margin_side_effect_type);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = account_.create_query(now, body);
-    auto headers = account_.get_headers();
+    auto query = account_.create_rest_signature_body(now, body);
+    auto headers = account_.get_rest_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
         .path = shared_.api.papi.margin_order,
@@ -832,8 +832,8 @@ void OrderEntryPortfolio::cancel_order(
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto body = json::Encoder::cancel_order(encode_buffer_, cancel_order, order, request_id, previous_request_id, cancel_order_template, recv_window);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = account_.create_query(now, body);
-    auto headers = account_.get_headers();
+    auto query = account_.create_rest_signature_body(now, body);
+    auto headers = account_.get_rest_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::DELETE,
         .path = shared_.api.papi.margin_order,
@@ -970,8 +970,8 @@ void OrderEntryPortfolio::cancel_all_open_orders(Event<CancelAllOrders> const &e
       }
       auto body = json::Encoder::cancel_all_open_orders(encode_buffer_, symbol, MarginMode::PORTFOLIO, recv_window);
       auto now = clock::get_realtime<std::chrono::milliseconds>();
-      auto query = account_.create_query(now, body);
-      auto headers = account_.get_headers();
+      auto query = account_.create_rest_signature_body(now, body);
+      auto headers = account_.get_rest_headers();
       auto request = web::rest::Request{
           .method = web::http::Method::DELETE,
           .path = shared_.api.papi.margin_all_open_orders,

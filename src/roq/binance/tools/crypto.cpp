@@ -68,24 +68,34 @@ std::string_view Crypto::create_session_logon_signature(std::string &buffer, std
   return buffer;
 }
 
-// legacy
+// classic
 
-std::string_view Crypto::create_query(std::span<std::byte> const &buffer, std::chrono::milliseconds now, std::string_view const &body) {
+std::string_view Crypto::create_rest_signature(std::span<std::byte> const &buffer, std::chrono::milliseconds now_utc) {
   utils::text::Writer writer{buffer};
-  writer.write("?timestamp="sv).write(now.count());
+  writer.write("?timestamp="sv).write(now_utc.count());
   mac_.clear();
   auto tmp = static_cast<std::string_view>(writer).substr(1);
   mac_.update(tmp);
-  if (!std::empty(body)) {
-    mac_.update(body);
-  }
   auto digest = mac_.final(digest_);
   writer.write("&signature="sv).write(utils::codec::Hex{digest});
   return writer.finish();
 }
 
-std::string Crypto::create_query_2(std::chrono::milliseconds now, std::string_view const &body) {
-  auto tmp = fmt::format("{}&timestamp={}"sv, body, now.count());
+std::string_view Crypto::create_rest_signature_body(std::span<std::byte> const &buffer, std::chrono::milliseconds now_utc, std::string_view const &body) {
+  utils::text::Writer writer{buffer};
+  writer.write("?timestamp="sv).write(now_utc.count());
+  mac_.clear();
+  auto tmp = static_cast<std::string_view>(writer).substr(1);
+  mac_.update(tmp);
+  assert(!std::empty(body));
+  mac_.update(body);
+  auto digest = mac_.final(digest_);
+  writer.write("&signature="sv).write(utils::codec::Hex{digest});
+  return writer.finish();
+}
+
+std::string Crypto::create_rest_signature_query(std::chrono::milliseconds now_utc, std::string_view const &query) {
+  auto tmp = fmt::format("{}&timestamp={}"sv, query, now_utc.count());
   mac_.clear();
   mac_.update(tmp);
   auto digest = mac_.final(digest_);
