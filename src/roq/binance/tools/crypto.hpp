@@ -52,7 +52,7 @@ struct Crypto final {
   utils::signature::Context context_;
   std::vector<std::byte> digest_;
 
-  // legacy
+  // classic
   using MAC = utils::mac::HMAC<utils::hash::SHA256>;
   using Digest = std::array<std::byte, MAC::DIGEST_LENGTH>;
   MAC mac_;

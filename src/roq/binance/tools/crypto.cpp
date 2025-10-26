@@ -27,7 +27,7 @@ static_assert(Crypto::QUERY_BUFFER_LENGTH % 64 == 0);
 // === HELPERS ===
 
 namespace {
-auto create_headers_helper(auto const &key) {
+auto create_headers_helper(auto &key) {
   return fmt::format("X-MBX-APIKEY: {}\r\n"sv, key);
 }
 
