@@ -313,7 +313,7 @@ void MarketData::operator()(Trace<json::AggTrade> const &event) {
     auto &[trace_info, agg_trade] = event;
     log::info<3>("agg_trade={}"sv, agg_trade);
     (*connection_).touch(trace_info.source_receive_time);
-    auto side = agg_trade.buyer_is_maker ? Side::BUY : Side::SELL;
+    auto side = agg_trade.buyer_is_maker ? Side::SELL : Side::BUY;
     auto trade = Trade{
         .side = side,
         .price = agg_trade.price,
@@ -341,7 +341,7 @@ void MarketData::operator()(Trace<json::Trade> const &event) {
     auto &[trace_info, trade] = event;
     log::info<3>("trade={}"sv, trade);
     (*connection_).touch(trace_info.source_receive_time);
-    auto side = trade.buyer_is_maker ? Side::BUY : Side::SELL;
+    auto side = trade.buyer_is_maker ? Side::SELL : Side::BUY;
     auto trade_2 = Trade{
         .side = side,
         .price = trade.price,

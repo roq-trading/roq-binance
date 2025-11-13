@@ -8,6 +8,7 @@ All notable changes will be documented in this file.
 
 ### Fixed
 
+* `TradeSummary` had incorrect `side` (#527)
 * HTTP response with status code 503 (service unavailable) should map to `RequestStatus::REJECTED` (#522)
 * New event-type "liabilityChange" (#519)
 
