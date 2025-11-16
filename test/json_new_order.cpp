@@ -156,6 +156,7 @@ TEST_CASE("json_new_order_create_market", "[json_new_order]") {
       .quantity = 123.4,
       .price = NaN,
       .stop_price = NaN,
+      .leverage = NaN,
       .routing_id = {},
       .strategy_id = {},
   };
@@ -192,6 +193,7 @@ TEST_CASE("json_new_order_create_limit", "[json_new_order]") {
       .quantity = 123.4,
       .price = 123.4,
       .stop_price = NaN,
+      .leverage = NaN,
       .routing_id = {},
       .strategy_id = {},
   };
@@ -230,6 +232,7 @@ TEST_CASE("json_new_order_create_limit_maker", "[json_new_order]") {
       .quantity = 123.4,
       .price = 123.4,
       .stop_price = NaN,
+      .leverage = NaN,
       .routing_id = {},
       .strategy_id = {},
   };
@@ -267,6 +270,7 @@ TEST_CASE("json_new_order_create_stop_loss", "[json_new_order]") {
       .quantity = 123.4,
       .price = NaN,
       .stop_price = 123.4,
+      .leverage = NaN,
       .routing_id = {},
       .strategy_id = {},
   };
@@ -304,6 +308,7 @@ TEST_CASE("json_new_order_create_stop_loss_limit", "[json_new_order]") {
       .quantity = 123.4,
       .price = 123.4,
       .stop_price = 123.4,
+      .leverage = NaN,
       .routing_id = {},
       .strategy_id = {},
   };
@@ -343,6 +348,7 @@ TEST_CASE("json_new_order_margin", "[json_new_order]") {
       .quantity = 123.4,
       .price = 123.4,
       .stop_price = 123.4,
+      .leverage = NaN,
       .routing_id = {},
       .strategy_id = {},
   };
