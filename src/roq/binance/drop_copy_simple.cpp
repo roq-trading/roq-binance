@@ -299,6 +299,7 @@ void DropCopySimple::operator()(Trace<json::ExecutionReport> const &event) {
         .quantity = NaN,
         .price = execution_report.price,
         .stop_price = execution_report.stop_price,
+        .leverage = NaN,
         .remaining_quantity = NaN,
         .traded_quantity = execution_report.cumulative_filled_quantity,
         .average_traded_price = average_traded_price,

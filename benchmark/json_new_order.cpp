@@ -58,6 +58,7 @@ void BM_json_new_order(benchmark::State &state) {
         .quantity = QUANTITY,
         .price = PRICE,
         .stop_price = NaN,
+        .leverage = NaN,
         .routing_id = {},
         .strategy_id = {},
     };
@@ -91,6 +92,7 @@ void BM_json_new_order_with_signature(benchmark::State &state) {
         .quantity = QUANTITY,
         .price = PRICE,
         .stop_price = NaN,
+        .leverage = NaN,
         .routing_id = {},
         .strategy_id = {},
     };
