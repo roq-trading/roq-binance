@@ -195,7 +195,7 @@ Environments
 
    .. code-block:: shell
 
-      $ $CONDA_PREFIX/share/roq-binance/flags/prod/flags.cfg
+      $ --flagfile $CONDA_PREFIX/share/roq-binance/flags/prod/flags.cfg
 
    .. include:: flags/prod/flags.cfg
      :code: shell
@@ -204,7 +204,7 @@ Environments
 
    .. code-block:: shell
 
-      $ $CONDA_PREFIX/share/roq-binance/flags/test/flags.cfg
+      $ --flagfile $CONDA_PREFIX/share/roq-binance/flags/test/flags.cfg
 
    .. include:: flags/test/flags.cfg
      :code: shell
@@ -213,7 +213,7 @@ Environments
 
    .. code-block:: shell
 
-      $ $CONDA_PREFIX/share/roq-binance/flags/prod-us/flags.cfg
+      $ --flagfile $CONDA_PREFIX/share/roq-binance/flags/prod-us/flags.cfg
 
    .. include:: flags/prod-us/flags.cfg
      :code: shell
@@ -224,7 +224,7 @@ Configuration
 
 .. code-block:: shell
 
-   $ $CONDA_PREFIX/share/roq-binance/config.toml
+   $ --flagfile $CONDA_PREFIX/share/roq-binance/config.toml
 
 .. important::
 
