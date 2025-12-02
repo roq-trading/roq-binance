@@ -499,5 +499,6 @@ OrderEntry &Gateway::OrderEntryRR::get_next() {
   }
   throw server::oms::NotReady{"get_next"sv};
 }
+
 }  // namespace binance
 }  // namespace roq
