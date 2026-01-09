@@ -736,6 +736,7 @@ void OrderEntryPortfolio::new_order_ack(Trace<web::rest::Response> const &event,
           .text = text,
           .version = version,
           .request_id = {},
+          .external_order_id = {},
           .quantity = NaN,
           .price = NaN,
       };
@@ -780,6 +781,7 @@ void OrderEntryPortfolio::operator()(Trace<json::NewOrder> const &event, uint8_t
       .text = {},
       .version = version,
       .request_id = {},
+      .external_order_id = {},
       .quantity = NaN,
       .price = NaN,
   };
@@ -867,6 +869,7 @@ void OrderEntryPortfolio::cancel_order_ack(Trace<web::rest::Response> const &eve
           .text = text,
           .version = version,
           .request_id = {},
+          .external_order_id = {},
           .quantity = NaN,
           .price = NaN,
       };
@@ -894,6 +897,7 @@ void OrderEntryPortfolio::operator()(Trace<json::CancelOrder> const &event, uint
       .text = {},
       .version = version,
       .request_id = {},
+      .external_order_id = {},
       .quantity = NaN,
       .price = NaN,
   };
