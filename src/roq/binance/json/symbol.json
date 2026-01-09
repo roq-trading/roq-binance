@@ -98,6 +98,10 @@
     {
       "name": "pegInstructionsAllowed",
       "type": "std/bool"
+    },
+    {
+      "name": "opoAllowed",
+      "type": "std/bool"
     }
   ]
 }
