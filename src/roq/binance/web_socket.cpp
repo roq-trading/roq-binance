@@ -656,11 +656,11 @@ void WebSocket::operator()(Trace<json::WSAPISessionLogon> const &event) {
     auto &[trace_info, session_logon] = event;
     log::info<2>("session_logon={}"sv, session_logon);
     if (session_logon.status == 200) {
-      auto &result = session_logon.result;
+      [[maybe_unused]] auto &result = session_logon.result;
       download_.check_relaxed(STATE);
     } else {
       // XXX FIXME TODO review
-      auto error = json::guess_error(session_logon.error.code);
+      [[maybe_unused]] auto error = json::guess_error(session_logon.error.code);
       log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, session_logon.error);
       if (download_.downloading()) {
         download_.retry(STATE);
@@ -679,7 +679,7 @@ void WebSocket::operator()(Trace<json::WSAPIUserDataStreamSubscribe> const &even
       download_.check_relaxed(STATE);
     } else {
       // XXX FIXME TODO review
-      auto error = json::guess_error(user_data_stream_subscribe.error.code);
+      [[maybe_unused]] auto error = json::guess_error(user_data_stream_subscribe.error.code);
       log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, user_data_stream_subscribe.error);
       if (download_.downloading()) {
         download_.retry(STATE);
