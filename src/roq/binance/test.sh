@@ -18,7 +18,7 @@ DOWNLOAD_SYMBOLS="BTCUSDT,ETHUSDT"
 
 WS_API=true
 
-$PREFIX ./roq-binance \
+$PREFIX ./roq-binance-2 \
   --name "$NAME" \
   --config_file "$CONFIG_FILE" \
   --flagfile "$FLAGFILE" \

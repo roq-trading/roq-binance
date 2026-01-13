@@ -1,4 +1,4 @@
-.. _roq-binance:
+.. _roq-binance-2:
 
 .. |dagger| unicode:: U+2020
 .. |double-dagger| unicode:: U+2021
@@ -13,8 +13,8 @@
 .. |footnote-3| unicode:: U+2778
 
 
-roq-binance
-===========
+roq-binance-2
+=============
 
 .. tab:: Unstable
 
@@ -22,7 +22,7 @@ roq-binance
 
      $ conda install \
            --channel https://roq-trading.com/conda/unstable \
-           roq-binance
+           roq-binance-2
 
 .. tab:: Stable
 
@@ -30,7 +30,7 @@ roq-binance
 
      $ conda install \
            --channel https://roq-trading.com/conda/stable \
-           roq-binance
+           roq-binance-2
 
 
 Supports
@@ -143,17 +143,17 @@ Using
 
 .. code-block:: shell
 
-   $ roq-binance [FLAGS]
+   $ roq-binance-2 [FLAGS]
 
 
-.. _roq-binance-flags:
+.. _roq-binance-2-flags:
 
 Flags
 -----
 
 .. code-block:: shell
 
-  $ roq-binance --help
+  $ roq-binance-2 --help
 
 .. tab:: Flags
 
@@ -195,7 +195,7 @@ Environments
 
    .. code-block:: shell
 
-      $ --flagfile $CONDA_PREFIX/share/roq-binance/flags/prod/flags.cfg
+      $ --flagfile $CONDA_PREFIX/share/roq-binance-2/flags/prod/flags.cfg
 
    .. include:: flags/prod/flags.cfg
      :code: shell
@@ -204,7 +204,7 @@ Environments
 
    .. code-block:: shell
 
-      $ --flagfile $CONDA_PREFIX/share/roq-binance/flags/test/flags.cfg
+      $ --flagfile $CONDA_PREFIX/share/roq-binance-2/flags/test/flags.cfg
 
    .. include:: flags/test/flags.cfg
      :code: shell
@@ -215,7 +215,7 @@ Configuration
 
 .. code-block:: shell
 
-   $ --config_file $CONDA_PREFIX/share/roq-binance/config.toml
+   $ --config_file $CONDA_PREFIX/share/roq-binance-2/config.toml
 
 .. important::
 
