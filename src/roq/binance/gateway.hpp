@@ -16,6 +16,7 @@
 #include "roq/binance/account.hpp"
 #include "roq/binance/config.hpp"
 #include "roq/binance/drop_copy.hpp"
+#include "roq/binance/drop_copy_margin.hpp"
 #include "roq/binance/market_data.hpp"
 #include "roq/binance/order_entry.hpp"
 #include "roq/binance/request.hpp"
@@ -69,9 +70,6 @@ struct Gateway final : public server::Handler, public Rest::Handler, public Mark
 
   void operator()(OrderEntry::ListenKeyUpdate const &) override;
 
-  template <typename T>
-  void create_drop_copy_from_listen_key_update(auto &listen_key_update);
-
   void operator()(Rest::SymbolsUpdate &) override;
 
   void ensure_symbol_slices(size_t size);
@@ -103,8 +101,9 @@ struct Gateway final : public server::Handler, public Rest::Handler, public Mark
   std::vector<std::unique_ptr<MarketData>> market_data_1_, market_data_2_;
   utils::unordered_map<std::string, Request> request_;
   utils::unordered_map<std::string, std::unique_ptr<OrderEntry>> order_entry_;
-  utils::unordered_map<std::string, std::unique_ptr<OrderEntry>> order_entry_margin_;
   utils::unordered_map<std::string, std::unique_ptr<DropCopy>> drop_copy_;
+  utils::unordered_map<std::string, std::unique_ptr<OrderEntry>> order_entry_margin_;
+  utils::unordered_map<std::string, std::unique_ptr<DropCopyMargin>> drop_copy_margin_;
   // cache
   std::vector<MBPUpdate> bids_, asks_;
 };

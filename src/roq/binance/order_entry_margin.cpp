@@ -322,10 +322,8 @@ uint32_t OrderEntryMargin::download(OrderEntryState state) {
       assert(false);
       break;
     case LISTEN_KEY:
-      // XXX HANS only master
-      // get_listen_key(MarginMode::UNDEFINED);
-      // return 1;
-      return 0;
+      get_listen_key(MarginMode::CROSS);  // note! isolated requires the symbol... don't know how to
+      return 1;
     case DONE:
       (*this)(ConnectionStatus::READY);
       assert(!ready_);
@@ -1267,7 +1265,7 @@ void OrderEntryMargin::cancel_all_open_orders(Event<CancelAllOrders> const &even
           switch (margin_mode) {
             using enum MarginMode;
             case UNDEFINED:
-              return shared_.api.sapi.margin_open_orders;  // XXX FIXME TODO maybe fail
+              throw server::oms::Rejected{Origin::GATEWAY, Error::INVALID_MARGIN_MODE, "internal error"sv};
             case ISOLATED:
             case CROSS:
               return shared_.api.sapi.margin_open_orders;
@@ -1297,7 +1295,6 @@ void OrderEntryMargin::cancel_all_open_orders(Event<CancelAllOrders> const &even
         };
         (*connection_)(request_id, request, callback);
       };
-      helper(MarginMode::UNDEFINED);
       helper(MarginMode::ISOLATED);
       helper(MarginMode::CROSS);
       send_ack(symbol);
@@ -1340,6 +1337,7 @@ void OrderEntryMargin::cancel_all_open_orders_ack(Trace<web::rest::Response> con
       send_ack(RequestStatus::REJECTED, error, text);
     };
     auto handle_success = [&](auto &body) {
+      log::warn(R"(DEBUG body="{}")"sv, body);
       json::CancelAllOpenOrders cancel_all_open_orders{body, decode_buffer_};
       Trace event_2{event, cancel_all_open_orders};
       (*this)(event_2);

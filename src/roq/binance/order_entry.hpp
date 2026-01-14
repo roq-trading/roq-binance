@@ -37,15 +37,11 @@ struct OrderEntry {
 
   virtual ~OrderEntry() = default;
 
-  // virtual bool ready() const = 0;
-
   virtual void operator()(Event<Start> const &) = 0;
   virtual void operator()(Event<Stop> const &) = 0;
   virtual void operator()(Event<Timer> const &) = 0;
 
   virtual void operator()(metrics::Writer &) const = 0;
-
-  // virtual void operator()(Event<Disconnected> const &) = 0;
 
   virtual uint16_t operator()(Event<CreateOrder> const &, server::oms::Order const &, std::string_view const &request_id) = 0;
   virtual uint16_t operator()(

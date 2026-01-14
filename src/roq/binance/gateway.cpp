@@ -182,35 +182,40 @@ void Gateway::operator()(Trace<FundsUpdate> const &event, bool is_last) {
 }
 
 void Gateway::operator()(OrderEntry::ListenKeyUpdate const &listen_key_update) {
+  log::warn("DEBUG margin_mode={}, listen_key={}"sv, listen_key_update.margin_mode, listen_key_update.listen_key);
   switch (listen_key_update.margin_mode) {
     using enum MarginMode;
     case UNDEFINED:
-    case ISOLATED:
-    case CROSS:
       log::fatal("Unexpected"sv);
+    case ISOLATED:
+    case CROSS: {
+      auto &instance = drop_copy_margin_[listen_key_update.account];
+      if (!instance) {
+        log::info(R"(Create drop-copy (user-stream) for account="{}", margin_mode={})"sv, listen_key_update.account, listen_key_update.margin_mode);
+        auto &account_2 = get_account(listen_key_update.account);
+        auto &request = request_[listen_key_update.account];  // XXX
+        instance = std::make_unique<DropCopyMargin>(
+            *this, context_, ++stream_id_, account_2, shared_, request, listen_key_update.listen_key, listen_key_update.margin_mode);
+        MessageInfo message_info;
+        Start start;
+        create_event_and_dispatch(*instance, message_info, start);
+      }
       break;
-    case PORTFOLIO:
-      create_drop_copy_from_listen_key_update<DropCopyPortfolio>(listen_key_update);
+    }
+    case PORTFOLIO: {
+      auto &instance = drop_copy_[listen_key_update.account];
+      if (!instance) {
+        log::info(R"(Create drop-copy (user-stream) for account="{}", margin_mode={})"sv, listen_key_update.account, listen_key_update.margin_mode);
+        auto &account_2 = get_account(listen_key_update.account);
+        auto &request = request_[listen_key_update.account];
+        instance = std::make_unique<DropCopyPortfolio>(
+            *this, context_, ++stream_id_, account_2, shared_, request, listen_key_update.listen_key, listen_key_update.margin_mode);
+        MessageInfo message_info;
+        Start start;
+        create_event_and_dispatch(*instance, message_info, start);
+      }
       break;
-  }
-}
-
-template <typename T>
-void Gateway::create_drop_copy_from_listen_key_update(auto &listen_key_update) {
-  auto iter_1 = drop_copy_.find(listen_key_update.account);
-  if (iter_1 == std::end(drop_copy_)) {
-    log::fatal(R"(Unexpected: account="{}")"sv, listen_key_update.account);
-  }
-  auto &instance = (*iter_1).second;
-  if (instance == nullptr) {
-    log::info(R"(Create drop-copy (user-stream) for account="{}", margin_mode={})"sv, listen_key_update.account, listen_key_update.margin_mode);
-    auto &account_2 = get_account(listen_key_update.account);
-    auto &request = request_[listen_key_update.account];
-    auto obj = std::make_unique<T>(*this, context_, ++stream_id_, account_2, shared_, request, listen_key_update.listen_key, listen_key_update.margin_mode);
-    MessageInfo message_info;
-    Start start;
-    create_event_and_dispatch(*obj, message_info, start);
-    instance = std::move(obj);
+    }
   }
 }
 
@@ -313,10 +318,13 @@ void Gateway::dispatch_helper(auto &self, Args &&...args) {
   for (auto &[_, item] : self.order_entry_) {
     helper(*item);
   }
+  for (auto &[_, item] : self.drop_copy_) {
+    helper(*item);
+  }
   for (auto &[_, item] : self.order_entry_margin_) {
     helper(*item);
   }
-  for (auto &[_, item] : self.drop_copy_) {
+  for (auto &[_, item] : self.drop_copy_margin_) {
     helper(*item);
   }
 }
