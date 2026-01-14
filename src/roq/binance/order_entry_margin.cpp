@@ -54,11 +54,11 @@ auto create_name(auto stream_id, auto &account) {
   return fmt::format("{}:{}:{}"sv, stream_id, NAME, account);
 }
 
-auto create_connection(auto &handler, auto &settings, auto &context, auto &interface) {
+auto create_connection(auto &handler, auto &settings, auto &context) {
   auto uri = settings.rest.uri;
   auto config = web::rest::Client::Config{
       // connection
-      .interface = interface,
+      .interface = {},
       .proxy = settings.rest.proxy,
       .uris = {&uri, 1},
       .host = settings.rest.host,
@@ -115,17 +115,8 @@ auto get_retry_after(auto &response) {
 
 // === IMPLEMENTATION ===
 
-OrderEntryMargin::OrderEntryMargin(
-    OrderEntry::Handler &handler,
-    io::Context &context,
-    uint16_t stream_id,
-    Account &account,
-    Shared &shared,
-    Request &request,
-    bool master,
-    std::string_view const &interface)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)}, master_{master},
-      connection_{create_connection(*this, shared.settings, context, interface)},
+OrderEntryMargin::OrderEntryMargin(OrderEntry::Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared, Request &request)
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)}, connection_{create_connection(*this, shared.settings, context)},
       decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -167,7 +158,8 @@ void OrderEntryMargin::operator()(Event<Timer> const &event) {
   auto &[message_info, timer] = event;
   (*connection_).refresh(timer.now);
   refresh_listen_key(timer.now);
-  if (master_ && ready() && !downloading()) {
+  // XXX HANS only master
+  if (ready() && !downloading()) {
     // spot
     if (!downloading() && request_.respond_account < request_.request_account) {
       get_account({});
@@ -330,12 +322,10 @@ uint32_t OrderEntryMargin::download(OrderEntryState state) {
       assert(false);
       break;
     case LISTEN_KEY:
-      if (master_) {
-        get_listen_key(MarginMode::UNDEFINED);
-        return 1;
-      } else {
-        return 0;
-      }
+      // XXX HANS only master
+      // get_listen_key(MarginMode::UNDEFINED);
+      // return 1;
+      return 0;
     case DONE:
       (*this)(ConnectionStatus::READY);
       assert(!ready_);

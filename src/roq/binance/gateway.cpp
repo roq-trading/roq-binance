@@ -13,6 +13,7 @@
 #include "roq/server/oms/exceptions.hpp"
 
 #include "roq/binance/drop_copy_portfolio.hpp"
+#include "roq/binance/order_entry_margin.hpp"
 #include "roq/binance/order_entry_portfolio.hpp"
 #include "roq/binance/web_socket.hpp"
 
@@ -71,6 +72,18 @@ R create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &accoun
   }
   return result;
 }
+
+template <typename R>
+R create_order_entry_margin(auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared, auto &request) {
+  using result_type = std::remove_cvref_t<R>;
+  result_type result;
+  for (auto &[_, item] : accounts) {
+    auto &account = *item;
+    auto order_entry = std::make_unique<OrderEntryMargin>(gateway, context, ++stream_id, account, shared, request[account.name]);
+    result.try_emplace(account.name, std::move(order_entry));
+  }
+  return result;
+}
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -78,7 +91,8 @@ R create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &accoun
 Gateway::Gateway(server::Dispatcher &dispatcher, Settings const &settings, Config const &config, io::Context &context)
     : dispatcher_{dispatcher}, accounts_(create_accounts<decltype(accounts_)>(config)), context_{context}, shared_{dispatcher, settings, config},
       rest_{*this, context_, ++stream_id_, shared_}, request_{create_request<decltype(request_)>(config)},
-      order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_, request_)} {
+      order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_, request_)},
+      order_entry_margin_{create_order_entry_margin<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_, request_)} {
   if (settings.rest.cancel_on_disconnect) {
     log::fatal("Exchange does *NOT* support cancel on disconnect"sv);
   }
@@ -215,7 +229,7 @@ void Gateway::ensure_symbol_slices(size_t size) {
   auto helper = [&](auto &container, auto priority) {
     auto stream_id = ++stream_id_;
     auto index = std::size(container);
-    log::info("Create MarketData (stream_id={}, priority={}, index={}))"sv, stream_id, priority, index);
+    log::info("Create MarketData (stream_id={}, priority={}, index={})"sv, stream_id, priority, index);
     auto market_data = std::make_unique<MarketData>(*this, context_, stream_id, priority, shared_, index);
     MessageInfo message_info;
     Start start;
@@ -236,7 +250,7 @@ void Gateway::ensure_symbol_slices(size_t size) {
 uint16_t Gateway::operator()(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
   auto &[message_info, create_order] = event;
   assert(!std::empty(create_order.account));
-  return get_order_entry(create_order.account)(event, order, request_id);
+  return get_order_entry(create_order.account, create_order.margin_mode)(event, order, request_id);
 }
 
 uint16_t Gateway::operator()(
@@ -244,7 +258,7 @@ uint16_t Gateway::operator()(
   auto &[message_info, modify_order] = event;
   assert(!std::empty(modify_order.account));
   assert(modify_order.account == order.account);
-  return get_order_entry(modify_order.account)(event, order, request_id, previous_request_id);
+  return get_order_entry(modify_order.account, order.margin_mode)(event, order, request_id, previous_request_id);
 }
 
 uint16_t Gateway::operator()(
@@ -252,13 +266,14 @@ uint16_t Gateway::operator()(
   auto &[message_info, cancel_order] = event;
   assert(!std::empty(cancel_order.account));
   assert(cancel_order.account == order.account);
-  return get_order_entry(cancel_order.account)(event, order, request_id, previous_request_id);
+  return get_order_entry(cancel_order.account, order.margin_mode)(event, order, request_id, previous_request_id);
 }
 
 uint16_t Gateway::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
   auto &[message_info, cancel_all_orders] = event;
   assert(!std::empty(cancel_all_orders.account));
-  return get_order_entry(cancel_all_orders.account)(event, request_id);
+  auto &account = get_account(cancel_all_orders.account);
+  return get_order_entry(cancel_all_orders.account, account.margin_mode)(event, request_id);
 }
 
 uint16_t Gateway::operator()(Event<MassQuote> const &) {
@@ -291,6 +306,9 @@ void Gateway::dispatch_helper(auto &self, Args &&...args) {
   for (auto &[_, item] : self.order_entry_) {
     helper(*item);
   }
+  for (auto &[_, item] : self.order_entry_margin_) {
+    helper(*item);
+  }
   for (auto &[_, item] : self.drop_copy_) {
     helper(*item);
   }
@@ -304,12 +322,25 @@ Account &Gateway::get_account(std::string_view const &account) {
   return *(*iter).second;
 }
 
-OrderEntry &Gateway::get_order_entry(std::string_view const &account) {
-  auto iter = order_entry_.find(account);
-  if (iter == std::end(order_entry_)) [[unlikely]] {
-    throw RuntimeError{R"(Unknown account="{}")"sv, account};
+OrderEntry &Gateway::get_order_entry(std::string_view const &account, MarginMode margin_mode) {
+  auto helper = [&](auto &lookup) -> OrderEntry & {
+    auto iter = lookup.find(account);
+    if (iter == std::end(lookup)) [[unlikely]] {
+      throw RuntimeError{R"(Unknown account="{}")"sv, account};
+    }
+    return *(*iter).second;
+  };
+  switch (margin_mode) {
+    using enum MarginMode;
+    case UNDEFINED:
+    case ISOLATED:
+      break;
+    case CROSS:
+      return helper(order_entry_margin_);
+    case PORTFOLIO:
+      break;
   }
-  return *(*iter).second;
+  return helper(order_entry_);
 }
 
 }  // namespace binance

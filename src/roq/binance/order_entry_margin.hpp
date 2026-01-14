@@ -47,8 +47,7 @@ namespace roq {
 namespace binance {
 
 struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Handler {
-  OrderEntryMargin(
-      OrderEntry::Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, bool master = true, std::string_view const &interface = {});
+  OrderEntryMargin(OrderEntry::Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &);
 
   void operator()(Event<Start> const &) override;
   void operator()(Event<Stop> const &) override;
@@ -134,7 +133,6 @@ struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Han
   // config
   uint16_t const stream_id_;
   std::string const name_;
-  bool const master_;
   // connection
   std::unique_ptr<web::rest::Client> connection_;
   // buffers

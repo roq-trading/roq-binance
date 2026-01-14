@@ -86,7 +86,7 @@ struct Gateway final : public server::Handler, public Rest::Handler, public Mark
 
   Account &get_account(std::string_view const &account);
 
-  OrderEntry &get_order_entry(std::string_view const &account);
+  OrderEntry &get_order_entry(std::string_view const &account, MarginMode);
 
  private:
   server::Dispatcher &dispatcher_;
@@ -103,6 +103,7 @@ struct Gateway final : public server::Handler, public Rest::Handler, public Mark
   std::vector<std::unique_ptr<MarketData>> market_data_1_, market_data_2_;
   utils::unordered_map<std::string, Request> request_;
   utils::unordered_map<std::string, std::unique_ptr<OrderEntry>> order_entry_;
+  utils::unordered_map<std::string, std::unique_ptr<OrderEntry>> order_entry_margin_;
   utils::unordered_map<std::string, std::unique_ptr<DropCopy>> drop_copy_;
   // cache
   std::vector<MBPUpdate> bids_, asks_;
