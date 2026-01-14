@@ -75,6 +75,10 @@
     {
       "name": "origQuoteOrderQty",
       "type": "std/double"
+    },
+    {
+      "name": "isIsolated",
+      "type": "std/bool"
     }
   ]
 }

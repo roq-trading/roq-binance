@@ -20,7 +20,7 @@ namespace binance {
 namespace tools {
 
 struct Crypto final {
-  Crypto(std::string_view const &key, std::string_view const &secret, MarginMode);
+  Crypto(std::string_view const &key, std::string_view const &secret, MarginMode, std::string_view const &key_2, std::string_view const &secret_2);
 
   Crypto(Crypto &&) = delete;
   Crypto(Crypto const &) = delete;
@@ -36,7 +36,7 @@ struct Crypto final {
   // classic
 
   static constexpr auto const QUERY_BUFFER_LENGTH = 128uz;  // note! expected length == 99
-                                                            //
+
   std::string_view create_rest_signature(std::span<std::byte> const &buffer, std::chrono::milliseconds now_utc);
 
   std::string_view create_rest_signature_body(std::span<std::byte> const &buffer, std::chrono::milliseconds now_utc, std::string_view const &body);

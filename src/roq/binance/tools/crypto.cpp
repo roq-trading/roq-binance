@@ -41,20 +41,27 @@ auto create_ed25519(auto &secret, auto margin_mode) {
 }
 
 template <typename R>
-auto create_hmac_sha256(auto &secret, auto margin_mode) {
+auto create_mac(auto &secret, auto margin_mode, auto &secret_2) {
   using result_type = std::remove_cvref_t<R>;
   if (margin_mode == MarginMode::PORTFOLIO) {
+    if (!std::empty(secret_2)) {
+      log::fatal("Unexpected: secret_2 is now allowed in PORTFOLIO mode"sv);
+    }
     return result_type{secret};
   }
-  return result_type{};
+  return result_type::create(std::empty(secret_2) ? secret : secret_2, false);
 }
 }  // namespace
 
 // === IMPLEMENTATION ===
 
-Crypto::Crypto(std::string_view const &key, std::string_view const &secret, MarginMode margin_mode)
-    : key_{key}, headers_{create_headers_helper(key_)}, pkey_{create_ed25519<decltype(pkey_)>(secret, margin_mode)},
-      mac_{create_hmac_sha256<decltype(mac_)>(secret, margin_mode)} {
+Crypto::Crypto(
+    std::string_view const &key, std::string_view const &secret, MarginMode margin_mode, std::string_view const &key_2, std::string_view const &secret_2)
+    : key_{key}, headers_{create_headers_helper(std::empty(key_2) ? key : key_2)}, pkey_{create_ed25519<decltype(pkey_)>(secret, margin_mode)},
+      mac_{create_mac<decltype(mac_)>(secret, margin_mode, secret_2)} {
+  if (std::empty(pkey_) && std::empty(mac_)) {
+    log::fatal("The secret must be valid ED25519 or HMAC_SHA256"sv);
+  }
 }
 
 // ed25519

@@ -35,6 +35,8 @@ struct Config final : public server::config::Dispatcher, public server::config::
 
   std::string const &get_api_key(Account const &) const;
   std::string const &get_secret(Account const &) const;
+  std::string const &get_api_key_2(Account const &) const;
+  std::string const &get_secret_2(Account const &) const;
 
  protected:
   // server::config::Dispatcher

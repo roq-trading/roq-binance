@@ -84,6 +84,22 @@ std::string const &Config::get_secret(Account const &account) const {
   return (*iter).second.secret;
 }
 
+std::string const &Config::get_api_key_2(Account const &account) const {
+  auto iter = accounts.find(static_cast<std::string_view>(account));
+  if (iter == std::end(accounts)) {
+    log::fatal(R"(Unknown account="{}")"sv, account);
+  }
+  return (*iter).second.login_2;
+}
+
+std::string const &Config::get_secret_2(Account const &account) const {
+  auto iter = accounts.find(static_cast<std::string_view>(account));
+  if (iter == std::end(accounts)) {
+    log::fatal(R"(Unknown account="{}")"sv, account);
+  }
+  return (*iter).second.secret_2;
+}
+
 void Config::dispatch(server::config::Handler &handler) const {
   handler(exchange_);
   handler(symbols);

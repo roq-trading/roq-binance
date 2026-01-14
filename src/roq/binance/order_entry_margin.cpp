@@ -986,6 +986,7 @@ void OrderEntryMargin::new_order(Event<CreateOrder> const &event, server::oms::O
         .body = body,
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
+    log::warn("DEBUG request={}"sv, request);
     auto callback = [this, user_id = message_info.source, order_id = create_order.order_id]([[maybe_unused]] auto &request_id, auto &response) {
       uint32_t version = 1;
       TraceInfo trace_info;

@@ -29,7 +29,9 @@ auto create_crypto(auto &config, auto &name, auto margin_mode) {
   if (!ready) {
     log::fatal("Invalid config"sv);
   }
-  return result_type{key, secret, margin_mode};
+  auto key_2 = config.get_api_key_2(name);
+  auto secret_2 = config.get_secret_2(name);
+  return result_type{key, secret, margin_mode, key_2, secret_2};
 }
 }  // namespace
 
