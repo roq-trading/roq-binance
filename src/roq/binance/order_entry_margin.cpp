@@ -1016,6 +1016,7 @@ void OrderEntryMargin::new_order_ack(Trace<web::rest::Response> const &event, ui
       (*this)(event_2, user_id, order_id);
     };
     auto handle_success = [&](auto &body) {
+      log::warn(R"(DEBUG body="{}")"sv, body);
       json::NewOrder new_order{body, decode_buffer_};
       Trace event_2{event, new_order};
       (*this)(event_2, user_id, order_id, version);
@@ -1027,6 +1028,7 @@ void OrderEntryMargin::new_order_ack(Trace<web::rest::Response> const &event, ui
 void OrderEntryMargin::operator()(Trace<json::NewOrder> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
   auto &[trace_info, new_order] = event;
   log::info<2>("new_order={}, user_id={}, order_id={}, version={}"sv, new_order, user_id, order_id, version);
+  auto margin_mode = new_order.is_isolated ? MarginMode::ISOLATED : MarginMode::CROSS;
   auto external_order_id = fmt::format("{}"sv, new_order.order_id);  // alloc
   auto order_status = map(new_order.status).template get<OrderStatus>();
   // LIMIT_MAKER orders do not return any order state + we only end up here if we receive HTTP status OK
@@ -1063,7 +1065,7 @@ void OrderEntryMargin::operator()(Trace<json::NewOrder> const &event, uint8_t us
       .symbol = new_order.symbol,
       .side = map(new_order.side),
       .position_effect = {},
-      .margin_mode = {},
+      .margin_mode = margin_mode,
       .max_show_quantity = NaN,
       .order_type = map(new_order.type),
       .time_in_force = map(new_order.time_in_force),
@@ -1162,6 +1164,7 @@ void OrderEntryMargin::cancel_order_ack(Trace<web::rest::Response> const &event,
       (*this)(event_2, user_id, order_id);
     };
     auto handle_success = [&](auto &body) {
+      log::warn(R"(DEBUG body="{}")"sv, body);
       json::CancelOrder cancel_order{body};
       Trace event_2{event, cancel_order};
       (*this)(event_2, user_id, order_id, version);
@@ -1173,6 +1176,7 @@ void OrderEntryMargin::cancel_order_ack(Trace<web::rest::Response> const &event,
 void OrderEntryMargin::operator()(Trace<json::CancelOrder> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
   auto &[trace_info, cancel_order] = event;
   log::info<2>("cancel_order={}, user_id={}, order_id={}, version={}"sv, cancel_order, user_id, order_id, version);
+  auto margin_mode = cancel_order.is_isolated ? MarginMode::ISOLATED : MarginMode::CROSS;
   auto external_order_id = fmt::format("{}"sv, cancel_order.order_id);  // alloc
   auto response = server::oms::Response{
       .request_type = RequestType::CANCEL_ORDER,
@@ -1192,7 +1196,7 @@ void OrderEntryMargin::operator()(Trace<json::CancelOrder> const &event, uint8_t
       .symbol = cancel_order.symbol,
       .side = map(cancel_order.side),
       .position_effect = {},
-      .margin_mode = {},
+      .margin_mode = margin_mode,
       .max_show_quantity = NaN,
       .order_type = map(cancel_order.type),
       .time_in_force = map(cancel_order.time_in_force),

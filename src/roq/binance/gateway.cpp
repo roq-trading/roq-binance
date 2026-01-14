@@ -272,8 +272,15 @@ uint16_t Gateway::operator()(
 uint16_t Gateway::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
   auto &[message_info, cancel_all_orders] = event;
   assert(!std::empty(cancel_all_orders.account));
-  auto &account = get_account(cancel_all_orders.account);
-  return get_order_entry(cancel_all_orders.account, account.margin_mode)(event, request_id);
+  auto helper = [&](auto &lookup) {
+    auto iter = lookup.find(cancel_all_orders.account);
+    if (iter != std::end(lookup)) {
+      (*(*iter).second)(event, request_id);
+    }
+  };
+  helper(order_entry_);
+  helper(order_entry_margin_);
+  return {};
 }
 
 uint16_t Gateway::operator()(Event<MassQuote> const &) {
@@ -333,8 +340,8 @@ OrderEntry &Gateway::get_order_entry(std::string_view const &account, MarginMode
   switch (margin_mode) {
     using enum MarginMode;
     case UNDEFINED:
-    case ISOLATED:
       break;
+    case ISOLATED:
     case CROSS:
       return helper(order_entry_margin_);
     case PORTFOLIO:
