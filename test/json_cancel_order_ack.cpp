@@ -3,9 +3,8 @@
 #include <catch2/catch_all.hpp>
 
 #include "roq/core/json/buffer_stack.hpp"
-#include "roq/core/json/parser.hpp"
 
-#include "roq/binance/json/cancel_order.hpp"
+#include "roq/binance/json/cancel_order_ack.hpp"
 
 using namespace roq;
 using namespace roq::binance;
@@ -15,9 +14,9 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::CancelOrder;
+using value_type = json::CancelOrderAck;
 
-TEST_CASE("cross", "[json_cancel_order]") {
+TEST_CASE("cross", "[json_cancel_order_ack]") {
   auto message = R"({)"
                  R"("orderId":"55329759393",)"
                  R"("symbol":"BTCUSDT",)"

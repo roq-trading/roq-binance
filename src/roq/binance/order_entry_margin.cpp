@@ -383,7 +383,7 @@ void OrderEntryMargin::get_listen_key_ack(Trace<web::rest::Response> const &even
       }
     };
     auto handle_success = [&](auto &body) {
-      json::ListenKey listen_key{body};
+      json::ListenKeyAck listen_key{body};
       Trace event_2{event, listen_key};
       (*this)(event_2, margin_mode);
       switch (margin_mode) {
@@ -406,17 +406,17 @@ void OrderEntryMargin::get_listen_key_ack(Trace<web::rest::Response> const &even
   });
 }
 
-void OrderEntryMargin::operator()(Trace<json::ListenKey> const &event, MarginMode margin_mode) {
-  auto &[trace_info, listen_key] = event;
-  log::info<2>("listen_key={}"sv, listen_key);
+void OrderEntryMargin::operator()(Trace<json::ListenKeyAck> const &event, MarginMode margin_mode) {
+  auto &[trace_info, listen_key_ack] = event;
+  log::info<2>("listen_key_ack={}"sv, listen_key_ack);
   auto dispatch = [&](auto initial) {
     if (initial) {
-      log::warn(R"(DEBUG Listen key has been acquired (margin_mode={}, value="{}"))"sv, margin_mode, listen_key.listen_key);
-      log::info<1>(R"(Listen key has been acquired (margin_mode={}, value="{}"))"sv, margin_mode, listen_key.listen_key);
+      log::warn(R"(DEBUG Listen key has been acquired (margin_mode={}, value="{}"))"sv, margin_mode, listen_key_ack.listen_key);
+      log::info<1>(R"(Listen key has been acquired (margin_mode={}, value="{}"))"sv, margin_mode, listen_key_ack.listen_key);
       auto listen_key_update = ListenKeyUpdate{
           .account = account_.name,
           .margin_mode = margin_mode,
-          .listen_key = listen_key.listen_key,
+          .listen_key = listen_key_ack.listen_key,
       };
       create_trace_and_dispatch(handler_, trace_info, listen_key_update);
     } else {
@@ -425,7 +425,7 @@ void OrderEntryMargin::operator()(Trace<json::ListenKey> const &event, MarginMod
   };
   auto update_spot = [&]() {
     bool initial = std::empty(listen_key_);
-    if (utils::update(listen_key_, listen_key.listen_key)) {
+    if (utils::update(listen_key_, listen_key_ack.listen_key)) {
       dispatch(initial);
     }
     auto now = clock::get_system();
@@ -433,7 +433,7 @@ void OrderEntryMargin::operator()(Trace<json::ListenKey> const &event, MarginMod
   };
   auto update_margin_cross = [&]() {
     bool initial = std::empty(listen_key_cross_);
-    if (utils::update(listen_key_cross_, listen_key.listen_key)) {
+    if (utils::update(listen_key_cross_, listen_key_ack.listen_key)) {
       dispatch(initial);
     }
     auto now = clock::get_system();
@@ -524,8 +524,8 @@ void OrderEntryMargin::get_account_ack(Trace<web::rest::Response> const &event, 
       switch (margin_mode) {
         using enum MarginMode;
         case UNDEFINED: {
-          json::Account account{body, decode_buffer_};
-          Trace event_2{event, account};
+          json::AccountAck account_ack{body, decode_buffer_};
+          Trace event_2{event, account_ack};
           (*this)(event_2, margin_mode);
           request_.respond_account = clock::get_system();  // completion
           download_account_ = false;
@@ -549,10 +549,10 @@ void OrderEntryMargin::get_account_ack(Trace<web::rest::Response> const &event, 
   });
 }
 
-void OrderEntryMargin::operator()(Trace<json::Account> const &event, MarginMode margin_mode) {
-  auto &[trace_info, account] = event;
-  log::info<2>("account={}"sv, account);
-  for (auto &item : account.balances) {
+void OrderEntryMargin::operator()(Trace<json::AccountAck> const &event, MarginMode margin_mode) {
+  auto &[trace_info, account_ack] = event;
+  log::info<2>("account_ack={}"sv, account_ack);
+  for (auto &item : account_ack.balances) {
     auto funds_update = FundsUpdate{
         .stream_id = stream_id_,
         .account = account_.name,
@@ -563,8 +563,8 @@ void OrderEntryMargin::operator()(Trace<json::Account> const &event, MarginMode 
         .borrowed = NaN,
         .external_account = {},
         .update_type = UpdateType::SNAPSHOT,
-        .exchange_time_utc = account.update_time,
-        .sending_time_utc = account.update_time,
+        .exchange_time_utc = account_ack.update_time,
+        .sending_time_utc = account_ack.update_time,
     };
     create_trace_and_dispatch(handler_, trace_info, funds_update, true);
   }
@@ -664,8 +664,8 @@ void OrderEntryMargin::get_open_orders_ack(Trace<web::rest::Response> const &eve
     };
     auto handle_success = [&](auto &body) {
       log::debug("body={}"sv, body);
-      json::OpenOrders open_orders{body, decode_buffer_};
-      Trace event_2{event, open_orders};
+      json::OpenOrdersAck open_orders_ack{body, decode_buffer_};
+      Trace event_2{event, open_orders_ack};
       (*this)(event_2, margin_mode);
       switch (margin_mode) {
         using enum MarginMode;
@@ -687,9 +687,9 @@ void OrderEntryMargin::get_open_orders_ack(Trace<web::rest::Response> const &eve
   });
 }
 
-void OrderEntryMargin::operator()(Trace<json::OpenOrders> const &event, MarginMode margin_mode) {
-  auto &[trace_info, open_orders] = event;
-  for (auto &order : open_orders.data) {
+void OrderEntryMargin::operator()(Trace<json::OpenOrdersAck> const &event, MarginMode margin_mode) {
+  auto &[trace_info, open_orders_ack] = event;
+  for (auto &order : open_orders_ack.data) {
     log::info<2>("order={}"sv, order);
     if (std::empty(order.client_order_id)) {
       continue;
@@ -793,8 +793,8 @@ void OrderEntryMargin::get_trades_ack(Trace<web::rest::Response> const &event, M
       }
     };
     auto handle_success = [&](auto &body) {
-      json::Trades trades{body, decode_buffer_};
-      Trace event_2{event, trades};
+      json::TradesAck trades_ack{body, decode_buffer_};
+      Trace event_2{event, trades_ack};
       (*this)(event_2, margin_mode);
       switch (margin_mode) {
         using enum MarginMode;
@@ -818,9 +818,9 @@ void OrderEntryMargin::get_trades_ack(Trace<web::rest::Response> const &event, M
   });
 }
 
-void OrderEntryMargin::operator()(Trace<json::Trades> const &event, MarginMode) {
-  auto &[trace_info, trades] = event;
-  for (auto &trade : trades.data) {
+void OrderEntryMargin::operator()(Trace<json::TradesAck> const &event, MarginMode) {
+  auto &[trace_info, trades_ack] = event;
+  for (auto &trade : trades_ack.data) {
     log::info<2>("trade={}"sv, trade);
     /*
     if (std::empty(order.client_order_id))
@@ -1015,29 +1015,29 @@ void OrderEntryMargin::new_order_ack(Trace<web::rest::Response> const &event, ui
     };
     auto handle_success = [&](auto &body) {
       log::warn(R"(DEBUG body="{}")"sv, body);
-      json::NewOrder new_order{body, decode_buffer_};
-      Trace event_2{event, new_order};
+      json::NewOrderAck new_order_ack{body, decode_buffer_};
+      Trace event_2{event, new_order_ack};
       (*this)(event_2, user_id, order_id, version);
     };
     process_response(event, handle_error, handle_success);
   });
 }
 
-void OrderEntryMargin::operator()(Trace<json::NewOrder> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
-  auto &[trace_info, new_order] = event;
-  log::info<2>("new_order={}, user_id={}, order_id={}, version={}"sv, new_order, user_id, order_id, version);
-  auto margin_mode = new_order.is_isolated ? MarginMode::ISOLATED : MarginMode::CROSS;
-  auto external_order_id = fmt::format("{}"sv, new_order.order_id);  // alloc
-  auto order_status = map(new_order.status).template get<OrderStatus>();
+void OrderEntryMargin::operator()(Trace<json::NewOrderAck> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
+  auto &[trace_info, new_order_ack] = event;
+  log::info<2>("new_order_ack={}, user_id={}, order_id={}, version={}"sv, new_order_ack, user_id, order_id, version);
+  auto margin_mode = new_order_ack.is_isolated ? MarginMode::ISOLATED : MarginMode::CROSS;
+  auto external_order_id = fmt::format("{}"sv, new_order_ack.order_id);  // alloc
+  auto order_status = map(new_order_ack.status).template get<OrderStatus>();
   // LIMIT_MAKER orders do not return any order state + we only end up here if we receive HTTP status OK
   if (order_status == OrderStatus{}) {
     order_status = OrderStatus::WORKING;
   }
-  auto remaining_quantity = new_order.orig_qty - new_order.executed_qty;
-  auto average_traded_price = utils::is_zero(new_order.executed_qty) ? NaN : (new_order.cummulative_quote_qty / new_order.executed_qty);
-  auto last_traded_quantity = 0.0;  // note! could also use new_order.executed_qty
+  auto remaining_quantity = new_order_ack.orig_qty - new_order_ack.executed_qty;
+  auto average_traded_price = utils::is_zero(new_order_ack.executed_qty) ? NaN : (new_order_ack.cummulative_quote_qty / new_order_ack.executed_qty);
+  auto last_traded_quantity = 0.0;  // note! could also use new_order_ack.executed_qty
   auto tmp = 0.0;
-  for (auto &item : new_order.fills) {
+  for (auto &item : new_order_ack.fills) {
     last_traded_quantity += item.qty;
     tmp += item.price * item.qty;
   }
@@ -1060,26 +1060,26 @@ void OrderEntryMargin::operator()(Trace<json::NewOrder> const &event, uint8_t us
   auto order_update = server::oms::OrderUpdate{
       .account = account_.name,
       .exchange = shared_.settings.exchange,
-      .symbol = new_order.symbol,
-      .side = map(new_order.side),
+      .symbol = new_order_ack.symbol,
+      .side = map(new_order_ack.side),
       .position_effect = {},
       .margin_mode = margin_mode,
       .max_show_quantity = NaN,
-      .order_type = map(new_order.type),
-      .time_in_force = map(new_order.time_in_force),
+      .order_type = map(new_order_ack.type),
+      .time_in_force = map(new_order_ack.time_in_force),
       .execution_instructions = {},
       .create_time_utc = {},
-      .update_time_utc = new_order.transact_time,
+      .update_time_utc = new_order_ack.transact_time,
       .external_account = {},
       .external_order_id = external_order_id,
       .client_order_id = {},
       .order_status = order_status,
-      .quantity = new_order.orig_qty,
-      .price = new_order.price,
+      .quantity = new_order_ack.orig_qty,
+      .price = new_order_ack.price,
       .stop_price = NaN,
       .leverage = NaN,
       .remaining_quantity = remaining_quantity,
-      .traded_quantity = new_order.executed_qty,
+      .traded_quantity = new_order_ack.executed_qty,
       .average_traded_price = average_traded_price,
       .last_traded_quantity = last_traded_quantity,
       .last_traded_price = last_traded_price,
@@ -1163,19 +1163,19 @@ void OrderEntryMargin::cancel_order_ack(Trace<web::rest::Response> const &event,
     };
     auto handle_success = [&](auto &body) {
       log::warn(R"(DEBUG body="{}")"sv, body);
-      json::CancelOrder cancel_order{body};
-      Trace event_2{event, cancel_order};
+      json::CancelOrderAck cancel_order_ack{body};
+      Trace event_2{event, cancel_order_ack};
       (*this)(event_2, user_id, order_id, version);
     };
     process_response(event, handle_error, handle_success);
   });
 }
 
-void OrderEntryMargin::operator()(Trace<json::CancelOrder> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
-  auto &[trace_info, cancel_order] = event;
-  log::info<2>("cancel_order={}, user_id={}, order_id={}, version={}"sv, cancel_order, user_id, order_id, version);
-  auto margin_mode = cancel_order.is_isolated ? MarginMode::ISOLATED : MarginMode::CROSS;
-  auto external_order_id = fmt::format("{}"sv, cancel_order.order_id);  // alloc
+void OrderEntryMargin::operator()(Trace<json::CancelOrderAck> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
+  auto &[trace_info, cancel_order_ack] = event;
+  log::info<2>("cancel_order_ack={}, user_id={}, order_id={}, version={}"sv, cancel_order_ack, user_id, order_id, version);
+  auto margin_mode = cancel_order_ack.is_isolated ? MarginMode::ISOLATED : MarginMode::CROSS;
+  auto external_order_id = fmt::format("{}"sv, cancel_order_ack.order_id);  // alloc
   auto response = server::oms::Response{
       .request_type = RequestType::CANCEL_ORDER,
       .origin = Origin::EXCHANGE,
@@ -1191,26 +1191,26 @@ void OrderEntryMargin::operator()(Trace<json::CancelOrder> const &event, uint8_t
   auto order_update = server::oms::OrderUpdate{
       .account = account_.name,
       .exchange = shared_.settings.exchange,
-      .symbol = cancel_order.symbol,
-      .side = map(cancel_order.side),
+      .symbol = cancel_order_ack.symbol,
+      .side = map(cancel_order_ack.side),
       .position_effect = {},
       .margin_mode = margin_mode,
       .max_show_quantity = NaN,
-      .order_type = map(cancel_order.type),
-      .time_in_force = map(cancel_order.time_in_force),
+      .order_type = map(cancel_order_ack.type),
+      .time_in_force = map(cancel_order_ack.time_in_force),
       .execution_instructions = {},
       .create_time_utc = {},
       .update_time_utc = {},
       .external_account = {},
       .external_order_id = external_order_id,
       .client_order_id = {},
-      .order_status = map(cancel_order.status),
-      .quantity = cancel_order.orig_qty,
-      .price = cancel_order.price,
+      .order_status = map(cancel_order_ack.status),
+      .quantity = cancel_order_ack.orig_qty,
+      .price = cancel_order_ack.price,
       .stop_price = NaN,
       .leverage = NaN,
       .remaining_quantity = NaN,
-      .traded_quantity = cancel_order.executed_qty,
+      .traded_quantity = cancel_order_ack.executed_qty,
       .average_traded_price = NaN,
       .last_traded_quantity = NaN,
       .last_traded_price = NaN,
@@ -1338,8 +1338,8 @@ void OrderEntryMargin::cancel_all_open_orders_ack(Trace<web::rest::Response> con
     };
     auto handle_success = [&](auto &body) {
       log::warn(R"(DEBUG body="{}")"sv, body);
-      json::CancelAllOpenOrders cancel_all_open_orders{body, decode_buffer_};
-      Trace event_2{event, cancel_all_open_orders};
+      json::CancelAllOpenOrdersAck cancel_all_open_orders_ack{body, decode_buffer_};
+      Trace event_2{event, cancel_all_open_orders_ack};
       (*this)(event_2);
       send_ack(RequestStatus::ACCEPTED, {}, {});
     };
@@ -1347,10 +1347,10 @@ void OrderEntryMargin::cancel_all_open_orders_ack(Trace<web::rest::Response> con
   });
 }
 
-void OrderEntryMargin::operator()(Trace<json::CancelAllOpenOrders> const &event) {
-  auto &[trace_info, cancel_all_open_orders] = event;
-  log::info<2>("cancel_all_open_orders={}"sv, cancel_all_open_orders);
-  for (auto &order : cancel_all_open_orders.data) {
+void OrderEntryMargin::operator()(Trace<json::CancelAllOpenOrdersAck> const &event) {
+  auto &[trace_info, cancel_all_open_orders_ack] = event;
+  log::info<2>("cancel_all_open_orders_ack={}"sv, cancel_all_open_orders_ack);
+  for (auto &order : cancel_all_open_orders_ack.data) {
     if (std::empty(order.client_order_id)) {
       continue;
     }

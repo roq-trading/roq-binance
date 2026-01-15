@@ -12,7 +12,7 @@
     },
     {
       "name": "data",
-      "type": "roq/binance/json/CancelReplaceOrder"
+      "type": "roq/binance/json/CancelReplaceOrderAck"
     }
   ]
 }

@@ -1,5 +1,5 @@
 {
-  "name": "roq/binance/json/Depth",
+  "name": "roq/binance/json/DepthAck",
   "type": "dictionary",
   "values": [
     {

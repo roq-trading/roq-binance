@@ -12,7 +12,7 @@
     },
     {
       "name": "result",
-      "type": "roq/binance/json/CancelOrder"
+      "type": "roq/binance/json/CancelOrderAck"
     },
     {
       "name": "error",

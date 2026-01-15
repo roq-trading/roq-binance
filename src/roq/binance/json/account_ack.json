@@ -1,5 +1,5 @@
 {
-  "name": "roq/binance/json/Account",
+  "name": "roq/binance/json/AccountAck",
   "type": "dictionary",
   "values": [
     {

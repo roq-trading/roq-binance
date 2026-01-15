@@ -12,29 +12,30 @@ set(SOURCES
 include(RoqAutogen)
 
 set(AUTOGEN_SCHEMAS
-    account.json
+    account_ack.json
     agg_trade.json
     amended_order.json
     balance2.json
     balance.json
     balances_item.json
-    balances.json
+    balances_ack.json
     balance_update.json
     book_ticker.json
-    cancel_all_open_orders.json
-    cancel_order.json
+    cancel_all_open_orders_ack.json
+    cancel_order_ack.json
     cancel_replace_mode.json
+    cancel_replace_order_ack.json
     cancel_replace_order_error.json
-    cancel_replace_order.json
     cancel_restrictions.json
     cross_margin_account.json
+    depth_ack.json
     depth_item.json
     depth.json
     depth_update.json
     error.json
     event_type.json
     exchange_filter.json
-    exchange_info.json
+    exchange_info_ack.json
     execution_report.json
     execution_type.json
     field.json
@@ -43,12 +44,12 @@ set(AUTOGEN_SCHEMAS
     filters.json
     filter_type.json
     interval.json
-    listen_key.json
+    listen_key_ack.json
     list_status_item.json
     list_status.json
     mini_ticker.json
-    new_order.json
-    open_orders.json
+    new_order_ack.json
+    open_orders_ack.json
     order_amend_keep_priority.json
     order.json
     order_status.json
@@ -67,7 +68,7 @@ set(AUTOGEN_SCHEMAS
     time_in_force.json
     trade2.json
     trade.json
-    trades.json
+    trades_ack.json
     user_asset.json
     user_stream.json
     wsapi_account.json

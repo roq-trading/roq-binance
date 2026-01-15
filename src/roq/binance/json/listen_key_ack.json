@@ -1,5 +1,5 @@
 {
-  "name": "roq/binance/json/ListenKey",
+  "name": "roq/binance/json/ListenKeyAck",
   "type": "dictionary",
   "values": [
     {

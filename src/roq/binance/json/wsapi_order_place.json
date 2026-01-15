@@ -12,7 +12,7 @@
     },
     {
       "name": "result",
-      "type": "roq/binance/json/NewOrder"
+      "type": "roq/binance/json/NewOrderAck"
     },
     {
       "name": "error",

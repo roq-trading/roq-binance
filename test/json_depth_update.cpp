@@ -2,10 +2,7 @@
 
 #include <catch2/catch_all.hpp>
 
-#include "roq/core/json/buffer_stack.hpp"
-#include "roq/core/json/parser.hpp"
-
-#include "roq/binance/json/market_stream_parser.hpp"
+#include "market_stream_parser_tester.hpp"
 
 using namespace roq;
 using namespace roq::binance;
@@ -15,7 +12,9 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("json_depth_update_simple", "[json_depth_update]") {
+using value_type = json::DepthUpdate;
+
+TEST_CASE("simple", "[json_depth_update]") {
   auto message = R"({)"
                  R"("stream":"btcusdt@depth@100ms",)"
                  R"("data":{)"
@@ -45,7 +44,8 @@ TEST_CASE("json_depth_update_simple", "[json_depth_update]") {
                  R"(["24480.31000000","0.00000000"],)"
                  R"(["24479.91000000","0.12000000"],)"
                  R"(["24478.36000000","0.00000000"],)"
-                 R"(["24478.10000000","0.02500000"]],)"
+                 R"(["24478.10000000","0.02500000"])"
+                 R"(],)"
                  R"("a":[)"
                  R"(["24489.35000000","0.02000000"],)"
                  R"(["24489.82000000","0.02000000"],)"
@@ -75,20 +75,10 @@ TEST_CASE("json_depth_update_simple", "[json_depth_update]") {
                  R"(["24562.30000000","0.02040000"])"
                  R"(])"
                  R"(})"
-                 R"(})";
-  core::json::BufferStack buffer_stack{65536, 1};
-  struct Handler : public json::MarketStreamParser::Handler {
-    size_t counter = 0;
-    void operator()(Trace<json::Error> const &, [[maybe_unused]] int64_t id) override { FAIL(); }
-    void operator()(Trace<json::Result> const &, [[maybe_unused]] int64_t id) override { FAIL(); }
-    void operator()(Trace<json::AggTrade> const &) override { FAIL(); }
-    void operator()(Trace<json::Trade> const &) override { FAIL(); }
-    void operator()(Trace<json::MiniTicker> const &) override { FAIL(); }
-    void operator()(Trace<json::BookTicker> const &) override { FAIL(); }
-    void operator()(Trace<json::Depth> const &, [[maybe_unused]] std::string_view const &symbol) override { FAIL(); }
-    void operator()(Trace<json::DepthUpdate> const &) override { ++counter; }
-  } handler;
-  TraceInfo trace_info;
-  json::MarketStreamParser::dispatch(handler, message, buffer_stack, trace_info, false);
-  CHECK(handler.counter == 1);
+                 R"(})"sv;
+  auto helper = [](value_type const &obj) {
+    CHECK(obj.event_type == "depthUpdate"sv);
+    CHECK(obj.symbol == "BTCUSDT"sv);
+  };
+  MarketStreamParserTester<value_type>::dispatch(helper, message, 65536, 1);
 }

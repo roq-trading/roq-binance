@@ -1,5 +1,5 @@
 {
-  "name": "roq/binance/json/CancelOrder",
+  "name": "roq/binance/json/CancelOrderAck",
   "type": "dictionary",
   "values": [
     {

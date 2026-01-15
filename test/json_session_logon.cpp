@@ -14,6 +14,8 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
+using value_type = json::WSAPISessionLogon;
+
 // === IMPLEMENTATION ===
 
 TEST_CASE("success", "[json_session_logon]") {
@@ -36,9 +38,14 @@ TEST_CASE("success", "[json_session_logon]") {
                        R"("count":24)"
                        R"(})"
                        R"(])"
-                       R"(})";
+                       R"(})"sv;
+  auto helper = [&](value_type &obj) {
+    CHECK(obj.id == "gYQeAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"sv);
+    CHECK(obj.status == 200);
+  };
   core::json::BufferStack buffers{8192, 1};
-  json::WSAPISessionLogon obj{message, buffers};
+  value_type obj{message, buffers};
+  helper(obj);
 }
 
 TEST_CASE("failure", "[json_session_logon]") {
@@ -57,7 +64,12 @@ TEST_CASE("failure", "[json_session_logon]") {
                        R"("count":24)"
                        R"(})"
                        R"(])"
-                       R"(})";
+                       R"(})"sv;
+  auto helper = [&](value_type &obj) {
+    CHECK(obj.id == "gYQeAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"sv);
+    CHECK(obj.status == 400);
+  };
   core::json::BufferStack buffers{8192, 1};
-  json::WSAPISessionLogon obj{message, buffers};
+  value_type obj{message, buffers};
+  helper(obj);
 }

@@ -1,5 +1,5 @@
 {
-  "name": "roq/binance/json/OpenOrders",
+  "name": "roq/binance/json/OpenOrdersAck",
   "type": "array",
   "values": [
     {

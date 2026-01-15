@@ -3,10 +3,8 @@
 #include <catch2/catch_all.hpp>
 
 #include "roq/core/json/buffer_stack.hpp"
-#include "roq/core/json/parser.hpp"
 
-#include "roq/binance/json/encoder.hpp"
-#include "roq/binance/json/new_order.hpp"
+#include "roq/binance/json/new_order_ack.hpp"
 
 using namespace roq;
 using namespace roq::binance;
@@ -16,9 +14,9 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::NewOrder;
+using value_type = json::NewOrderAck;
 
-TEST_CASE("cross", "[json_new_order]") {
+TEST_CASE("cross", "[json_new_order_ack]") {
   auto message = R"({)"
                  R"("symbol":"BTCUSDT",)"
                  R"("orderId":55329626247,)"

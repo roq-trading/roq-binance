@@ -4,23 +4,22 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/binance/json/ping.hpp"
+#include "roq/binance/json/listen_key_ack.hpp"
 
 using namespace roq;
 using namespace roq::binance;
 
 using namespace std::literals;
-using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::Ping;
+using value_type = json::ListenKeyAck;
 
-TEST_CASE("json_ping_simple", "[json_ping]") {
+TEST_CASE("simple", "[json_listen_key_ack]") {
   auto message = R"({)"
-                 R"("serverTime":1634180186435)"
+                 R"("listenKey":"F25mdh1CpogWkUK0A2F99A7hFTciD9fGiosfYoSqw8snTMDFrRt2eNWrBaI2")"
                  R"(})"sv;
-  auto helper = [&](value_type &obj) { CHECK(obj.server_time == 1634180186435ms); };
+  auto helper = [&](value_type &obj) { CHECK(obj.listen_key == "F25mdh1CpogWkUK0A2F99A7hFTciD9fGiosfYoSqw8snTMDFrRt2eNWrBaI2"sv); };
   core::json::BufferStack buffers{8192, 1};
   value_type obj{message, buffers};
   helper(obj);

@@ -3,9 +3,8 @@
 #include <catch2/catch_all.hpp>
 
 #include "roq/core/json/buffer_stack.hpp"
-#include "roq/core/json/parser.hpp"
 
-#include "roq/binance/json/exchange_info.hpp"
+#include "roq/binance/json/exchange_info_ack.hpp"
 
 using namespace roq;
 using namespace roq::binance;
@@ -15,7 +14,9 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-TEST_CASE("json_exchange_info_simple", "[json_exchange_info]") {
+using value_type = json::ExchangeInfoAck;
+
+TEST_CASE("simple", "[json_exchange_info_ack]") {
   auto message = R"({)"
                  R"("timezone":"UTC",)"
                  R"("serverTime":1634180185607,)"
@@ -102,49 +103,52 @@ TEST_CASE("json_exchange_info_simple", "[json_exchange_info]") {
                  R"("permissions":["SPOT","MARGIN"])"
                  R"(})"
                  R"(])"
-                 R"(})";
-  core::json::BufferStack buffer{65536, 2};
-  json::ExchangeInfo obj{message, buffer};
-  CHECK(obj.timezone == "UTC"sv);
-  CHECK(obj.server_time == 1634180185607ms);
-  // not parsed: rate_limits
-  // not parsed: exchange_filters
-  auto &symbols = obj.symbols;
-  REQUIRE(std::size(obj.symbols) == 2);
-  auto &symbol_0 = symbols[0];
-  CHECK(symbol_0.symbol == "ETHBTC"sv);
-  CHECK(symbol_0.status == json::SymbolStatus::TRADING);
-  CHECK(symbol_0.base_asset == "ETH"sv);
-  CHECK(symbol_0.base_asset_precision == 8);
-  CHECK(symbol_0.quote_asset == "BTC"sv);
-  CHECK(symbol_0.quote_precision == 8);
-  CHECK(symbol_0.quote_asset_precision == 8);
-  CHECK(symbol_0.base_commission_precision == 8);
-  CHECK(symbol_0.quote_commission_precision == 8);
-  // not parsed: order_type
-  CHECK(symbol_0.iceberg_allowed == true);
-  CHECK(symbol_0.oco_allowed == true);
-  CHECK(symbol_0.quote_order_qty_market_allowed == true);
-  CHECK(symbol_0.is_spot_trading_allowed == true);
-  CHECK(symbol_0.is_margin_trading_allowed == true);
-  // not parsed: filters
-  // not parsed: permissions
-  auto &symbol_1 = symbols[1];
-  CHECK(symbol_1.symbol == "LTCBTC"sv);
-  CHECK(symbol_1.status == json::SymbolStatus::TRADING);
-  CHECK(symbol_1.base_asset == "LTC"sv);
-  CHECK(symbol_1.base_asset_precision == 8);
-  CHECK(symbol_1.quote_asset == "BTC"sv);
-  CHECK(symbol_1.quote_precision == 8);
-  CHECK(symbol_1.quote_asset_precision == 8);
-  CHECK(symbol_1.base_commission_precision == 8);
-  CHECK(symbol_1.quote_commission_precision == 8);
-  // not parsed: order_type
-  CHECK(symbol_1.iceberg_allowed == true);
-  CHECK(symbol_1.oco_allowed == true);
-  CHECK(symbol_1.quote_order_qty_market_allowed == true);
-  CHECK(symbol_1.is_spot_trading_allowed == true);
-  CHECK(symbol_1.is_margin_trading_allowed == true);
-  // not parsed: filters
-  // not parsed: permissions
+                 R"(})"sv;
+  auto helper = [&](value_type &obj) {
+    CHECK(obj.timezone == "UTC"sv);
+    CHECK(obj.server_time == 1634180185607ms);
+    // not parsed: rate_limits
+    // not parsed: exchange_filters
+    auto &symbols = obj.symbols;
+    REQUIRE(std::size(obj.symbols) == 2);
+    auto &symbol_0 = symbols[0];
+    CHECK(symbol_0.symbol == "ETHBTC"sv);
+    CHECK(symbol_0.status == json::SymbolStatus::TRADING);
+    CHECK(symbol_0.base_asset == "ETH"sv);
+    CHECK(symbol_0.base_asset_precision == 8);
+    CHECK(symbol_0.quote_asset == "BTC"sv);
+    CHECK(symbol_0.quote_precision == 8);
+    CHECK(symbol_0.quote_asset_precision == 8);
+    CHECK(symbol_0.base_commission_precision == 8);
+    CHECK(symbol_0.quote_commission_precision == 8);
+    // not parsed: order_type
+    CHECK(symbol_0.iceberg_allowed == true);
+    CHECK(symbol_0.oco_allowed == true);
+    CHECK(symbol_0.quote_order_qty_market_allowed == true);
+    CHECK(symbol_0.is_spot_trading_allowed == true);
+    CHECK(symbol_0.is_margin_trading_allowed == true);
+    // not parsed: filters
+    // not parsed: permissions
+    auto &symbol_1 = symbols[1];
+    CHECK(symbol_1.symbol == "LTCBTC"sv);
+    CHECK(symbol_1.status == json::SymbolStatus::TRADING);
+    CHECK(symbol_1.base_asset == "LTC"sv);
+    CHECK(symbol_1.base_asset_precision == 8);
+    CHECK(symbol_1.quote_asset == "BTC"sv);
+    CHECK(symbol_1.quote_precision == 8);
+    CHECK(symbol_1.quote_asset_precision == 8);
+    CHECK(symbol_1.base_commission_precision == 8);
+    CHECK(symbol_1.quote_commission_precision == 8);
+    // not parsed: order_type
+    CHECK(symbol_1.iceberg_allowed == true);
+    CHECK(symbol_1.oco_allowed == true);
+    CHECK(symbol_1.quote_order_qty_market_allowed == true);
+    CHECK(symbol_1.is_spot_trading_allowed == true);
+    CHECK(symbol_1.is_margin_trading_allowed == true);
+    // not parsed: filters
+    // not parsed: permissions
+  };
+  core::json::BufferStack buffers{65536, 2};
+  value_type obj{message, buffers};
+  helper(obj);
 }
