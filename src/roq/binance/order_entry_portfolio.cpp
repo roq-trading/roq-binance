@@ -583,7 +583,7 @@ void OrderEntryPortfolio::get_trades() {
       auto limit = shared_.settings.download.trades_limit ? shared_.settings.download.trades_limit : DOWNLOAD_TRADES_LIMIT;
       log::info<1>("Download trades: lookback={}"sv, lookback);
       auto headers = account_.get_rest_headers();
-      auto body = json::Encoder::my_trades(encode_buffer_, symbol, lookback, limit, now);
+      auto body = json::Encoder::my_trades_url(encode_buffer_, symbol, lookback, limit, now);
       auto query = account_.create_rest_signature_query(now, body);
       auto request = web::rest::Request{
           .method = web::http::Method::GET,
@@ -701,7 +701,7 @@ void OrderEntryPortfolio::new_order(Event<CreateOrder> const &event, server::oms
     auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto body =
-        json::Encoder::new_order(encode_buffer_, create_order, order, request_id, create_order_template, recv_window, shared_.api.margin_side_effect_type);
+        json::Encoder::new_order_url(encode_buffer_, create_order, order, request_id, create_order_template, recv_window, shared_.api.margin_side_effect_type);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = account_.create_rest_signature_body(now, body);
     auto headers = account_.get_rest_headers();
@@ -834,7 +834,7 @@ void OrderEntryPortfolio::cancel_order(
     auto &[message_info, cancel_order] = event;
     auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto body = json::Encoder::cancel_order(encode_buffer_, cancel_order, order, request_id, previous_request_id, cancel_order_template, recv_window);
+    auto body = json::Encoder::cancel_order_url(encode_buffer_, cancel_order, order, request_id, previous_request_id, cancel_order_template, recv_window);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = account_.create_rest_signature_body(now, body);
     auto headers = account_.get_rest_headers();
@@ -975,7 +975,7 @@ void OrderEntryPortfolio::cancel_all_open_orders(Event<CancelAllOrders> const &e
       if (!std::empty(cancel_all_orders.symbol) && symbol != cancel_all_orders.symbol) {
         continue;
       }
-      auto body = json::Encoder::cancel_all_open_orders(encode_buffer_, symbol, MarginMode::PORTFOLIO, recv_window);
+      auto body = json::Encoder::cancel_all_open_orders_url(encode_buffer_, symbol, MarginMode::PORTFOLIO, recv_window);
       auto now = clock::get_realtime<std::chrono::milliseconds>();
       auto query = account_.create_rest_signature_body(now, body);
       auto headers = account_.get_rest_headers();

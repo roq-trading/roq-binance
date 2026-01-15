@@ -12,6 +12,8 @@
 
 #include "roq/binance/json/map.hpp"
 
+#define WS_USE_FMT
+
 using namespace std::literals;
 
 namespace roq {
@@ -79,7 +81,7 @@ auto get_cancel_replace_mode(auto &cancel_order_template, bool stop_on_failure) 
 
 // wsapi
 
-std::string_view Encoder::wsapi_place_order(
+std::string_view Encoder::place_order_json(
     std::vector<char> &buffer,
     CreateOrder const &create_order,
     server::oms::Order const &order,
@@ -90,6 +92,43 @@ std::string_view Encoder::wsapi_place_order(
   auto side = map(create_order.side).template get<Side>();
   auto type = map_order_type(create_order);
   auto time_in_force = map_time_in_force(create_order);
+#if defined(WS_USE_FMT)
+  buffer.clear();
+  fmt::format_to(
+      std::back_inserter(buffer),
+      R"({{)"
+      R"("newClientOrderId":"{}",)"sv,
+      request_id);
+  if (!std::isnan(create_order.price)) {
+    fmt::format_to(std::back_inserter(buffer), R"("price":"{}",)"sv, Decimal{create_order.price, order.price_precision.precision});
+  }
+  fmt::format_to(
+      std::back_inserter(buffer),
+      R"("quantity":"{}",)"
+      R"("recvWindow":{},)"sv,
+      Decimal{create_order.quantity, order.quantity_precision.precision},
+      recv_window.count());
+  if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{}) {
+    fmt::format_to(std::back_inserter(buffer), R"("selfTradePreventionMode":"{}",)"sv, create_order_template.self_trade_prevention_mode.as_raw_text());
+  }
+  fmt::format_to(std::back_inserter(buffer), R"("side":"{}",)"sv, side.as_raw_text());
+  if (!std::isnan(create_order.stop_price)) {
+    fmt::format_to(std::back_inserter(buffer), R"("stopPrice":"{}",)"sv, Decimal{create_order.stop_price, order.price_precision.precision});
+  }
+  fmt::format_to(std::back_inserter(buffer), R"("symbol":"{}",)"sv, create_order.symbol);
+  if (time_in_force != json::TimeInForce{}) {
+    fmt::format_to(std::back_inserter(buffer), R"("timeInForce":"{}",)"sv, time_in_force.as_raw_text());
+  }
+  fmt::format_to(
+      std::back_inserter(buffer),
+      R"("timestamp":{},)"
+      R"("type":"{}")"
+      R"(}})"sv,
+      now.count(),
+      type.as_raw_text());
+  std::string_view result{std::data(buffer), std::size(buffer)};
+  return result;
+#else
   buffer.resize(512);
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
   utils::text::Writer writer{buffer_2};
@@ -115,9 +154,10 @@ std::string_view Encoder::wsapi_place_order(
   writer.write(R"(,"type":")"sv).write(type.as_raw_text()).write(R"(")"sv);
   writer.write("}"sv);
   return writer.finish();
+#endif
 }
 
-std::string_view Encoder::wsapi_amend_order_keep_priority(
+std::string_view Encoder::amend_order_keep_priority_json(
     std::vector<char> &buffer,
     roq::ModifyOrder const &modify_order,
     server::oms::Order const &order,
@@ -128,6 +168,32 @@ std::string_view Encoder::wsapi_amend_order_keep_priority(
   if (!std::isnan(modify_order.price)) {
     throw server::oms::Rejected{Origin::GATEWAY, Error::INVALID_REQUEST_ARGS, "Price not allowed"sv};
   }
+#if defined(WS_USE_FMT)
+  buffer.clear();
+  fmt::format_to(
+      std::back_inserter(buffer),
+      R"({{)"
+      R"("newClientOrderId":"{}",)"sv,
+      request_id);
+  if (!std::empty(order.external_order_id)) {
+    fmt::format_to(std::back_inserter(buffer), R"("orderId":{},)"sv, order.external_order_id);  // note! integer
+  }
+  fmt::format_to(
+      std::back_inserter(buffer),
+      R"("origClientOrderId":"{}",)"
+      R"("newQty":"{}",)"
+      R"("recvWindow":{},)"
+      R"("symbol":"{}",)"
+      R"("timestamp":{})"
+      R"(}})"sv,
+      previous_request_id,
+      Decimal{modify_order.quantity, order.quantity_precision.precision},
+      recv_window.count(),
+      order.symbol,
+      now.count());
+  std::string_view result{std::data(buffer), std::size(buffer)};
+  return result;
+#else
   buffer.resize(512);
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
   utils::text::Writer writer{buffer_2};
@@ -143,9 +209,10 @@ std::string_view Encoder::wsapi_amend_order_keep_priority(
   writer.write(R"(,"timestamp":)"sv).write(now.count());
   writer.write("}"sv);
   return writer.finish();
+#endif
 }
 
-std::string_view Encoder::wsapi_cancel_order(
+std::string_view Encoder::cancel_order_json(
     std::vector<char> &buffer,
     roq::CancelOrder const &,
     server::oms::Order const &order,
@@ -154,6 +221,30 @@ std::string_view Encoder::wsapi_cancel_order(
     CancelOrderTemplate const &cancel_order_template,
     std::chrono::milliseconds recv_window,
     std::chrono::milliseconds now) {
+#if defined(WS_USE_FMT)
+  buffer.clear();
+  fmt::format_to(std::back_inserter(buffer), R"({{)"sv);
+  if (cancel_order_template.cancel_restrictions != CancelRestrictions{}) {
+    fmt::format_to(std::back_inserter(buffer), R"("cancelRestrictions":"{}",)"sv, cancel_order_template.cancel_restrictions.as_raw_text());
+  }
+  fmt::format_to(std::back_inserter(buffer), R"("newClientOrderId":"{}",)"sv, request_id);
+  if (!std::empty(order.external_order_id)) {
+    fmt::format_to(std::back_inserter(buffer), R"("orderId":{},)"sv, order.external_order_id);  // note! integer
+  }
+  fmt::format_to(
+      std::back_inserter(buffer),
+      R"("origClientOrderId":"{}",)"
+      R"("recvWindow":{},)"
+      R"("symbol":"{}",)"
+      R"("timestamp":{})"
+      R"(}})"sv,
+      previous_request_id,
+      recv_window.count(),
+      order.symbol,
+      now.count());
+  std::string_view result{std::data(buffer), std::size(buffer)};
+  return result;
+#else
   buffer.resize(512);
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
   utils::text::Writer writer{buffer_2};
@@ -171,23 +262,38 @@ std::string_view Encoder::wsapi_cancel_order(
   writer.write(R"(,"timestamp":)"sv).write(now.count());
   writer.write("}"sv);
   return writer.finish();
+#endif
 }
 
 // sapi+papi
 
-std::string_view Encoder::my_trades(
+std::string_view Encoder::my_trades_url(
     std::vector<char> &buffer, std::string_view const &symbol, std::chrono::nanoseconds lookback, uint32_t limit, std::chrono::milliseconds now) {
+  auto start_time = std::chrono::duration_cast<std::chrono::milliseconds>(now - lookback);
+#if defined(WS_USE_FMT)
+  buffer.clear();
+  fmt::format_to(
+      std::back_inserter(buffer),
+      R"(limit={})"
+      R"(&startTime={})"
+      R"(&symbol={})"sv,
+      limit,
+      start_time.count(),
+      symbol);
+  std::string_view result{std::data(buffer), std::size(buffer)};
+  return result;
+#else
   buffer.resize(512);
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
   utils::text::Writer writer{buffer_2};
-  auto start_time = std::chrono::duration_cast<std::chrono::milliseconds>(now - lookback);
   writer.write("limit="sv).write(limit);
   writer.write("&startTime="sv).write(start_time.count());
   writer.write("&symbol="sv).write(symbol);
   return writer.finish();
+#endif
 }
 
-std::string_view Encoder::new_order(
+std::string_view Encoder::new_order_url(
     std::vector<char> &buffer,
     CreateOrder const &create_order,
     server::oms::Order const &order,
@@ -198,6 +304,35 @@ std::string_view Encoder::new_order(
   auto side = map(create_order.side).template get<Side>();
   auto type = map_order_type(create_order);
   auto time_in_force = map_time_in_force(create_order);
+#if defined(WS_USE_FMT)
+  buffer.clear();
+  if (create_order.margin_mode == MarginMode::ISOLATED) {
+    fmt::format_to(std::back_inserter(buffer), "isIsolated=TRUE&"sv);
+  }
+  fmt::format_to(std::back_inserter(buffer), "newClientOrderId={}"sv, request_id);
+  if (!std::isnan(create_order.price)) {
+    fmt::format_to(std::back_inserter(buffer), "&price={}"sv, Decimal{create_order.price, order.price_precision.precision});
+  }
+  fmt::format_to(std::back_inserter(buffer), "&quantity={}"sv, Decimal{create_order.quantity, order.quantity_precision.precision});
+  fmt::format_to(std::back_inserter(buffer), "&recvWindow={}"sv, recv_window.count());
+  if (create_order_template.self_trade_prevention_mode != SelfTradePreventionMode{}) {
+    fmt::format_to(std::back_inserter(buffer), "&selfTradePreventionMode={}"sv, create_order_template.self_trade_prevention_mode.as_raw_text());
+  }
+  fmt::format_to(std::back_inserter(buffer), "&side={}"sv, side.as_raw_text());
+  if (side_effect_type != SideEffectType::UNDEFINED) {
+    fmt::format_to(std::back_inserter(buffer), "&sideEffectType={}"sv, magic_enum::enum_name(side_effect_type));
+  }
+  if (!std::isnan(create_order.stop_price)) {
+    fmt::format_to(std::back_inserter(buffer), "&stopPrice={}"sv, Decimal{create_order.stop_price, order.price_precision.precision});
+  }
+  fmt::format_to(std::back_inserter(buffer), "&symbol={}"sv, create_order.symbol);
+  if (time_in_force != json::TimeInForce{}) {
+    fmt::format_to(std::back_inserter(buffer), "&timeInForce={}"sv, time_in_force.as_raw_text());
+  }
+  fmt::format_to(std::back_inserter(buffer), "&type={}"sv, type.as_raw_text());
+  std::string_view result{std::data(buffer), std::size(buffer)};
+  return result;
+#else
   buffer.resize(512);
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
   utils::text::Writer writer{buffer_2};
@@ -226,9 +361,10 @@ std::string_view Encoder::new_order(
   }
   writer.write("&type="sv).write(type.as_raw_text());
   return writer.finish();
+#endif
 }
 
-std::string_view Encoder::cancel_order(
+std::string_view Encoder::cancel_order_url(
     std::vector<char> &buffer,
     roq::CancelOrder const &,
     server::oms::Order const &order,
@@ -236,6 +372,29 @@ std::string_view Encoder::cancel_order(
     std::string_view const &previous_request_id,
     CancelOrderTemplate const &cancel_order_template,
     std::chrono::milliseconds recv_window) {
+#if defined(WS_USE_FMT)
+  buffer.clear();
+  if (order.margin_mode == MarginMode::ISOLATED) {
+    fmt::format_to(std::back_inserter(buffer), "isIsolated=TRUE&"sv);
+  }
+  fmt::format_to(std::back_inserter(buffer), "newClientOrderId={}"sv, request_id);
+  if (cancel_order_template.cancel_restrictions != CancelRestrictions{}) {
+    fmt::format_to(std::back_inserter(buffer), "&cancelRestrictions={}"sv, cancel_order_template.cancel_restrictions.as_raw_text());
+  }
+  if (!std::empty(order.external_order_id)) {
+    fmt::format_to(std::back_inserter(buffer), "&orderId={}"sv, order.external_order_id);
+  }
+  fmt::format_to(
+      std::back_inserter(buffer),
+      "&origClientOrderId={}"
+      "&recvWindow={}"
+      "&symbol={}"sv,
+      previous_request_id,
+      recv_window.count(),
+      order.symbol);
+  std::string_view result{std::data(buffer), std::size(buffer)};
+  return result;
+#else
   buffer.resize(512);
   std::span buffer_2{reinterpret_cast<std::byte *>(std::data(buffer)), std::size(buffer)};
   utils::text::Writer writer{buffer_2};
@@ -253,11 +412,12 @@ std::string_view Encoder::cancel_order(
   writer.write("&recvWindow="sv).write(recv_window.count());
   writer.write("&symbol="sv).write(order.symbol);
   return writer.finish();
+#endif
 }
 
 // cancel-all
 
-std::string_view Encoder::cancel_all_open_orders(
+std::string_view Encoder::cancel_all_open_orders_url(
     std::vector<char> &buffer, std::string_view const &symbol, MarginMode margin_mode, std::chrono::milliseconds recv_window) {
   buffer.clear();
   switch (margin_mode) {

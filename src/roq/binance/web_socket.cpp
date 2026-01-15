@@ -385,7 +385,7 @@ void WebSocket::order_place(Event<CreateOrder> const &event, server::oms::Order 
     auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
-    auto params = json::Encoder::wsapi_place_order(encode_buffer_, create_order, order, request_id, create_order_template, recv_window, timestamp);
+    auto params = json::Encoder::place_order_json(encode_buffer_, create_order, order, request_id, create_order_template, recv_window, timestamp);
     auto request = json::WSAPIRequest{
         .sequence = ++request_id_,
         .type = json::WSAPIType::ORDER_PLACE,
@@ -419,7 +419,7 @@ void WebSocket::order_amend_keep_priority(
     auto &[message_info, modify_order] = event;
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
-    auto params = json::Encoder::wsapi_amend_order_keep_priority(encode_buffer_, modify_order, order, request_id, previous_request_id, recv_window, timestamp);
+    auto params = json::Encoder::amend_order_keep_priority_json(encode_buffer_, modify_order, order, request_id, previous_request_id, recv_window, timestamp);
     auto request = json::WSAPIRequest{
         .sequence = ++request_id_,
         .type = json::WSAPIType::ORDER_AMEND_KEEP_PRIORITY,
@@ -455,7 +455,7 @@ void WebSocket::order_cancel(
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
     auto params =
-        json::Encoder::wsapi_cancel_order(encode_buffer_, cancel_order, order, request_id, previous_request_id, cancel_order_template, recv_window, timestamp);
+        json::Encoder::cancel_order_json(encode_buffer_, cancel_order, order, request_id, previous_request_id, cancel_order_template, recv_window, timestamp);
     auto request = json::WSAPIRequest{
         .sequence = ++request_id_,
         .type = json::WSAPIType::ORDER_CANCEL,

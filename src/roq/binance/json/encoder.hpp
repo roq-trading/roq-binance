@@ -27,7 +27,7 @@ namespace json {
 struct Encoder final {
   // wsapi
 
-  static std::string_view wsapi_place_order(
+  static std::string_view place_order_json(
       std::vector<char> &buffer,
       CreateOrder const &,
       server::oms::Order const &,
@@ -36,7 +36,7 @@ struct Encoder final {
       std::chrono::milliseconds recv_window,
       std::chrono::milliseconds now);
 
-  static std::string_view wsapi_amend_order_keep_priority(
+  static std::string_view amend_order_keep_priority_json(
       std::vector<char> &buffer,
       ModifyOrder const &,
       server::oms::Order const &,
@@ -45,7 +45,7 @@ struct Encoder final {
       std::chrono::milliseconds recv_window,
       std::chrono::milliseconds now);
 
-  static std::string_view wsapi_cancel_order(
+  static std::string_view cancel_order_json(
       std::vector<char> &buffer,
       roq::CancelOrder const &,
       server::oms::Order const &,
@@ -57,10 +57,10 @@ struct Encoder final {
 
   // sapi+papi
 
-  static std::string_view my_trades(
+  static std::string_view my_trades_url(
       std::vector<char> &buffer, std::string_view const &symbol, std::chrono::nanoseconds lookback, uint32_t limit, std::chrono::milliseconds now);
 
-  static std::string_view new_order(
+  static std::string_view new_order_url(
       std::vector<char> &buffer,
       CreateOrder const &,
       server::oms::Order const &,
@@ -69,7 +69,7 @@ struct Encoder final {
       std::chrono::milliseconds recv_window,
       SideEffectType = {});
 
-  static std::string_view cancel_order(
+  static std::string_view cancel_order_url(
       std::vector<char> &buffer,
       roq::CancelOrder const &,
       server::oms::Order const &,
@@ -78,7 +78,8 @@ struct Encoder final {
       CancelOrderTemplate const &,
       std::chrono::milliseconds recv_window);
 
-  static std::string_view cancel_all_open_orders(std::vector<char> &buffer, std::string_view const &symbol, MarginMode, std::chrono::milliseconds recv_window);
+  static std::string_view cancel_all_open_orders_url(
+      std::vector<char> &buffer, std::string_view const &symbol, MarginMode, std::chrono::milliseconds recv_window);
 };
 
 }  // namespace json
