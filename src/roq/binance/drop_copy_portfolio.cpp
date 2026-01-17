@@ -250,7 +250,7 @@ void DropCopyPortfolio::operator()(Trace<json::OutboundAccountPosition> const &e
   profile_.outbound_account_position([&]() {
     auto &[trace_info, outbound_account_position] = event;
     log::info<2>("outbound_account_position={}"sv, outbound_account_position);
-    for (auto &item : outbound_account_position.balances) {
+    for (auto &item : outbound_account_position.data.balances) {
       auto funds_update = FundsUpdate{
           .stream_id = stream_id_,
           .account = account_.name,
@@ -261,8 +261,8 @@ void DropCopyPortfolio::operator()(Trace<json::OutboundAccountPosition> const &e
           .borrowed = NaN,
           .external_account = {},
           .update_type = UpdateType::INCREMENTAL,
-          .exchange_time_utc = outbound_account_position.time_of_last_account_update,
-          .sending_time_utc = outbound_account_position.event_time,
+          .exchange_time_utc = outbound_account_position.data.time_of_last_account_update,
+          .sending_time_utc = outbound_account_position.data.event_time,
       };
       create_trace_and_dispatch(handler_, trace_info, funds_update, true);
     }
@@ -281,49 +281,49 @@ void DropCopyPortfolio::operator()(Trace<json::ExecutionReport> const &event) {
   profile_.execution_report([&]() {
     auto &[trace_info, execution_report] = event;
     log::info<2>("execution_report={}"sv, execution_report);
-    auto external_order_id = fmt::format("{}"sv, execution_report.order_id);  // alloc
-    auto average_traded_price = utils::is_zero(execution_report.cumulative_filled_quantity)
+    auto external_order_id = fmt::format("{}"sv, execution_report.data.order_id);  // alloc
+    auto average_traded_price = utils::is_zero(execution_report.data.cumulative_filled_quantity)
                                     ? NaN
-                                    : (execution_report.cumulative_quote_asset_transacted_quantity / execution_report.cumulative_filled_quantity);
-    auto last_liquidity = execution_report.is_trade_maker ? Liquidity::MAKER : Liquidity::TAKER;
+                                    : (execution_report.data.cumulative_quote_asset_transacted_quantity / execution_report.data.cumulative_filled_quantity);
+    auto last_liquidity = execution_report.data.is_trade_maker ? Liquidity::MAKER : Liquidity::TAKER;
     auto order_update = server::oms::OrderUpdate{
         .account = account_.name,
         .exchange = shared_.settings.exchange,
-        .symbol = execution_report.symbol,
-        .side = map(execution_report.side),
+        .symbol = execution_report.data.symbol,
+        .side = map(execution_report.data.side),
         .position_effect = {},
         .margin_mode = MarginMode::PORTFOLIO,
         .max_show_quantity = NaN,
-        .order_type = map(execution_report.order_type),
-        .time_in_force = map(execution_report.time_in_force),
+        .order_type = map(execution_report.data.order_type),
+        .time_in_force = map(execution_report.data.time_in_force),
         .execution_instructions = {},
         .create_time_utc = {},
-        .update_time_utc = execution_report.transaction_time,
+        .update_time_utc = execution_report.data.transaction_time,
         .external_account = {},
         .external_order_id = external_order_id,
         .client_order_id = {},
-        .order_status = map(execution_report.current_order_status),
+        .order_status = map(execution_report.data.current_order_status),
         .quantity = NaN,
-        .price = execution_report.price,
-        .stop_price = execution_report.stop_price,
+        .price = execution_report.data.price,
+        .stop_price = execution_report.data.stop_price,
         .leverage = NaN,
         .remaining_quantity = NaN,
-        .traded_quantity = execution_report.cumulative_filled_quantity,
+        .traded_quantity = execution_report.data.cumulative_filled_quantity,
         .average_traded_price = average_traded_price,
-        .last_traded_quantity = execution_report.last_executed_quantity,
-        .last_traded_price = execution_report.last_executed_price,
+        .last_traded_quantity = execution_report.data.last_executed_quantity,
+        .last_traded_price = execution_report.data.last_executed_price,
         .last_liquidity = last_liquidity,
         .routing_id = {},
         .max_request_version = {},
         .max_response_version = {},
         .max_accepted_version = {},
         .update_type = UpdateType::INCREMENTAL,
-        .sending_time_utc = execution_report.event_time,
+        .sending_time_utc = execution_report.data.event_time,
     };
     auto user_id = SOURCE_NONE;
     auto order_id = ORDER_ID_NONE;
     auto strategy_id = STRATEGY_ID_NONE;
-    if (shared_.update_order(execution_report.client_order_id, stream_id_, trace_info, order_update, [&](auto &order) {
+    if (shared_.update_order(execution_report.data.client_order_id, stream_id_, trace_info, order_update, [&](auto &order) {
           user_id = order.user_id;
           order_id = order.order_id;
           strategy_id = order.strategy_id;
@@ -332,48 +332,48 @@ void DropCopyPortfolio::operator()(Trace<json::ExecutionReport> const &event) {
       log::warn("*** EXTERNAL ORDER ***"sv);
       log::warn("execution_report={}"sv, execution_report);
     }
-    if (execution_report.current_execution_type != json::ExecutionType::TRADE) {
+    if (execution_report.data.current_execution_type != json::ExecutionType::TRADE) {
       return;
     }
-    auto side = map(execution_report.side).template get<Side>();
-    auto ref_data = shared_.get_ref_data(shared_.settings.exchange, execution_report.symbol);
+    auto side = map(execution_report.data.side).template get<Side>();
+    auto ref_data = shared_.get_ref_data(shared_.settings.exchange, execution_report.data.symbol);
     auto profit_loss_amount =
-        utils::compute_profit_loss_amount(side, execution_report.last_executed_quantity, execution_report.last_executed_price, ref_data.multiplier);
+        utils::compute_profit_loss_amount(side, execution_report.data.last_executed_quantity, execution_report.data.last_executed_price, ref_data.multiplier);
     auto fill = Fill{
         .external_trade_id = {},
-        .quantity = execution_report.last_executed_quantity,
-        .price = execution_report.last_executed_price,
+        .quantity = execution_report.data.last_executed_quantity,
+        .price = execution_report.data.last_executed_price,
         .liquidity = last_liquidity,
-        .commission_amount = execution_report.commission_amount,
-        .commission_currency = execution_report.commission_asset,
+        .commission_amount = execution_report.data.commission_amount,
+        .commission_currency = execution_report.data.commission_asset,
         .base_amount = NaN,
-        .quote_amount = execution_report.last_quote_asset_transacted_quantity,
+        .quote_amount = execution_report.data.last_quote_asset_transacted_quantity,
         .profit_loss_amount = profit_loss_amount,
     };
-    fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"sv, execution_report.trade_id);
+    fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"sv, execution_report.data.trade_id);
     auto trade_update = TradeUpdate{
         .stream_id = stream_id_,
         .account = account_.name,
         .order_id = order_id,
         .exchange = shared_.settings.exchange,
-        .symbol = execution_report.symbol,
+        .symbol = execution_report.data.symbol,
         .side = side,
         .position_effect = {},
         .margin_mode = MarginMode::PORTFOLIO,
         .quantity_type = {},
-        .create_time_utc = execution_report.transaction_time,
-        .update_time_utc = execution_report.transaction_time,
+        .create_time_utc = execution_report.data.transaction_time,
+        .update_time_utc = execution_report.data.transaction_time,
         .external_account = {},
         .external_order_id = external_order_id,
         .client_order_id = {},
         .fills = {&fill, 1},
         .routing_id = {},
         .update_type = UpdateType::INCREMENTAL,
-        .sending_time_utc = execution_report.event_time,
+        .sending_time_utc = execution_report.data.event_time,
         .user = {},
         .strategy_id = strategy_id,
     };
-    create_trace_and_dispatch(handler_, trace_info, trade_update, true, user_id, execution_report.client_order_id);
+    create_trace_and_dispatch(handler_, trace_info, trade_update, true, user_id, execution_report.data.client_order_id);
   });
 }
 

@@ -1,11 +1,15 @@
 {
   "name": "roq/binance/json/Result",
-  "type": "array",
+  "type": "dictionary",
   "values": [
     {
-      "name": "data",
+      "name": "result",
       "type": "std/string_view",
       "array": "std/span"
+    },
+    {
+      "name": "id",
+      "type": "std/int64"
     }
   ]
 }

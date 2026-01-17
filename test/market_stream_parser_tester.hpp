@@ -16,10 +16,8 @@ struct MarketStreamParserTester final : public json::MarketStreamParser::Handler
     core::json::BufferStack buffers{buffer_size, max_depth};
     // simple
     // XXX FIXME TODO catch2 block ???
-    /*
     T obj{message, buffers};
     callback(obj);
-    */
     // parser
     // XXX FIXME TODO catch2 block ???
     MarketStreamParserTester handler{callback};

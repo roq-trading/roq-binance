@@ -16,7 +16,7 @@
     },
     {
       "name": "error",
-      "type": "roq/binance/json/Error"
+      "type": "roq/binance/json/ErrorError"
     },
     {
       "name": "rateLimits",

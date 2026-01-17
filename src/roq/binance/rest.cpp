@@ -641,7 +641,7 @@ void Rest::process_response(web::rest::Response const &response, auto error_hand
             assert(false);
             [[fallthrough]];
           default: {
-            json::Error error{body};
+            json::ErrorError error{body};
             error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, json::guess_error(error.code), error.msg);
           }
         }

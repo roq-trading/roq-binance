@@ -31,7 +31,7 @@ namespace roq {
 namespace binance {
 namespace json {
 
-struct WSAPIParser2 final {
+struct WSAPIParser final {
   struct Handler {
     virtual void operator()(Trace<WSAPISessionLogon> const &) = 0;
     //

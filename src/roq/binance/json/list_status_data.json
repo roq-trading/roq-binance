@@ -1,0 +1,62 @@
+{
+  "name": "roq/binance/json/ListStatusData",
+  "type": "dictionary",
+  "values": [
+    {
+      "raw": "e",
+      "name": "event_type",
+      "type": "roq/binance/json/EventType"
+    },
+    {
+      "raw": "E",
+      "name": "event_time",
+      "type": "std/milliseconds"
+    },
+    {
+      "raw": "s",
+      "name": "symbol",
+      "type": "std/string_view"
+    },
+    {
+      "raw": "g",
+      "name": "order_list_id",
+      "type": "std/int32"
+    },
+    {
+      "raw": "c",
+      "name": "contingency_type",
+      "type": "std/string_view"
+    },
+    {
+      "raw": "l",
+      "name": "list_status_type",
+      "type": "std/string_view"
+    },
+    {
+      "raw": "L",
+      "name": "list_order_status",
+      "type": "std/string_view"
+    },
+    {
+      "raw": "r",
+      "name": "list_reject_reasson",
+      "type": "std/string_view"
+    },
+    {
+      "raw": "C",
+      "name": "list_client_order_id",
+      "type": "std/string_view"
+    },
+    {
+      "raw": "T",
+      "name": "transaction_time",
+      "type": "std/milliseconds"
+    },
+    {
+      "raw": "O",
+      "name": "objects",
+      "type": "roq/binance/json/ListStatusItem",
+      "array": "std/span"
+    }
+  ]
+}

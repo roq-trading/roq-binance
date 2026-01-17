@@ -6,20 +6,23 @@ set(SOURCES
     market_stream_parser.cpp
     user_stream_parser.cpp
     utils.cpp
-    wsapi_parser_2.cpp
+    wsapi_parser.cpp
     wsapi_request.cpp)
 
 include(RoqAutogen)
 
 set(AUTOGEN_SCHEMAS
     account_ack.json
+    agg_trade_data.json
     agg_trade.json
     amended_order.json
     balance2.json
     balance.json
-    balances_item.json
     balances_ack.json
+    balances_item.json
+    balance_update_data.json
     balance_update.json
+    book_ticker_data.json
     book_ticker.json
     cancel_all_open_orders_ack.json
     cancel_order_ack.json
@@ -29,13 +32,17 @@ set(AUTOGEN_SCHEMAS
     cancel_restrictions.json
     cross_margin_account.json
     depth_ack.json
+    depth_data.json
     depth_item.json
     depth.json
+    depth_update_data.json
     depth_update.json
     error.json
+    error_error.json
     event_type.json
     exchange_filter.json
     exchange_info_ack.json
+    execution_report_data.json
     execution_report.json
     execution_type.json
     field.json
@@ -45,8 +52,10 @@ set(AUTOGEN_SCHEMAS
     filter_type.json
     interval.json
     listen_key_ack.json
+    list_status_data.json
     list_status_item.json
     list_status.json
+    mini_ticker_data.json
     mini_ticker.json
     new_order_ack.json
     open_orders_ack.json
@@ -54,6 +63,7 @@ set(AUTOGEN_SCHEMAS
     order.json
     order_status.json
     order_type.json
+    outbound_account_position_data.json
     outbound_account_position.json
     rate_limits_item.json
     rate_limit_type.json
@@ -67,6 +77,7 @@ set(AUTOGEN_SCHEMAS
     ticker.json
     time_in_force.json
     trade2.json
+    trade_data.json
     trade.json
     trades_ack.json
     user_asset.json

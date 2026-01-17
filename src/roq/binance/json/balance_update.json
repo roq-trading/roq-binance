@@ -3,34 +3,12 @@
   "type": "dictionary",
   "values": [
     {
-      "raw": "e",
-      "name": "event_type",
+      "name": "stream",
       "type": "std/string_view"
     },
     {
-      "raw": "E",
-      "name": "event_time",
-      "type": "std/milliseconds"
-    },
-    {
-      "raw": "a",
-      "name": "asset",
-      "type": "std/string_view"
-    },
-    {
-      "raw": "d",
-      "name": "balance_delta",
-      "type": "std/double"
-    },
-    {
-      "raw": "U",
-      "name": "update_id",
-      "type": "std/uint64"
-    },
-    {
-      "raw": "T",
-      "name": "clear_time",
-      "type": "std/milliseconds"
+      "name": "data",
+      "type": "roq/binance/json/BalanceUpdateData"
     }
   ]
 }

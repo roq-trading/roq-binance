@@ -3,12 +3,12 @@
   "type": "dictionary",
   "values": [
     {
-      "name": "code",
-      "type": "std/int32"
+      "name": "error",
+      "type": "roq/binance/json/ErrorError"
     },
     {
-      "name": "msg",
-      "type": "std/string_view"
+      "name": "id",
+      "type": "std/int64"
     }
   ]
 }

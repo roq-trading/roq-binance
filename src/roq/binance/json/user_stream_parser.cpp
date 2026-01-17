@@ -88,7 +88,7 @@ bool UserStreamParser::dispatch(
       continue;
     }
     EventType event_type{value};
-    if (try_dispatch(handler, data, buffer_stack, event_type, trace_info, allow_unknown_event_types)) {
+    if (try_dispatch(handler, message, buffer_stack, event_type, trace_info, allow_unknown_event_types)) {
       return true;
     }
     break;

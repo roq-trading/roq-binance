@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2026, Hans Erik Thrane */
 
-#include "roq/binance/json/wsapi_parser_2.hpp"
+#include "roq/binance/json/wsapi_parser.hpp"
 
 #include "roq/logging.hpp"
 
@@ -104,8 +104,8 @@ bool dispatch_event(auto &handler, auto &message, auto &buffer_stack, auto &trac
 }
 }  // namespace
 
-bool WSAPIParser2::dispatch(
-    WSAPIParser2::Handler &handler,
+bool WSAPIParser::dispatch(
+    WSAPIParser::Handler &handler,
     std::string_view const &message,
     core::json::BufferStack &buffer_stack,
     TraceInfo const &trace_info,

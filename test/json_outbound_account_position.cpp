@@ -38,10 +38,11 @@ TEST_CASE("simple", "[json_outbound_account_position]") {
                  R"(})"
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
-    CHECK(obj.event_type == json::EventType::OUTBOUND_ACCOUNT_POSITION);
-    CHECK(obj.event_time == 1634285425303ms);
-    CHECK(obj.time_of_last_account_update == 1634285425302ms);
-    auto &balances = obj.balances;
+    CHECK(obj.stream == "sj9ht0LN4uqn6kILaJpcsmZ5q2bjVInmmJPl8PdStouqzwHiwHgbwEaBm1ai"sv);
+    CHECK(obj.data.event_type == json::EventType::OUTBOUND_ACCOUNT_POSITION);
+    CHECK(obj.data.event_time == 1634285425303ms);
+    CHECK(obj.data.time_of_last_account_update == 1634285425302ms);
+    auto &balances = obj.data.balances;
     REQUIRE(std::size(balances) == 3);
     auto &balance_0 = balances[0];
     CHECK(balance_0.asset == "BTC"sv);
@@ -82,10 +83,11 @@ TEST_CASE("maker_new", "[json_outbound_account_position]") {
                  R"(})"
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
-    CHECK(obj.event_type == json::EventType::OUTBOUND_ACCOUNT_POSITION);
-    CHECK(obj.event_time == 1634906177360ms);
-    CHECK(obj.time_of_last_account_update == 1634906177360ms);
-    auto &balances = obj.balances;
+    CHECK(obj.stream == "x4PghblTRhWAXEO9E0wrDhwIZ0kRXDp3I32Vg9B60nxqGNjiG1lknGi1omdX"sv);
+    CHECK(obj.data.event_type == json::EventType::OUTBOUND_ACCOUNT_POSITION);
+    CHECK(obj.data.event_time == 1634906177360ms);
+    CHECK(obj.data.time_of_last_account_update == 1634906177360ms);
+    auto &balances = obj.data.balances;
     REQUIRE(std::size(balances) == 3);
     auto &balance_0 = balances[0];
     CHECK(balance_0.asset == "LTC"sv);
@@ -127,10 +129,11 @@ TEST_CASE("maker_filled", "[json_outbound_account_position]") {
                  R"(})"
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
-    CHECK(obj.event_type == json::EventType::OUTBOUND_ACCOUNT_POSITION);
-    CHECK(obj.event_time == 1634906229934ms);
-    CHECK(obj.time_of_last_account_update == 1634906229933ms);
-    auto &balances = obj.balances;
+    CHECK(obj.stream == "x4PghblTRhWAXEO9E0wrDhwIZ0kRXDp3I32Vg9B60nxqGNjiG1lknGi1omdX"sv);
+    CHECK(obj.data.event_type == json::EventType::OUTBOUND_ACCOUNT_POSITION);
+    CHECK(obj.data.event_time == 1634906229934ms);
+    CHECK(obj.data.time_of_last_account_update == 1634906229933ms);
+    auto &balances = obj.data.balances;
     REQUIRE(std::size(balances) == 3);
     auto &balance_0 = balances[0];
     CHECK(balance_0.asset == "LTC"sv);

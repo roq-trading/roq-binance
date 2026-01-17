@@ -30,12 +30,12 @@
 #include "roq/binance/shared.hpp"
 #include "roq/binance/web_socket_state.hpp"
 
-#include "roq/binance/json/wsapi_parser_2.hpp"
+#include "roq/binance/json/wsapi_parser.hpp"
 
 namespace roq {
 namespace binance {
 
-struct WebSocket final : public OrderEntry, public web::socket::Client::Handler, public json::WSAPIParser2::Handler {
+struct WebSocket final : public OrderEntry, public web::socket::Client::Handler, public json::WSAPIParser::Handler {
   WebSocket(OrderEntry::Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, std::string_view const &interface = {});
 
   WebSocket(WebSocket const &) = delete;
@@ -71,6 +71,7 @@ struct WebSocket final : public OrderEntry, public web::socket::Client::Handler,
   void open_orders_cancel_all(Event<CancelAllOrders> const &, std::string_view const &request_id);
 
   // web::socket::Client::Handler
+
   void operator()(web::socket::Client::Connected const &) override;
   void operator()(web::socket::Client::Disconnected const &) override;
   void operator()(web::socket::Client::Ready const &) override;
@@ -85,7 +86,8 @@ struct WebSocket final : public OrderEntry, public web::socket::Client::Handler,
 
   void parse(std::string_view const &message);
 
-  // json::WSAPIParser2::Handler
+  // json::WSAPIParser::Handler
+
   void operator()(Trace<json::WSAPISessionLogon> const &) override;
   //
   void operator()(Trace<json::WSAPIUserDataStreamSubscribe> const &) override;
@@ -103,10 +105,11 @@ struct WebSocket final : public OrderEntry, public web::socket::Client::Handler,
   void operator()(Trace<json::WSAPIBalanceUpdate> const &) override;
   void operator()(Trace<json::WSAPIExecutionReport> const &) override;
 
-  //
-  void operator()(Trace<json::OutboundAccountPosition> const &);
-  void operator()(Trace<json::BalanceUpdate> const &);
-  void operator()(Trace<json::ExecutionReport> const &);
+  // helpers
+
+  void operator()(Trace<json::OutboundAccountPositionData> const &);
+  void operator()(Trace<json::BalanceUpdateData> const &);
+  void operator()(Trace<json::ExecutionReportData> const &);
 
   void update_rate_limits(auto &event);
 

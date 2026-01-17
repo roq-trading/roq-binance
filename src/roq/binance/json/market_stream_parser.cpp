@@ -72,13 +72,13 @@ bool MarketStreamParser::dispatch(
           break;
         case ERROR:
           if (id >= 0) {
-            dispatch_helper<Error>(handler, value, buffer_stack, trace_info, id);
+            dispatch_helper<Error>(handler, message, buffer_stack, trace_info, id);
             return true;
           }
           break;
         case RESULT:
           if (id >= 0) {
-            dispatch_helper<Result>(handler, value, buffer_stack, trace_info, id);
+            dispatch_helper<Result>(handler, message, buffer_stack, trace_info, id);
             return true;
           }
           break;
@@ -99,26 +99,26 @@ bool MarketStreamParser::dispatch(
               }
               break;  // ... might take another iteration, probably ok
             case AGG_TRADE:
-              dispatch_helper<AggTrade>(handler, value, buffer_stack, trace_info);
+              dispatch_helper<AggTrade>(handler, message, buffer_stack, trace_info);
               return true;
             case TRADE:
-              dispatch_helper<Trade>(handler, value, buffer_stack, trace_info);
+              dispatch_helper<Trade>(handler, message, buffer_stack, trace_info);
               return true;
             case MINI_TICKER:
-              dispatch_helper<MiniTicker>(handler, value, buffer_stack, trace_info);
+              dispatch_helper<MiniTicker>(handler, message, buffer_stack, trace_info);
               return true;
             case BOOK_TICKER:
-              dispatch_helper<BookTicker>(handler, value, buffer_stack, trace_info);
+              dispatch_helper<BookTicker>(handler, message, buffer_stack, trace_info);
               return true;
             case DEPTH5:
             case DEPTH10:
             case DEPTH20:
               assert(!std::empty(symbol));  // note! must be defined when stream is defined
-              dispatch_helper<Depth>(handler, value, buffer_stack, trace_info, symbol);
+              dispatch_helper<Depth>(handler, message, buffer_stack, trace_info, symbol);
               return true;
             case DEPTH:
               assert(!std::empty(symbol));  // note! must be defined when stream is defined
-              dispatch_helper<DepthUpdate>(handler, value, buffer_stack, trace_info);
+              dispatch_helper<DepthUpdate>(handler, message, buffer_stack, trace_info);
               return true;
           }
           break;

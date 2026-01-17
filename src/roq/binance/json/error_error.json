@@ -1,0 +1,14 @@
+{
+  "name": "roq/binance/json/ErrorError",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "code",
+      "type": "std/int32"
+    },
+    {
+      "name": "msg",
+      "type": "std/string_view"
+    }
+  ]
+}

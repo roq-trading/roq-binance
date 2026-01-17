@@ -3,18 +3,12 @@
   "type": "dictionary",
   "values": [
     {
-      "name": "lastUpdateId",
-      "type": "std/uint64"
+      "name": "stream",
+      "type": "std/string_view"
     },
     {
-      "name": "bids",
-      "type": "roq/binance/json/DepthItem",
-      "array": "std/span"
-    },
-    {
-      "name": "asks",
-      "type": "roq/binance/json/DepthItem",
-      "array": "std/span"
+      "name": "data",
+      "type": "roq/binance/json/DepthData"
     }
   ]
 }

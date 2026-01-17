@@ -8,7 +8,7 @@
     },
     {
       "name": "event",
-      "type": "roq/binance/json/ExecutionReport"
+      "type": "roq/binance/json/ExecutionReportData"
     }
   ]
 }

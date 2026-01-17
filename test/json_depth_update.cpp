@@ -77,8 +77,10 @@ TEST_CASE("simple", "[json_depth_update]") {
                  R"(})"
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
-    CHECK(obj.event_type == "depthUpdate"sv);
-    CHECK(obj.symbol == "BTCUSDT"sv);
+    CHECK(obj.stream == "btcusdt@depth@100ms"sv);
+    CHECK(obj.data.event_type == json::EventType::DEPTH_UPDATE);
+    CHECK(obj.data.event_time == 1660386669440ms);
+    CHECK(obj.data.symbol == "BTCUSDT"sv);
   };
   MarketStreamParserTester<value_type>::dispatch(helper, message, 65536, 1);
 }

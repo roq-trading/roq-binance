@@ -8,7 +8,7 @@
     },
     {
       "name": "event",
-      "type": "roq/binance/json/OutboundAccountPosition"
+      "type": "roq/binance/json/OutboundAccountPositionData"
     }
   ]
 }
