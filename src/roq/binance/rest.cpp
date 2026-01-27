@@ -470,7 +470,7 @@ void Rest::operator()(Trace<json::ExchangeInfoAck> const &event) {
       continue;
     }
     auto symbol = normalized_symbol(item.symbol);
-    if (all_symbols_.emplace(symbol).second) {  // only include new
+    if (shared_.all_symbols.emplace(symbol).second) {  // only include new
       symbols.emplace_back(symbol);
     }
     ++counter;
