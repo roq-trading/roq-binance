@@ -296,6 +296,8 @@ void DropCopyMargin::operator()(Trace<json::ExecutionReport> const &event) {
         .external_order_id = external_order_id,
         .client_order_id = {},
         .order_status = map(execution_report.data.current_order_status),
+        .error = {},
+        .text = {},
         .quantity = NaN,
         .price = execution_report.data.price,
         .stop_price = execution_report.data.stop_price,
