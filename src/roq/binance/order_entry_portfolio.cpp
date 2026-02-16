@@ -220,7 +220,8 @@ void OrderEntryPortfolio::operator()(metrics::Writer &writer) const {
       .write(rate_limiter_.requests_1m, metrics::Type::RATE_LIMITER);
 }
 
-uint16_t OrderEntryPortfolio::operator()(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
+uint16_t OrderEntryPortfolio::operator()(
+    Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &, std::string_view const &request_id) {
   new_order(event, order, request_id);
   return stream_id_;
 }
@@ -228,6 +229,7 @@ uint16_t OrderEntryPortfolio::operator()(Event<CreateOrder> const &event, server
 uint16_t OrderEntryPortfolio::operator()(
     Event<ModifyOrder> const &,
     server::oms::Order const &,
+    server::oms::RefData const &,
     [[maybe_unused]] std::string_view const &request_id,
     [[maybe_unused]] std::string_view const &previous_request_id) {
   throw server::oms::NotSupported{"not supported"sv};
@@ -235,7 +237,11 @@ uint16_t OrderEntryPortfolio::operator()(
 }
 
 uint16_t OrderEntryPortfolio::operator()(
-    Event<CancelOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
+    Event<CancelOrder> const &event,
+    server::oms::Order const &order,
+    server::oms::RefData const &,
+    std::string_view const &request_id,
+    std::string_view const &previous_request_id) {
   cancel_order(event, order, request_id, previous_request_id);
   return stream_id_;
 }

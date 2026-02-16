@@ -197,19 +197,28 @@ void WebSocket::operator()(metrics::Writer &writer) const {
       .write(rate_limiter_.create_order_1d, metrics::Type::RATE_LIMITER);
 }
 
-uint16_t WebSocket::operator()(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
+uint16_t WebSocket::operator()(
+    Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &, std::string_view const &request_id) {
   order_place(event, order, request_id);
   return stream_id_;
 }
 
 uint16_t WebSocket::operator()(
-    Event<ModifyOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
+    Event<ModifyOrder> const &event,
+    server::oms::Order const &order,
+    server::oms::RefData const &,
+    std::string_view const &request_id,
+    std::string_view const &previous_request_id) {
   order_amend_keep_priority(event, order, request_id, previous_request_id);
   return stream_id_;
 }
 
 uint16_t WebSocket::operator()(
-    Event<CancelOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
+    Event<CancelOrder> const &event,
+    server::oms::Order const &order,
+    server::oms::RefData const &,
+    std::string_view const &request_id,
+    std::string_view const &previous_request_id) {
   order_cancel(event, order, request_id, previous_request_id);
   return stream_id_;
 }
