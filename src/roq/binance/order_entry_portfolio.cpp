@@ -221,8 +221,8 @@ void OrderEntryPortfolio::operator()(metrics::Writer &writer) const {
 }
 
 uint16_t OrderEntryPortfolio::operator()(
-    Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &, std::string_view const &request_id) {
-  new_order(event, order, request_id);
+    Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
+  new_order(event, order, ref_data, request_id);
   return stream_id_;
 }
 
@@ -239,10 +239,10 @@ uint16_t OrderEntryPortfolio::operator()(
 uint16_t OrderEntryPortfolio::operator()(
     Event<CancelOrder> const &event,
     server::oms::Order const &order,
-    server::oms::RefData const &,
+    server::oms::RefData const &ref_data,
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
-  cancel_order(event, order, request_id, previous_request_id);
+  cancel_order(event, order, ref_data, request_id, previous_request_id);
   return stream_id_;
 }
 
@@ -699,7 +699,8 @@ void OrderEntryPortfolio::refresh_listen_key(std::chrono::nanoseconds now) {
 
 // new-order
 
-void OrderEntryPortfolio::new_order(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
+void OrderEntryPortfolio::new_order(
+    Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
   profile_.new_order([&]() {
     if (!ready()) {
       throw server::oms::NotReady{"not ready"sv};
@@ -708,8 +709,8 @@ void OrderEntryPortfolio::new_order(Event<CreateOrder> const &event, server::oms
     open_orders_symbols_.emplace(create_order.symbol);
     auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto body =
-        json::Encoder::new_order_url(encode_buffer_, create_order, order, request_id, create_order_template, recv_window, shared_.api.margin_side_effect_type);
+    auto body = json::Encoder::new_order_url(
+        encode_buffer_, create_order, order, ref_data, request_id, create_order_template, recv_window, shared_.api.margin_side_effect_type);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = account_.create_rest_signature_body(now, body);
     auto headers = account_.get_rest_headers();
@@ -836,7 +837,11 @@ void OrderEntryPortfolio::operator()(Trace<json::NewOrderAck> const &event, uint
 // cancel-order
 
 void OrderEntryPortfolio::cancel_order(
-    Event<CancelOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
+    Event<CancelOrder> const &event,
+    server::oms::Order const &order,
+    server::oms::RefData const &ref_data,
+    std::string_view const &request_id,
+    std::string_view const &previous_request_id) {
   profile_.cancel_order([&]() {
     if (!ready()) {
       throw server::oms::NotReady{"not ready"sv};
@@ -844,7 +849,8 @@ void OrderEntryPortfolio::cancel_order(
     auto &[message_info, cancel_order] = event;
     auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto body = json::Encoder::cancel_order_url(encode_buffer_, cancel_order, order, request_id, previous_request_id, cancel_order_template, recv_window);
+    auto body =
+        json::Encoder::cancel_order_url(encode_buffer_, cancel_order, order, ref_data, request_id, previous_request_id, cancel_order_template, recv_window);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto query = account_.create_rest_signature_body(now, body);
     auto headers = account_.get_rest_headers();

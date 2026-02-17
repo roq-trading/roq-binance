@@ -198,28 +198,28 @@ void WebSocket::operator()(metrics::Writer &writer) const {
 }
 
 uint16_t WebSocket::operator()(
-    Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &, std::string_view const &request_id) {
-  order_place(event, order, request_id);
+    Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
+  order_place(event, order, ref_data, request_id);
   return stream_id_;
 }
 
 uint16_t WebSocket::operator()(
     Event<ModifyOrder> const &event,
     server::oms::Order const &order,
-    server::oms::RefData const &,
+    server::oms::RefData const &ref_data,
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
-  order_amend_keep_priority(event, order, request_id, previous_request_id);
+  order_amend_keep_priority(event, order, ref_data, request_id, previous_request_id);
   return stream_id_;
 }
 
 uint16_t WebSocket::operator()(
     Event<CancelOrder> const &event,
     server::oms::Order const &order,
-    server::oms::RefData const &,
+    server::oms::RefData const &ref_data,
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
-  order_cancel(event, order, request_id, previous_request_id);
+  order_cancel(event, order, ref_data, request_id, previous_request_id);
   return stream_id_;
 }
 
@@ -384,7 +384,8 @@ void WebSocket::my_trades() {
 // order-place
 // weight: 1
 
-void WebSocket::order_place(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
+void WebSocket::order_place(
+    Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
   profile_.order_place([&]() {
     if (!ready()) {
       throw server::oms::NotReady{"not ready"sv};
@@ -394,7 +395,7 @@ void WebSocket::order_place(Event<CreateOrder> const &event, server::oms::Order 
     auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
-    auto params = json::Encoder::place_order_json(encode_buffer_, create_order, order, request_id, create_order_template, recv_window, timestamp);
+    auto params = json::Encoder::place_order_json(encode_buffer_, create_order, order, ref_data, request_id, create_order_template, recv_window, timestamp);
     auto request = json::WSAPIRequest{
         .sequence = ++request_id_,
         .type = json::WSAPIType::ORDER_PLACE,
@@ -420,7 +421,11 @@ void WebSocket::order_place(Event<CreateOrder> const &event, server::oms::Order 
 // weight: 4
 
 void WebSocket::order_amend_keep_priority(
-    Event<ModifyOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
+    Event<ModifyOrder> const &event,
+    server::oms::Order const &order,
+    server::oms::RefData const &ref_data,
+    std::string_view const &request_id,
+    std::string_view const &previous_request_id) {
   profile_.order_amend_keep_priority([&]() {
     if (!ready()) {
       throw server::oms::NotReady{"not ready"sv};
@@ -428,7 +433,8 @@ void WebSocket::order_amend_keep_priority(
     auto &[message_info, modify_order] = event;
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
-    auto params = json::Encoder::amend_order_keep_priority_json(encode_buffer_, modify_order, order, request_id, previous_request_id, recv_window, timestamp);
+    auto params =
+        json::Encoder::amend_order_keep_priority_json(encode_buffer_, modify_order, order, ref_data, request_id, previous_request_id, recv_window, timestamp);
     auto request = json::WSAPIRequest{
         .sequence = ++request_id_,
         .type = json::WSAPIType::ORDER_AMEND_KEEP_PRIORITY,
@@ -454,7 +460,11 @@ void WebSocket::order_amend_keep_priority(
 // weight: 1
 
 void WebSocket::order_cancel(
-    Event<CancelOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
+    Event<CancelOrder> const &event,
+    server::oms::Order const &order,
+    server::oms::RefData const &ref_data,
+    std::string_view const &request_id,
+    std::string_view const &previous_request_id) {
   profile_.order_cancel([&]() {
     if (!ready()) {
       throw server::oms::NotReady{"not ready"sv};
@@ -463,8 +473,8 @@ void WebSocket::order_cancel(
     auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
-    auto params =
-        json::Encoder::cancel_order_json(encode_buffer_, cancel_order, order, request_id, previous_request_id, cancel_order_template, recv_window, timestamp);
+    auto params = json::Encoder::cancel_order_json(
+        encode_buffer_, cancel_order, order, ref_data, request_id, previous_request_id, cancel_order_template, recv_window, timestamp);
     auto request = json::WSAPIRequest{
         .sequence = ++request_id_,
         .type = json::WSAPIType::ORDER_CANCEL,

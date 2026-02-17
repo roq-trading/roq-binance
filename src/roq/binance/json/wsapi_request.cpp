@@ -16,7 +16,7 @@ namespace json {
 
 // NOLINTBEGIN(readability-container-data-pointer,readability-magic-numbers)
 
-std::string_view WSAPIRequest::encode(std::vector<char> &buffer, WSAPIRequest const &request) {
+std::string_view WSAPIRequest::encode(std::string &buffer, WSAPIRequest const &request) {
   std::array<std::byte, 27> data;
   std::memcpy(&data[0], &request.sequence, 4);
   auto event_type = static_cast<uint8_t>(static_cast<json::WSAPIType::type_t>(request.type));

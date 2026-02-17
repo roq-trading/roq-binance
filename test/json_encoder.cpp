@@ -79,25 +79,35 @@ auto create_order(double quantity, double price, std::string_view const &externa
       .max_response_version = {},
       .max_accepted_version = {},
       .security_type = {},
-      .quantity_precision = {},
-      .price_precision = {},
       .update_type = {},
       .user = {},
       .strategy_id = {},
   };
   return order;
 }
+auto create_ref_data() {
+  auto ref_data = server::oms::RefData{
+      .security_type = {},
+      .external_security_id = {},
+      .multiplier = NaN,
+      .quantity = {},
+      .price = {},
+      .has_tick_size_steps = false,
+  };
+  return ref_data;
+}
 }  // namespace
 
 // === IMPLEMENTATION ===
 
 TEST_CASE("create_json", "[json_encoder]") {
-  std::vector<char> buffer;
+  std::string buffer;
   auto create_order_2 = create_create_order(1.0, 1.0);
   auto order = create_order(1.0, 1.0, {});
+  auto ref_data = create_ref_data();
   auto request_id = "oid:1234"sv;
   json::CreateOrderTemplate create_order_template;
-  auto result = json::Encoder::place_order_json(buffer, create_order_2, order, request_id, create_order_template, 5s, {});
+  auto result = json::Encoder::place_order_json(buffer, create_order_2, order, ref_data, request_id, create_order_template, 5s, {});
   CHECK(
       result == R"({)"
                 R"("newClientOrderId":"oid:1234",)"

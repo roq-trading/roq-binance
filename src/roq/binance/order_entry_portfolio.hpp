@@ -101,11 +101,16 @@ struct OrderEntryPortfolio final : public OrderEntry, public web::rest::Client::
 
   void refresh_listen_key(std::chrono::nanoseconds now);
 
-  void new_order(Event<CreateOrder> const &, server::oms::Order const &order, std::string_view const &request_id);
+  void new_order(Event<CreateOrder> const &, server::oms::Order const &, server::oms::RefData const &, std::string_view const &request_id);
   void new_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
   void operator()(Trace<json::NewOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
 
-  void cancel_order(Event<CancelOrder> const &, server::oms::Order const &, std::string_view const &request_id, std::string_view const &previous_request_id);
+  void cancel_order(
+      Event<CancelOrder> const &,
+      server::oms::Order const &,
+      server::oms::RefData const &,
+      std::string_view const &request_id,
+      std::string_view const &previous_request_id);
   void cancel_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
   void operator()(Trace<json::CancelOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
 
@@ -170,7 +175,7 @@ struct OrderEntryPortfolio final : public OrderEntry, public web::rest::Client::
   bool download_account_ = false;
   bool download_orders_ = false;
   bool download_trades_ = false;
-  std::vector<char> encode_buffer_;
+  std::string encode_buffer_;
   bool download_trades_is_first_ = true;
 };
 

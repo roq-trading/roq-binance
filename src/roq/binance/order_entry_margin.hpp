@@ -111,11 +111,16 @@ struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Han
 
   void refresh_listen_key(std::chrono::nanoseconds now);
 
-  void new_order(Event<CreateOrder> const &, server::oms::Order const &order, std::string_view const &request_id);
+  void new_order(Event<CreateOrder> const &, server::oms::Order const &order, server::oms::RefData const &, std::string_view const &request_id);
   void new_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
   void operator()(Trace<json::NewOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
 
-  void cancel_order(Event<CancelOrder> const &, server::oms::Order const &, std::string_view const &request_id, std::string_view const &previous_request_id);
+  void cancel_order(
+      Event<CancelOrder> const &,
+      server::oms::Order const &,
+      server::oms::RefData const &,
+      std::string_view const &request_id,
+      std::string_view const &previous_request_id);
   void cancel_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
   void operator()(Trace<json::CancelOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
 
@@ -188,7 +193,7 @@ struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Han
   bool download_orders_cross_ = false;
   bool download_trades_cross_ = false;
   bool download_account_cross_on_timer_ = false;
-  std::vector<char> encode_buffer_;
+  std::string encode_buffer_;
   bool download_trades_is_first_ = true;
   bool download_trades_cross_is_first_ = true;
   //

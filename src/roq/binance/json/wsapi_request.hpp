@@ -4,8 +4,8 @@
 
 #include <fmt/format.h>
 
+#include <string>
 #include <string_view>
-#include <vector>
 
 #include "roq/binance/json/wsapi_type.hpp"
 
@@ -21,7 +21,7 @@ struct WSAPIRequest final {
   uint32_t version = {};
   uint64_t order_id_2 = {};
 
-  static std::string_view encode(std::vector<char> &buffer, WSAPIRequest const &);
+  static std::string_view encode(std::string &buffer, WSAPIRequest const &);
   static WSAPIRequest decode(std::string_view const &buffer);
 };
 
