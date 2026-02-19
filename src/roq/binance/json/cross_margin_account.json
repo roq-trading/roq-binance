@@ -62,6 +62,10 @@
       "name": "userAssets",
       "type": "roq/binance/json/UserAsset",
       "array": "std/span"
+    },
+    {
+      "name": "withdrawCollateralMarginLevel",
+      "type": "std/int32"
     }
   ]
 }

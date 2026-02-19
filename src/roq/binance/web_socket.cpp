@@ -74,7 +74,6 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &inter
       // proxy
       .proxy = {},
       // http
-      .query = {},
       .user_agent = ROQ_PACKAGE_NAME,
       .request_timeout = {},
       .ping_frequency = settings.ws_api_2.ping_freq,

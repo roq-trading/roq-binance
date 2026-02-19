@@ -41,10 +41,13 @@ auto create_name(auto stream_id, auto &account, auto margin_mode) {
   return fmt::format("{}:{}:{}:{}"sv, stream_id, NAME, account, margin_mode);
 }
 
-auto create_connection(auto &handler, auto &settings, auto &context, auto &listen_key) {
+auto create_query(auto &listen_key) {
   assert(!std::empty(listen_key));
+  return fmt::format("?streams={}"sv, listen_key);
+}
+
+auto create_connection(auto &handler, auto &settings, auto &context) {
   auto uri = settings.ws.uri;
-  auto query = fmt::format("?streams={}"sv, listen_key);
   auto config = web::socket::Client::Config{
       // connection
       .interface = {},
@@ -58,7 +61,6 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &liste
       // proxy
       .proxy = {},
       // http
-      .query = query,
       .user_agent = ROQ_PACKAGE_NAME,
       .request_timeout = {},
       .ping_frequency = settings.ws.ping_freq,
@@ -86,7 +88,7 @@ DropCopyMargin::DropCopyMargin(
     std::string_view const &listen_key,
     MarginMode margin_mode)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name, margin_mode)}, margin_mode_{margin_mode},
-      connection_{create_connection(*this, shared.settings, context, listen_key)},
+      query_{create_query(listen_key)}, connection_{create_connection(*this, shared.settings, context)},
       decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
