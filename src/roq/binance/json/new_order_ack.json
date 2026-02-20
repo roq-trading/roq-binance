@@ -84,6 +84,14 @@
     {
       "name": "origQuoteOrderQty",
       "type": "std/double"
+    },
+    {
+      "name": "marginBuyBorrowAsset",
+      "type": "std/string_view"
+    },
+    {
+      "name": "marginBuyBorrowAmount",
+      "type": "std/double"
     }
   ]
 }
