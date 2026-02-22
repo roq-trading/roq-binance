@@ -74,13 +74,15 @@ R create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &accoun
 }
 
 template <typename R>
-R create_order_entry_margin(auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared, auto &request) {
+R create_order_entry_margin(auto &gateway, auto &settings, auto &context, auto &stream_id, auto &accounts, auto &shared, auto &request) {
   using result_type = std::remove_cvref_t<R>;
   result_type result;
-  for (auto &[_, item] : accounts) {
-    auto &account = *item;
-    auto order_entry = std::make_unique<OrderEntryMargin>(gateway, context, ++stream_id, account, shared, request[account.name]);
-    result.try_emplace(account.name, std::move(order_entry));
+  if (!settings.misc.experimental_drop_margin) {
+    for (auto &[_, item] : accounts) {
+      auto &account = *item;
+      auto order_entry = std::make_unique<OrderEntryMargin>(gateway, context, ++stream_id, account, shared, request[account.name]);
+      result.try_emplace(account.name, std::move(order_entry));
+    }
   }
   return result;
 }
@@ -92,7 +94,7 @@ Gateway::Gateway(server::Dispatcher &dispatcher, Settings const &settings, Confi
     : dispatcher_{dispatcher}, accounts_(create_accounts<decltype(accounts_)>(config)), context_{context}, shared_{dispatcher, settings, config},
       rest_{*this, context_, ++stream_id_, shared_}, request_{create_request<decltype(request_)>(config)},
       order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_, request_)},
-      order_entry_margin_{create_order_entry_margin<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_, request_)} {
+      order_entry_margin_{create_order_entry_margin<decltype(order_entry_)>(*this, settings, context_, stream_id_, accounts_, shared_, request_)} {
   if (settings.rest.cancel_on_disconnect) {
     log::fatal("Exchange does *NOT* support cancel on disconnect"sv);
   }

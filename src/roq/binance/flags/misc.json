@@ -21,6 +21,12 @@
       "type": "std/bool",
       "default": false,
       "description": "Continue when receiving updates for unexpected event-types?"
+    },
+    {
+      "name": "experimental_drop_margin",
+      "type": "std/bool",
+      "default": false,
+      "description": "TEST"
     }
   ]
 }
