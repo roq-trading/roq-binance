@@ -71,6 +71,7 @@ struct Encoder final {
       std::string_view const &request_id,
       CreateOrderTemplate const &,
       std::chrono::milliseconds recv_window,
+      std::chrono::milliseconds now_utc,
       SideEffectType = {});
 
   static std::string_view cancel_order_url(

@@ -359,7 +359,7 @@ void OrderEntryMargin::get_listen_key(MarginMode margin_mode) {
       log::fatal("Unexpected"sv);
     }();
     log::warn("DEBUG margin_mode={}, path={}"sv, margin_mode, path);
-    auto headers = account_.get_rest_headers();
+    auto headers = account_.get_rest_headers_new();
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
         .path = path,
@@ -483,8 +483,9 @@ void OrderEntryMargin::get_account(MarginMode margin_mode) {
       }
       log::fatal("Unexpected"sv);
     }();
-    auto query = account_.create_rest_signature(now_utc);
-    auto headers = account_.get_rest_headers();
+    auto body = fmt::format("timestamp={}"sv, now_utc.count());
+    auto query = account_.create_rest_signature_body_new(now_utc, body);
+    auto headers = account_.get_rest_headers_new();
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
         .path = path,
@@ -495,6 +496,7 @@ void OrderEntryMargin::get_account(MarginMode margin_mode) {
         .body = {},
         .quality_of_service = {},
     };
+    log::warn("DEBUG request={}"sv, request);
     auto callback = [this, margin_mode = margin_mode]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
@@ -617,17 +619,9 @@ void OrderEntryMargin::get_open_orders(MarginMode margin_mode) {
       log::fatal("Unexpected"sv);
     }();
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = account_.create_rest_signature(now_utc);
-    auto headers = account_.get_rest_headers();
-    auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
-    encode_buffer_.clear();
-    fmt::format_to(
-        std::back_inserter(encode_buffer_),
-        R"({{)"
-        R"("timestamp":{})"
-        R"(}})"sv,
-        timestamp.count());
-    std::string body{std::data(encode_buffer_), std::size(encode_buffer_)};
+    auto body = fmt::format("timestamp={}"sv, now_utc.count());
+    auto query = account_.create_rest_signature_body_new(now_utc, body);
+    auto headers = account_.get_rest_headers_new();
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
         .path = path,
@@ -756,17 +750,17 @@ void OrderEntryMargin::get_trades(MarginMode margin_mode) {
       auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
       auto limit = shared_.settings.download.trades_limit ? shared_.settings.download.trades_limit : DOWNLOAD_TRADES_LIMIT;
       log::info<1>("Download trades: lookback={}"sv, lookback);
-      auto headers = account_.get_rest_headers();
       auto body = json::Encoder::my_trades_url(encode_buffer_, symbol, lookback, limit, now_utc);
-      auto query = account_.create_rest_signature_body(now_utc, body);
+      auto query = account_.create_rest_signature_body_new(now_utc, body);
+      auto headers = account_.get_rest_headers_new();
       auto request = web::rest::Request{
           .method = web::http::Method::GET,
           .path = shared_.api.sapi.margin_my_trades,
           .query = query,
           .accept = web::http::Accept::APPLICATION_JSON,
-          .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
+          .content_type = {},
           .headers = headers,
-          .body = body,
+          .body = {},
           .quality_of_service = {},
       };
       auto callback = [this, margin_mode = margin_mode]([[maybe_unused]] auto &request_id, auto &response) {
@@ -886,8 +880,9 @@ void OrderEntryMargin::get_account_cross_on_timer() {
     log::warn("DEBUG Download borrowed amount ON TIMER..."sv);
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
     auto path = shared_.api.sapi.cross_account;
-    auto query = account_.create_rest_signature(now_utc);
-    auto headers = account_.get_rest_headers();
+    auto body = fmt::format("timestamp={}"sv, now_utc.count());
+    auto query = account_.create_rest_signature_body_new(now_utc, body);
+    auto headers = account_.get_rest_headers_new();
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
         .path = path,
@@ -977,20 +972,20 @@ void OrderEntryMargin::new_order(
     open_orders_symbols_.emplace(create_order.symbol);
     auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto body = json::Encoder::new_order_url(
-        encode_buffer_, create_order, order, ref_data, request_id, create_order_template, recv_window, shared_.api.margin_side_effect_type);
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = account_.create_rest_signature_body(now_utc, body);
-    auto headers = account_.get_rest_headers();
+    auto body = json::Encoder::new_order_url(
+        encode_buffer_, create_order, order, ref_data, request_id, create_order_template, recv_window, now_utc, shared_.api.margin_side_effect_type);
+    auto query = account_.create_rest_signature_body_new(now_utc, body);
+    auto headers = account_.get_rest_headers_new();
     auto path = shared_.api.sapi.margin_order;
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
         .path = path,
         .query = query,
         .accept = web::http::Accept::APPLICATION_JSON,
-        .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
+        .content_type = {},
         .headers = headers,
-        .body = body,
+        .body = {},
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
     log::warn("DEBUG request={}"sv, request);
@@ -1144,9 +1139,9 @@ void OrderEntryMargin::cancel_order(
         .path = path,
         .query = query,
         .accept = web::http::Accept::APPLICATION_JSON,
-        .content_type = {},  // web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
+        .content_type = {},
         .headers = headers,
-        .body = {},  // body,
+        .body = {},
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
     log::warn("DEBUG request={}"sv, request);
@@ -1302,9 +1297,9 @@ void OrderEntryMargin::cancel_all_open_orders(Event<CancelAllOrders> const &even
             .path = path,
             .query = query,
             .accept = web::http::Accept::APPLICATION_JSON,
-            .content_type = {},  // web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
+            .content_type = {},
             .headers = headers,
-            .body = {},  // body,
+            .body = {},
             .quality_of_service = io::QualityOfService::IMMEDIATE,
         };
         log::warn("DEBUG request={}"sv, request);
@@ -1315,7 +1310,7 @@ void OrderEntryMargin::cancel_all_open_orders(Event<CancelAllOrders> const &even
         };
         (*connection_)(request_id, request, callback);
       };
-      // helper(MarginMode::ISOLATED);
+      helper(MarginMode::ISOLATED);
       helper(MarginMode::CROSS);
       send_ack(symbol);
     }

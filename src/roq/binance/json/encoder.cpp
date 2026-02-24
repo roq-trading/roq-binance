@@ -220,6 +220,7 @@ std::string_view Encoder::new_order_url(
     std::string_view const &request_id,
     CreateOrderTemplate const &create_order_template,
     std::chrono::milliseconds recv_window,
+    std::chrono::milliseconds now_utc,
     SideEffectType side_effect_type) {
   auto side = map(create_order.side).template get<Side>();
   auto type = map_order_type(create_order);
@@ -248,7 +249,12 @@ std::string_view Encoder::new_order_url(
   if (time_in_force != json::TimeInForce{}) {
     fmt::format_to(std::back_inserter(buffer), "&timeInForce={}"sv, time_in_force.as_raw_text());
   }
-  fmt::format_to(std::back_inserter(buffer), "&type={}"sv, type.as_raw_text());
+  fmt::format_to(
+      std::back_inserter(buffer),
+      "&timestamp={}"
+      "&type={}"sv,
+      now_utc.count(),
+      type.as_raw_text());
   return buffer;
 }
 

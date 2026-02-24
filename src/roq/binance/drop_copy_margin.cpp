@@ -77,7 +77,7 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &accou
       .decode_buffer_size = settings.misc.decode_buffer_size,
       .encode_buffer_size = settings.misc.encode_buffer_size,
   };
-  return web::socket::Client::create(handler, context, config, [headers = std::string{account.get_rest_headers()}]() { return headers; });
+  return web::socket::Client::create(handler, context, config, [headers = std::string{account.get_rest_headers_new()}]() { return headers; });
 }
 
 struct create_metrics final : public utils::metrics::Factory {
@@ -275,7 +275,6 @@ void DropCopyMargin::operator()(web::socket::Client::Latency const &latency) {
 }
 
 void DropCopyMargin::operator()(web::socket::Client::Text const &text) {
-  log::warn("DEBUG {}"sv, text.payload);
   parse(text.payload);
 }
 

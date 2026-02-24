@@ -32,7 +32,7 @@ auto create_headers_helper_new(auto &key) {
   return fmt::format("X-MBX-APIKEY: {}\r\n"sv, key);
 }
 
-auto create_headers_helper(auto &key) {
+auto create_headers_helper_old(auto &key) {
   return fmt::format("X-MBX-APIKEY: {}\r\n"sv, key);
 }
 
@@ -62,7 +62,7 @@ auto create_mac(auto &secret, auto margin_mode, auto &secret_2) {
 
 Crypto::Crypto(
     std::string_view const &key, std::string_view const &secret, MarginMode margin_mode, std::string_view const &key_2, std::string_view const &secret_2)
-    : key_{key}, headers_new_{create_headers_helper_new(key)}, headers_{create_headers_helper(std::empty(key_2) ? key : key_2)},
+    : key_{key}, headers_new_{create_headers_helper_new(key)}, headers_old_{create_headers_helper_old(std::empty(key_2) ? key : key_2)},
       pkey_{create_ed25519<decltype(pkey_)>(secret, margin_mode)}, mac_{create_mac<decltype(mac_)>(secret, margin_mode, secret_2)} {
   if (std::empty(pkey_) && std::empty(mac_)) {
     log::fatal("The secret must be valid ED25519 or HMAC_SHA256"sv);
