@@ -409,7 +409,7 @@ void OrderEntryPortfolio::operator()(Trace<json::ListenKeyAck> const &event) {
 void OrderEntryPortfolio::get_account() {
   profile_.account([&]() {
     auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = account_.create_rest_signature(now);
+    auto query = account_.create_rest_signature_old(now);
     auto headers = account_.get_rest_headers_old();
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
@@ -477,7 +477,7 @@ void OrderEntryPortfolio::operator()(Trace<json::BalancesAck> const &event) {
 void OrderEntryPortfolio::get_open_orders() {
   profile_.open_orders([&]() {
     auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = account_.create_rest_signature(now);
+    auto query = account_.create_rest_signature_old(now);
     auto headers = account_.get_rest_headers_old();
     auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
     encode_buffer_.clear();
@@ -592,7 +592,7 @@ void OrderEntryPortfolio::get_trades() {
       log::info<1>("Download trades: lookback={}"sv, lookback);
       auto headers = account_.get_rest_headers_old();
       auto body = json::Encoder::my_trades_url(encode_buffer_, symbol, lookback, limit, now);
-      auto query = account_.create_rest_signature_query(now, body);
+      auto query = account_.create_rest_signature_old_query(now, body);
       auto request = web::rest::Request{
           .method = web::http::Method::GET,
           .path = shared_.api.papi.margin_my_trades,
@@ -712,7 +712,7 @@ void OrderEntryPortfolio::new_order(
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     auto body = json::Encoder::new_order_url(
         encode_buffer_, create_order, order, ref_data, request_id, create_order_template, recv_window, now, shared_.api.margin_side_effect_type);
-    auto query = account_.create_rest_signature_body(now, body);
+    auto query = account_.create_rest_signature_old_body(now, body);
     auto headers = account_.get_rest_headers_old();
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
@@ -852,7 +852,7 @@ void OrderEntryPortfolio::cancel_order(
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto body = json::Encoder::cancel_order_url(
         encode_buffer_, cancel_order, order, ref_data, request_id, previous_request_id, cancel_order_template, recv_window, now);
-    auto query = account_.create_rest_signature_body(now, body);
+    auto query = account_.create_rest_signature_old_body(now, body);
     auto headers = account_.get_rest_headers_old();
     auto request = web::rest::Request{
         .method = web::http::Method::DELETE,
@@ -996,7 +996,7 @@ void OrderEntryPortfolio::cancel_all_open_orders(Event<CancelAllOrders> const &e
       }
       auto now = clock::get_realtime<std::chrono::milliseconds>();
       auto body = json::Encoder::cancel_all_open_orders_url(encode_buffer_, symbol, MarginMode::PORTFOLIO, recv_window, now);
-      auto query = account_.create_rest_signature_body(now, body);
+      auto query = account_.create_rest_signature_old_body(now, body);
       auto headers = account_.get_rest_headers_old();
       auto request = web::rest::Request{
           .method = web::http::Method::DELETE,

@@ -96,7 +96,7 @@ std::string_view Crypto::create_rest_signature_body_new(std::span<std::byte> con
 
 // classic
 
-std::string_view Crypto::create_rest_signature(std::span<std::byte> const &buffer, std::chrono::milliseconds now_utc) {
+std::string_view Crypto::create_rest_signature_old(std::span<std::byte> const &buffer, std::chrono::milliseconds now_utc) {
   utils::text::Writer writer{buffer};
   writer.write("?timestamp="sv).write(now_utc.count());
   mac_.clear();
@@ -107,7 +107,7 @@ std::string_view Crypto::create_rest_signature(std::span<std::byte> const &buffe
   return writer.finish();
 }
 
-std::string_view Crypto::create_rest_signature_body(std::span<std::byte> const &buffer, std::chrono::milliseconds now_utc, std::string_view const &body) {
+std::string_view Crypto::create_rest_signature_old_body(std::span<std::byte> const &buffer, std::chrono::milliseconds now_utc, std::string_view const &body) {
   utils::text::Writer writer{buffer};
   writer.write("?timestamp="sv).write(now_utc.count());
   mac_.clear();
@@ -120,7 +120,7 @@ std::string_view Crypto::create_rest_signature_body(std::span<std::byte> const &
   return writer.finish();
 }
 
-std::string Crypto::create_rest_signature_query(std::chrono::milliseconds now_utc, std::string_view const &query) {
+std::string Crypto::create_rest_signature_old_query(std::chrono::milliseconds now_utc, std::string_view const &query) {
   auto tmp = fmt::format("{}&timestamp={}"sv, query, now_utc.count());
   mac_.clear();
   mac_.update(tmp);

@@ -41,11 +41,11 @@ struct Crypto final {
 
   static constexpr auto const QUERY_BUFFER_LENGTH = 512uz;  // note! expected length == 99
 
-  std::string_view create_rest_signature(std::span<std::byte> const &buffer, std::chrono::milliseconds now_utc);
+  std::string_view create_rest_signature_old(std::span<std::byte> const &buffer, std::chrono::milliseconds now_utc);
 
-  std::string_view create_rest_signature_body(std::span<std::byte> const &buffer, std::chrono::milliseconds now_utc, std::string_view const &body);
+  std::string_view create_rest_signature_old_body(std::span<std::byte> const &buffer, std::chrono::milliseconds now_utc, std::string_view const &body);
 
-  std::string create_rest_signature_query(std::chrono::milliseconds now_utc, std::string_view const &message);
+  std::string create_rest_signature_old_query(std::chrono::milliseconds now_utc, std::string_view const &message);
 
  private:
   std::string const key_;

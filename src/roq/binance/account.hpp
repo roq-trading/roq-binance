@@ -37,14 +37,14 @@ struct Account final {
 
   std::string_view get_rest_headers_old() const { return crypto_.get_rest_headers_old(); }
 
-  std::string_view create_rest_signature(std::chrono::milliseconds now_utc) { return crypto_.create_rest_signature(query_encode_buffer_, now_utc); }
+  std::string_view create_rest_signature_old(std::chrono::milliseconds now_utc) { return crypto_.create_rest_signature_old(query_encode_buffer_, now_utc); }
 
-  std::string_view create_rest_signature_body(std::chrono::milliseconds now_utc, std::string_view const &body) {
-    return crypto_.create_rest_signature_body(query_encode_buffer_, now_utc, body);
+  std::string_view create_rest_signature_old_body(std::chrono::milliseconds now_utc, std::string_view const &body) {
+    return crypto_.create_rest_signature_old_body(query_encode_buffer_, now_utc, body);
   }
 
-  std::string create_rest_signature_query(std::chrono::milliseconds now_utc, std::string_view const &query) {
-    return crypto_.create_rest_signature_query(now_utc, query);
+  std::string create_rest_signature_old_query(std::chrono::milliseconds now_utc, std::string_view const &query) {
+    return crypto_.create_rest_signature_old_query(now_utc, query);
   }
 
   std::string const name;
