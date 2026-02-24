@@ -282,7 +282,6 @@ void DropCopyMargin::operator()(web::socket::Client::Latency const &latency) {
 }
 
 void DropCopyMargin::operator()(web::socket::Client::Text const &text) {
-  log::warn("DEBUG {}"sv, text.payload);
   parse(text.payload);
 }
 
