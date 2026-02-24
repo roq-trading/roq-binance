@@ -97,6 +97,8 @@ set(AUTOGEN_SCHEMAS
     wsapi_session_logon_result.json
     wsapi_trades.json
     wsapi_type.json
+    wsapi_event_stream_terminated.json
+    wsapi_event_stream_terminated_event.json
     wsapi_user_data_stream_subscribe.json
     wsapi_user_data_stream_subscribe_result.json)
 

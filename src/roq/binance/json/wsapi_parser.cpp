@@ -99,6 +99,9 @@ bool dispatch_event(auto &handler, auto &message, auto &buffer_stack, auto &trac
       break;
     case ORDER_TRADE_UPDATE:
       break;
+    case EVENT_STREAM_TERMINATED:
+      dispatch_helper<WSAPIEventStreamTerminated>(handler, message, buffer_stack, trace_info);
+      return true;
   }
   log::fatal(R"(Unexpected: message="{}")"sv, message);
 }

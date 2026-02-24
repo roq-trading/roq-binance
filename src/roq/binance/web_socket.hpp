@@ -108,6 +108,7 @@ struct WebSocket final : public OrderEntry, public web::socket::Client::Handler,
   void operator()(Trace<json::WSAPISessionLogon> const &) override;
   //
   void operator()(Trace<json::WSAPIUserDataStreamSubscribe> const &) override;
+  void operator()(Trace<json::WSAPIEventStreamTerminated> const &) override;
   //
   void operator()(Trace<json::WSAPIAccount> const &) override;
   void operator()(Trace<json::WSAPIOpenOrders> const &) override;

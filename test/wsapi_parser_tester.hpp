@@ -32,6 +32,7 @@ struct WSAPIParserTester final : public json::WSAPIParser::Handler {
   void operator()(Trace<json::WSAPISessionLogon> const &event) override { dispatch(event); }
 
   void operator()(Trace<json::WSAPIUserDataStreamSubscribe> const &event) override { dispatch(event); }
+  void operator()(Trace<json::WSAPIEventStreamTerminated> const &event) override { dispatch(event); }
 
   void operator()(Trace<json::WSAPIAccount> const &event) override { dispatch(event); }
   void operator()(Trace<json::WSAPIOpenOrders> const &event) override { dispatch(event); }

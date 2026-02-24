@@ -19,6 +19,9 @@ struct Request final {
   std::chrono::nanoseconds request_trades = {};
   std::chrono::nanoseconds respond_trades = {};
   // margin cross:
+  // listen-key
+  std::chrono::nanoseconds request_listen_key_cross = {};
+  std::chrono::nanoseconds respond_listen_key_cross = {};
   // account
   std::chrono::nanoseconds request_account_cross = {};
   std::chrono::nanoseconds respond_account_cross = {};

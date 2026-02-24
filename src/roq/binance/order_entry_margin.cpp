@@ -174,6 +174,10 @@ void OrderEntryMargin::operator()(Event<Timer> const &event) {
       download_trades_ = true;
     }
     // margin cross
+    if (!downloading() && request_.respond_listen_key_cross < request_.request_listen_key_cross) {
+      get_listen_key(MarginMode::CROSS);
+      download_listen_key_cross_ = true;
+    }
     if (!downloading() && request_.respond_account_cross < request_.request_account_cross) {
       get_account(MarginMode::CROSS);
       download_account_cross_ = true;
@@ -270,6 +274,7 @@ void OrderEntryMargin::operator()(Trace<web::rest::Client::Disconnected> const &
   download_account_ = false;
   download_orders_ = false;
   download_trades_ = false;
+  download_listen_key_cross_ = false;
   download_account_cross_ = false;
   download_orders_cross_ = false;
   download_trades_cross_ = false;
@@ -328,8 +333,12 @@ uint32_t OrderEntryMargin::download(OrderEntryState state) {
       assert(false);
       break;
     case LISTEN_KEY:
-      get_listen_key(MarginMode::CROSS);  // note! isolated requires the symbol... don't know how to
-      return 1;
+      if (has_listen_key_cross_) {
+        return 0;
+      } else {
+        get_listen_key(MarginMode::CROSS);  // note! isolated requires the symbol... don't know how to
+        return 1;
+      }
     case DONE:
       (*this)(ConnectionStatus::READY);
       assert(!ready_);
@@ -359,17 +368,21 @@ void OrderEntryMargin::get_listen_key(MarginMode margin_mode) {
       log::fatal("Unexpected"sv);
     }();
     log::warn("DEBUG margin_mode={}, path={}"sv, margin_mode, path);
+    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+    auto body = "validity=86400000"sv;  // 24 hours
+    auto query = account_.create_rest_signature_body_new(now_utc, body);
     auto headers = account_.get_rest_headers_new();
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
         .path = path,
-        .query = {},
+        .query = query,
         .accept = web::http::Accept::APPLICATION_JSON,
         .content_type = {},
         .headers = headers,
         .body = {},
         .quality_of_service = {},
     };
+    log::warn("DEBUG request={}"sv, request);
     auto callback = [this, margin_mode = margin_mode]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
@@ -387,6 +400,8 @@ void OrderEntryMargin::get_listen_key_ack(Trace<web::rest::Response> const &even
       if (download_.downloading()) {
         download_.retry(STATE);
       }
+      request_.respond_listen_key_cross = clock::get_system();  // completion
+      download_listen_key_cross_ = false;
     };
     auto handle_success = [&](auto &body) {
       json::ListenKeyAckMargin listen_key{body};
@@ -402,7 +417,9 @@ void OrderEntryMargin::get_listen_key_ack(Trace<web::rest::Response> const &even
           get_listen_key(MarginMode::CROSS);
           break;
         case CROSS:
-          download_.check_relaxed(STATE);  // note! done
+          download_.check_relaxed(STATE);                           // note! done
+          request_.respond_listen_key_cross = clock::get_system();  // completion
+          download_listen_key_cross_ = false;
           break;
         case PORTFOLIO:
           log::fatal("Unexpected"sv);
@@ -430,6 +447,7 @@ void OrderEntryMargin::operator()(Trace<json::ListenKeyAckMargin> const &event, 
     }
   };
   auto update_spot = [&]() {
+    log::fatal("Unexpected"sv);  // XXX FIXME TODO legacy ???
     bool initial = std::empty(listen_key_);
     if (utils::update(listen_key_, listen_key_ack.token)) {
       dispatch(initial);
@@ -438,16 +456,21 @@ void OrderEntryMargin::operator()(Trace<json::ListenKeyAckMargin> const &event, 
     listen_key_refresh_ = now + shared_.settings.rest.listen_key_refresh;
   };
   auto update_margin_cross = [&]() {
+    /*
     bool initial = std::empty(listen_key_cross_);
     if (utils::update(listen_key_cross_, listen_key_ack.token)) {
       dispatch(initial);
     }
-    auto now = clock::get_system();
-    listen_key_refresh_cross_ = now + shared_.settings.rest.listen_key_refresh;
+    */
+    dispatch(true);
+    // auto now = clock::get_system();
+    // listen_key_refresh_cross_ = now + shared_.settings.rest.listen_key_refresh;
+    has_listen_key_cross_ = true;
   };
   switch (margin_mode) {
     using enum MarginMode;
     case UNDEFINED:
+      log::fatal("Unexpected"sv);  // XXX FIXME TODO legacy ???
       update_spot();
       break;
     case ISOLATED:
@@ -496,7 +519,7 @@ void OrderEntryMargin::get_account(MarginMode margin_mode) {
         .body = {},
         .quality_of_service = {},
     };
-    log::warn("DEBUG request={}"sv, request);
+    // log::warn("DEBUG request={}"sv, request);
     auto callback = [this, margin_mode = margin_mode]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
@@ -910,7 +933,7 @@ void OrderEntryMargin::get_account_cross_on_timer_ack(Trace<web::rest::Response>
       download_account_cross_on_timer_ = false;
     };
     auto handle_success = [&](auto &body) {
-      log::warn(R"(DEBUG body="{}")"sv, body);
+      // log::warn(R"(DEBUG body="{}")"sv, body);
       json::CrossMarginAccount account{body, decode_buffer_};
       Trace event_2{event, account};
       (*this)(event_2);
@@ -948,6 +971,7 @@ void OrderEntryMargin::refresh_listen_key(std::chrono::nanoseconds now) {
   if (!ready_) {
     return;
   }
+  /*
   if (listen_key_refresh_.count() != 0 && listen_key_refresh_ < now) {
     log::info<1>("Refreshing listen key..."sv);
     listen_key_refresh_ = now + shared_.settings.rest.listen_key_refresh;
@@ -958,6 +982,7 @@ void OrderEntryMargin::refresh_listen_key(std::chrono::nanoseconds now) {
     listen_key_refresh_cross_ = now + shared_.settings.rest.listen_key_refresh;
     get_listen_key(MarginMode::CROSS);
   }
+  */
 }
 
 // new-order
@@ -988,7 +1013,7 @@ void OrderEntryMargin::new_order(
         .body = {},
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
-    log::warn("DEBUG request={}"sv, request);
+    // log::warn("DEBUG request={}"sv, request);
     auto callback = [this, user_id = message_info.source, order_id = create_order.order_id]([[maybe_unused]] auto &request_id, auto &response) {
       uint32_t version = 1;
       TraceInfo trace_info;
@@ -1018,7 +1043,7 @@ void OrderEntryMargin::new_order_ack(Trace<web::rest::Response> const &event, ui
       (*this)(event_2, user_id, order_id);
     };
     auto handle_success = [&](auto &body) {
-      log::warn(R"(DEBUG body="{}")"sv, body);
+      // log::warn(R"(DEBUG body="{}")"sv, body);
       json::NewOrderAck new_order_ack{body, decode_buffer_};
       Trace event_2{event, new_order_ack};
       (*this)(event_2, user_id, order_id, version);
@@ -1144,7 +1169,7 @@ void OrderEntryMargin::cancel_order(
         .body = {},
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
-    log::warn("DEBUG request={}"sv, request);
+    // log::warn("DEBUG request={}"sv, request);
     auto callback = [this, user_id = message_info.source, order_id = cancel_order.order_id, version = cancel_order.version](
                         [[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
@@ -1174,7 +1199,7 @@ void OrderEntryMargin::cancel_order_ack(Trace<web::rest::Response> const &event,
       (*this)(event_2, user_id, order_id);
     };
     auto handle_success = [&](auto &body) {
-      log::warn(R"(DEBUG body="{}")"sv, body);
+      // log::warn(R"(DEBUG body="{}")"sv, body);
       json::CancelOrderAck cancel_order_ack{body};
       Trace event_2{event, cancel_order_ack};
       (*this)(event_2, user_id, order_id, version);
@@ -1302,7 +1327,7 @@ void OrderEntryMargin::cancel_all_open_orders(Event<CancelAllOrders> const &even
             .body = {},
             .quality_of_service = io::QualityOfService::IMMEDIATE,
         };
-        log::warn("DEBUG request={}"sv, request);
+        // log::warn("DEBUG request={}"sv, request);
         auto callback = [this](auto &request_id, auto &response) {
           TraceInfo trace_info;
           Trace event{trace_info, response};
@@ -1352,7 +1377,7 @@ void OrderEntryMargin::cancel_all_open_orders_ack(Trace<web::rest::Response> con
       send_ack(RequestStatus::REJECTED, error, text);
     };
     auto handle_success = [&](auto &body) {
-      log::warn(R"(DEBUG body="{}")"sv, body);
+      // log::warn(R"(DEBUG body="{}")"sv, body);
       json::CancelAllOpenOrdersAck cancel_all_open_orders_ack{body, decode_buffer_};
       Trace event_2{event, cancel_all_open_orders_ack};
       (*this)(event_2);

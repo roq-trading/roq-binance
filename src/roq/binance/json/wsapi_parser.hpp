@@ -12,6 +12,7 @@
 
 #include "roq/binance/json/wsapi_session_logon.hpp"
 
+#include "roq/binance/json/wsapi_event_stream_terminated.hpp"
 #include "roq/binance/json/wsapi_user_data_stream_subscribe.hpp"
 
 #include "roq/binance/json/wsapi_account.hpp"
@@ -36,6 +37,7 @@ struct WSAPIParser final {
     virtual void operator()(Trace<WSAPISessionLogon> const &) = 0;
     //
     virtual void operator()(Trace<WSAPIUserDataStreamSubscribe> const &) = 0;
+    virtual void operator()(Trace<WSAPIEventStreamTerminated> const &) = 0;
     //
     virtual void operator()(Trace<WSAPIAccount> const &) = 0;
     virtual void operator()(Trace<WSAPIOpenOrders> const &) = 0;

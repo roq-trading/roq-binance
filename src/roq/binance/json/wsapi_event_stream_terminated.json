@@ -1,0 +1,14 @@
+{
+  "name": "roq/binance/json/WSAPIEventStreamTerminated",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "subscriptionId",
+      "type": "std/int64"
+    },
+    {
+      "name": "event",
+      "type": "roq/binance/json/WSAPIEventStreamTerminatedEvent"
+    }
+  ]
+}

@@ -32,6 +32,7 @@ set(SOURCES
     json_wsapi_session_logon.cpp
     json_wsapi_trades.cpp
     json_wsapi_user_data_stream_subscribe.cpp
+    json_wsapi_event_stream_terminated.cpp
     tools_crypto.cpp
     main.cpp)
 

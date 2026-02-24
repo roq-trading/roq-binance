@@ -104,10 +104,9 @@ DropCopyMargin::DropCopyMargin(
     Account &account,
     Shared &shared,
     Request &request,
-    std::string_view const &listen_key,
-    MarginMode margin_mode)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)}, listen_key_{listen_key}, margin_mode_{margin_mode},
-      connection_{create_connection(*this, shared.settings, context, account)},
+    OrderEntry::ListenKeyUpdate const &listen_key_update)
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)}, listen_token_{listen_key_update.listen_key},
+      margin_mode_{listen_key_update.margin_mode}, connection_{create_connection(*this, shared.settings, context, account)},
       decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -148,6 +147,7 @@ void DropCopyMargin::operator()(Event<Stop> const &) {
 void DropCopyMargin::operator()(Event<Timer> const &event) {
   auto &[message_info, timer] = event;
   (*connection_).refresh(timer.now);
+  check_response_listen_key();
   check_response_account();
   check_response_orders();
 }
@@ -173,6 +173,13 @@ void DropCopyMargin::operator()(metrics::Writer &writer) const {
       .write(rate_limiter_.request_weight_1m, metrics::Type::RATE_LIMITER)
       .write(rate_limiter_.create_order_10s, metrics::Type::RATE_LIMITER)
       .write(rate_limiter_.create_order_1d, metrics::Type::RATE_LIMITER);
+}
+
+void DropCopyMargin::operator()(OrderEntry::ListenKeyUpdate const &listen_key_update) {
+  assert(std::empty(listen_token_));
+  listen_token_ = listen_key_update.listen_key;
+  log::warn(R"(DEBUG listen_token_="{}")"sv, listen_token_);
+  (*connection_).resume();
 }
 
 // session-logon
@@ -228,7 +235,7 @@ void DropCopyMargin::subscribe_user_data_stream() {
       R"(}})"
       R"(}})"sv,
       request_id,
-      listen_key_);
+      listen_token_);
   (*connection_).send_text(message);
   (*this)(ConnectionStatus::DOWNLOADING);
 }
@@ -275,6 +282,7 @@ void DropCopyMargin::operator()(web::socket::Client::Latency const &latency) {
 }
 
 void DropCopyMargin::operator()(web::socket::Client::Text const &text) {
+  log::warn("DEBUG {}"sv, text.payload);
   parse(text.payload);
 }
 
@@ -388,179 +396,27 @@ void DropCopyMargin::operator()(Trace<json::WSAPIUserDataStreamSubscribe> const 
   });
 }
 
+void DropCopyMargin::operator()(Trace<json::WSAPIEventStreamTerminated> const &) {
+  if (std::empty(listen_token_)) {
+    return;
+  }
+  log::warn("REQUEST LISTEN TOKEN"sv);
+  listen_token_.clear();
+  (*connection_).suspend(60s);
+  request_.request_listen_key_cross = clock::get_system();
+  download_listen_token_ = true;
+}
+
 void DropCopyMargin::operator()(Trace<json::WSAPIAccount> const &event) {
   log::fatal("{}"sv, event.value);
-  /*
-  auto const STATE = DropCopyStateMargin::ACCOUNT_STATUS;
-  profile_.account_status([&]() {
-    auto &[trace_info, wsapi_account] = event;
-    log::info<2>("wsapi_account={}"sv, wsapi_account);
-    if (wsapi_account.status == 200) {
-      auto &account = wsapi_account.result;
-      for (auto &item : account.balances) {
-        auto funds_update = FundsUpdate{
-            .stream_id = stream_id_,
-            .account = account_.name,
-            .currency = item.asset,
-            .margin_mode = {},
-            .balance = item.free,
-            .hold = item.locked,
-            .borrowed = NaN,
-            .external_account = {},
-            .update_type = UpdateType::SNAPSHOT,
-            .exchange_time_utc = account.update_time,
-            .sending_time_utc = account.update_time,
-        };
-        create_trace_and_dispatch(handler_, trace_info, funds_update, true);
-      }
-      download_.check_relaxed(STATE);
-    } else {
-      // XXX FIXME TODO review
-      log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, wsapi_account.error);
-      if (download_.downloading()) {
-        download_.retry(STATE);
-      }
-    }
-    update_rate_limits(event);
-  });
-  */
 }
 
 void DropCopyMargin::operator()(Trace<json::WSAPIOpenOrders> const &event) {
   log::fatal("{}"sv, event.value);
-  /*
-  auto const STATE = DropCopyStateMargin::OPEN_ORDERS_STATUS;
-  profile_.open_orders_status([&]() {
-    auto &[trace_info, wsapi_open_orders] = event;
-    log::info<2>("wsapi_open_orders={}"sv, wsapi_open_orders);
-    if (wsapi_open_orders.status == 200) {
-      auto &open_orders = wsapi_open_orders.result;
-      for (auto &item : open_orders) {
-        log::info<2>("item={}"sv, item);
-        if (std::empty(item.client_order_id)) {
-          continue;
-        }
-        open_orders_symbols_.emplace(item.symbol);
-        auto external_order_id = fmt::format("{}"sv, item.order_id);  // alloc
-        auto order_update = server::oms::OrderUpdate{
-            .account = account_.name,
-            .exchange = shared_.settings.exchange,
-            .symbol = item.symbol,
-            .side = map(item.side),
-            .position_effect = {},
-            .margin_mode = {},
-            .max_show_quantity = NaN,
-            .order_type = map(item.type),
-            .time_in_force = map(item.time_in_force),
-            .execution_instructions = {},
-            .create_time_utc = item.time,
-            .update_time_utc = item.update_time,
-            .external_account = {},
-            .external_order_id = external_order_id,
-            .client_order_id = item.client_order_id,
-            .order_status = map(item.status),
-            .error = {},
-            .text = {},
-            .quantity = item.orig_qty,
-            .price = item.price,
-            .stop_price = item.stop_price,
-            .leverage = NaN,
-            .remaining_quantity = NaN,
-            .traded_quantity = item.executed_qty,
-            .average_traded_price = {},
-            .last_traded_quantity = {},
-            .last_traded_price = {},
-            .last_liquidity = {},
-            .routing_id = {},
-            .max_request_version = {},
-            .max_response_version = {},
-            .max_accepted_version = {},
-            .update_type = UpdateType::SNAPSHOT,
-            .sending_time_utc = {},
-        };
-        Trace event_2{trace_info, order_update};
-        (*this)(event_2, item.client_order_id);
-      }
-      download_.check_relaxed(STATE);
-    } else {
-      // XXX FIXME TODO review
-      log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, wsapi_open_orders.error);
-      if (download_.downloading()) {
-        download_.retry(STATE);
-      }
-    }
-    update_rate_limits(event);
-  });
-  */
 }
 
 void DropCopyMargin::operator()(Trace<json::WSAPITrades> const &event) {
   log::fatal("{}"sv, event.value);
-  /*
-  auto const STATE = DropCopyStateMargin::MY_TRADES;
-  profile_.my_trades([&]() {
-    auto &[trace_info, wsapi_trades] = event;
-    log::info<2>("wsapi_trades={}"sv, wsapi_trades);
-    if (wsapi_trades.status == 200) {
-      download_trades_is_first_ = false;  // after first successful
-      auto &trades = wsapi_trades.result;
-      for (auto &item : trades) {
-        log::info<2>("item={}"sv, item);
-        auto liquidity = item.is_maker ? Liquidity::MAKER : Liquidity::TAKER;
-        auto side = item.is_buyer ? Side::BUY : Side::SELL;
-        auto ref_data = shared_.get_ref_data(shared_.settings.exchange, item.symbol);
-        auto profit_loss_amount = utils::compute_profit_loss_amount(side, item.qty, item.price, ref_data.multiplier);
-        auto fill = Fill{
-            .external_trade_id = {},
-            .quantity = item.qty,  // XXX FIXME quote_qty ???
-            .price = item.price,
-            .liquidity = liquidity,
-            .commission_amount = item.commission,
-            .commission_currency = item.commission_asset,
-            .base_amount = NaN,
-            .quote_amount = item.quote_qty,
-            .profit_loss_amount = profit_loss_amount,
-        };
-        fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"sv, item.id);
-        auto external_order_id = fmt::format("{}"sv, item.order_id);
-        auto trade_update = TradeUpdate{
-            .stream_id = stream_id_,
-            .account = account_.name,
-            .order_id = {},
-            .exchange = shared_.settings.exchange,
-            .symbol = item.symbol,
-            .side = side,
-            .position_effect = {},
-            .margin_mode = {},
-            .quantity_type = {},
-            .create_time_utc = item.time,
-            .update_time_utc = item.time,
-            .external_account = {},
-            .external_order_id = external_order_id,
-            .client_order_id = {},
-            .fills = {&fill, 1},
-            .routing_id = {},
-            .update_type = UpdateType::INCREMENTAL,
-            .sending_time_utc = item.time,
-            .user = {},
-            .strategy_id = {},
-        };
-        std::string_view client_order_id;  // XXX MISSING
-        create_trace_and_dispatch(handler_, trace_info, trade_update, true, SOURCE_NONE, client_order_id);
-      }
-      // XXX FIXME TODO here we need a countdown
-      download_.check_relaxed(STATE);
-    }
-    // XXX FIXME TODO review
-    else {
-      log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, wsapi_trades.error);
-      if (download_.downloading()) {
-        download_.retry(STATE);
-      }
-    }
-    update_rate_limits(event);
-  });
-  */
 }
 
 void DropCopyMargin::operator()(Trace<json::WSAPIOrderPlace> const &, json::WSAPIRequest const &) {
@@ -583,7 +439,6 @@ void DropCopyMargin::operator()(Trace<json::WSAPIOutboundAccountPosition> const 
   profile_.outbound_account_position([&]() {
     auto &[trace_info, wsapi_outbound_account_position] = event;
     log::info<2>("wsapi_outbound_account_position={}"sv, wsapi_outbound_account_position);
-    log::warn("DEBUG wsapi_outbound_account_position={}"sv, wsapi_outbound_account_position);
     Trace event_2{trace_info, wsapi_outbound_account_position.event};
     (*this)(event_2);
   });
@@ -593,7 +448,6 @@ void DropCopyMargin::operator()(Trace<json::WSAPIBalanceUpdate> const &event) {
   profile_.balance_update([&]() {
     auto &[trace_info, wsapi_balance_update] = event;
     log::info<2>("wsapi_balance_update={}"sv, wsapi_balance_update);
-    log::warn("DEBUG wsapi_balance_update={}"sv, wsapi_balance_update);
     Trace event_2{trace_info, wsapi_balance_update.event};
     (*this)(event_2);
   });
@@ -603,7 +457,6 @@ void DropCopyMargin::operator()(Trace<json::WSAPIExecutionReport> const &event) 
   profile_.execution_report([&]() {
     auto &[trace_info, wsapi_execution_report] = event;
     log::info<2>("wsapi_execution_report={}"sv, wsapi_execution_report);
-    log::warn("DEBUG wsapi_execution_report={}"sv, wsapi_execution_report);
     Trace event_2{trace_info, wsapi_execution_report.event};
     (*this)(event_2);
   });
@@ -828,6 +681,13 @@ void DropCopyMargin::operator()(Trace<server::oms::OrderUpdate> const &event, st
   if (shared_.update_order(client_order_id, stream_id_, trace_info, order_update, [&]([[maybe_unused]] auto &order) {})) {
   } else {
     log::warn("*** EXTERNAL ORDER ***"sv);
+  }
+}
+
+void DropCopyMargin::check_response_listen_key() {
+  if (download_listen_token_ && request_.request_listen_key_cross < request_.respond_listen_key_cross) {
+    download_listen_token_ = false;
+    log::warn("GOT PRIVATE TOKEN"sv);
   }
 }
 

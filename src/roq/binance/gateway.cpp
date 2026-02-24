@@ -192,12 +192,13 @@ void Gateway::operator()(OrderEntry::ListenKeyUpdate const &listen_key_update) {
     case ISOLATED:
     case CROSS: {
       auto &instance = drop_copy_margin_[listen_key_update.account];
-      if (!instance) {
+      if (instance) {
+        (*instance)(listen_key_update);
+      } else {
         log::info(R"(Create drop-copy (user-stream) for account="{}", margin_mode={})"sv, listen_key_update.account, listen_key_update.margin_mode);
         auto &account_2 = get_account(listen_key_update.account);
         auto &request = request_[listen_key_update.account];  // XXX
-        instance = std::make_unique<DropCopyMargin>(
-            *this, context_, ++stream_id_, account_2, shared_, request, listen_key_update.listen_key, listen_key_update.margin_mode);
+        instance = std::make_unique<DropCopyMargin>(*this, context_, ++stream_id_, account_2, shared_, request, listen_key_update);
         MessageInfo message_info;
         Start start;
         create_event_and_dispatch(*instance, message_info, start);

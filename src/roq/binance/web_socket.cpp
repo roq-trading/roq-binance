@@ -707,6 +707,10 @@ void WebSocket::operator()(Trace<json::WSAPIUserDataStreamSubscribe> const &even
   });
 }
 
+void WebSocket::operator()(Trace<json::WSAPIEventStreamTerminated> const &) {
+  log::fatal("Unexpected"sv);
+}
+
 void WebSocket::operator()(Trace<json::WSAPIAccount> const &event) {
   auto const STATE = WebSocketState::ACCOUNT_STATUS;
   profile_.account_status([&]() {

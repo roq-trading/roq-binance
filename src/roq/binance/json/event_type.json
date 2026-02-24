@@ -35,6 +35,9 @@
     {
       "name": "ORDER_TRADE_UPDATE",
       "comment": "seen on papi"
+    },
+    {
+      "name": "eventStreamTerminated"
     }
   ]
 }

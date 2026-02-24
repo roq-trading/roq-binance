@@ -74,8 +74,8 @@ struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Han
   bool ready() const { return status_ == ConnectionStatus::READY; }
 
   bool downloading() const {
-    return download_account_ || download_orders_ || download_trades_ || download_account_cross_ || download_orders_cross_ || download_trades_cross_ ||
-           download_account_cross_on_timer_;
+    return download_account_ || download_orders_ || download_trades_ || download_listen_key_cross_ || download_account_cross_ || download_orders_cross_ ||
+           download_trades_cross_ || download_account_cross_on_timer_;
   }
 
   // web::rest::Client::Handler
@@ -189,6 +189,7 @@ struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Han
   bool download_account_ = false;
   bool download_orders_ = false;
   bool download_trades_ = false;
+  bool download_listen_key_cross_ = false;
   bool download_account_cross_ = false;
   bool download_orders_cross_ = false;
   bool download_trades_cross_ = false;
@@ -198,6 +199,8 @@ struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Han
   bool download_trades_cross_is_first_ = true;
   //
   std::chrono::nanoseconds next_poll_borrowed_ = {};
+  //
+  bool has_listen_key_cross_ = false;
 };
 
 }  // namespace binance

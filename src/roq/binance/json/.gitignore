@@ -85,6 +85,8 @@ wsapi_session_logon.hpp
 wsapi_session_logon_result.hpp
 wsapi_trades.hpp
 wsapi_type.hpp
+wsapi_event_stream_terminated.hpp
+wsapi_event_stream_terminated_event.hpp
 wsapi_user_data_stream_subscribe.hpp
 wsapi_user_data_stream_subscribe_result.hpp
 account_ack.cpp
@@ -172,5 +174,7 @@ wsapi_session_logon.cpp
 wsapi_session_logon_result.cpp
 wsapi_trades.cpp
 wsapi_type.cpp
+wsapi_event_stream_terminated.cpp
+wsapi_event_stream_terminated_event.cpp
 wsapi_user_data_stream_subscribe.cpp
 wsapi_user_data_stream_subscribe_result.cpp

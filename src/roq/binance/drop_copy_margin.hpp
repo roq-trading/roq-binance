@@ -26,6 +26,7 @@
 #include "roq/binance/account.hpp"
 #include "roq/binance/drop_copy.hpp"
 #include "roq/binance/drop_copy_state_margin.hpp"
+#include "roq/binance/order_entry.hpp"
 #include "roq/binance/request.hpp"
 #include "roq/binance/shared.hpp"
 
@@ -35,7 +36,7 @@ namespace roq {
 namespace binance {
 
 struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handler, public json::WSAPIParser::Handler {
-  DropCopyMargin(DropCopy::Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, std::string_view const &listen_key, MarginMode);
+  DropCopyMargin(DropCopy::Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, OrderEntry::ListenKeyUpdate const &);
 
   DropCopyMargin(DropCopyMargin const &) = delete;
 
@@ -45,9 +46,11 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
 
   void operator()(metrics::Writer &) const override;
 
-  bool ready() const { return status_ == ConnectionStatus::READY; }
+  void operator()(OrderEntry::ListenKeyUpdate const &);
 
  protected:
+  bool ready() const { return status_ == ConnectionStatus::READY; }
+
   void operator()(ConnectionStatus);
 
   uint32_t download(DropCopyStateMargin);
@@ -76,6 +79,7 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
   void operator()(Trace<json::WSAPISessionLogon> const &) override;
   //
   void operator()(Trace<json::WSAPIUserDataStreamSubscribe> const &) override;
+  void operator()(Trace<json::WSAPIEventStreamTerminated> const &) override;
   //
   void operator()(Trace<json::WSAPIAccount> const &) override;
   void operator()(Trace<json::WSAPIOpenOrders> const &) override;
@@ -103,6 +107,7 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
 
   void operator()(Trace<server::oms::OrderUpdate> const &, std::string_view const &client_order_id);
 
+  void check_response_listen_key();
   void check_response_account();
   void check_response_orders();
 
@@ -110,7 +115,7 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
   // config
   uint16_t const stream_id_;
   std::string const name_;
-  std::string listen_key_;
+  std::string listen_token_;
   MarginMode const margin_mode_;
   // web socket
   std::unique_ptr<web::socket::Client> connection_;
@@ -146,6 +151,8 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
   bool ready_ = false;
   ConnectionStatus status_ = {};
   core::Download<DropCopyStateMargin> download_;
+  //
+  bool download_listen_token_ = false;
 };
 
 }  // namespace binance
