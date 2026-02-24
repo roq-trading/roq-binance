@@ -4,8 +4,12 @@
 
 #include <string>
 #include <string_view>
+#include <vector>
+
+#include "roq/utils/container.hpp"
 
 #include "roq/utils/metrics/counter.hpp"
+#include "roq/utils/metrics/gauge.hpp"
 #include "roq/utils/metrics/latency.hpp"
 #include "roq/utils/metrics/profile.hpp"
 
@@ -21,17 +25,19 @@
 
 #include "roq/binance/account.hpp"
 #include "roq/binance/drop_copy.hpp"
-#include "roq/binance/drop_copy_state.hpp"
+#include "roq/binance/drop_copy_state_margin.hpp"
 #include "roq/binance/request.hpp"
 #include "roq/binance/shared.hpp"
 
-#include "roq/binance/json/user_stream_parser.hpp"
+#include "roq/binance/json/wsapi_parser.hpp"
 
 namespace roq {
 namespace binance {
 
-struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handler, public json::UserStreamParser::Handler {
+struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handler, public json::WSAPIParser::Handler {
   DropCopyMargin(DropCopy::Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, std::string_view const &listen_key, MarginMode);
+
+  DropCopyMargin(DropCopyMargin const &) = delete;
 
   void operator()(Event<Start> const &) override;
   void operator()(Event<Stop> const &) override;
@@ -39,7 +45,22 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
 
   void operator()(metrics::Writer &) const override;
 
+  bool ready() const { return status_ == ConnectionStatus::READY; }
+
  protected:
+  void operator()(ConnectionStatus);
+
+  uint32_t download(DropCopyStateMargin);
+
+  void session_logon();
+
+  void subscribe_user_data_stream();
+
+  void get_account();
+  void get_orders();
+
+  // web::socket::Client::Handler
+
   void operator()(web::socket::Client::Connected const &) override;
   void operator()(web::socket::Client::Disconnected const &) override;
   void operator()(web::socket::Client::Ready const &) override;
@@ -47,37 +68,51 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
   void operator()(web::socket::Client::Latency const &) override;
   void operator()(web::socket::Client::Text const &) override;
   void operator()(web::socket::Client::Binary const &) override;
-  //
-  std::string_view get_query() const override { return query_; }
-
- private:
-  void operator()(ConnectionStatus);
-
-  uint32_t download(DropCopyState);
 
   void parse(std::string_view const &message);
 
-  void operator()(Trace<json::OutboundAccountPosition> const &) override;
-  void operator()(Trace<json::BalanceUpdate> const &) override;
-  void operator()(Trace<json::ExecutionReport> const &) override;
-  void operator()(Trace<json::ListStatus> const &) override;
+  // json::WSAPIParser::Handler
 
-  void request_account();
+  void operator()(Trace<json::WSAPISessionLogon> const &) override;
+  //
+  void operator()(Trace<json::WSAPIUserDataStreamSubscribe> const &) override;
+  //
+  void operator()(Trace<json::WSAPIAccount> const &) override;
+  void operator()(Trace<json::WSAPIOpenOrders> const &) override;
+  void operator()(Trace<json::WSAPITrades> const &) override;
+  //
+  void operator()(Trace<json::WSAPIOrderPlace> const &, json::WSAPIRequest const &) override;
+  void operator()(Trace<json::WSAPIOrderAmendKeepPriority> const &, json::WSAPIRequest const &) override;
+  void operator()(Trace<json::WSAPICancelOrder> const &, json::WSAPIRequest const &) override;
+  void operator()(Trace<json::WSAPICancelOpenOrders> const &, json::WSAPIRequest const &) override;
+  //
+  void operator()(Trace<json::WSAPIOutboundAccountPosition> const &) override;
+  void operator()(Trace<json::WSAPIBalanceUpdate> const &) override;
+  void operator()(Trace<json::WSAPIExecutionReport> const &) override;
+
+  // helpers
+
+  void operator()(Trace<json::OutboundAccountPositionData> const &);
+  void operator()(Trace<json::BalanceUpdateData> const &);
+  void operator()(Trace<json::ExecutionReportData> const &);
+
+  void update_rate_limits(auto &event);
+
+  template <typename... Args>
+  void operator()(Trace<server::oms::Response> const &, uint8_t user_id, uint64_t order_id, Args &&...args);
+
+  void operator()(Trace<server::oms::OrderUpdate> const &, std::string_view const &client_order_id);
+
   void check_response_account();
-
-  void request_orders();
   void check_response_orders();
-
-  void request_trades();
-  void check_response_trades();
 
   DropCopy::Handler &handler_;
   // config
   uint16_t const stream_id_;
   std::string const name_;
+  std::string listen_key_;
   MarginMode const margin_mode_;
   // web socket
-  std::string query_;
   std::unique_ptr<web::socket::Client> connection_;
   // buffers
   core::json::BufferStack decode_buffer_;
@@ -86,20 +121,31 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile parse, outbound_account_position, balance_update, execution_report, list_status;
+    utils::metrics::Profile parse,   //
+        session_logon,               //
+        user_data_stream_subscribe,  //
+        outbound_account_position,   //
+        balance_update,              //
+        execution_report;
   } profile_;
   struct {
     utils::metrics::Latency ping, heartbeat;
   } latency_;
-  // accounts
+  struct {
+    utils::metrics::Gauge request_weight_1m, create_order_10s, create_order_1d;
+  } rate_limiter_;
+  // authentication
   Account &account_;
   // shared
   Shared &shared_;
   Request &request_;
+  // experimental
+  uint32_t request_id_;
+  std::string request_encode_buffer_;
   // state
   bool ready_ = false;
   ConnectionStatus status_ = {};
-  core::Download<DropCopyState> download_;
+  core::Download<DropCopyStateMargin> download_;
 };
 
 }  // namespace binance

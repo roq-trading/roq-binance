@@ -35,7 +35,7 @@ struct Encoder final {
       std::string_view const &request_id,
       CreateOrderTemplate const &,
       std::chrono::milliseconds recv_window,
-      std::chrono::milliseconds now);
+      std::chrono::milliseconds now_utc);
 
   static std::string_view amend_order_keep_priority_json(
       std::string &buffer,
@@ -45,7 +45,7 @@ struct Encoder final {
       std::string_view const &request_id,
       std::string_view const &previous_request_id,
       std::chrono::milliseconds recv_window,
-      std::chrono::milliseconds now);
+      std::chrono::milliseconds now_utc);
 
   static std::string_view cancel_order_json(
       std::string &buffer,
@@ -56,12 +56,12 @@ struct Encoder final {
       std::string_view const &previous_request_id,
       CancelOrderTemplate const &,
       std::chrono::milliseconds recv_window,
-      std::chrono::milliseconds now);
+      std::chrono::milliseconds now_utc);
 
   // sapi+papi
 
   static std::string_view my_trades_url(
-      std::string &buffer, std::string_view const &symbol, std::chrono::nanoseconds lookback, uint32_t limit, std::chrono::milliseconds now);
+      std::string &buffer, std::string_view const &symbol, std::chrono::nanoseconds lookback, uint32_t limit, std::chrono::milliseconds now_utc);
 
   static std::string_view new_order_url(
       std::string &buffer,
@@ -81,9 +81,11 @@ struct Encoder final {
       std::string_view const &request_id,
       std::string_view const &previous_request_id,
       CancelOrderTemplate const &,
-      std::chrono::milliseconds recv_window);
+      std::chrono::milliseconds recv_window,
+      std::chrono::milliseconds now_utc);
 
-  static std::string_view cancel_all_open_orders_url(std::string &buffer, std::string_view const &symbol, MarginMode, std::chrono::milliseconds recv_window);
+  static std::string_view cancel_all_open_orders_url(
+      std::string &buffer, std::string_view const &symbol, MarginMode, std::chrono::milliseconds recv_window, std::chrono::milliseconds now_utc);
 };
 
 }  // namespace json

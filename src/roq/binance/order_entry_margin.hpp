@@ -38,7 +38,7 @@
 #include "roq/binance/json/cancel_replace_order_ack.hpp"
 #include "roq/binance/json/cancel_replace_order_error.hpp"
 #include "roq/binance/json/cross_margin_account.hpp"
-#include "roq/binance/json/listen_key_ack.hpp"
+#include "roq/binance/json/listen_key_ack_margin.hpp"
 #include "roq/binance/json/new_order_ack.hpp"
 #include "roq/binance/json/open_orders_ack.hpp"
 #include "roq/binance/json/trades_ack.hpp"
@@ -90,7 +90,7 @@ struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Han
 
   void get_listen_key(MarginMode);
   void get_listen_key_ack(Trace<web::rest::Response> const &, MarginMode);
-  void operator()(Trace<json::ListenKeyAck> const &, MarginMode);
+  void operator()(Trace<json::ListenKeyAckMargin> const &, MarginMode);
 
   void get_account(MarginMode);
   void get_account_ack(Trace<web::rest::Response> const &, MarginMode);

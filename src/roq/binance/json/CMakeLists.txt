@@ -52,6 +52,7 @@ set(AUTOGEN_SCHEMAS
     filter_type.json
     interval.json
     listen_key_ack.json
+    listen_key_ack_margin.json
     list_status_data.json
     list_status_item.json
     list_status.json

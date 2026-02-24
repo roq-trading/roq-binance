@@ -37,7 +37,7 @@ API API::create(Settings const &settings) {
           .listen_key = "/sapi/v1/margin/listen-key"sv,
           .isolated_margin_user_data_stream = "/sapi/v1/userDataStream/isolated"sv,
           .cross_account = "/sapi/v1/margin/account"sv,
-          .margin_user_data_stream = "/sapi/v1/userDataStream"sv,
+          .margin_user_data_stream = "/sapi/v1/userListenToken"sv,
           .margin_open_orders = "/sapi/v1/margin/openOrders"sv,
           .margin_my_trades = "/sapi/v1/margin/myTrades"sv,
           .margin_order = "/sapi/v1/margin/order"sv,

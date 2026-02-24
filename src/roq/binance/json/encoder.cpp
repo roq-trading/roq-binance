@@ -85,7 +85,7 @@ std::string_view Encoder::place_order_json(
     std::string_view const &request_id,
     CreateOrderTemplate const &create_order_template,
     std::chrono::milliseconds recv_window,
-    std::chrono::milliseconds now) {
+    std::chrono::milliseconds now_utc) {
   auto side = map(create_order.side).template get<Side>();
   auto type = map_order_type(create_order);
   auto time_in_force = map_time_in_force(create_order);
@@ -120,7 +120,7 @@ std::string_view Encoder::place_order_json(
       R"("timestamp":{},)"
       R"("type":"{}")"
       R"(}})"sv,
-      now.count(),
+      now_utc.count(),
       type.as_raw_text());
   return buffer;
 }
@@ -133,7 +133,7 @@ std::string_view Encoder::amend_order_keep_priority_json(
     std::string_view const &request_id,
     std::string_view const &previous_request_id,
     std::chrono::milliseconds recv_window,
-    std::chrono::milliseconds now) {
+    std::chrono::milliseconds now_utc) {
   if (!std::isnan(modify_order.price)) {
     throw server::oms::Rejected{Origin::GATEWAY, Error::INVALID_REQUEST_ARGS, "Price not allowed"sv};
   }
@@ -158,7 +158,7 @@ std::string_view Encoder::amend_order_keep_priority_json(
       Decimal{modify_order.quantity, ref_data.quantity.precision},
       recv_window.count(),
       order.symbol,
-      now.count());
+      now_utc.count());
   return buffer;
 }
 
@@ -171,7 +171,7 @@ std::string_view Encoder::cancel_order_json(
     std::string_view const &previous_request_id,
     CancelOrderTemplate const &cancel_order_template,
     std::chrono::milliseconds recv_window,
-    std::chrono::milliseconds now) {
+    std::chrono::milliseconds now_utc) {
   buffer.clear();
   fmt::format_to(std::back_inserter(buffer), R"({{)"sv);
   if (cancel_order_template.cancel_restrictions != CancelRestrictions{}) {
@@ -191,15 +191,15 @@ std::string_view Encoder::cancel_order_json(
       previous_request_id,
       recv_window.count(),
       order.symbol,
-      now.count());
+      now_utc.count());
   return buffer;
 }
 
 // sapi+papi
 
 std::string_view Encoder::my_trades_url(
-    std::string &buffer, std::string_view const &symbol, std::chrono::nanoseconds lookback, uint32_t limit, std::chrono::milliseconds now) {
-  auto start_time = std::chrono::duration_cast<std::chrono::milliseconds>(now - lookback);
+    std::string &buffer, std::string_view const &symbol, std::chrono::nanoseconds lookback, uint32_t limit, std::chrono::milliseconds now_utc) {
+  auto start_time = std::chrono::duration_cast<std::chrono::milliseconds>(now_utc - lookback);
   buffer.clear();
   fmt::format_to(
       std::back_inserter(buffer),
@@ -260,8 +260,10 @@ std::string_view Encoder::cancel_order_url(
     std::string_view const &request_id,
     std::string_view const &previous_request_id,
     CancelOrderTemplate const &cancel_order_template,
-    std::chrono::milliseconds recv_window) {
+    std::chrono::milliseconds recv_window,
+    std::chrono::milliseconds now_utc) {
   buffer.clear();
+  // assert(!std::empty(previous_request_id));
   if (order.margin_mode == MarginMode::ISOLATED) {
     fmt::format_to(std::back_inserter(buffer), "isIsolated=TRUE&"sv);
   }
@@ -269,24 +271,26 @@ std::string_view Encoder::cancel_order_url(
   if (cancel_order_template.cancel_restrictions != CancelRestrictions{}) {
     fmt::format_to(std::back_inserter(buffer), "&cancelRestrictions={}"sv, cancel_order_template.cancel_restrictions.as_raw_text());
   }
-  if (!std::empty(order.external_order_id)) {
+  if (std::empty(order.external_order_id)) {
+    fmt::format_to(std::back_inserter(buffer), "&origClientOrderId={}"sv, order.client_order_id);  // XXX FIXME TODO previous_request_id ???
+  } else {
     fmt::format_to(std::back_inserter(buffer), "&orderId={}"sv, order.external_order_id);
   }
   fmt::format_to(
       std::back_inserter(buffer),
-      "&origClientOrderId={}"
       "&recvWindow={}"
-      "&symbol={}"sv,
-      previous_request_id,
+      "&symbol={}"
+      "&timestamp={}"sv,
       recv_window.count(),
-      order.symbol);
+      order.symbol,
+      now_utc.count());
   return buffer;
 }
 
 // cancel-all
 
 std::string_view Encoder::cancel_all_open_orders_url(
-    std::string &buffer, std::string_view const &symbol, MarginMode margin_mode, std::chrono::milliseconds recv_window) {
+    std::string &buffer, std::string_view const &symbol, MarginMode margin_mode, std::chrono::milliseconds recv_window, std::chrono::milliseconds now_utc) {
   buffer.clear();
   switch (margin_mode) {
     using enum MarginMode;
@@ -304,9 +308,11 @@ std::string_view Encoder::cancel_all_open_orders_url(
   fmt::format_to(
       std::back_inserter(buffer),
       R"(symbol={}&)"
-      R"(recvWindow={})"sv,
+      R"(recvWindow={}&)"
+      R"(timestamp={})"sv,
       symbol,
-      recv_window.count());
+      recv_window.count(),
+      now_utc.count());
   std::string_view result{std::data(buffer), std::size(buffer)};
   return result;
 }

@@ -1,10 +1,10 @@
 {
-  "name": "roq/binance/json/WSAPIUserDataStreamSubscribeResult",
+  "name": "roq/binance/json/ListenKeyAckMargin",
   "type": "dictionary",
   "values": [
     {
-      "name": "subscriptionId",
-      "type": "std/uint32"
+      "name": "token",
+      "type": "std/string_view"
     },
     {
       "name": "expirationTime",

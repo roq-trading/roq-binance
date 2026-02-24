@@ -21,12 +21,18 @@ struct Account final {
 
   std::string_view get_key() const { return crypto_.get_key(); }
 
+  std::string_view get_rest_headers_new() const { return crypto_.get_rest_headers_new(); }
+
   std::string_view get_rest_headers() const { return crypto_.get_rest_headers(); }
 
   // ed25519
 
   std::string_view create_session_logon_signature(std::chrono::milliseconds timestamp) {
     return crypto_.create_session_logon_signature(sign_buffer_, timestamp);
+  }
+
+  std::string_view create_rest_signature_body_new(std::chrono::milliseconds now_utc, std::string_view const &body) {
+    return crypto_.create_rest_signature_body_new(query_encode_buffer_, now_utc, body);
   }
 
   // classic

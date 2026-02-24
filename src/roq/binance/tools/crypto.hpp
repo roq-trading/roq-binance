@@ -27,15 +27,19 @@ struct Crypto final {
 
   std::string_view get_key() const { return key_; }
 
+  std::string_view get_rest_headers_new() const { return headers_new_; }
+
   std::string_view get_rest_headers() const { return headers_; }
 
   // ed25519
 
-  std::string_view create_session_logon_signature(std::string &buffer, std::chrono::milliseconds timestamp);
+  std::string_view create_session_logon_signature(std::string &buffer, std::chrono::milliseconds now_utc);
+
+  std::string_view create_rest_signature_body_new(std::span<std::byte> const &buffer, std::chrono::milliseconds now_utc, std::string_view const &body);
 
   // classic
 
-  static constexpr auto const QUERY_BUFFER_LENGTH = 128uz;  // note! expected length == 99
+  static constexpr auto const QUERY_BUFFER_LENGTH = 256uz;  // note! expected length == 99
 
   std::string_view create_rest_signature(std::span<std::byte> const &buffer, std::chrono::milliseconds now_utc);
 
@@ -45,6 +49,7 @@ struct Crypto final {
 
  private:
   std::string const key_;
+  std::string const headers_new_;
   std::string const headers_;
 
   // ed25519

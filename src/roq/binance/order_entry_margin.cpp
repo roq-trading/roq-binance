@@ -389,7 +389,7 @@ void OrderEntryMargin::get_listen_key_ack(Trace<web::rest::Response> const &even
       }
     };
     auto handle_success = [&](auto &body) {
-      json::ListenKeyAck listen_key{body};
+      json::ListenKeyAckMargin listen_key{body};
       Trace event_2{event, listen_key};
       (*this)(event_2, margin_mode);
       switch (margin_mode) {
@@ -412,17 +412,17 @@ void OrderEntryMargin::get_listen_key_ack(Trace<web::rest::Response> const &even
   });
 }
 
-void OrderEntryMargin::operator()(Trace<json::ListenKeyAck> const &event, MarginMode margin_mode) {
+void OrderEntryMargin::operator()(Trace<json::ListenKeyAckMargin> const &event, MarginMode margin_mode) {
   auto &[trace_info, listen_key_ack] = event;
   log::info<2>("listen_key_ack={}"sv, listen_key_ack);
   auto dispatch = [&](auto initial) {
     if (initial) {
-      log::warn(R"(DEBUG Listen key has been acquired (margin_mode={}, value="{}"))"sv, margin_mode, listen_key_ack.listen_key);
-      log::info<1>(R"(Listen key has been acquired (margin_mode={}, value="{}"))"sv, margin_mode, listen_key_ack.listen_key);
+      log::warn(R"(DEBUG Listen key has been acquired (margin_mode={}, value="{}"))"sv, margin_mode, listen_key_ack.token);
+      log::info<1>(R"(Listen key has been acquired (margin_mode={}, value="{}"))"sv, margin_mode, listen_key_ack.token);
       auto listen_key_update = ListenKeyUpdate{
           .account = account_.name,
           .margin_mode = margin_mode,
-          .listen_key = listen_key_ack.listen_key,
+          .listen_key = listen_key_ack.token,
       };
       create_trace_and_dispatch(handler_, trace_info, listen_key_update);
     } else {
@@ -431,7 +431,7 @@ void OrderEntryMargin::operator()(Trace<json::ListenKeyAck> const &event, Margin
   };
   auto update_spot = [&]() {
     bool initial = std::empty(listen_key_);
-    if (utils::update(listen_key_, listen_key_ack.listen_key)) {
+    if (utils::update(listen_key_, listen_key_ack.token)) {
       dispatch(initial);
     }
     auto now = clock::get_system();
@@ -439,7 +439,7 @@ void OrderEntryMargin::operator()(Trace<json::ListenKeyAck> const &event, Margin
   };
   auto update_margin_cross = [&]() {
     bool initial = std::empty(listen_key_cross_);
-    if (utils::update(listen_key_cross_, listen_key_ack.listen_key)) {
+    if (utils::update(listen_key_cross_, listen_key_ack.token)) {
       dispatch(initial);
     }
     auto now = clock::get_system();
@@ -466,7 +466,7 @@ void OrderEntryMargin::operator()(Trace<json::ListenKeyAck> const &event, Margin
 void OrderEntryMargin::get_account(MarginMode margin_mode) {
   profile_.account([&]() {
     log::info("Download account... (margin_mode={})"sv, margin_mode);
-    auto now = clock::get_realtime<std::chrono::milliseconds>();
+    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
     auto path = [&]() {
       switch (margin_mode) {
         using enum MarginMode;
@@ -483,7 +483,7 @@ void OrderEntryMargin::get_account(MarginMode margin_mode) {
       }
       log::fatal("Unexpected"sv);
     }();
-    auto query = account_.create_rest_signature(now);
+    auto query = account_.create_rest_signature(now_utc);
     auto headers = account_.get_rest_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
@@ -616,8 +616,8 @@ void OrderEntryMargin::get_open_orders(MarginMode margin_mode) {
       };
       log::fatal("Unexpected"sv);
     }();
-    auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = account_.create_rest_signature(now);
+    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+    auto query = account_.create_rest_signature(now_utc);
     auto headers = account_.get_rest_headers();
     auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
     encode_buffer_.clear();
@@ -752,13 +752,13 @@ void OrderEntryMargin::get_trades(MarginMode margin_mode) {
     log::info("Download trades... (margin_mode={})"sv, margin_mode);
     auto &symbols = shared_.settings.download.symbols;
     for (auto &symbol : symbols) {
-      auto now = clock::get_realtime<std::chrono::milliseconds>();
+      auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
       auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
       auto limit = shared_.settings.download.trades_limit ? shared_.settings.download.trades_limit : DOWNLOAD_TRADES_LIMIT;
       log::info<1>("Download trades: lookback={}"sv, lookback);
       auto headers = account_.get_rest_headers();
-      auto body = json::Encoder::my_trades_url(encode_buffer_, symbol, lookback, limit, now);
-      auto query = account_.create_rest_signature_body(now, body);
+      auto body = json::Encoder::my_trades_url(encode_buffer_, symbol, lookback, limit, now_utc);
+      auto query = account_.create_rest_signature_body(now_utc, body);
       auto request = web::rest::Request{
           .method = web::http::Method::GET,
           .path = shared_.api.sapi.margin_my_trades,
@@ -884,9 +884,9 @@ void OrderEntryMargin::operator()(Trace<json::TradesAck> const &event, MarginMod
 void OrderEntryMargin::get_account_cross_on_timer() {
   profile_.account([&]() {
     log::warn("DEBUG Download borrowed amount ON TIMER..."sv);
-    auto now = clock::get_realtime<std::chrono::milliseconds>();
+    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
     auto path = shared_.api.sapi.cross_account;
-    auto query = account_.create_rest_signature(now);
+    auto query = account_.create_rest_signature(now_utc);
     auto headers = account_.get_rest_headers();
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
@@ -979,8 +979,8 @@ void OrderEntryMargin::new_order(
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto body = json::Encoder::new_order_url(
         encode_buffer_, create_order, order, ref_data, request_id, create_order_template, recv_window, shared_.api.margin_side_effect_type);
-    auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = account_.create_rest_signature_body(now, body);
+    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+    auto query = account_.create_rest_signature_body(now_utc, body);
     auto headers = account_.get_rest_headers();
     auto path = shared_.api.sapi.margin_order;
     auto request = web::rest::Request{
@@ -1121,11 +1121,11 @@ void OrderEntryMargin::cancel_order(
     auto &[message_info, cancel_order] = event;
     auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto body =
-        json::Encoder::cancel_order_url(encode_buffer_, cancel_order, order, ref_data, request_id, previous_request_id, cancel_order_template, recv_window);
-    auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = account_.create_rest_signature_body(now, body);
-    auto headers = account_.get_rest_headers();
+    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+    auto body = json::Encoder::cancel_order_url(
+        encode_buffer_, cancel_order, order, ref_data, request_id, previous_request_id, cancel_order_template, recv_window, now_utc);
+    auto query = account_.create_rest_signature_body_new(now_utc, body);
+    auto headers = account_.get_rest_headers_new();
     auto path = [&]() -> std::string_view {
       switch (order.margin_mode) {
         using enum MarginMode;
@@ -1144,11 +1144,12 @@ void OrderEntryMargin::cancel_order(
         .path = path,
         .query = query,
         .accept = web::http::Accept::APPLICATION_JSON,
-        .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
+        .content_type = {},  // web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
         .headers = headers,
-        .body = body,
+        .body = {},  // body,
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
+    log::warn("DEBUG request={}"sv, request);
     auto callback = [this, user_id = message_info.source, order_id = cancel_order.order_id, version = cancel_order.version](
                         [[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
@@ -1292,28 +1293,29 @@ void OrderEntryMargin::cancel_all_open_orders(Event<CancelAllOrders> const &even
           };
           log::fatal("Unexpected"sv);
         }();
-        auto body = json::Encoder::cancel_all_open_orders_url(encode_buffer_, symbol, margin_mode, recv_window);
-        auto now = clock::get_realtime<std::chrono::milliseconds>();
-        auto query = account_.create_rest_signature_body(now, body);
-        auto headers = account_.get_rest_headers();
+        auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+        auto body = json::Encoder::cancel_all_open_orders_url(encode_buffer_, symbol, margin_mode, recv_window, now_utc);
+        auto query = account_.create_rest_signature_body_new(now_utc, body);
+        auto headers = account_.get_rest_headers_new();
         auto request = web::rest::Request{
             .method = web::http::Method::DELETE,
             .path = path,
             .query = query,
             .accept = web::http::Accept::APPLICATION_JSON,
-            .content_type = web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
+            .content_type = {},  // web::http::ContentType::APPLICATION_X_WWW_FORM_URLENCODED,
             .headers = headers,
-            .body = body,
+            .body = {},  // body,
             .quality_of_service = io::QualityOfService::IMMEDIATE,
         };
-        auto callback = [&]([[maybe_unused]] auto &request_id, auto &response) {
-          TraceInfo trace_info{event};
+        log::warn("DEBUG request={}"sv, request);
+        auto callback = [this](auto &request_id, auto &response) {
+          TraceInfo trace_info;
           Trace event{trace_info, response};
           cancel_all_open_orders_ack(event, request_id);
         };
         (*connection_)(request_id, request, callback);
       };
-      helper(MarginMode::ISOLATED);
+      // helper(MarginMode::ISOLATED);
       helper(MarginMode::CROSS);
       send_ack(symbol);
     }

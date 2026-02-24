@@ -36,3 +36,27 @@ TEST_CASE("empty", "[json_wsapi_user_data_stream_subscribe]") {
   };
   WSAPIParserTester<value_type>::dispatch(helper, message, 65536, 1);
 }
+
+TEST_CASE("sapi", "[json_wsapi_user_data_stream_subscribe]") {
+  auto message = R"({)"
+                 R"("id":"Agk9AAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",)"
+                 R"("status":200,)"
+                 R"("result":{)"
+                 R"("subscriptionId":0,)"
+                 R"("expirationTime":1771954221502)"
+                 R"(},)"
+                 R"("rateLimits":[{)"
+                 R"("rateLimitType":"REQUEST_WEIGHT",)"
+                 R"("interval":"MINUTE",)"
+                 R"("intervalNum":1,)"
+                 R"("limit":6000,)"
+                 R"("count":106)"
+                 R"(})"
+                 R"(])"
+                 R"(})"sv;
+  auto helper = [](value_type const &obj) {
+    CHECK(obj.id == "Agk9AAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"sv);
+    CHECK(obj.status == 200);
+  };
+  WSAPIParserTester<value_type>::dispatch(helper, message, 65536, 1);
+}

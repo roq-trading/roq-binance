@@ -40,6 +40,7 @@ filters.hpp
 filter_type.hpp
 interval.hpp
 listen_key_ack.hpp
+listen_key_ack_margin.hpp
 list_status_data.hpp
 list_status_item.hpp
 list_status.hpp
@@ -126,6 +127,7 @@ filters.cpp
 filter_type.cpp
 interval.cpp
 listen_key_ack.cpp
+listen_key_ack_margin.cpp
 list_status_data.cpp
 list_status_item.cpp
 list_status.cpp

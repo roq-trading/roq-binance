@@ -848,10 +848,10 @@ void OrderEntryPortfolio::cancel_order(
     }
     auto &[message_info, cancel_order] = event;
     auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
-    auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto body =
-        json::Encoder::cancel_order_url(encode_buffer_, cancel_order, order, ref_data, request_id, previous_request_id, cancel_order_template, recv_window);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
+    auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
+    auto body = json::Encoder::cancel_order_url(
+        encode_buffer_, cancel_order, order, ref_data, request_id, previous_request_id, cancel_order_template, recv_window, now);
     auto query = account_.create_rest_signature_body(now, body);
     auto headers = account_.get_rest_headers();
     auto request = web::rest::Request{
@@ -864,6 +864,7 @@ void OrderEntryPortfolio::cancel_order(
         .body = body,
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
+    log::warn("DEBUG request={}"sv, request);
     auto callback = [this, user_id = message_info.source, order_id = cancel_order.order_id, version = cancel_order.version](
                         [[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
@@ -993,8 +994,8 @@ void OrderEntryPortfolio::cancel_all_open_orders(Event<CancelAllOrders> const &e
       if (!std::empty(cancel_all_orders.symbol) && symbol != cancel_all_orders.symbol) {
         continue;
       }
-      auto body = json::Encoder::cancel_all_open_orders_url(encode_buffer_, symbol, MarginMode::PORTFOLIO, recv_window);
       auto now = clock::get_realtime<std::chrono::milliseconds>();
+      auto body = json::Encoder::cancel_all_open_orders_url(encode_buffer_, symbol, MarginMode::PORTFOLIO, recv_window, now);
       auto query = account_.create_rest_signature_body(now, body);
       auto headers = account_.get_rest_headers();
       auto request = web::rest::Request{
