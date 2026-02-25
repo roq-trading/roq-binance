@@ -62,7 +62,7 @@ struct WebSocket final : public OrderEntry, public web::socket::Client::Handler,
       std::string_view const &previous_request_id) override;
   uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id) override;
 
-  bool ready() const { return status_ == ConnectionStatus::READY; }
+  bool ready() const { return connection_status_ == ConnectionStatus::READY; }
 
   void session_logon();
 
@@ -97,7 +97,7 @@ struct WebSocket final : public OrderEntry, public web::socket::Client::Handler,
   void operator()(web::socket::Client::Text const &) override;
   void operator()(web::socket::Client::Binary const &) override;
 
-  void operator()(ConnectionStatus);
+  void operator()(ConnectionStatus, std::string_view const &reason = {});
 
   uint32_t download(WebSocketState);
 
@@ -178,7 +178,7 @@ struct WebSocket final : public OrderEntry, public web::socket::Client::Handler,
   std::string encode_buffer_;
   // state
   bool ready_ = false;
-  ConnectionStatus status_ = {};
+  ConnectionStatus connection_status_ = {};
   core::Download<WebSocketState> download_;
   bool download_trades_is_first_ = true;  // note! lookback depends on it
 };

@@ -52,7 +52,7 @@ struct Rest final : public web::rest::Client::Handler {
   Rest(Rest &&) = delete;
   Rest(Rest const &) = delete;
 
-  bool ready() const { return status_ == ConnectionStatus::READY; }
+  bool ready() const { return connection_status_ == ConnectionStatus::READY; }
 
   void operator()(Event<Start> const &);
   void operator()(Event<Stop> const &);
@@ -69,7 +69,7 @@ struct Rest final : public web::rest::Client::Handler {
   void operator()(Trace<web::rest::Client::Header> const &) override;
   void operator()(Trace<web::rest::Client::MessageEnd> const &) override;
 
-  void operator()(ConnectionStatus);
+  void operator()(ConnectionStatus, std::string_view const &reason = {});
 
   uint32_t download(RestState state);
 
@@ -114,7 +114,7 @@ struct Rest final : public web::rest::Client::Handler {
   Shared &shared_;
   // state
   bool ready_ = false;
-  ConnectionStatus status_ = {};
+  ConnectionStatus connection_status_ = {};
   core::Download<RestState> download_;
 };
 

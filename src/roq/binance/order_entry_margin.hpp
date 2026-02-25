@@ -71,7 +71,7 @@ struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Han
   uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id) override;
 
  protected:
-  bool ready() const { return status_ == ConnectionStatus::READY; }
+  bool ready() const { return connection_status_ == ConnectionStatus::READY; }
 
   bool downloading() const {
     return download_account_ || download_orders_ || download_trades_ || download_listen_key_cross_ || download_account_cross_ || download_orders_cross_ ||
@@ -84,7 +84,7 @@ struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Han
   void operator()(Trace<web::rest::Client::Header> const &) override;
   void operator()(Trace<web::rest::Client::Latency> const &) override;
 
-  void operator()(ConnectionStatus);
+  void operator()(ConnectionStatus, std::string_view const &reason = {});
 
   uint32_t download(OrderEntryState state);
 
@@ -182,7 +182,7 @@ struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Han
   bool ready_ = false;
   std::chrono::nanoseconds listen_key_refresh_ = {};
   std::chrono::nanoseconds listen_key_refresh_cross_ = {};
-  ConnectionStatus status_ = {};
+  ConnectionStatus connection_status_ = {};
   core::Download<OrderEntryState> download_;
   // experimental
   utils::unordered_set<std::string> open_orders_symbols_;

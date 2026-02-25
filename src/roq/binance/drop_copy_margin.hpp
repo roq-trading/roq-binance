@@ -49,9 +49,9 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
   void operator()(OrderEntry::ListenKeyUpdate const &);
 
  protected:
-  bool ready() const { return status_ == ConnectionStatus::READY; }
+  bool ready() const { return connection_status_ == ConnectionStatus::READY; }
 
-  void operator()(ConnectionStatus);
+  void operator()(ConnectionStatus, std::string_view const &reason = {});
 
   uint32_t download(DropCopyStateMargin);
 
@@ -149,7 +149,7 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
   std::string request_encode_buffer_;
   // state
   bool ready_ = false;
-  ConnectionStatus status_ = {};
+  ConnectionStatus connection_status_ = {};
   core::Download<DropCopyStateMargin> download_;
   //
   bool download_listen_token_ = false;

@@ -211,7 +211,7 @@ void DropCopyMargin::session_logon() {
       timestamp.count(),
       signature);
   (*connection_).send_text(message);
-  (*this)(ConnectionStatus::LOGIN_SENT);
+  (*this)(ConnectionStatus::LOGIN_SENT, "session.logon"sv);
 }
 
 // user-data-stream-subscribe
@@ -237,19 +237,19 @@ void DropCopyMargin::subscribe_user_data_stream() {
       request_id,
       listen_token_);
   (*connection_).send_text(message);
-  (*this)(ConnectionStatus::DOWNLOADING);
+  (*this)(ConnectionStatus::DOWNLOADING, "userDataStream.subscribe.listenToken"sv);
 }
 
 void DropCopyMargin::get_account() {
   request_.request_account_cross = clock::get_system();
-  (*this)(ConnectionStatus::DOWNLOADING);
+  (*this)(ConnectionStatus::DOWNLOADING, "account"sv);
 }
 
 // open-orders
 
 void DropCopyMargin::get_orders() {
   request_.request_orders_cross = clock::get_system();
-  (*this)(ConnectionStatus::DOWNLOADING);
+  (*this)(ConnectionStatus::DOWNLOADING, "orders"sv);
 }
 
 void DropCopyMargin::operator()(web::socket::Client::Connected const &) {
@@ -289,26 +289,26 @@ void DropCopyMargin::operator()(web::socket::Client::Binary const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopyMargin::operator()(ConnectionStatus status) {
-  if (utils::update(status_, status)) {
-    TraceInfo trace_info;
-    auto stream_status = StreamStatus{
-        .stream_id = stream_id_,
-        .account = account_.name,
-        .supports = SUPPORTS,
-        .transport = Transport::TCP,
-        .protocol = Protocol::WS,
-        .encoding = {Encoding::JSON},
-        .priority = Priority::PRIMARY,
-        .connection_status = status_,
-        .interface = (*connection_).get_interface(),
-        .authority = (*connection_).get_current_authority(),
-        .path = (*connection_).get_current_path(),
-        .proxy = (*connection_).get_proxy(),
-    };
-    log::info("stream_status={}"sv, stream_status);
-    create_trace_and_dispatch(handler_, trace_info, stream_status);
-  }
+void DropCopyMargin::operator()(ConnectionStatus connection_status, std::string_view const &reason) {
+  connection_status_ = connection_status;
+  TraceInfo trace_info;
+  auto stream_status = StreamStatus{
+      .stream_id = stream_id_,
+      .account = account_.name,
+      .supports = SUPPORTS,
+      .transport = Transport::TCP,
+      .protocol = Protocol::WS,
+      .encoding = {Encoding::JSON},
+      .priority = Priority::PRIMARY,
+      .connection_status = connection_status_,
+      .reason = reason,
+      .interface = (*connection_).get_interface(),
+      .authority = (*connection_).get_current_authority(),
+      .path = (*connection_).get_current_path(),
+      .proxy = (*connection_).get_proxy(),
+  };
+  log::info("stream_status={}"sv, stream_status);
+  create_trace_and_dispatch(handler_, trace_info, stream_status);
 }
 
 uint32_t DropCopyMargin::download(DropCopyStateMargin state) {

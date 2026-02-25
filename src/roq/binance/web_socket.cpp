@@ -257,7 +257,7 @@ void WebSocket::session_logon() {
       timestamp.count(),
       signature);
   (*connection_).send_text(message);
-  (*this)(ConnectionStatus::LOGIN_SENT);
+  (*this)(ConnectionStatus::LOGIN_SENT, "session.logon"sv);
 }
 
 // user-data-stream-subscribe
@@ -280,7 +280,7 @@ void WebSocket::user_data_stream_subscribe() {
       R"(}})"sv,
       request_id);
   (*connection_).send_text(message);
-  (*this)(ConnectionStatus::DOWNLOADING);
+  (*this)(ConnectionStatus::DOWNLOADING, "userDataStream.subscribe"sv);
 }
 
 // account-status
@@ -308,7 +308,7 @@ void WebSocket::account_status() {
       request_id,
       timestamp.count());
   (*connection_).send_text(message);
-  (*this)(ConnectionStatus::DOWNLOADING);
+  (*this)(ConnectionStatus::DOWNLOADING, "account.status"sv);
 }
 
 // open-orders
@@ -336,7 +336,7 @@ void WebSocket::open_orders_status() {
       request_id,
       timestamp.count());
   (*connection_).send_text(message);
-  (*this)(ConnectionStatus::DOWNLOADING);
+  (*this)(ConnectionStatus::DOWNLOADING, "openOrders.status"sv);
 }
 
 // my-trades
@@ -378,7 +378,7 @@ void WebSocket::my_trades() {
           symbol);
       log::warn("DEBUG message={}"sv, message);
       (*connection_).send_text(message);
-      (*this)(ConnectionStatus::DOWNLOADING);
+      (*this)(ConnectionStatus::DOWNLOADING, "myTrades"sv);
     }
   } else {
     auto const STATE = WebSocketState::MY_TRADES;
@@ -604,26 +604,26 @@ void WebSocket::operator()(web::socket::Client::Binary const &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(ConnectionStatus status) {
-  if (utils::update(status_, status)) {
-    TraceInfo trace_info;
-    auto stream_status = StreamStatus{
-        .stream_id = stream_id_,
-        .account = account_.name,
-        .supports = SUPPORTS,
-        .transport = Transport::TCP,
-        .protocol = Protocol::WS,
-        .encoding = {Encoding::JSON},
-        .priority = Priority::PRIMARY,
-        .connection_status = status_,
-        .interface = (*connection_).get_interface(),
-        .authority = (*connection_).get_current_authority(),
-        .path = (*connection_).get_current_path(),
-        .proxy = (*connection_).get_proxy(),
-    };
-    log::info("stream_status={}"sv, stream_status);
-    create_trace_and_dispatch(handler_, trace_info, stream_status);
-  }
+void WebSocket::operator()(ConnectionStatus connection_status, std::string_view const &reason) {
+  connection_status_ = connection_status;
+  TraceInfo trace_info;
+  auto stream_status = StreamStatus{
+      .stream_id = stream_id_,
+      .account = account_.name,
+      .supports = SUPPORTS,
+      .transport = Transport::TCP,
+      .protocol = Protocol::WS,
+      .encoding = {Encoding::JSON},
+      .priority = Priority::PRIMARY,
+      .connection_status = connection_status_,
+      .reason = reason,
+      .interface = (*connection_).get_interface(),
+      .authority = (*connection_).get_current_authority(),
+      .path = (*connection_).get_current_path(),
+      .proxy = (*connection_).get_proxy(),
+  };
+  log::info("stream_status={}"sv, stream_status);
+  create_trace_and_dispatch(handler_, trace_info, stream_status);
 }
 
 uint32_t WebSocket::download(WebSocketState state) {
