@@ -344,39 +344,45 @@ void WebSocket::open_orders_status() {
 // weight: 20 (without orderId)
 
 void WebSocket::my_trades() {
-  auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
   auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
-  auto limit = shared_.settings.download.trades_limit ? shared_.settings.download.trades_limit : DOWNLOAD_TRADES_LIMIT;
-  auto start_time = std::chrono::duration_cast<std::chrono::milliseconds>(timestamp - lookback);
-  for (auto &symbol : shared_.settings.download.symbols) {
-    log::info<1>("Download trades: lookback={}"sv, lookback);
-    auto request = json::WSAPIRequest{
-        .sequence = ++request_id_,
-        .type = json::WSAPIType::MY_TRADES,
-        .user_id = {},
-        .order_id = {},
-        .version = {},
-        .order_id_2 = {},
-    };
-    auto request_id = json::WSAPIRequest::encode(request_encode_buffer_, request);
-    auto message = fmt::format(
-        R"({{)"
-        R"("id":"{}",)"
-        R"("method":"myTrades",)"
-        R"("params":{{)"
-        R"("timestamp":{},)"
-        R"("limit":{},)"
-        R"("startTime":{},)"
-        R"("symbol":"{}")"
-        R"(}})"
-        R"(}})"sv,
-        request_id,
-        timestamp.count(),
-        limit,
-        start_time.count(),
-        symbol);
-    (*connection_).send_text(message);
-    (*this)(ConnectionStatus::DOWNLOADING);
+  if (lookback.count() && !std::empty(shared_.settings.download.symbols)) {
+    log::info<1>("Download trades: lookback={}, symbol={}"sv, lookback, shared_.settings.download.symbols);
+    auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
+    auto start_time = std::chrono::duration_cast<std::chrono::milliseconds>(timestamp - lookback);
+    auto limit = shared_.settings.download.trades_limit ? shared_.settings.download.trades_limit : DOWNLOAD_TRADES_LIMIT;
+    for (auto &symbol : shared_.settings.download.symbols) {
+      auto request = json::WSAPIRequest{
+          .sequence = ++request_id_,
+          .type = json::WSAPIType::MY_TRADES,
+          .user_id = {},
+          .order_id = {},
+          .version = {},
+          .order_id_2 = {},
+      };
+      auto request_id = json::WSAPIRequest::encode(request_encode_buffer_, request);
+      auto message = fmt::format(
+          R"({{)"
+          R"("id":"{}",)"
+          R"("method":"myTrades",)"
+          R"("params":{{)"
+          R"("timestamp":{},)"
+          R"("limit":{},)"
+          R"("startTime":{},)"
+          R"("symbol":"{}")"
+          R"(}})"
+          R"(}})"sv,
+          request_id,
+          timestamp.count(),
+          limit,
+          start_time.count(),
+          symbol);
+      log::warn("DEBUG message={}"sv, message);
+      (*connection_).send_text(message);
+      (*this)(ConnectionStatus::DOWNLOADING);
+    }
+  } else {
+    auto const STATE = WebSocketState::MY_TRADES;
+    download_.check_relaxed(STATE);
   }
 }
 
@@ -816,6 +822,7 @@ void WebSocket::operator()(Trace<json::WSAPITrades> const &event) {
   profile_.my_trades([&]() {
     auto &[trace_info, wsapi_trades] = event;
     log::info<2>("wsapi_trades={}"sv, wsapi_trades);
+    log::warn("DEBUG wsapi_trades={}"sv, wsapi_trades);
     if (wsapi_trades.status == 200) {
       download_trades_is_first_ = false;  // after first successful
       auto &trades = wsapi_trades.result;
