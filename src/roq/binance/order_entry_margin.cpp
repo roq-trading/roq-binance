@@ -382,7 +382,7 @@ void OrderEntryMargin::get_listen_key(MarginMode margin_mode) {
         .body = {},
         .quality_of_service = {},
     };
-    log::warn("DEBUG request={}"sv, request);
+    log::debug("request={}"sv, request);
     auto callback = [this, margin_mode = margin_mode]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
@@ -519,7 +519,7 @@ void OrderEntryMargin::get_account(MarginMode margin_mode) {
         .body = {},
         .quality_of_service = {},
     };
-    // log::warn("DEBUG request={}"sv, request);
+    log::debug("request={}"sv, request);
     auto callback = [this, margin_mode = margin_mode]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
@@ -655,6 +655,7 @@ void OrderEntryMargin::get_open_orders(MarginMode margin_mode) {
         .body = {},
         .quality_of_service = {},
     };
+    log::debug("request={}"sv, request);
     auto callback = [this, margin_mode = margin_mode]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
@@ -786,6 +787,7 @@ void OrderEntryMargin::get_trades(MarginMode margin_mode) {
           .body = {},
           .quality_of_service = {},
       };
+      log::debug("request={}"sv, request);
       auto callback = [this, margin_mode = margin_mode]([[maybe_unused]] auto &request_id, auto &response) {
         TraceInfo trace_info;
         Trace event{trace_info, response};
@@ -916,6 +918,7 @@ void OrderEntryMargin::get_account_cross_on_timer() {
         .body = {},
         .quality_of_service = {},
     };
+    log::debug("request={}"sv, request);
     auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
@@ -1013,7 +1016,7 @@ void OrderEntryMargin::new_order(
         .body = {},
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
-    // log::warn("DEBUG request={}"sv, request);
+    log::debug("request={}"sv, request);
     auto callback = [this, user_id = message_info.source, order_id = create_order.order_id]([[maybe_unused]] auto &request_id, auto &response) {
       uint32_t version = 1;
       TraceInfo trace_info;
@@ -1169,7 +1172,7 @@ void OrderEntryMargin::cancel_order(
         .body = {},
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
-    // log::warn("DEBUG request={}"sv, request);
+    log::debug("request={}"sv, request);
     auto callback = [this, user_id = message_info.source, order_id = cancel_order.order_id, version = cancel_order.version](
                         [[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
@@ -1327,7 +1330,7 @@ void OrderEntryMargin::cancel_all_open_orders(Event<CancelAllOrders> const &even
             .body = {},
             .quality_of_service = io::QualityOfService::IMMEDIATE,
         };
-        // log::warn("DEBUG request={}"sv, request);
+        log::debug("request={}"sv, request);
         auto callback = [this](auto &request_id, auto &response) {
           TraceInfo trace_info;
           Trace event{trace_info, response};

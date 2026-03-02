@@ -102,7 +102,7 @@ std::string_view Crypto::create_rest_signature_old(std::span<std::byte> const &b
   mac_.clear();
   auto tmp = static_cast<std::string_view>(writer).substr(1);
   mac_.update(tmp);
-  auto digest = mac_.final(digest_);
+  auto digest = mac_.final(digest_2_);
   writer.write("&signature="sv).write(utils::codec::Hex{digest});
   return writer.finish();
 }
@@ -115,7 +115,7 @@ std::string_view Crypto::create_rest_signature_old_body(std::span<std::byte> con
   mac_.update(tmp);
   assert(!std::empty(body));
   mac_.update(body);
-  auto digest = mac_.final(digest_);
+  auto digest = mac_.final(digest_2_);
   writer.write("&signature="sv).write(utils::codec::Hex{digest});
   return writer.finish();
 }
@@ -124,7 +124,7 @@ std::string Crypto::create_rest_signature_old_query(std::chrono::milliseconds no
   auto tmp = fmt::format("{}&timestamp={}"sv, query, now_utc.count());
   mac_.clear();
   mac_.update(tmp);
-  auto digest = mac_.final(digest_);
+  auto digest = mac_.final(digest_2_);
   std::string signature;
   utils::codec::Hex::encode(signature, digest);
   return fmt::format("?{}&signature={}"sv, tmp, signature);

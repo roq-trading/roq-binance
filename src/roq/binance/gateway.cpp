@@ -80,8 +80,10 @@ R create_order_entry_margin(auto &gateway, auto &settings, auto &context, auto &
   if (!settings.misc.experimental_drop_margin) {
     for (auto &[_, item] : accounts) {
       auto &account = *item;
-      auto order_entry = std::make_unique<OrderEntryMargin>(gateway, context, ++stream_id, account, shared, request[account.name]);
-      result.try_emplace(account.name, std::move(order_entry));
+      if (account.margin_mode != MarginMode::PORTFOLIO) {
+        auto order_entry = std::make_unique<OrderEntryMargin>(gateway, context, ++stream_id, account, shared, request[account.name]);
+        result.try_emplace(account.name, std::move(order_entry));
+      }
     }
   }
   return result;

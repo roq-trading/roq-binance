@@ -418,6 +418,7 @@ void WebSocket::order_place(
         R"(}})"sv,
         request_id_2,
         params);
+    log::debug("message={}"sv, message);
     (*connection_).send_text(message);
   });
 }
@@ -457,6 +458,7 @@ void WebSocket::order_amend_keep_priority(
         R"(}})"sv,
         request_id_2,
         params);
+    log::debug("message={}"sv, message);
     (*connection_).send_text(message);
   });
 }
@@ -497,6 +499,7 @@ void WebSocket::order_cancel(
         R"(}})"sv,
         request_id_2,
         params);
+    log::debug("message={}"sv, message);
     (*connection_).send_text(message);
   });
 }
@@ -561,6 +564,7 @@ void WebSocket::open_orders_cancel_all(Event<CancelAllOrders> const &event, std:
           request_id_2,
           symbol,
           timestamp.count());
+      log::debug("message={}"sv, message);
       (*connection_).send_text(message);
       send_ack(symbol);
     }

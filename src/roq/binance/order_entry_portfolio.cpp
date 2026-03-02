@@ -355,6 +355,7 @@ void OrderEntryPortfolio::get_listen_key() {
         .body = {},
         .quality_of_service = {},
     };
+    log::warn("DEBUG request={}"sv, request);
     auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
@@ -408,8 +409,8 @@ void OrderEntryPortfolio::operator()(Trace<json::ListenKeyAck> const &event) {
 
 void OrderEntryPortfolio::get_account() {
   profile_.account([&]() {
-    auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = account_.create_rest_signature_old(now);
+    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+    auto query = account_.create_rest_signature_old(now_utc);
     auto headers = account_.get_rest_headers_old();
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
@@ -421,6 +422,7 @@ void OrderEntryPortfolio::get_account() {
         .body = {},
         .quality_of_service = {},
     };
+    log::warn("DEBUG request={}"sv, request);
     auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
@@ -476,8 +478,8 @@ void OrderEntryPortfolio::operator()(Trace<json::BalancesAck> const &event) {
 // XXX should prefer to add filter on symbol -- cost is multiplied by number of symbols traded on exchange
 void OrderEntryPortfolio::get_open_orders() {
   profile_.open_orders([&]() {
-    auto now = clock::get_realtime<std::chrono::milliseconds>();
-    auto query = account_.create_rest_signature_old(now);
+    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+    auto query = account_.create_rest_signature_old(now_utc);
     auto headers = account_.get_rest_headers_old();
     auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
     encode_buffer_.clear();
@@ -498,6 +500,7 @@ void OrderEntryPortfolio::get_open_orders() {
         .body = {},
         .quality_of_service = {},
     };
+    log::warn("DEBUG request={}"sv, request);
     auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
@@ -586,13 +589,13 @@ void OrderEntryPortfolio::get_trades() {
   profile_.trades([&]() {
     auto &symbols = shared_.settings.download.symbols;
     for (auto &symbol : symbols) {
-      auto now = clock::get_realtime<std::chrono::milliseconds>();
+      auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
       auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
       auto limit = shared_.settings.download.trades_limit ? shared_.settings.download.trades_limit : DOWNLOAD_TRADES_LIMIT;
       log::info<1>("Download trades: lookback={}"sv, lookback);
       auto headers = account_.get_rest_headers_old();
-      auto body = json::Encoder::my_trades_url(encode_buffer_, symbol, lookback, limit, now);
-      auto query = account_.create_rest_signature_old_query(now, body);
+      auto body = json::Encoder::my_trades_url(encode_buffer_, symbol, lookback, limit, now_utc);
+      auto query = account_.create_rest_signature_old_query(now_utc, body);
       auto request = web::rest::Request{
           .method = web::http::Method::GET,
           .path = shared_.api.papi.margin_my_trades,
@@ -603,6 +606,7 @@ void OrderEntryPortfolio::get_trades() {
           .body = {},
           .quality_of_service = {},
       };
+      log::warn("DEBUG request={}"sv, request);
       auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
         TraceInfo trace_info;
         Trace event{trace_info, response};
@@ -709,10 +713,10 @@ void OrderEntryPortfolio::new_order(
     open_orders_symbols_.emplace(create_order.symbol);
     auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto now = clock::get_realtime<std::chrono::milliseconds>();
+    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
     auto body = json::Encoder::new_order_url(
-        encode_buffer_, create_order, order, ref_data, request_id, create_order_template, recv_window, now, shared_.api.margin_side_effect_type);
-    auto query = account_.create_rest_signature_old_body(now, body);
+        encode_buffer_, create_order, order, ref_data, request_id, create_order_template, recv_window, now_utc, shared_.api.margin_side_effect_type);
+    auto query = account_.create_rest_signature_old_body(now_utc, body);
     auto headers = account_.get_rest_headers_old();
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
@@ -724,6 +728,7 @@ void OrderEntryPortfolio::new_order(
         .body = body,
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
+    log::debug("request={}"sv, request);
     auto callback = [this, user_id = message_info.source, order_id = create_order.order_id]([[maybe_unused]] auto &request_id, auto &response) {
       uint32_t version = 1;
       TraceInfo trace_info;
@@ -848,11 +853,11 @@ void OrderEntryPortfolio::cancel_order(
     }
     auto &[message_info, cancel_order] = event;
     auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
-    auto now = clock::get_realtime<std::chrono::milliseconds>();
+    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto body = json::Encoder::cancel_order_url(
-        encode_buffer_, cancel_order, order, ref_data, request_id, previous_request_id, cancel_order_template, recv_window, now);
-    auto query = account_.create_rest_signature_old_body(now, body);
+        encode_buffer_, cancel_order, order, ref_data, request_id, previous_request_id, cancel_order_template, recv_window, now_utc);
+    auto query = account_.create_rest_signature_old_body(now_utc, body);
     auto headers = account_.get_rest_headers_old();
     auto request = web::rest::Request{
         .method = web::http::Method::DELETE,
@@ -864,7 +869,7 @@ void OrderEntryPortfolio::cancel_order(
         .body = body,
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
-    log::warn("DEBUG request={}"sv, request);
+    log::debug("request={}"sv, request);
     auto callback = [this, user_id = message_info.source, order_id = cancel_order.order_id, version = cancel_order.version](
                         [[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
@@ -994,9 +999,9 @@ void OrderEntryPortfolio::cancel_all_open_orders(Event<CancelAllOrders> const &e
       if (!std::empty(cancel_all_orders.symbol) && symbol != cancel_all_orders.symbol) {
         continue;
       }
-      auto now = clock::get_realtime<std::chrono::milliseconds>();
-      auto body = json::Encoder::cancel_all_open_orders_url(encode_buffer_, symbol, MarginMode::PORTFOLIO, recv_window, now);
-      auto query = account_.create_rest_signature_old_body(now, body);
+      auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+      auto body = json::Encoder::cancel_all_open_orders_url(encode_buffer_, symbol, MarginMode::PORTFOLIO, recv_window, now_utc);
+      auto query = account_.create_rest_signature_old_body(now_utc, body);
       auto headers = account_.get_rest_headers_old();
       auto request = web::rest::Request{
           .method = web::http::Method::DELETE,
@@ -1008,6 +1013,7 @@ void OrderEntryPortfolio::cancel_all_open_orders(Event<CancelAllOrders> const &e
           .body = body,
           .quality_of_service = io::QualityOfService::IMMEDIATE,
       };
+      log::debug("request={}"sv, request);
       auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
         TraceInfo trace_info;
         Trace event{trace_info, response};
