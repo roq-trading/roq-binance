@@ -591,6 +591,7 @@ void OrderEntryMargin::operator()(Trace<json::AccountAck> const &event, MarginMo
         .balance = item.free,
         .hold = item.locked,
         .borrowed = NaN,
+        .unrealized_pnl = NaN,
         .external_account = {},
         .update_type = UpdateType::SNAPSHOT,
         .exchange_time_utc = account_ack.update_time,
@@ -612,6 +613,7 @@ void OrderEntryMargin::operator()(Trace<json::CrossMarginAccount> const &event, 
         .balance = item.free,
         .hold = item.locked,
         .borrowed = item.borrowed,
+        .unrealized_pnl = NaN,
         .external_account = {},
         .update_type = UpdateType::SNAPSHOT,
         .exchange_time_utc = {},
@@ -959,6 +961,7 @@ void OrderEntryMargin::operator()(Trace<json::CrossMarginAccount> const &event) 
         .balance = NaN,             // note!
         .hold = NaN,                // note!
         .borrowed = item.borrowed,  // note!
+        .unrealized_pnl = NaN,
         .external_account = {},
         .update_type = UpdateType::INCREMENTAL,  // note! avoid replacing other fields
         .exchange_time_utc = {},

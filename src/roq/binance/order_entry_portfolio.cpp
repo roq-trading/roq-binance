@@ -464,6 +464,7 @@ void OrderEntryPortfolio::operator()(Trace<json::BalancesAck> const &event) {
         .balance = item.total_wallet_balance,
         .hold = NaN,
         .borrowed = NaN,
+        .unrealized_pnl = NaN,
         .external_account = {},
         .update_type = UpdateType::SNAPSHOT,
         .exchange_time_utc = item.update_time,
