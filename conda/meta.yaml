@@ -1,5 +1,5 @@
 package:
-  name: roq-binance-2
+  name: roq-binance
   version: {{ GIT_DESCRIBE_TAG }}
 
 source:

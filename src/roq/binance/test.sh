@@ -10,7 +10,7 @@ NAME="binance"
 
 CONFIG="${CONFIG:-$NAME}"
 
-CONFIG_FILE="$ROQ_CONFIG_PATH/roq-binance-2/$CONFIG.toml"
+CONFIG_FILE="$ROQ_CONFIG_PATH/roq-binance/$CONFIG.toml"
 
 FLAGFILE="../../../share/flags/test/flags.cfg"
 
@@ -18,7 +18,7 @@ DOWNLOAD_SYMBOLS="BTCUSDT,ETHUSDT"
 
 WS_API=true
 
-$PREFIX ./roq-binance-2 \
+$PREFIX ./roq-binance \
   --name "$NAME" \
   --config_file "$CONFIG_FILE" \
   --flagfile "$FLAGFILE" \

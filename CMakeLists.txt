@@ -16,7 +16,7 @@ message("Using GIT_REPO_VERSION=${GIT_REPO_VERSION}")
 
 # project
 
-project(roq-binance-2 VERSION ${GIT_REPO_VERSION})
+project(roq-binance VERSION ${GIT_REPO_VERSION})
 
 # language
 
