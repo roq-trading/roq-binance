@@ -355,7 +355,6 @@ void OrderEntryPortfolio::get_listen_key() {
         .body = {},
         .quality_of_service = {},
     };
-    log::warn("DEBUG request={}"sv, request);
     auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
@@ -422,7 +421,6 @@ void OrderEntryPortfolio::get_account() {
         .body = {},
         .quality_of_service = {},
     };
-    log::warn("DEBUG request={}"sv, request);
     auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
@@ -501,7 +499,6 @@ void OrderEntryPortfolio::get_open_orders() {
         .body = {},
         .quality_of_service = {},
     };
-    log::warn("DEBUG request={}"sv, request);
     auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
@@ -607,7 +604,6 @@ void OrderEntryPortfolio::get_trades() {
           .body = {},
           .quality_of_service = {},
       };
-      log::warn("DEBUG request={}"sv, request);
       auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
         TraceInfo trace_info;
         Trace event{trace_info, response};

@@ -186,7 +186,6 @@ void Gateway::operator()(Trace<FundsUpdate> const &event, bool is_last) {
 }
 
 void Gateway::operator()(OrderEntry::ListenKeyUpdate const &listen_key_update) {
-  log::warn("DEBUG margin_mode={}, listen_key={}"sv, listen_key_update.margin_mode, listen_key_update.listen_key);
   switch (listen_key_update.margin_mode) {
     using enum MarginMode;
     case UNDEFINED:

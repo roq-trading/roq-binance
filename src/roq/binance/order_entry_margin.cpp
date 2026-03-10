@@ -367,7 +367,6 @@ void OrderEntryMargin::get_listen_key(MarginMode margin_mode) {
       }
       log::fatal("Unexpected"sv);
     }();
-    log::warn("DEBUG margin_mode={}, path={}"sv, margin_mode, path);
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
     auto body = "validity=86400000"sv;  // 24 hours
     auto query = account_.create_rest_signature_body_new(now_utc, body);
@@ -434,7 +433,6 @@ void OrderEntryMargin::operator()(Trace<json::ListenKeyAckMargin> const &event, 
   log::info<2>("listen_key_ack={}"sv, listen_key_ack);
   auto dispatch = [&](auto initial) {
     if (initial) {
-      log::warn(R"(DEBUG Listen key has been acquired (margin_mode={}, value="{}"))"sv, margin_mode, listen_key_ack.token);
       log::info<1>(R"(Listen key has been acquired (margin_mode={}, value="{}"))"sv, margin_mode, listen_key_ack.token);
       auto listen_key_update = ListenKeyUpdate{
           .account = account_.name,

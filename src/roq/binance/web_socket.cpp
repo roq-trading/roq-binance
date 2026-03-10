@@ -376,7 +376,6 @@ void WebSocket::my_trades() {
           limit,
           start_time.count(),
           symbol);
-      log::warn("DEBUG message={}"sv, message);
       (*connection_).send_text(message);
       (*this)(ConnectionStatus::DOWNLOADING, "myTrades"sv);
     }
@@ -827,7 +826,6 @@ void WebSocket::operator()(Trace<json::WSAPITrades> const &event) {
   profile_.my_trades([&]() {
     auto &[trace_info, wsapi_trades] = event;
     log::info<2>("wsapi_trades={}"sv, wsapi_trades);
-    log::warn("DEBUG wsapi_trades={}"sv, wsapi_trades);
     if (wsapi_trades.status == 200) {
       download_trades_is_first_ = false;  // after first successful
       auto &trades = wsapi_trades.result;
