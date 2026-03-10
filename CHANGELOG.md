@@ -4,6 +4,8 @@ All notable changes will be documented in this file.
 
 ## Head
 
+## 1.1.3 &ndash; 2026-03-12
+
 ### Fixed
 
 * Downloading my-trades did not respect the download flags (#566)
