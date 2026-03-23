@@ -45,6 +45,7 @@ void BM_json_cancel_order(benchmark::State &state) {
         .routing_id = {},
         .version = {},
         .conditional_on_version = {},
+        .release_time_utc = {},
     };
     json::cancel_order(buffer, cancel_order, OMS_ORDER, REQUEST_ID, PREVIOUS_REQUEST_ID, CANCEL_ORDER_TEMPLATE, RECV_WINDOW);
   }
@@ -66,6 +67,7 @@ void BM_json_cancel_order_with_signature(benchmark::State &state) {
         .routing_id = {},
         .version = {},
         .conditional_on_version = {},
+        .release_time_utc = {},
     };
     auto body = json::cancel_order(buffer, cancel_order, OMS_ORDER, REQUEST_ID, PREVIOUS_REQUEST_ID, CANCEL_ORDER_TEMPLATE, RECV_WINDOW);
     auto now = clock::get_realtime<std::chrono::milliseconds>();

@@ -38,6 +38,7 @@ auto create_create_order(double quantity, double price) {
       .leverage = NaN,
       .routing_id = {},
       .strategy_id = {},
+      .release_time_utc = {},
   };
 }
 

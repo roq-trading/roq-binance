@@ -60,6 +60,7 @@ void BM_json_new_order(benchmark::State &state) {
         .stop_price = NaN,
         .routing_id = {},
         .strategy_id = {},
+        .release_time_utc = {},
     };
     json::new_order(buffer, create_order, OMS_ORDER, REQUEST_ID, CREATE_ORDER_TEMPLATE, RECV_WINDOW);
   }
@@ -93,6 +94,7 @@ void BM_json_new_order_with_signature(benchmark::State &state) {
         .stop_price = NaN,
         .routing_id = {},
         .strategy_id = {},
+        .release_time_utc = {},
     };
     auto body = json::new_order(buffer, create_order, OMS_ORDER, REQUEST_ID, CREATE_ORDER_TEMPLATE, RECV_WINDOW);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
