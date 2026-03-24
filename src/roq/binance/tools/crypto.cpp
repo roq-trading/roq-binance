@@ -80,7 +80,7 @@ std::string_view Crypto::create_session_logon_signature(std::string &buffer, std
   return buffer;
 }
 
-std::string_view Crypto::create_rest_signature_body_new(std::span<std::byte> const &buffer, std::chrono::milliseconds now_utc, std::string_view const &body) {
+std::string_view Crypto::create_rest_signature_body_new(std::span<std::byte> const &buffer, std::string_view const &body) {
   digest_.clear();
   context_.reset();
   pkey_.sign(digest_, body, context_);

@@ -33,7 +33,7 @@ struct Crypto final {
 
   std::string_view create_session_logon_signature(std::string &buffer, std::chrono::milliseconds now_utc);
 
-  std::string_view create_rest_signature_body_new(std::span<std::byte> const &buffer, std::chrono::milliseconds now_utc, std::string_view const &body);
+  std::string_view create_rest_signature_body_new(std::span<std::byte> const &buffer, std::string_view const &body);
 
   // classic
 

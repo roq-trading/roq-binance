@@ -29,9 +29,7 @@ struct Account final {
     return crypto_.create_session_logon_signature(sign_buffer_, timestamp);
   }
 
-  std::string_view create_rest_signature_body_new(std::chrono::milliseconds now_utc, std::string_view const &body) {
-    return crypto_.create_rest_signature_body_new(query_encode_buffer_, now_utc, body);
-  }
+  std::string_view create_rest_signature_body_new(std::string_view const &body) { return crypto_.create_rest_signature_body_new(query_encode_buffer_, body); }
 
   // classic
 

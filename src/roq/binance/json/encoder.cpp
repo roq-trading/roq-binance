@@ -264,7 +264,7 @@ std::string_view Encoder::cancel_order_url(
     server::oms::Order const &order,
     server::oms::RefData const &,
     std::string_view const &request_id,
-    std::string_view const &previous_request_id,
+    [[maybe_unused]] std::string_view const &previous_request_id,
     CancelOrderTemplate const &cancel_order_template,
     std::chrono::milliseconds recv_window,
     std::chrono::milliseconds now_utc) {

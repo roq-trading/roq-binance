@@ -367,9 +367,8 @@ void OrderEntryMargin::get_listen_key(MarginMode margin_mode) {
       }
       log::fatal("Unexpected"sv);
     }();
-    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
     auto body = "validity=86400000"sv;  // 24 hours
-    auto query = account_.create_rest_signature_body_new(now_utc, body);
+    auto query = account_.create_rest_signature_body_new(body);
     auto headers = account_.get_rest_headers_new();
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
@@ -505,7 +504,7 @@ void OrderEntryMargin::get_account(MarginMode margin_mode) {
       log::fatal("Unexpected"sv);
     }();
     auto body = fmt::format("timestamp={}"sv, now_utc.count());
-    auto query = account_.create_rest_signature_body_new(now_utc, body);
+    auto query = account_.create_rest_signature_body_new(body);
     auto headers = account_.get_rest_headers_new();
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
@@ -643,7 +642,7 @@ void OrderEntryMargin::get_open_orders(MarginMode margin_mode) {
     }();
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
     auto body = fmt::format("timestamp={}"sv, now_utc.count());
-    auto query = account_.create_rest_signature_body_new(now_utc, body);
+    auto query = account_.create_rest_signature_body_new(body);
     auto headers = account_.get_rest_headers_new();
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
@@ -775,7 +774,7 @@ void OrderEntryMargin::get_trades(MarginMode margin_mode) {
       auto limit = shared_.settings.download.trades_limit ? shared_.settings.download.trades_limit : DOWNLOAD_TRADES_LIMIT;
       log::info<1>("Download trades: lookback={}"sv, lookback);
       auto body = json::Encoder::my_trades_url(encode_buffer_, symbol, lookback, limit, now_utc);
-      auto query = account_.create_rest_signature_body_new(now_utc, body);
+      auto query = account_.create_rest_signature_body_new(body);
       auto headers = account_.get_rest_headers_new();
       auto request = web::rest::Request{
           .method = web::http::Method::GET,
@@ -906,7 +905,7 @@ void OrderEntryMargin::get_account_cross_on_timer() {
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
     auto path = shared_.api.sapi.cross_account;
     auto body = fmt::format("timestamp={}"sv, now_utc.count());
-    auto query = account_.create_rest_signature_body_new(now_utc, body);
+    auto query = account_.create_rest_signature_body_new(body);
     auto headers = account_.get_rest_headers_new();
     auto request = web::rest::Request{
         .method = web::http::Method::GET,
@@ -1004,7 +1003,7 @@ void OrderEntryMargin::new_order(
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
     auto body = json::Encoder::new_order_url(
         encode_buffer_, create_order, order, ref_data, request_id, create_order_template, recv_window, now_utc, shared_.api.margin_side_effect_type);
-    auto query = account_.create_rest_signature_body_new(now_utc, body);
+    auto query = account_.create_rest_signature_body_new(body);
     auto headers = account_.get_rest_headers_new();
     auto path = shared_.api.sapi.margin_order;
     auto request = web::rest::Request{
@@ -1148,7 +1147,7 @@ void OrderEntryMargin::cancel_order(
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
     auto body = json::Encoder::cancel_order_url(
         encode_buffer_, cancel_order, order, ref_data, request_id, previous_request_id, cancel_order_template, recv_window, now_utc);
-    auto query = account_.create_rest_signature_body_new(now_utc, body);
+    auto query = account_.create_rest_signature_body_new(body);
     auto headers = account_.get_rest_headers_new();
     auto path = [&]() -> std::string_view {
       switch (order.margin_mode) {
@@ -1319,7 +1318,7 @@ void OrderEntryMargin::cancel_all_open_orders(Event<CancelAllOrders> const &even
         }();
         auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
         auto body = json::Encoder::cancel_all_open_orders_url(encode_buffer_, symbol, margin_mode, recv_window, now_utc);
-        auto query = account_.create_rest_signature_body_new(now_utc, body);
+        auto query = account_.create_rest_signature_body_new(body);
         auto headers = account_.get_rest_headers_new();
         auto request = web::rest::Request{
             .method = web::http::Method::DELETE,

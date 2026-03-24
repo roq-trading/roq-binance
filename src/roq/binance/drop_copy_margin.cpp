@@ -661,8 +661,8 @@ void DropCopyMargin::update_rate_limits(auto &event) {
         .origin = Origin::EXCHANGE,
         .rate_limits = shared_.rate_limits,
     };
-    // Trace event_2{trace_info, rate_limits_update};
-    // handler_(event_2);
+    Trace event_2{trace_info, rate_limits_update};
+    handler_(event_2);
   }
   shared_.rate_limits.clear();
 }
