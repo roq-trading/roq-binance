@@ -44,8 +44,6 @@ auto const SUPPORTS = Mask{
 uint32_t const REQUEST_ID = 1'000'000;
 
 size_t const MAX_DECODE_BUFFER_DEPTH = 1;
-
-size_t const DOWNLOAD_TRADES_LIMIT = 1000;
 }  // namespace
 
 // === HELPERS ===
