@@ -642,6 +642,10 @@ void DropCopyMargin::update_rate_limits(auto &event) {
           rate_limiter_.request_weight_1m.set(item.count);
         }
         break;
+      case CREATE_AND_MODIFY_ORDER:
+      case MODIFY_ORDER:
+      case CANCEL_ORDER:
+        break;
     }
     auto rate_limit = RateLimit{
         .type = type,
