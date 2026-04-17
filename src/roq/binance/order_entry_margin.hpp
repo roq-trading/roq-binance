@@ -181,7 +181,6 @@ struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Han
   // state
   bool ready_ = false;
   std::chrono::nanoseconds listen_key_refresh_ = {};
-  std::chrono::nanoseconds listen_key_refresh_cross_ = {};
   ConnectionStatus connection_status_ = {};
   core::Download<OrderEntryState> download_;
   // experimental
