@@ -970,7 +970,7 @@ void OrderEntryMargin::operator()(Trace<json::CrossMarginAccount> const &event) 
 
 // ...
 
-void OrderEntryMargin::refresh_listen_key(std::chrono::nanoseconds now) {
+void OrderEntryMargin::refresh_listen_key([[maybe_unused]] std::chrono::nanoseconds now) {
   if (!ready_) {
     return;
   }
