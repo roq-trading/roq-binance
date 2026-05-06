@@ -65,8 +65,22 @@ bool try_dispatch(auto &handler, auto &message, auto &buffer_stack, auto event_t
     case ORDER_TRADE_UPDATE:
       // dispatch_helper<OrderTradeUpdate>(handler, message, buffer_stack, trace_info);
       return true;
-    case EVENT_STREAM_TERMINATED:
-      // only WSAPI ???
+    case EVENT_STREAM_TERMINATED:  // only WSAPI ???
+      if (allow_unknown_event_types) {
+        return false;
+      }
+      break;
+    case ACCOUNT_UPDATE:
+      if (allow_unknown_event_types) {
+        return false;
+      }
+      break;
+    case POSITION_HISTORY_UPDATE:
+      if (allow_unknown_event_types) {
+        return false;
+      }
+      break;
+    case LIABILITY_CHANGE:
       if (allow_unknown_event_types) {
         return false;
       }

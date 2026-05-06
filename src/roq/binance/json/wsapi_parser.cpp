@@ -102,6 +102,12 @@ bool dispatch_event(auto &handler, auto &message, auto &buffer_stack, auto &trac
     case EVENT_STREAM_TERMINATED:
       dispatch_helper<WSAPIEventStreamTerminated>(handler, message, buffer_stack, trace_info);
       return true;
+    case ACCOUNT_UPDATE:
+      break;
+    case POSITION_HISTORY_UPDATE:
+      break;
+    case LIABILITY_CHANGE:
+      break;
   }
   log::fatal(R"(Unexpected: message="{}")"sv, message);
 }

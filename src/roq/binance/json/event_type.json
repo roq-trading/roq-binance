@@ -38,6 +38,15 @@
     },
     {
       "name": "eventStreamTerminated"
+    },
+    {
+      "name": "ACCOUNT_UPDATE"
+    },
+    {
+      "name": "POSITION_HISTORY_UPDATE"
+    },
+    {
+      "name": "liabilityChange"
     }
   ]
 }
