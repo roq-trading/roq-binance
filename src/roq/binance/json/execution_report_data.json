@@ -179,6 +179,11 @@
       "raw": "J",
       "name": "strategy_type",
       "type": "std/int32"
+    },
+    {
+      "raw": "eR",
+      "name": "expiry_reason",
+      "type": "std/string_view"
     }
   ]
 }
