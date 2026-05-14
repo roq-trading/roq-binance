@@ -325,9 +325,9 @@ void OrderEntryMargin::operator()(ConnectionStatus connection_status, std::strin
   create_trace_and_dispatch(handler_, trace_info, stream_status);
 }
 
-uint32_t OrderEntryMargin::download(OrderEntryState state) {
+uint32_t OrderEntryMargin::download(State state) {
   switch (state) {
-    using enum OrderEntryState;
+    using enum State;
     case UNDEFINED:
       assert(false);
       break;
@@ -391,7 +391,7 @@ void OrderEntryMargin::get_listen_key(MarginMode margin_mode) {
 }
 
 void OrderEntryMargin::get_listen_key_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
-  auto const STATE = OrderEntryState::LISTEN_KEY;
+  auto const STATE = State::LISTEN_KEY;
   profile_.listen_key_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);

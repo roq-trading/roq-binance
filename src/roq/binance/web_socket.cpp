@@ -380,7 +380,7 @@ void WebSocket::my_trades() {
       (*this)(ConnectionStatus::DOWNLOADING, "myTrades"sv);
     }
   } else {
-    auto const STATE = WebSocketState::MY_TRADES;
+    auto const STATE = State::MY_TRADES;
     download_.check_relaxed(STATE);
   }
 }
@@ -629,9 +629,9 @@ void WebSocket::operator()(ConnectionStatus connection_status, std::string_view 
   create_trace_and_dispatch(handler_, trace_info, stream_status);
 }
 
-uint32_t WebSocket::download(WebSocketState state) {
+uint32_t WebSocket::download(State state) {
   switch (state) {
-    using enum WebSocketState;
+    using enum State;
     case UNDEFINED:
       assert(false);
       break;
@@ -678,7 +678,7 @@ void WebSocket::parse(std::string_view const &message) {
 // json::WSAPIParser::Handler
 
 void WebSocket::operator()(Trace<json::WSAPISessionLogon> const &event) {
-  auto const STATE = WebSocketState::SESSION_LOGON;
+  auto const STATE = State::SESSION_LOGON;
   profile_.session_logon([&]() {
     auto &[trace_info, wsapi_session_logon] = event;
     log::info<2>("wsapi_session_logon={}"sv, wsapi_session_logon);
@@ -698,7 +698,7 @@ void WebSocket::operator()(Trace<json::WSAPISessionLogon> const &event) {
 }
 
 void WebSocket::operator()(Trace<json::WSAPIUserDataStreamSubscribe> const &event) {
-  auto const STATE = WebSocketState::USER_DATA_STREAM_SUBSCRIBE;
+  auto const STATE = State::USER_DATA_STREAM_SUBSCRIBE;
   profile_.user_data_stream_subscribe([&]() {
     auto &[trace_info, wsapi_user_data_stream_subscribe] = event;
     log::info<2>("wsapi_user_data_stream_subscribe={}"sv, wsapi_user_data_stream_subscribe);
@@ -721,7 +721,7 @@ void WebSocket::operator()(Trace<json::WSAPIEventStreamTerminated> const &) {
 }
 
 void WebSocket::operator()(Trace<json::WSAPIAccount> const &event) {
-  auto const STATE = WebSocketState::ACCOUNT_STATUS;
+  auto const STATE = State::ACCOUNT_STATUS;
   profile_.account_status([&]() {
     auto &[trace_info, wsapi_account] = event;
     log::info<2>("wsapi_account={}"sv, wsapi_account);
@@ -757,7 +757,7 @@ void WebSocket::operator()(Trace<json::WSAPIAccount> const &event) {
 }
 
 void WebSocket::operator()(Trace<json::WSAPIOpenOrders> const &event) {
-  auto const STATE = WebSocketState::OPEN_ORDERS_STATUS;
+  auto const STATE = State::OPEN_ORDERS_STATUS;
   profile_.open_orders_status([&]() {
     auto &[trace_info, wsapi_open_orders] = event;
     log::info<2>("wsapi_open_orders={}"sv, wsapi_open_orders);
@@ -822,7 +822,7 @@ void WebSocket::operator()(Trace<json::WSAPIOpenOrders> const &event) {
 }
 
 void WebSocket::operator()(Trace<json::WSAPITrades> const &event) {
-  auto const STATE = WebSocketState::MY_TRADES;
+  auto const STATE = State::MY_TRADES;
   profile_.my_trades([&]() {
     auto &[trace_info, wsapi_trades] = event;
     log::info<2>("wsapi_trades={}"sv, wsapi_trades);

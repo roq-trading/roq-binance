@@ -28,7 +28,6 @@
 #include "roq/binance/order_entry.hpp"
 
 #include "roq/binance/account.hpp"
-#include "roq/binance/order_entry_state.hpp"
 #include "roq/binance/request.hpp"
 #include "roq/binance/shared.hpp"
 
@@ -86,7 +85,13 @@ struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Han
 
   void operator()(ConnectionStatus, std::string_view const &reason = {});
 
-  uint32_t download(OrderEntryState state);
+  enum class State {
+    UNDEFINED = 0,
+    LISTEN_KEY,
+    DONE,
+  };
+
+  uint32_t download(State state);
 
   void get_listen_key(MarginMode);
   void get_listen_key_ack(Trace<web::rest::Response> const &, MarginMode);
@@ -182,7 +187,7 @@ struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Han
   bool ready_ = false;
   std::chrono::nanoseconds listen_key_refresh_ = {};
   ConnectionStatus connection_status_ = {};
-  core::Download<OrderEntryState> download_;
+  core::Download<State> download_;
   // experimental
   utils::unordered_set<std::string> open_orders_symbols_;
   bool download_account_ = false;

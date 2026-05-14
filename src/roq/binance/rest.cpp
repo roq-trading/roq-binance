@@ -243,9 +243,9 @@ void Rest::operator()(ConnectionStatus connection_status, std::string_view const
   create_trace_and_dispatch(handler_, trace_info, stream_status);
 }
 
-uint32_t Rest::download(RestState state) {
+uint32_t Rest::download(State state) {
   switch (state) {
-    using enum RestState;
+    using enum State;
     case UNDEFINED:
       assert(false);
       break;
@@ -287,7 +287,7 @@ void Rest::get_exchange_info() {
 }
 
 void Rest::get_exchange_info_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
-  auto const STATE = RestState::EXCHANGE_INFO;
+  auto const STATE = State::EXCHANGE_INFO;
   profile_.exchange_info_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
