@@ -1,7 +1,2 @@
 !!! THIS FILE HAS BEEN AUTO-GENERATED !!!
 roq-binance
-drop_copy_state.hpp
-drop_copy_state_margin.hpp
-order_entry_state.hpp
-rest_state.hpp
-web_socket_state.hpp
