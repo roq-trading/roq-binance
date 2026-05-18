@@ -15,14 +15,15 @@
 
 #include "roq/binance/account.hpp"
 #include "roq/binance/config.hpp"
+#include "roq/binance/request.hpp"
+#include "roq/binance/settings.hpp"
+#include "roq/binance/shared.hpp"
+
 #include "roq/binance/drop_copy.hpp"
 #include "roq/binance/drop_copy_margin.hpp"
 #include "roq/binance/market_data.hpp"
 #include "roq/binance/order_entry.hpp"
-#include "roq/binance/request.hpp"
 #include "roq/binance/rest.hpp"
-#include "roq/binance/settings.hpp"
-#include "roq/binance/shared.hpp"
 
 namespace roq {
 namespace binance {
