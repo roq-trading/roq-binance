@@ -102,6 +102,8 @@ Gateway::Gateway(server::Dispatcher &dispatcher, Settings const &settings, Confi
   }
 }
 
+// server::Handler
+
 void Gateway::operator()(Event<Start> const &event) {
   log::info("Starting..."sv);
   assert(std::empty(market_data_1_));
@@ -139,6 +141,81 @@ void Gateway::operator()(Event<Connected> const &) {
 
 void Gateway::operator()(Event<Disconnected> const &) {
 }
+
+void Gateway::operator()(Event<Subscribe> const &event) {
+  auto &[message_info, subscribe] = event;
+  std::vector<Symbol> symbols;
+  for (auto &item : subscribe.symbols) {
+    if (shared_.all_symbols.emplace(item).second) {
+      symbols.emplace_back(item);
+    } else {
+      log::warn(R"(*** DUPLICATE SUBSCRIPTION *** (symbol="{}")"sv, item);
+    }
+  }
+  auto symbols_update = Rest::SymbolsUpdate{
+      .symbols = symbols,
+  };
+  (*this)(symbols_update);
+}
+
+uint16_t Gateway::operator()(
+    Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
+  auto &[message_info, create_order] = event;
+  assert(!std::empty(create_order.account));
+  return get_order_entry(create_order.account, create_order.margin_mode)(event, order, ref_data, request_id);
+}
+
+uint16_t Gateway::operator()(
+    Event<ModifyOrder> const &event,
+    server::oms::Order const &order,
+    server::oms::RefData const &ref_data,
+    std::string_view const &request_id,
+    std::string_view const &previous_request_id) {
+  auto &[message_info, modify_order] = event;
+  assert(!std::empty(modify_order.account));
+  assert(modify_order.account == order.account);
+  return get_order_entry(modify_order.account, order.margin_mode)(event, order, ref_data, request_id, previous_request_id);
+}
+
+uint16_t Gateway::operator()(
+    Event<CancelOrder> const &event,
+    server::oms::Order const &order,
+    server::oms::RefData const &ref_data,
+    std::string_view const &request_id,
+    std::string_view const &previous_request_id) {
+  auto &[message_info, cancel_order] = event;
+  assert(!std::empty(cancel_order.account));
+  assert(cancel_order.account == order.account);
+  return get_order_entry(cancel_order.account, order.margin_mode)(event, order, ref_data, request_id, previous_request_id);
+}
+
+uint16_t Gateway::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
+  auto &[message_info, cancel_all_orders] = event;
+  assert(!std::empty(cancel_all_orders.account));
+  auto helper = [&](auto &lookup) {
+    auto iter = lookup.find(cancel_all_orders.account);
+    if (iter != std::end(lookup)) {
+      (*(*iter).second)(event, request_id);
+    }
+  };
+  helper(order_entry_);
+  helper(order_entry_margin_);
+  return {};
+}
+
+uint16_t Gateway::operator()(Event<MassQuote> const &) {
+  throw server::oms::NotSupported{"not supported"sv};
+}
+
+uint16_t Gateway::operator()(Event<CancelQuotes> const &) {
+  throw server::oms::NotSupported{"not supported"sv};
+}
+
+void Gateway::operator()(metrics::Writer &writer) const {
+  dispatch_helper(*this, writer);
+}
+
+// streams
 
 void Gateway::operator()(Trace<StreamStatus> const &event) {
   dispatcher_(event);
@@ -234,6 +311,8 @@ void Gateway::operator()(Rest::SymbolsUpdate &symbols_update) {
   }
 }
 
+// utilities
+
 void Gateway::ensure_symbol_slices(size_t size) {
   auto helper = [&](auto &container, auto priority) {
     auto stream_id = ++stream_id_;
@@ -254,79 +333,6 @@ void Gateway::ensure_symbol_slices(size_t size) {
   while (std::size(market_data_2_) < size) {
     helper(market_data_2_, Priority::SECONDARY);
   }
-}
-
-void Gateway::operator()(Event<Subscribe> const &event) {
-  auto &[message_info, subscribe] = event;
-  std::vector<Symbol> symbols;
-  for (auto &item : subscribe.symbols) {
-    if (shared_.all_symbols.emplace(item).second) {
-      symbols.emplace_back(item);
-    } else {
-      log::warn(R"(*** DUPLICATE SUBSCRIPTION *** (symbol="{}")"sv, item);
-    }
-  }
-  auto symbols_update = Rest::SymbolsUpdate{
-      .symbols = symbols,
-  };
-  (*this)(symbols_update);
-}
-
-uint16_t Gateway::operator()(
-    Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
-  auto &[message_info, create_order] = event;
-  assert(!std::empty(create_order.account));
-  return get_order_entry(create_order.account, create_order.margin_mode)(event, order, ref_data, request_id);
-}
-
-uint16_t Gateway::operator()(
-    Event<ModifyOrder> const &event,
-    server::oms::Order const &order,
-    server::oms::RefData const &ref_data,
-    std::string_view const &request_id,
-    std::string_view const &previous_request_id) {
-  auto &[message_info, modify_order] = event;
-  assert(!std::empty(modify_order.account));
-  assert(modify_order.account == order.account);
-  return get_order_entry(modify_order.account, order.margin_mode)(event, order, ref_data, request_id, previous_request_id);
-}
-
-uint16_t Gateway::operator()(
-    Event<CancelOrder> const &event,
-    server::oms::Order const &order,
-    server::oms::RefData const &ref_data,
-    std::string_view const &request_id,
-    std::string_view const &previous_request_id) {
-  auto &[message_info, cancel_order] = event;
-  assert(!std::empty(cancel_order.account));
-  assert(cancel_order.account == order.account);
-  return get_order_entry(cancel_order.account, order.margin_mode)(event, order, ref_data, request_id, previous_request_id);
-}
-
-uint16_t Gateway::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
-  auto &[message_info, cancel_all_orders] = event;
-  assert(!std::empty(cancel_all_orders.account));
-  auto helper = [&](auto &lookup) {
-    auto iter = lookup.find(cancel_all_orders.account);
-    if (iter != std::end(lookup)) {
-      (*(*iter).second)(event, request_id);
-    }
-  };
-  helper(order_entry_);
-  helper(order_entry_margin_);
-  return {};
-}
-
-uint16_t Gateway::operator()(Event<MassQuote> const &) {
-  throw server::oms::NotSupported{"not supported"sv};
-}
-
-uint16_t Gateway::operator()(Event<CancelQuotes> const &) {
-  throw server::oms::NotSupported{"not supported"sv};
-}
-
-void Gateway::operator()(metrics::Writer &writer) const {
-  dispatch_helper(*this, writer);
 }
 
 template <typename... Args>
