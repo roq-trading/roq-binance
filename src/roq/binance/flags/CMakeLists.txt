@@ -4,6 +4,8 @@ include(RoqAutogen)
 
 set(NAMESPACE "roq/binance/flags")
 
+set(TARGET_DIR ${CMAKE_INSTALL_INCLUDEDIR}/${NAMESPACE})
+
 set(AUTOGEN_SCHEMAS
     flags.json
     mbp.json
@@ -63,8 +65,10 @@ roq_gitignore(
   ${AUTOGEN_HEADERS}
   ${AUTOGEN_SOURCES})
 
-add_library(${TARGET_NAME} OBJECT ${AUTOGEN_SOURCES})
+add_library(${TARGET_NAME} SHARED ${AUTOGEN_SOURCES})
 
 add_dependencies(${TARGET_NAME} flags-autogen-headers)
 
-target_link_libraries(${TARGET_NAME} PRIVATE roq-api::roq-api absl::flags)
+target_link_libraries(${TARGET_NAME} PRIVATE roq-core::roq-core roq-api::roq-api absl::flags)
+
+install(FILES ${AUTOGEN_HEADERS} DESTINATION ${TARGET_DIR})
