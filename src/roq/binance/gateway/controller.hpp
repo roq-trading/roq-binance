@@ -31,14 +31,14 @@ namespace roq {
 namespace binance {
 namespace gateway {
 
-struct ROQ_PUBLIC Controller final : public server::Handler,
-                                     public Rest::Handler,
-                                     public MarketData::Handler,
-                                     public OrderEntry::Handler,
-                                     public DropCopy::Handler {
+struct Controller final : public server::Handler, public Rest::Handler, public MarketData::Handler, public OrderEntry::Handler, public DropCopy::Handler {
+  ROQ_PUBLIC static std::unique_ptr<server::Handler> create(server::Dispatcher &, Settings const &, Config const &, io::Context &);
+
   Controller(server::Dispatcher &, Settings const &, Config const &, io::Context &);
 
   Controller(Controller const &) = delete;
+
+  virtual ~Controller() = default;
 
  protected:
   // server::Handler

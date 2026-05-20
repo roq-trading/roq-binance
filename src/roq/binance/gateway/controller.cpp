@@ -93,6 +93,10 @@ R create_order_entry_margin(auto &gateway, auto &settings, auto &context, auto &
 
 // === IMPLEMENTATION ===
 
+std::unique_ptr<server::Handler> Controller::create(server::Dispatcher &dispatcher, Settings const &settings, Config const &config, io::Context &context) {
+  return std::make_unique<Controller>(dispatcher, settings, config, context);
+}
+
 Controller::Controller(server::Dispatcher &dispatcher, Settings const &settings, Config const &config, io::Context &context)
     : dispatcher_{dispatcher}, accounts_(create_accounts<decltype(accounts_)>(config)), context_{context}, shared_{dispatcher, settings, config},
       rest_{*this, context_, ++stream_id_, shared_}, request_{create_request<decltype(request_)>(config)},
