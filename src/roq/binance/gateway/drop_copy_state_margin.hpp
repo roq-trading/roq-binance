@@ -6,6 +6,7 @@
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 enum class DropCopyStateMargin : uint8_t {
   UNDEFINED = 0,
@@ -16,5 +17,6 @@ enum class DropCopyStateMargin : uint8_t {
   DONE,
 };
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

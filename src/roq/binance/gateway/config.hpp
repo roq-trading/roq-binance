@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "roq/compat.hpp"
+
 #include <fmt/ranges.h>
 
 #include <toml++/toml.h>
@@ -18,15 +20,16 @@
 #include "roq/server/config/dispatcher.hpp"
 #include "roq/server/config/reader.hpp"
 
-#include "roq/binance/settings.hpp"
+#include "roq/binance/gateway/settings.hpp"
 
 #include "roq/binance/json/cancel_order_template.hpp"
 #include "roq/binance/json/create_order_template.hpp"
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
-struct Config final : public server::config::Dispatcher, public server::config::Reader::Handler {
+struct ROQ_PUBLIC Config final : public server::config::Dispatcher, public server::config::Reader::Handler {
   explicit Config(Settings const &);
 
   Config(Config const &) = delete;
@@ -75,13 +78,14 @@ struct Config final : public server::config::Dispatcher, public server::config::
  * tcp+ssl://fix-public.sandbox.pro.binance.com:4198
  */
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq
 
 template <>
-struct fmt::formatter<roq::binance::Config> {
+struct fmt::formatter<roq::binance::gateway::Config> {
   constexpr auto parse(format_parse_context &context) { return std::begin(context); }
-  auto format(roq::binance::Config const &value, format_context &context) const {
+  auto format(roq::binance::gateway::Config const &value, format_context &context) const {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),

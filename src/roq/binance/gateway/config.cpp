@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2026, Hans Erik Thrane */
 
-#include "roq/binance/config.hpp"
+#include "roq/binance/gateway/config.hpp"
 
 #include <utility>
 
@@ -12,6 +12,7 @@ using namespace std::literals;
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 // === CONSTANTS ===
 
@@ -188,5 +189,6 @@ void Config::operator()(std::string_view const &key, toml::node &) {
   log::warn(R"(Unexpected: key="{}")"sv, key);
 }
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

@@ -8,6 +8,7 @@
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 struct DropCopy {
   struct Handler {
@@ -31,5 +32,6 @@ struct DropCopy {
   virtual void operator()(metrics::Writer &) const = 0;
 };
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

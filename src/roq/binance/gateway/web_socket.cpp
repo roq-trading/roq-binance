@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2026, Hans Erik Thrane */
 
-#include "roq/binance/web_socket.hpp"
+#include "roq/binance/gateway/web_socket.hpp"
 
 #include <algorithm>
 #include <memory>
@@ -29,6 +29,7 @@ using namespace std::literals;
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 // === CONSTANTS ===
 
@@ -1453,5 +1454,6 @@ void WebSocket::operator()(Trace<server::oms::OrderUpdate> const &event, std::st
   }
 }
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

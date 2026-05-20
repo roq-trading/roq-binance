@@ -23,13 +23,14 @@
 
 #include "roq/server.hpp"
 
-#include "roq/binance/shared.hpp"
+#include "roq/binance/gateway/shared.hpp"
 
 #include "roq/binance/json/depth_ack.hpp"
 #include "roq/binance/json/exchange_info_ack.hpp"
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 struct Rest final : public web::rest::Client::Handler {
   struct SymbolsUpdate final {
@@ -123,5 +124,6 @@ struct Rest final : public web::rest::Client::Handler {
   core::Download<State> download_;
 };
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

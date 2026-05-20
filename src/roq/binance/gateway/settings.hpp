@@ -6,8 +6,10 @@
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 using Settings = flags::Settings;
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

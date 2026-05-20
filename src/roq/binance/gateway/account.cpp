@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2026, Hans Erik Thrane */
 
-#include "roq/binance/account.hpp"
+#include "roq/binance/gateway/account.hpp"
 
 #include "roq/logging.hpp"
 
@@ -8,6 +8,7 @@ using namespace std::literals;
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 // === HELPERS ===
 
@@ -42,5 +43,6 @@ Account::Account(Config const &config, std::string_view const &name, MarginMode 
       query_encode_buffer_(tools::Crypto::QUERY_BUFFER_LENGTH) {
 }
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

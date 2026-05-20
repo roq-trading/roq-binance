@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2026, Hans Erik Thrane */
 
-#include "roq/binance/api.hpp"
+#include "roq/binance/gateway/api.hpp"
 
 #include "roq/logging.hpp"
 
@@ -12,6 +12,7 @@ using namespace std::literals;
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 // === HELPERS ===
 
@@ -55,5 +56,6 @@ API API::create(Settings const &settings) {
   };
 }
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

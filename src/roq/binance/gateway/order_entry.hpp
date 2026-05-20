@@ -12,6 +12,7 @@
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 struct OrderEntry {
   struct ListenKeyUpdate final {
@@ -59,5 +60,6 @@ struct OrderEntry {
   virtual uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id) = 0;
 };
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

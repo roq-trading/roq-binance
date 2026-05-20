@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2026, Hans Erik Thrane */
 
-#include "roq/binance/shared.hpp"
+#include "roq/binance/gateway/shared.hpp"
 
 #include "roq/server/oms/exceptions.hpp"
 
@@ -8,6 +8,7 @@ using namespace std::literals;
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 // === HELPERS ===
 
@@ -70,5 +71,6 @@ json::CancelOrderTemplate const &Shared::get_cancel_order_template(std::string_v
 Shared::Instrument::Instrument(Settings const &settings) : sequencer{create_sequencer(settings)} {
 }
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

@@ -4,12 +4,13 @@
 
 #include <string_view>
 
-#include "roq/binance/settings.hpp"
+#include "roq/binance/gateway/settings.hpp"
 
 #include "roq/binance/json/side_effect_type.hpp"
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 struct API final {
   struct {
@@ -43,13 +44,14 @@ struct API final {
   static API create(Settings const &);
 };
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq
 
 template <>
-struct fmt::formatter<roq::binance::API> {
+struct fmt::formatter<roq::binance::gateway::API> {
   constexpr auto parse(format_parse_context &context) { return std::begin(context); }
-  auto format(roq::binance::API const &value, format_context &context) const {
+  auto format(roq::binance::gateway::API const &value, format_context &context) const {
     using namespace std::literals;
     return fmt::format_to(
         context.out(),

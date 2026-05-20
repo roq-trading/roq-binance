@@ -19,15 +19,16 @@
 
 #include "roq/core/limit/rate_limiter.hpp"
 
-#include "roq/binance/api.hpp"
-#include "roq/binance/config.hpp"
-#include "roq/binance/settings.hpp"
+#include "roq/binance/gateway/api.hpp"
+#include "roq/binance/gateway/config.hpp"
+#include "roq/binance/gateway/settings.hpp"
 
 #include "roq/binance/json/cancel_order_template.hpp"
 #include "roq/binance/json/create_order_template.hpp"
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 struct Shared final {
   Shared(server::Dispatcher &, Settings const &, Config const &);
@@ -132,5 +133,6 @@ struct Shared final {
   bool const allow_unknown_event_types;
 };
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

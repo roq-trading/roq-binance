@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2026, Hans Erik Thrane */
 
-#include "roq/binance/rest.hpp"
+#include "roq/binance/gateway/rest.hpp"
 
 #include <algorithm>
 #include <utility>
@@ -27,6 +27,7 @@ using namespace std::literals;
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 // === CONSTANTS ===
 
@@ -678,5 +679,6 @@ void Rest::waf_limit_violation() {
   }
 }
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

@@ -19,15 +19,16 @@
 
 #include "roq/server.hpp"
 
-#include "roq/binance/account.hpp"
-#include "roq/binance/drop_copy.hpp"
-#include "roq/binance/request.hpp"
-#include "roq/binance/shared.hpp"
+#include "roq/binance/gateway/account.hpp"
+#include "roq/binance/gateway/drop_copy.hpp"
+#include "roq/binance/gateway/request.hpp"
+#include "roq/binance/gateway/shared.hpp"
 
 #include "roq/binance/json/user_stream_parser.hpp"
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 struct DropCopyPortfolio final : public DropCopy, public web::socket::Client::Handler, public json::UserStreamParser::Handler {
   DropCopyPortfolio(DropCopy::Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, std::string_view const &listen_key, MarginMode);
@@ -108,5 +109,6 @@ struct DropCopyPortfolio final : public DropCopy, public web::socket::Client::Ha
   core::Download<State> download_;
 };
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

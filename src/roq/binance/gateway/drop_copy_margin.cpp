@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2026, Hans Erik Thrane */
 
-#include "roq/binance/drop_copy_margin.hpp"
+#include "roq/binance/gateway/drop_copy_margin.hpp"
 
 #include <algorithm>
 #include <memory>
@@ -29,6 +29,7 @@ using namespace std::literals;
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 // === CONSTANTS ===
 
@@ -713,5 +714,6 @@ void DropCopyMargin::check_response_orders() {
   }
 }
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

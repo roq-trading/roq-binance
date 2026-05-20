@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2026, Hans Erik Thrane */
 
-#include "roq/binance/drop_copy_portfolio.hpp"
+#include "roq/binance/gateway/drop_copy_portfolio.hpp"
 
 #include "roq/mask.hpp"
 
@@ -18,6 +18,7 @@ using namespace std::literals;
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 // === CONSTANTS ===
 
@@ -435,5 +436,6 @@ void DropCopyPortfolio::check_response_trades() {
   }
 }
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

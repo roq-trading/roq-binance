@@ -7,12 +7,13 @@
 #include <string_view>
 #include <utility>
 
-#include "roq/binance/config.hpp"
+#include "roq/binance/gateway/config.hpp"
 
 #include "roq/binance/tools/crypto.hpp"
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 struct Account final {
   Account(Config const &, std::string_view const &name, MarginMode);
@@ -54,5 +55,6 @@ struct Account final {
   std::vector<std::byte> query_encode_buffer_;
 };
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

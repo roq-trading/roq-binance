@@ -23,44 +23,69 @@
 
 #include "roq/server.hpp"
 
-#include "roq/binance/account.hpp"
-#include "roq/binance/drop_copy.hpp"
-#include "roq/binance/drop_copy_state_margin.hpp"
-#include "roq/binance/order_entry.hpp"
-#include "roq/binance/request.hpp"
-#include "roq/binance/shared.hpp"
+#include "roq/server/cache/cancel_order_request.hpp"
+
+#include "roq/binance/gateway/account.hpp"
+#include "roq/binance/gateway/order_entry.hpp"
+#include "roq/binance/gateway/shared.hpp"
 
 #include "roq/binance/json/wsapi_parser.hpp"
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
-struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handler, public json::WSAPIParser::Handler {
-  DropCopyMargin(DropCopy::Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, OrderEntry::ListenKeyUpdate const &);
+struct WebSocket final : public OrderEntry, public web::socket::Client::Handler, public json::WSAPIParser::Handler {
+  WebSocket(OrderEntry::Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, std::string_view const &interface = {});
 
-  DropCopyMargin(DropCopyMargin const &) = delete;
+  WebSocket(WebSocket const &) = delete;
 
+ protected:
   void operator()(Event<Start> const &) override;
   void operator()(Event<Stop> const &) override;
   void operator()(Event<Timer> const &) override;
 
   void operator()(metrics::Writer &) const override;
 
-  void operator()(OrderEntry::ListenKeyUpdate const &);
+  uint16_t operator()(Event<CreateOrder> const &, server::oms::Order const &, server::oms::RefData const &, std::string_view const &request_id) override;
+  uint16_t operator()(
+      Event<ModifyOrder> const &,
+      server::oms::Order const &,
+      server::oms::RefData const &,
+      std::string_view const &request_id,
+      std::string_view const &previous_request_id) override;
+  uint16_t operator()(
+      Event<CancelOrder> const &,
+      server::oms::Order const &,
+      server::oms::RefData const &,
+      std::string_view const &request_id,
+      std::string_view const &previous_request_id) override;
+  uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id) override;
 
- protected:
   bool ready() const { return connection_status_ == ConnectionStatus::READY; }
-
-  void operator()(ConnectionStatus, std::string_view const &reason = {});
-
-  uint32_t download(DropCopyStateMargin);
 
   void session_logon();
 
-  void subscribe_user_data_stream();
+  void user_data_stream_subscribe();
 
-  void get_account();
-  void get_orders();
+  void account_status();
+  void open_orders_status();
+  void my_trades();
+
+  void order_place(Event<CreateOrder> const &, server::oms::Order const &, server::oms::RefData const &, std::string_view const &request_id);
+  void order_amend_keep_priority(
+      Event<ModifyOrder> const &,
+      server::oms::Order const &,
+      server::oms::RefData const &,
+      std::string_view const &request_id,
+      std::string_view const &previous_request_id);
+  void order_cancel(
+      Event<CancelOrder> const &,
+      server::oms::Order const &,
+      server::oms::RefData const &,
+      std::string_view const &request_id,
+      std::string_view const &previous_request_id);
+  void open_orders_cancel_all(Event<CancelAllOrders> const &, std::string_view const &request_id);
 
   // web::socket::Client::Handler
 
@@ -71,6 +96,20 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
   void operator()(web::socket::Client::Latency const &) override;
   void operator()(web::socket::Client::Text const &) override;
   void operator()(web::socket::Client::Binary const &) override;
+
+  void operator()(ConnectionStatus, std::string_view const &reason = {});
+
+  enum class State {
+    UNDEFINED = 0,
+    SESSION_LOGON,
+    USER_DATA_STREAM_SUBSCRIBE,
+    ACCOUNT_STATUS,
+    OPEN_ORDERS_STATUS,
+    MY_TRADES,
+    DONE,
+  };
+
+  uint32_t download(State);
 
   void parse(std::string_view const &message);
 
@@ -107,16 +146,10 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
 
   void operator()(Trace<server::oms::OrderUpdate> const &, std::string_view const &client_order_id);
 
-  void check_response_listen_key();
-  void check_response_account();
-  void check_response_orders();
-
-  DropCopy::Handler &handler_;
+  OrderEntry::Handler &handler_;
   // config
   uint16_t const stream_id_;
   std::string const name_;
-  std::string listen_token_;
-  MarginMode const margin_mode_;
   // web socket
   std::unique_ptr<web::socket::Client> connection_;
   // buffers
@@ -126,11 +159,16 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile parse,   //
-        session_logon,               //
-        user_data_stream_subscribe,  //
-        outbound_account_position,   //
-        balance_update,              //
+    utils::metrics::Profile parse,                                 //
+        session_logon,                                             //
+        user_data_stream_subscribe,                                //
+        account_status, open_orders_status, my_trades,             //
+        order_place, order_place_ack,                              //
+        order_amend_keep_priority, order_amend_keep_priority_ack,  //
+        order_cancel, order_cancel_ack,                            //
+        open_orders_cancel_all, open_orders_cancel_all_ack,        //
+        outbound_account_position,                                 //
+        balance_update,                                            //
         execution_report;
   } profile_;
   struct {
@@ -143,17 +181,18 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
   Account &account_;
   // shared
   Shared &shared_;
-  Request &request_;
   // experimental
   uint32_t request_id_;
+  utils::unordered_set<std::string> open_orders_symbols_;
   std::string request_encode_buffer_;
+  std::string encode_buffer_;
   // state
   bool ready_ = false;
   ConnectionStatus connection_status_ = {};
-  core::Download<DropCopyStateMargin> download_;
-  //
-  bool download_listen_token_ = false;
+  core::Download<State> download_;
+  bool download_trades_is_first_ = true;  // note! lookback depends on it
 };
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

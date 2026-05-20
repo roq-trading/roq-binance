@@ -6,6 +6,7 @@
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 struct Request final {
   // spot:
@@ -33,5 +34,6 @@ struct Request final {
   std::chrono::nanoseconds respond_trades_cross = {};
 };
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

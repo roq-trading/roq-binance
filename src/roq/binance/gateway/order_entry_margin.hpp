@@ -25,11 +25,11 @@
 
 #include "roq/server/cache/cancel_order_request.hpp"
 
-#include "roq/binance/order_entry.hpp"
+#include "roq/binance/gateway/order_entry.hpp"
 
-#include "roq/binance/account.hpp"
-#include "roq/binance/request.hpp"
-#include "roq/binance/shared.hpp"
+#include "roq/binance/gateway/account.hpp"
+#include "roq/binance/gateway/request.hpp"
+#include "roq/binance/gateway/shared.hpp"
 
 #include "roq/binance/json/account_ack.hpp"
 #include "roq/binance/json/cancel_all_open_orders_ack.hpp"
@@ -44,6 +44,7 @@
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Handler {
   OrderEntryMargin(OrderEntry::Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &);
@@ -207,5 +208,6 @@ struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Han
   bool has_listen_key_cross_ = false;
 };
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

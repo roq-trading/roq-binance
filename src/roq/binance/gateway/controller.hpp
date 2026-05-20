@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "roq/compat.hpp"
+
 #include <memory>
 #include <string>
 #include <utility>
@@ -13,25 +15,30 @@
 
 #include "roq/io/context.hpp"
 
-#include "roq/binance/account.hpp"
-#include "roq/binance/config.hpp"
-#include "roq/binance/request.hpp"
-#include "roq/binance/settings.hpp"
-#include "roq/binance/shared.hpp"
+#include "roq/binance/gateway/account.hpp"
+#include "roq/binance/gateway/config.hpp"
+#include "roq/binance/gateway/request.hpp"
+#include "roq/binance/gateway/settings.hpp"
+#include "roq/binance/gateway/shared.hpp"
 
-#include "roq/binance/drop_copy.hpp"
-#include "roq/binance/drop_copy_margin.hpp"
-#include "roq/binance/market_data.hpp"
-#include "roq/binance/order_entry.hpp"
-#include "roq/binance/rest.hpp"
+#include "roq/binance/gateway/drop_copy.hpp"
+#include "roq/binance/gateway/drop_copy_margin.hpp"
+#include "roq/binance/gateway/market_data.hpp"
+#include "roq/binance/gateway/order_entry.hpp"
+#include "roq/binance/gateway/rest.hpp"
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
-struct Gateway final : public server::Handler, public Rest::Handler, public MarketData::Handler, public OrderEntry::Handler, public DropCopy::Handler {
-  Gateway(server::Dispatcher &, Settings const &, Config const &, io::Context &);
+struct ROQ_PUBLIC Controller final : public server::Handler,
+                                     public Rest::Handler,
+                                     public MarketData::Handler,
+                                     public OrderEntry::Handler,
+                                     public DropCopy::Handler {
+  Controller(server::Dispatcher &, Settings const &, Config const &, io::Context &);
 
-  Gateway(Gateway const &) = delete;
+  Controller(Controller const &) = delete;
 
  protected:
   // server::Handler
@@ -121,5 +128,6 @@ struct Gateway final : public server::Handler, public Rest::Handler, public Mark
   std::vector<MBPUpdate> bids_, asks_;
 };
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

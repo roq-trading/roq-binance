@@ -25,11 +25,11 @@
 
 #include "roq/server/cache/cancel_order_request.hpp"
 
-#include "roq/binance/order_entry.hpp"
+#include "roq/binance/gateway/order_entry.hpp"
 
-#include "roq/binance/account.hpp"
-#include "roq/binance/request.hpp"
-#include "roq/binance/shared.hpp"
+#include "roq/binance/gateway/account.hpp"
+#include "roq/binance/gateway/request.hpp"
+#include "roq/binance/gateway/shared.hpp"
 
 #include "roq/binance/json/balances_ack.hpp"
 #include "roq/binance/json/cancel_all_open_orders_ack.hpp"
@@ -41,6 +41,7 @@
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 struct OrderEntryPortfolio final : public OrderEntry, public web::rest::Client::Handler {
   OrderEntryPortfolio(
@@ -184,5 +185,6 @@ struct OrderEntryPortfolio final : public OrderEntry, public web::rest::Client::
   bool download_trades_is_first_ = true;
 };
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

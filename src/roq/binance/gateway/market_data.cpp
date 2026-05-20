@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2026, Hans Erik Thrane */
 
-#include "roq/binance/market_data.hpp"
+#include "roq/binance/gateway/market_data.hpp"
 
 #include <algorithm>
 #include <utility>
@@ -22,6 +22,7 @@ using namespace std::literals;
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 // === CONSTANTS ===
 
@@ -521,5 +522,6 @@ void MarketData::check_subscribe_queue(std::chrono::nanoseconds now) {
   subscribe_queue_.dispatch(can_request, request, now);
 }
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

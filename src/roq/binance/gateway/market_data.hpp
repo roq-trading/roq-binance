@@ -22,12 +22,13 @@
 
 #include "roq/server.hpp"
 
-#include "roq/binance/shared.hpp"
+#include "roq/binance/gateway/shared.hpp"
 
 #include "roq/binance/json/market_stream_parser.hpp"
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 struct MarketData final : public web::socket::Client::Handler, public json::MarketStreamParser::Handler {
   struct Handler {
@@ -115,5 +116,6 @@ struct MarketData final : public web::socket::Client::Handler, public json::Mark
   core::TimerQueue<std::string> subscribe_queue_;
 };
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq
