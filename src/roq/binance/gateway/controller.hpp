@@ -38,8 +38,6 @@ struct Controller final : public server::Handler, public Rest::Handler, public M
 
   Controller(Controller const &) = delete;
 
-  virtual ~Controller() = default;
-
  protected:
   // server::Handler
 
