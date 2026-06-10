@@ -12,7 +12,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::DepthUpdate;
+using value_type = protocol::json::DepthUpdate;
 
 TEST_CASE("simple", "[json_depth_update]") {
   auto message = R"({)"
@@ -78,7 +78,7 @@ TEST_CASE("simple", "[json_depth_update]") {
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
     CHECK(obj.stream == "btcusdt@depth@100ms"sv);
-    CHECK(obj.data.event_type == json::EventType::DEPTH_UPDATE);
+    CHECK(obj.data.event_type == protocol::json::EventType::DEPTH_UPDATE);
     CHECK(obj.data.event_time == 1660386669440ms);
     CHECK(obj.data.symbol == "BTCUSDT"sv);
   };

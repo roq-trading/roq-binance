@@ -2,7 +2,7 @@
 
 #include <benchmark/benchmark.h>
 
-#include "roq/binance/json/utils.hpp"
+#include "roq/binance/protocol/json/utils.hpp"
 
 #include "roq/binance/tools/crypto.hpp"
 
@@ -32,7 +32,7 @@ auto const OMS_ORDER = []() {
   return result;
 }();
 }  // namespace
-auto const CREATE_ORDER_TEMPLATE = json::CreateOrderTemplate{};
+auto const CREATE_ORDER_TEMPLATE = protocol::json::CreateOrderTemplate{};
 
 // === IMPLEMENTATION ===
 
@@ -62,7 +62,7 @@ void BM_json_new_order(benchmark::State &state) {
         .strategy_id = {},
         .release_time_utc = {},
     };
-    json::new_order(buffer, create_order, OMS_ORDER, REQUEST_ID, CREATE_ORDER_TEMPLATE, RECV_WINDOW);
+    protocol::json::new_order(buffer, create_order, OMS_ORDER, REQUEST_ID, CREATE_ORDER_TEMPLATE, RECV_WINDOW);
   }
 }
 
@@ -96,7 +96,7 @@ void BM_json_new_order_with_signature(benchmark::State &state) {
         .strategy_id = {},
         .release_time_utc = {},
     };
-    auto body = json::new_order(buffer, create_order, OMS_ORDER, REQUEST_ID, CREATE_ORDER_TEMPLATE, RECV_WINDOW);
+    auto body = protocol::json::new_order(buffer, create_order, OMS_ORDER, REQUEST_ID, CREATE_ORDER_TEMPLATE, RECV_WINDOW);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     crypto.create_query(buffer_2, now, body);
   }

@@ -22,8 +22,8 @@
 
 #include "roq/binance/gateway/settings.hpp"
 
-#include "roq/binance/json/cancel_order_template.hpp"
-#include "roq/binance/json/create_order_template.hpp"
+#include "roq/binance/protocol/json/cancel_order_template.hpp"
+#include "roq/binance/protocol/json/create_order_template.hpp"
 
 namespace roq {
 namespace binance {
@@ -63,8 +63,8 @@ struct ROQ_PUBLIC Config final : public server::config::Dispatcher, public serve
   server::config::Accounts accounts;
   Account master_account_;
   server::config::RateLimits rate_limits;
-  utils::unordered_map<std::string, json::CreateOrderTemplate> create_order_templates;
-  utils::unordered_map<std::string, json::CancelOrderTemplate> cancel_order_templates;
+  utils::unordered_map<std::string, protocol::json::CreateOrderTemplate> create_order_templates;
+  utils::unordered_map<std::string, protocol::json::CancelOrderTemplate> cancel_order_templates;
 };
 
 /*

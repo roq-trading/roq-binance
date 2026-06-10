@@ -4,7 +4,7 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/binance/json/open_orders_ack.hpp"
+#include "roq/binance/protocol/json/open_orders_ack.hpp"
 
 using namespace roq;
 using namespace roq::binance;
@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::OpenOrdersAck;
+using value_type = protocol::json::OpenOrdersAck;
 
 TEST_CASE("empty", "[json_open_orders_ack]") {
   auto message = R"([])"sv;
@@ -58,10 +58,10 @@ TEST_CASE("simple", "[json_open_orders_ack]") {
     CHECK(data_0.orig_qty == 0.1_a);
     CHECK(data_0.executed_qty == 0.0_a);
     CHECK(data_0.cummulative_quote_qty == 0.0_a);
-    CHECK(data_0.status == json::OrderStatus::NEW);
-    CHECK(data_0.time_in_force == json::TimeInForce::GTC);
-    CHECK(data_0.type == json::OrderType::LIMIT);
-    CHECK(data_0.side == json::Side::BUY);
+    CHECK(data_0.status == protocol::json::OrderStatus::NEW);
+    CHECK(data_0.time_in_force == protocol::json::TimeInForce::GTC);
+    CHECK(data_0.type == protocol::json::OrderType::LIMIT);
+    CHECK(data_0.side == protocol::json::Side::BUY);
     CHECK(data_0.stop_price == 0.0_a);
     CHECK(data_0.iceberg_qty == 0.0_a);
     CHECK(data_0.time == 1634214384058ms);

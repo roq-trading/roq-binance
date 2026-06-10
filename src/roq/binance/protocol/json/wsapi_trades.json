@@ -1,0 +1,28 @@
+{
+  "name": "roq/binance/protocol/json/WSAPITrades",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "id",
+      "type": "std/string_view"
+    },
+    {
+      "name": "status",
+      "type": "std/int32"
+    },
+    {
+      "name": "result",
+      "type": "roq/binance/protocol/json/Trade2",
+      "array": "std/span"
+    },
+    {
+      "name": "error",
+      "type": "roq/binance/protocol/json/Error"
+    },
+    {
+      "name": "rateLimits",
+      "type": "roq/binance/protocol/json/WSAPIRateLimitsItem",
+      "array": "std/span"
+    }
+  ]
+}

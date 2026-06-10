@@ -11,8 +11,8 @@
 
 #include "roq/utils/metrics/factory.hpp"
 
-#include "roq/binance/json/map.hpp"
-#include "roq/binance/json/utils.hpp"
+#include "roq/binance/protocol/json/map.hpp"
+#include "roq/binance/protocol/json/utils.hpp"
 
 using namespace std::literals;
 
@@ -240,7 +240,7 @@ void DropCopyPortfolio::parse(std::string_view const &message) {
     auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     try {
       TraceInfo trace_info;
-      if (!json::UserStreamParser::dispatch_papi(*this, message, decode_buffer_, trace_info, shared_.allow_unknown_event_types)) {
+      if (!protocol::json::UserStreamParser::dispatch_papi(*this, message, decode_buffer_, trace_info, shared_.allow_unknown_event_types)) {
         log_message();
       }
     } catch (...) {
@@ -250,7 +250,7 @@ void DropCopyPortfolio::parse(std::string_view const &message) {
   });
 }
 
-void DropCopyPortfolio::operator()(Trace<json::OutboundAccountPosition> const &event) {
+void DropCopyPortfolio::operator()(Trace<protocol::json::OutboundAccountPosition> const &event) {
   profile_.outbound_account_position([&]() {
     auto &[trace_info, outbound_account_position] = event;
     log::info<2>("outbound_account_position={}"sv, outbound_account_position);
@@ -274,7 +274,7 @@ void DropCopyPortfolio::operator()(Trace<json::OutboundAccountPosition> const &e
   });
 }
 
-void DropCopyPortfolio::operator()(Trace<json::BalanceUpdate> const &event) {
+void DropCopyPortfolio::operator()(Trace<protocol::json::BalanceUpdate> const &event) {
   profile_.balance_update([&]() {
     auto &[trace_info, balance_update] = event;
     log::info<2>("balance_update={}"sv, balance_update);
@@ -282,7 +282,7 @@ void DropCopyPortfolio::operator()(Trace<json::BalanceUpdate> const &event) {
   });
 }
 
-void DropCopyPortfolio::operator()(Trace<json::ExecutionReport> const &event) {
+void DropCopyPortfolio::operator()(Trace<protocol::json::ExecutionReport> const &event) {
   profile_.execution_report([&]() {
     auto &[trace_info, execution_report] = event;
     log::info<2>("execution_report={}"sv, execution_report);
@@ -339,7 +339,7 @@ void DropCopyPortfolio::operator()(Trace<json::ExecutionReport> const &event) {
       log::warn("*** EXTERNAL ORDER ***"sv);
       log::warn("execution_report={}"sv, execution_report);
     }
-    if (execution_report.data.current_execution_type != json::ExecutionType::TRADE) {
+    if (execution_report.data.current_execution_type != protocol::json::ExecutionType::TRADE) {
       return;
     }
     auto side = map(execution_report.data.side).template get<Side>();
@@ -384,7 +384,7 @@ void DropCopyPortfolio::operator()(Trace<json::ExecutionReport> const &event) {
   });
 }
 
-void DropCopyPortfolio::operator()(Trace<json::ListStatus> const &event) {
+void DropCopyPortfolio::operator()(Trace<protocol::json::ListStatus> const &event) {
   profile_.list_status([&]() {
     auto &[trace_info, list_status] = event;
     log::info<2>("list_status={}"sv, list_status);

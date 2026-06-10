@@ -1,0 +1,105 @@
+{
+  "name": "roq/binance/protocol/json/AccountAck",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "makerCommission",
+      "type": "std/double"
+    },
+    {
+      "name": "takerCommission",
+      "type": "std/double"
+    },
+    {
+      "name": "buyerCommission",
+      "type": "std/double"
+    },
+    {
+      "name": "sellerCommission",
+      "type": "std/double"
+    },
+    {
+      "name": "canTrade",
+      "type": "std/bool"
+    },
+    {
+      "name": "canWithdraw",
+      "type": "std/bool"
+    },
+    {
+      "name": "canDeposit",
+      "type": "std/bool"
+    },
+    {
+      "name": "updateTime",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "accountType",
+      "type": "std/string_view"
+    },
+    {
+      "name": "balances",
+      "type": "roq/binance/protocol/json/Balance",
+      "array": "std/span"
+    },
+    {
+      "name": "permissions"
+    },
+    {
+      "name": "brokered",
+      "type": "std/bool"
+    },
+    {
+      "name": "commissionRates"
+    },
+    {
+      "name": "requireSelfTradePrevention",
+      "type": "std/bool"
+    },
+    {
+      "name": "preventSor",
+      "type": "std/bool"
+    },
+    {
+      "name": "uid",
+      "type": "std/int32"
+    },
+    {
+      "name": "uniMMR",
+      "type": "std/double"
+    },
+    {
+      "name": "accountEquity",
+      "type": "std/double"
+    },
+    {
+      "name": "actualEquity",
+      "type": "std/double"
+    },
+    {
+      "name": "accountInitialMargin",
+      "type": "std/double"
+    },
+    {
+      "name": "accountMaintMargin",
+      "type": "std/double"
+    },
+    {
+      "name": "accountStatus",
+      "type": "std/string_view"
+    },
+    {
+      "name": "virtualMaxWithdrawAmount",
+      "type": "std/double"
+    },
+    {
+      "name": "totalAvailableBalance",
+      "type": "std/double"
+    },
+    {
+      "name": "totalMarginOpenLoss",
+      "type": "std/double"
+    }
+  ]
+}

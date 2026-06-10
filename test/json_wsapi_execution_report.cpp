@@ -12,7 +12,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::WSAPIExecutionReport;
+using value_type = protocol::json::WSAPIExecutionReport;
 
 TEST_CASE("empty", "[json_wsapi_execution_report]") {
   auto message = R"({)"
@@ -56,7 +56,7 @@ TEST_CASE("empty", "[json_wsapi_execution_report]") {
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
     CHECK(obj.subscription_id == 0);
-    CHECK(obj.event.event_type == json::EventType::EXECUTION_REPORT);
+    CHECK(obj.event.event_type == protocol::json::EventType::EXECUTION_REPORT);
   };
   WSAPIParserTester<value_type>::dispatch(helper, message, 65536, 1);
 }

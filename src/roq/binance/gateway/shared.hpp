@@ -23,8 +23,8 @@
 #include "roq/binance/gateway/config.hpp"
 #include "roq/binance/gateway/settings.hpp"
 
-#include "roq/binance/json/cancel_order_template.hpp"
-#include "roq/binance/json/create_order_template.hpp"
+#include "roq/binance/protocol/json/cancel_order_template.hpp"
+#include "roq/binance/protocol/json/create_order_template.hpp"
 
 namespace roq {
 namespace binance {
@@ -116,12 +116,12 @@ struct Shared final {
   core::TimerQueue<std::string> depth_request_queue;
 
  private:
-  utils::unordered_map<std::string, json::CreateOrderTemplate> const &create_order_templates;
-  utils::unordered_map<std::string, json::CancelOrderTemplate> const &cancel_order_templates;
+  utils::unordered_map<std::string, protocol::json::CreateOrderTemplate> const &create_order_templates;
+  utils::unordered_map<std::string, protocol::json::CancelOrderTemplate> const &cancel_order_templates;
 
  public:
-  json::CreateOrderTemplate const &get_create_order_template(std::string_view const &name);
-  json::CancelOrderTemplate const &get_cancel_order_template(std::string_view const &name);
+  protocol::json::CreateOrderTemplate const &get_create_order_template(std::string_view const &name);
+  protocol::json::CancelOrderTemplate const &get_cancel_order_template(std::string_view const &name);
 
   struct {
     uint32_t request_weight_1m = {};

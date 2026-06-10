@@ -2,13 +2,13 @@
 
 #include <catch2/catch_all.hpp>
 
-#include "roq/binance/json/wsapi_parser.hpp"
+#include "roq/binance/protocol/json/wsapi_parser.hpp"
 
 namespace roq {
 namespace binance {
 
 template <typename T>
-struct WSAPIParserTester final : public json::WSAPIParser::Handler {
+struct WSAPIParserTester final : public protocol::json::WSAPIParser::Handler {
   using value_type = std::remove_cvref_t<T>;
   using callback_type = std::function<void(value_type const &)>;
 
@@ -21,7 +21,7 @@ struct WSAPIParserTester final : public json::WSAPIParser::Handler {
     // parser
     // XXX FIXME TODO catch2 block ???
     WSAPIParserTester handler{callback};
-    auto res = json::WSAPIParser::dispatch(handler, message, buffers, {}, false);
+    auto res = protocol::json::WSAPIParser::dispatch(handler, message, buffers, {}, false);
     CHECK(res == true);
     CHECK(handler.found_ == true);
   }
@@ -29,23 +29,23 @@ struct WSAPIParserTester final : public json::WSAPIParser::Handler {
  protected:
   explicit WSAPIParserTester(callback_type const &callback) : callback_{callback} {}
 
-  void operator()(Trace<json::WSAPISessionLogon> const &event) override { dispatch(event); }
+  void operator()(Trace<protocol::json::WSAPISessionLogon> const &event) override { dispatch(event); }
 
-  void operator()(Trace<json::WSAPIUserDataStreamSubscribe> const &event) override { dispatch(event); }
-  void operator()(Trace<json::WSAPIEventStreamTerminated> const &event) override { dispatch(event); }
+  void operator()(Trace<protocol::json::WSAPIUserDataStreamSubscribe> const &event) override { dispatch(event); }
+  void operator()(Trace<protocol::json::WSAPIEventStreamTerminated> const &event) override { dispatch(event); }
 
-  void operator()(Trace<json::WSAPIAccount> const &event) override { dispatch(event); }
-  void operator()(Trace<json::WSAPIOpenOrders> const &event) override { dispatch(event); }
-  void operator()(Trace<json::WSAPITrades> const &event) override { dispatch(event); }
+  void operator()(Trace<protocol::json::WSAPIAccount> const &event) override { dispatch(event); }
+  void operator()(Trace<protocol::json::WSAPIOpenOrders> const &event) override { dispatch(event); }
+  void operator()(Trace<protocol::json::WSAPITrades> const &event) override { dispatch(event); }
 
-  void operator()(Trace<json::WSAPIOrderPlace> const &event, json::WSAPIRequest const &) override { dispatch(event); }
-  void operator()(Trace<json::WSAPIOrderAmendKeepPriority> const &event, json::WSAPIRequest const &) override { dispatch(event); }
-  void operator()(Trace<json::WSAPICancelOrder> const &event, json::WSAPIRequest const &) override { dispatch(event); }
-  void operator()(Trace<json::WSAPICancelOpenOrders> const &event, json::WSAPIRequest const &) override { dispatch(event); }
+  void operator()(Trace<protocol::json::WSAPIOrderPlace> const &event, protocol::json::WSAPIRequest const &) override { dispatch(event); }
+  void operator()(Trace<protocol::json::WSAPIOrderAmendKeepPriority> const &event, protocol::json::WSAPIRequest const &) override { dispatch(event); }
+  void operator()(Trace<protocol::json::WSAPICancelOrder> const &event, protocol::json::WSAPIRequest const &) override { dispatch(event); }
+  void operator()(Trace<protocol::json::WSAPICancelOpenOrders> const &event, protocol::json::WSAPIRequest const &) override { dispatch(event); }
 
-  void operator()(Trace<json::WSAPIOutboundAccountPosition> const &event) override { dispatch(event); }
-  void operator()(Trace<json::WSAPIBalanceUpdate> const &event) override { dispatch(event); }
-  void operator()(Trace<json::WSAPIExecutionReport> const &event) override { dispatch(event); }
+  void operator()(Trace<protocol::json::WSAPIOutboundAccountPosition> const &event) override { dispatch(event); }
+  void operator()(Trace<protocol::json::WSAPIBalanceUpdate> const &event) override { dispatch(event); }
+  void operator()(Trace<protocol::json::WSAPIExecutionReport> const &event) override { dispatch(event); }
 
   template <typename U>
   void dispatch(Trace<U> const &event) {

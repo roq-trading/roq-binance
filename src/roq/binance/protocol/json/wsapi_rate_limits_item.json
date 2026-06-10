@@ -1,0 +1,26 @@
+{
+  "name": "roq/binance/protocol/json/WSAPIRateLimitsItem",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "rateLimitType",
+      "type": "roq/binance/protocol/json/RateLimitType"
+    },
+    {
+      "name": "interval",
+      "type": "roq/binance/protocol/json/Interval"
+    },
+    {
+      "name": "intervalNum",
+      "type": "std/uint32"
+    },
+    {
+      "name": "limit",
+      "type": "std/uint32"
+    },
+    {
+      "name": "count",
+      "type": "std/uint32"
+    }
+  ]
+}

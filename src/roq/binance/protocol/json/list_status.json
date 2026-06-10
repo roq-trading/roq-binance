@@ -1,0 +1,14 @@
+{
+  "name": "roq/binance/protocol/json/ListStatus",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "stream",
+      "type": "std/string_view"
+    },
+    {
+      "name": "data",
+      "type": "roq/binance/protocol/json/ListStatusData"
+    }
+  ]
+}

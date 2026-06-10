@@ -25,8 +25,8 @@
 
 #include "roq/binance/gateway/shared.hpp"
 
-#include "roq/binance/json/depth_ack.hpp"
-#include "roq/binance/json/exchange_info_ack.hpp"
+#include "roq/binance/protocol/json/depth_ack.hpp"
+#include "roq/binance/protocol/json/exchange_info_ack.hpp"
 
 namespace roq {
 namespace binance {
@@ -81,11 +81,11 @@ struct Rest final : public web::rest::Client::Handler {
 
   void get_exchange_info();
   void get_exchange_info_ack(Trace<web::rest::Response> const &, uint32_t sequence);
-  void operator()(Trace<json::ExchangeInfoAck> const &);
+  void operator()(Trace<protocol::json::ExchangeInfoAck> const &);
 
   void get_depth(std::string_view const &symbol);
   void get_depth_ack(Trace<web::rest::Response> const &, std::string_view const &symbol);
-  void operator()(Trace<json::DepthAck> const &, std::string_view const &symbol);
+  void operator()(Trace<protocol::json::DepthAck> const &, std::string_view const &symbol);
 
   void check_request_queue(std::chrono::nanoseconds now);
 

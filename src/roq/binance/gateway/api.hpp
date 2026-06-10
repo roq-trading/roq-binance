@@ -6,7 +6,7 @@
 
 #include "roq/binance/gateway/settings.hpp"
 
-#include "roq/binance/json/side_effect_type.hpp"
+#include "roq/binance/protocol/json/side_effect_type.hpp"
 
 namespace roq {
 namespace binance {
@@ -38,7 +38,7 @@ struct API final {
     std::string_view margin_order;
     std::string_view margin_all_open_orders;
   } papi;
-  json::SideEffectType margin_side_effect_type = {};
+  protocol::json::SideEffectType margin_side_effect_type = {};
 
   // factory
   static API create(Settings const &);

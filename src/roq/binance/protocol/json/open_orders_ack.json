@@ -1,0 +1,11 @@
+{
+  "name": "roq/binance/protocol/json/OpenOrdersAck",
+  "type": "array",
+  "values": [
+    {
+      "name": "data",
+      "type": "roq/binance/protocol/json/Order",
+      "array": "std/span"
+    }
+  ]
+}

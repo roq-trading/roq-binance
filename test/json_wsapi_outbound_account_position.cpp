@@ -12,7 +12,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::WSAPIOutboundAccountPosition;
+using value_type = protocol::json::WSAPIOutboundAccountPosition;
 
 TEST_CASE("empty", "[json_wsapi_outbound_account_position]") {
   auto message = R"({)"
@@ -39,7 +39,7 @@ TEST_CASE("empty", "[json_wsapi_outbound_account_position]") {
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
     CHECK(obj.subscription_id == 0);
-    CHECK(obj.event.event_type == json::EventType::OUTBOUND_ACCOUNT_POSITION);
+    CHECK(obj.event.event_type == protocol::json::EventType::OUTBOUND_ACCOUNT_POSITION);
   };
   WSAPIParserTester<value_type>::dispatch(helper, message, 65536, 1);
 }

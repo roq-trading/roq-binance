@@ -2,7 +2,7 @@
 
 #include <benchmark/benchmark.h>
 
-#include "roq/binance/json/utils.hpp"
+#include "roq/binance/protocol/json/utils.hpp"
 
 #include "roq/binance/tools/crypto.hpp"
 
@@ -19,7 +19,7 @@ auto const REQUEST_ID = "jQAB6gMAAQAAQUIp3sUSAawljiyfnylc"sv;
 auto const PREVIOUS_REQUEST_ID = "jQAB6gMAAQAAQUIp3sUSAawljiyfnylc"sv;
 auto const ACCOUNT = "A1"sv;
 uint32_t const ORDER_ID = 1234;
-auto const CANCEL_ORDER_TEMPLATE = json::CancelOrderTemplate{};
+auto const CANCEL_ORDER_TEMPLATE = protocol::json::CancelOrderTemplate{};
 auto const RECV_WINDOW = 5s;
 auto const KEY = "sSzUA6j8tGDfmLoFrOPhWHY3VeXbC3NrApp94Ci4H4XvcjuCuvOXp8gH89XzMPDe"sv;
 auto const SECRET = "tHurnNFWLFkm97xVRqoESdujAiq1ilNjnY52tDej5RilUbTVZXT2YB5eo7txFLHk"sv;
@@ -47,7 +47,7 @@ void BM_json_cancel_order(benchmark::State &state) {
         .conditional_on_version = {},
         .release_time_utc = {},
     };
-    json::cancel_order(buffer, cancel_order, OMS_ORDER, REQUEST_ID, PREVIOUS_REQUEST_ID, CANCEL_ORDER_TEMPLATE, RECV_WINDOW);
+    protocol::json::cancel_order(buffer, cancel_order, OMS_ORDER, REQUEST_ID, PREVIOUS_REQUEST_ID, CANCEL_ORDER_TEMPLATE, RECV_WINDOW);
   }
 }
 
@@ -69,7 +69,7 @@ void BM_json_cancel_order_with_signature(benchmark::State &state) {
         .conditional_on_version = {},
         .release_time_utc = {},
     };
-    auto body = json::cancel_order(buffer, cancel_order, OMS_ORDER, REQUEST_ID, PREVIOUS_REQUEST_ID, CANCEL_ORDER_TEMPLATE, RECV_WINDOW);
+    auto body = protocol::json::cancel_order(buffer, cancel_order, OMS_ORDER, REQUEST_ID, PREVIOUS_REQUEST_ID, CANCEL_ORDER_TEMPLATE, RECV_WINDOW);
     auto now = clock::get_realtime<std::chrono::milliseconds>();
     crypto.create_query(buffer_2, now, body);
   }

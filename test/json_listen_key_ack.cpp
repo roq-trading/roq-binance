@@ -4,7 +4,7 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/binance/json/listen_key_ack.hpp"
+#include "roq/binance/protocol/json/listen_key_ack.hpp"
 
 using namespace roq;
 using namespace roq::binance;
@@ -13,7 +13,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::ListenKeyAck;
+using value_type = protocol::json::ListenKeyAck;
 
 TEST_CASE("simple", "[json_listen_key_ack]") {
   auto message = R"({)"

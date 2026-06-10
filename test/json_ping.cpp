@@ -4,7 +4,7 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/binance/json/ping.hpp"
+#include "roq/binance/protocol/json/ping.hpp"
 
 using namespace roq;
 using namespace roq::binance;
@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::Ping;
+using value_type = protocol::json::Ping;
 
 TEST_CASE("json_ping_simple", "[json_ping]") {
   auto message = R"({)"

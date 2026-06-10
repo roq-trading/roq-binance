@@ -6,7 +6,7 @@
 
 #include "roq/logging.hpp"
 
-#include "roq/binance/json/cancel_restrictions.hpp"
+#include "roq/binance/protocol/json/cancel_restrictions.hpp"
 
 using namespace std::literals;
 
@@ -139,13 +139,13 @@ void Config::operator()(server::config::RequestTemplate request_template, std::s
   switch (request_template) {
     using enum server::config::RequestTemplate;
     case CREATE_ORDER: {
-      json::CreateOrderTemplate create_order_template;
+      protocol::json::CreateOrderTemplate create_order_template;
       for (auto &[k, v] : table) {
         auto key = static_cast<std::string_view>(k);
         if (key == "self_trade_prevention_mode"sv) {
           auto value = *v.template value<std::string_view>();
           create_order_template.self_trade_prevention_mode = value;
-          if (create_order_template.self_trade_prevention_mode == json::SelfTradePreventionMode::UNKNOWN_INTERNAL) {
+          if (create_order_template.self_trade_prevention_mode == protocol::json::SelfTradePreventionMode::UNKNOWN_INTERNAL) {
             log::fatal(R"(Unknown: value="{}")"sv, value);
           }
         } else {
@@ -159,19 +159,19 @@ void Config::operator()(server::config::RequestTemplate request_template, std::s
     case MODIFY_ORDER:
       break;
     case CANCEL_ORDER: {
-      json::CancelOrderTemplate cancel_order_template;
+      protocol::json::CancelOrderTemplate cancel_order_template;
       for (auto &[k, v] : table) {
         auto key = static_cast<std::string_view>(k);
         if (key == "cancel_restrictions"sv) {
           auto value = *v.template value<std::string_view>();
           cancel_order_template.cancel_restrictions = value;
-          if (cancel_order_template.cancel_restrictions == json::CancelRestrictions::UNKNOWN_INTERNAL) {
+          if (cancel_order_template.cancel_restrictions == protocol::json::CancelRestrictions::UNKNOWN_INTERNAL) {
             log::fatal(R"(Unknown: value="{}")"sv, value);
           }
         } else if (key == "cancel_replace_mode"sv) {
           auto value = *v.template value<std::string_view>();
           cancel_order_template.cancel_replace_mode = value;
-          if (cancel_order_template.cancel_replace_mode == json::CancelReplaceMode::UNKNOWN_INTERNAL) {
+          if (cancel_order_template.cancel_replace_mode == protocol::json::CancelReplaceMode::UNKNOWN_INTERNAL) {
             log::fatal(R"(Unknown: value="{}")"sv, value);
           }
         } else {

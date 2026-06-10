@@ -20,10 +20,10 @@
 
 #include "roq/server/oms/exceptions.hpp"
 
-#include "roq/binance/json/encoder.hpp"
-#include "roq/binance/json/map.hpp"
-#include "roq/binance/json/utils.hpp"
-#include "roq/binance/json/wsapi_type.hpp"
+#include "roq/binance/protocol/json/encoder.hpp"
+#include "roq/binance/protocol/json/map.hpp"
+#include "roq/binance/protocol/json/utils.hpp"
+#include "roq/binance/protocol/json/wsapi_type.hpp"
 
 using namespace std::literals;
 
@@ -233,15 +233,15 @@ uint16_t WebSocket::operator()(Event<CancelAllOrders> const &event, std::string_
 
 void WebSocket::session_logon() {
   auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
-  auto request = json::WSAPIRequest{
+  auto request = protocol::json::WSAPIRequest{
       .sequence = ++request_id_,
-      .type = json::WSAPIType::SESSION_LOGON,
+      .type = protocol::json::WSAPIType::SESSION_LOGON,
       .user_id = {},
       .order_id = {},
       .version = {},
       .order_id_2 = {},
   };
-  auto request_id = json::WSAPIRequest::encode(request_encode_buffer_, request);
+  auto request_id = protocol::json::WSAPIRequest::encode(request_encode_buffer_, request);
   auto signature = account_.create_session_logon_signature(timestamp);
   auto message = fmt::format(
       R"({{)"
@@ -265,15 +265,15 @@ void WebSocket::session_logon() {
 // weight: 2
 
 void WebSocket::user_data_stream_subscribe() {
-  auto request = json::WSAPIRequest{
+  auto request = protocol::json::WSAPIRequest{
       .sequence = ++request_id_,
-      .type = json::WSAPIType::USER_DATA_STREAM_SUBSCRIBE,
+      .type = protocol::json::WSAPIType::USER_DATA_STREAM_SUBSCRIBE,
       .user_id = {},
       .order_id = {},
       .version = {},
       .order_id_2 = {},
   };
-  auto request_id = json::WSAPIRequest::encode(request_encode_buffer_, request);
+  auto request_id = protocol::json::WSAPIRequest::encode(request_encode_buffer_, request);
   auto message = fmt::format(
       R"({{)"
       R"("id":"{}",)"
@@ -289,15 +289,15 @@ void WebSocket::user_data_stream_subscribe() {
 
 void WebSocket::account_status() {
   auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
-  auto request = json::WSAPIRequest{
+  auto request = protocol::json::WSAPIRequest{
       .sequence = ++request_id_,
-      .type = json::WSAPIType::ACCOUNT_STATUS,
+      .type = protocol::json::WSAPIType::ACCOUNT_STATUS,
       .user_id = {},
       .order_id = {},
       .version = {},
       .order_id_2 = {},
   };
-  auto request_id = json::WSAPIRequest::encode(request_encode_buffer_, request);
+  auto request_id = protocol::json::WSAPIRequest::encode(request_encode_buffer_, request);
   auto message = fmt::format(
       R"({{)"
       R"("id":"{}",)"
@@ -317,15 +317,15 @@ void WebSocket::account_status() {
 
 void WebSocket::open_orders_status() {
   auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
-  auto request = json::WSAPIRequest{
+  auto request = protocol::json::WSAPIRequest{
       .sequence = ++request_id_,
-      .type = json::WSAPIType::OPEN_ORDERS_STATUS,
+      .type = protocol::json::WSAPIType::OPEN_ORDERS_STATUS,
       .user_id = {},
       .order_id = {},
       .version = {},
       .order_id_2 = {},
   };
-  auto request_id = json::WSAPIRequest::encode(request_encode_buffer_, request);
+  auto request_id = protocol::json::WSAPIRequest::encode(request_encode_buffer_, request);
   auto message = fmt::format(
       R"({{)"
       R"("id":"{}",)"
@@ -352,15 +352,15 @@ void WebSocket::my_trades() {
     auto start_time = std::chrono::duration_cast<std::chrono::milliseconds>(timestamp - lookback);
     auto limit = shared_.settings.download.trades_limit ? shared_.settings.download.trades_limit : DOWNLOAD_TRADES_LIMIT;
     for (auto &symbol : shared_.settings.download.symbols) {
-      auto request = json::WSAPIRequest{
+      auto request = protocol::json::WSAPIRequest{
           .sequence = ++request_id_,
-          .type = json::WSAPIType::MY_TRADES,
+          .type = protocol::json::WSAPIType::MY_TRADES,
           .user_id = {},
           .order_id = {},
           .version = {},
           .order_id_2 = {},
       };
-      auto request_id = json::WSAPIRequest::encode(request_encode_buffer_, request);
+      auto request_id = protocol::json::WSAPIRequest::encode(request_encode_buffer_, request);
       auto message = fmt::format(
           R"({{)"
           R"("id":"{}",)"
@@ -400,16 +400,17 @@ void WebSocket::order_place(
     auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
-    auto params = json::Encoder::place_order_json(encode_buffer_, create_order, order, ref_data, request_id, create_order_template, recv_window, timestamp);
-    auto request = json::WSAPIRequest{
+    auto params =
+        protocol::json::Encoder::place_order_json(encode_buffer_, create_order, order, ref_data, request_id, create_order_template, recv_window, timestamp);
+    auto request = protocol::json::WSAPIRequest{
         .sequence = ++request_id_,
-        .type = json::WSAPIType::ORDER_PLACE,
+        .type = protocol::json::WSAPIType::ORDER_PLACE,
         .user_id = message_info.source,
         .order_id = create_order.order_id,
         .version = 1,
         .order_id_2 = {},
     };
-    auto request_id_2 = json::WSAPIRequest::encode(request_encode_buffer_, request);
+    auto request_id_2 = protocol::json::WSAPIRequest::encode(request_encode_buffer_, request);
     auto message = fmt::format(
         R"({{)"
         R"("id":"{}",)"
@@ -439,17 +440,17 @@ void WebSocket::order_amend_keep_priority(
     auto &[message_info, modify_order] = event;
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
-    auto params =
-        json::Encoder::amend_order_keep_priority_json(encode_buffer_, modify_order, order, ref_data, request_id, previous_request_id, recv_window, timestamp);
-    auto request = json::WSAPIRequest{
+    auto params = protocol::json::Encoder::amend_order_keep_priority_json(
+        encode_buffer_, modify_order, order, ref_data, request_id, previous_request_id, recv_window, timestamp);
+    auto request = protocol::json::WSAPIRequest{
         .sequence = ++request_id_,
-        .type = json::WSAPIType::ORDER_AMEND_KEEP_PRIORITY,
+        .type = protocol::json::WSAPIType::ORDER_AMEND_KEEP_PRIORITY,
         .user_id = message_info.source,
         .order_id = modify_order.order_id,
         .version = modify_order.version,
         .order_id_2 = {},
     };
-    auto request_id_2 = json::WSAPIRequest::encode(request_encode_buffer_, request);
+    auto request_id_2 = protocol::json::WSAPIRequest::encode(request_encode_buffer_, request);
     auto message = fmt::format(
         R"({{)"
         R"("id":"{}",)"
@@ -480,17 +481,17 @@ void WebSocket::order_cancel(
     auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
-    auto params = json::Encoder::cancel_order_json(
+    auto params = protocol::json::Encoder::cancel_order_json(
         encode_buffer_, cancel_order, order, ref_data, request_id, previous_request_id, cancel_order_template, recv_window, timestamp);
-    auto request = json::WSAPIRequest{
+    auto request = protocol::json::WSAPIRequest{
         .sequence = ++request_id_,
-        .type = json::WSAPIType::ORDER_CANCEL,
+        .type = protocol::json::WSAPIType::ORDER_CANCEL,
         .user_id = message_info.source,
         .order_id = cancel_order.order_id,
         .version = cancel_order.version,
         .order_id_2 = {},
     };
-    auto request_id_2 = json::WSAPIRequest::encode(request_encode_buffer_, request);
+    auto request_id_2 = protocol::json::WSAPIRequest::encode(request_encode_buffer_, request);
     auto message = fmt::format(
         R"({{)"
         R"("id":"{}",)"
@@ -543,15 +544,15 @@ void WebSocket::open_orders_cancel_all(Event<CancelAllOrders> const &event, std:
         continue;
       }
       auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
-      auto request = json::WSAPIRequest{
+      auto request = protocol::json::WSAPIRequest{
           .sequence = ++request_id_,
-          .type = json::WSAPIType::OPEN_ORDERS_CANCEL_ALL,
+          .type = protocol::json::WSAPIType::OPEN_ORDERS_CANCEL_ALL,
           .user_id = message_info.source,
           .order_id = {},
           .version = {},
           .order_id_2 = {},
       };
-      auto request_id_2 = json::WSAPIRequest::encode(request_encode_buffer_, request);  // XXX FIXME here we lose request_id
+      auto request_id_2 = protocol::json::WSAPIRequest::encode(request_encode_buffer_, request);  // XXX FIXME here we lose request_id
       auto message = fmt::format(
           R"({{)"
           R"("id":"{}",)"
@@ -666,7 +667,7 @@ void WebSocket::parse(std::string_view const &message) {
     auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     try {
       TraceInfo trace_info;
-      if (!json::WSAPIParser::dispatch(*this, message, decode_buffer_, trace_info)) {
+      if (!protocol::json::WSAPIParser::dispatch(*this, message, decode_buffer_, trace_info)) {
         log_message();
       }
     } catch (...) {
@@ -676,9 +677,9 @@ void WebSocket::parse(std::string_view const &message) {
   });
 }
 
-// json::WSAPIParser::Handler
+// protocol::json::WSAPIParser::Handler
 
-void WebSocket::operator()(Trace<json::WSAPISessionLogon> const &event) {
+void WebSocket::operator()(Trace<protocol::json::WSAPISessionLogon> const &event) {
   auto const STATE = State::SESSION_LOGON;
   profile_.session_logon([&]() {
     auto &[trace_info, wsapi_session_logon] = event;
@@ -688,7 +689,7 @@ void WebSocket::operator()(Trace<json::WSAPISessionLogon> const &event) {
       download_.check_relaxed(STATE);
     } else {
       // XXX FIXME TODO review
-      [[maybe_unused]] auto error = json::guess_error(wsapi_session_logon.error.code);
+      [[maybe_unused]] auto error = protocol::json::guess_error(wsapi_session_logon.error.code);
       log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, wsapi_session_logon.error);
       if (download_.downloading()) {
         download_.retry(STATE);
@@ -698,7 +699,7 @@ void WebSocket::operator()(Trace<json::WSAPISessionLogon> const &event) {
   });
 }
 
-void WebSocket::operator()(Trace<json::WSAPIUserDataStreamSubscribe> const &event) {
+void WebSocket::operator()(Trace<protocol::json::WSAPIUserDataStreamSubscribe> const &event) {
   auto const STATE = State::USER_DATA_STREAM_SUBSCRIBE;
   profile_.user_data_stream_subscribe([&]() {
     auto &[trace_info, wsapi_user_data_stream_subscribe] = event;
@@ -707,7 +708,7 @@ void WebSocket::operator()(Trace<json::WSAPIUserDataStreamSubscribe> const &even
       download_.check_relaxed(STATE);
     } else {
       // XXX FIXME TODO review
-      [[maybe_unused]] auto error = json::guess_error(wsapi_user_data_stream_subscribe.error.code);
+      [[maybe_unused]] auto error = protocol::json::guess_error(wsapi_user_data_stream_subscribe.error.code);
       log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, wsapi_user_data_stream_subscribe.error);
       if (download_.downloading()) {
         download_.retry(STATE);
@@ -717,11 +718,11 @@ void WebSocket::operator()(Trace<json::WSAPIUserDataStreamSubscribe> const &even
   });
 }
 
-void WebSocket::operator()(Trace<json::WSAPIEventStreamTerminated> const &) {
+void WebSocket::operator()(Trace<protocol::json::WSAPIEventStreamTerminated> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(Trace<json::WSAPIAccount> const &event) {
+void WebSocket::operator()(Trace<protocol::json::WSAPIAccount> const &event) {
   auto const STATE = State::ACCOUNT_STATUS;
   profile_.account_status([&]() {
     auto &[trace_info, wsapi_account] = event;
@@ -757,7 +758,7 @@ void WebSocket::operator()(Trace<json::WSAPIAccount> const &event) {
   });
 }
 
-void WebSocket::operator()(Trace<json::WSAPIOpenOrders> const &event) {
+void WebSocket::operator()(Trace<protocol::json::WSAPIOpenOrders> const &event) {
   auto const STATE = State::OPEN_ORDERS_STATUS;
   profile_.open_orders_status([&]() {
     auto &[trace_info, wsapi_open_orders] = event;
@@ -822,7 +823,7 @@ void WebSocket::operator()(Trace<json::WSAPIOpenOrders> const &event) {
   });
 }
 
-void WebSocket::operator()(Trace<json::WSAPITrades> const &event) {
+void WebSocket::operator()(Trace<protocol::json::WSAPITrades> const &event) {
   auto const STATE = State::MY_TRADES;
   profile_.my_trades([&]() {
     auto &[trace_info, wsapi_trades] = event;
@@ -888,7 +889,7 @@ void WebSocket::operator()(Trace<json::WSAPITrades> const &event) {
   });
 }
 
-void WebSocket::operator()(Trace<json::WSAPIOrderPlace> const &event, json::WSAPIRequest const &request) {
+void WebSocket::operator()(Trace<protocol::json::WSAPIOrderPlace> const &event, protocol::json::WSAPIRequest const &request) {
   profile_.order_place_ack([&]() {
     auto &[trace_info, wsapi_order_place] = event;
     log::info<2>("wsapi_order_place={}, request={}"sv, wsapi_order_place, request);
@@ -964,7 +965,7 @@ void WebSocket::operator()(Trace<json::WSAPIOrderPlace> const &event, json::WSAP
       (*this)(event_2, request.user_id, request.order_id, order_update);
     } else {
       auto &error = wsapi_order_place.error;
-      auto error_2 = json::guess_error(error.code);
+      auto error_2 = protocol::json::guess_error(error.code);
       auto response = server::oms::Response{
           .request_type = RequestType::CREATE_ORDER,
           .origin = Origin::EXCHANGE,
@@ -984,7 +985,7 @@ void WebSocket::operator()(Trace<json::WSAPIOrderPlace> const &event, json::WSAP
   });
 }
 
-void WebSocket::operator()(Trace<json::WSAPIOrderAmendKeepPriority> const &event, json::WSAPIRequest const &request) {
+void WebSocket::operator()(Trace<protocol::json::WSAPIOrderAmendKeepPriority> const &event, protocol::json::WSAPIRequest const &request) {
   profile_.order_amend_keep_priority_ack([&]() {
     auto &[trace_info, wsapi_order_amend_keep_priority] = event;
     log::info<2>("wsapi_order_amend_keep_priority={}, request={}"sv, wsapi_order_amend_keep_priority, request);
@@ -1044,7 +1045,7 @@ void WebSocket::operator()(Trace<json::WSAPIOrderAmendKeepPriority> const &event
       (*this)(event_2, request.user_id, request.order_id, order_update);
     } else {
       auto &error = wsapi_order_amend_keep_priority.error;
-      auto error_2 = json::guess_error(error.code);
+      auto error_2 = protocol::json::guess_error(error.code);
       auto response = server::oms::Response{
           .request_type = RequestType::CANCEL_ORDER,
           .origin = Origin::EXCHANGE,
@@ -1064,7 +1065,7 @@ void WebSocket::operator()(Trace<json::WSAPIOrderAmendKeepPriority> const &event
   });
 }
 
-void WebSocket::operator()(Trace<json::WSAPICancelOrder> const &event, json::WSAPIRequest const &request) {
+void WebSocket::operator()(Trace<protocol::json::WSAPICancelOrder> const &event, protocol::json::WSAPIRequest const &request) {
   profile_.order_cancel_ack([&]() {
     auto &[trace_info, wsapi_cancel_order] = event;
     log::info<2>("wsapi_cancel_order={}, request={}"sv, wsapi_cancel_order, request);
@@ -1123,7 +1124,7 @@ void WebSocket::operator()(Trace<json::WSAPICancelOrder> const &event, json::WSA
       (*this)(event_2, request.user_id, request.order_id, order_update);
     } else {
       auto &error = wsapi_cancel_order.error;
-      auto error_2 = json::guess_error(error.code);
+      auto error_2 = protocol::json::guess_error(error.code);
       auto response = server::oms::Response{
           .request_type = RequestType::CANCEL_ORDER,
           .origin = Origin::EXCHANGE,
@@ -1143,7 +1144,7 @@ void WebSocket::operator()(Trace<json::WSAPICancelOrder> const &event, json::WSA
   });
 }
 
-void WebSocket::operator()(Trace<json::WSAPICancelOpenOrders> const &event, json::WSAPIRequest const &request) {
+void WebSocket::operator()(Trace<protocol::json::WSAPICancelOpenOrders> const &event, protocol::json::WSAPIRequest const &request) {
   profile_.open_orders_cancel_all_ack([&]() {
     auto &[trace_info, wsapi_cancel_open_orders] = event;
     log::info<2>("wsapi_cancel_open_orders={}, request={}"sv, wsapi_cancel_open_orders, request);
@@ -1200,7 +1201,7 @@ void WebSocket::operator()(Trace<json::WSAPICancelOpenOrders> const &event, json
   });
 }
 
-void WebSocket::operator()(Trace<json::WSAPIOutboundAccountPosition> const &event) {
+void WebSocket::operator()(Trace<protocol::json::WSAPIOutboundAccountPosition> const &event) {
   profile_.outbound_account_position([&]() {
     auto &[trace_info, wsapi_outbound_account_position] = event;
     log::info<2>("wsapi_outbound_account_position={}"sv, wsapi_outbound_account_position);
@@ -1209,7 +1210,7 @@ void WebSocket::operator()(Trace<json::WSAPIOutboundAccountPosition> const &even
   });
 }
 
-void WebSocket::operator()(Trace<json::WSAPIBalanceUpdate> const &event) {
+void WebSocket::operator()(Trace<protocol::json::WSAPIBalanceUpdate> const &event) {
   profile_.balance_update([&]() {
     auto &[trace_info, wsapi_balance_update] = event;
     log::info<2>("wsapi_balance_update={}"sv, wsapi_balance_update);
@@ -1218,7 +1219,7 @@ void WebSocket::operator()(Trace<json::WSAPIBalanceUpdate> const &event) {
   });
 }
 
-void WebSocket::operator()(Trace<json::WSAPIExecutionReport> const &event) {
+void WebSocket::operator()(Trace<protocol::json::WSAPIExecutionReport> const &event) {
   profile_.execution_report([&]() {
     auto &[trace_info, wsapi_execution_report] = event;
     log::info<2>("wsapi_execution_report={}"sv, wsapi_execution_report);
@@ -1229,7 +1230,7 @@ void WebSocket::operator()(Trace<json::WSAPIExecutionReport> const &event) {
 
 // helpers
 
-void WebSocket::operator()(Trace<json::OutboundAccountPositionData> const &event) {
+void WebSocket::operator()(Trace<protocol::json::OutboundAccountPositionData> const &event) {
   auto &[trace_info, outbound_account_position] = event;
   for (auto &item : outbound_account_position.balances) {
     auto funds_update = FundsUpdate{
@@ -1250,11 +1251,11 @@ void WebSocket::operator()(Trace<json::OutboundAccountPositionData> const &event
   }
 }
 
-void WebSocket::operator()(Trace<json::BalanceUpdateData> const &) {
+void WebSocket::operator()(Trace<protocol::json::BalanceUpdateData> const &) {
   // note! contains delta (changes) -- we're not going to use here
 }
 
-void WebSocket::operator()(Trace<json::ExecutionReportData> const &event) {
+void WebSocket::operator()(Trace<protocol::json::ExecutionReportData> const &event) {
   auto &[trace_info, execution_report] = event;
   auto external_order_id = fmt::format("{}"sv, execution_report.order_id);  // alloc
   auto average_traded_price = utils::is_zero(execution_report.cumulative_filled_quantity)
@@ -1309,7 +1310,7 @@ void WebSocket::operator()(Trace<json::ExecutionReportData> const &event) {
     log::warn("*** EXTERNAL ORDER ***"sv);
     log::warn("execution_report={}"sv, execution_report);
   }
-  if (execution_report.current_execution_type != json::ExecutionType::TRADE) {
+  if (execution_report.current_execution_type != protocol::json::ExecutionType::TRADE) {
     return;
   }
   auto side = map(execution_report.side).template get<Side>();
@@ -1359,7 +1360,7 @@ void WebSocket::update_rate_limits(auto &event) {
   for (auto &item : message.rate_limits) {
     auto type = [&]() -> RateLimitType {
       switch (item.rate_limit_type) {
-        using enum json::RateLimitType::type_t;
+        using enum protocol::json::RateLimitType::type_t;
         case UNDEFINED_INTERNAL:
         case UNKNOWN_INTERNAL:
           break;
@@ -1377,7 +1378,7 @@ void WebSocket::update_rate_limits(auto &event) {
     }
     auto period = [&]() -> std::chrono::seconds {
       switch (item.interval) {
-        using enum json::Interval::type_t;
+        using enum protocol::json::Interval::type_t;
         case UNDEFINED_INTERNAL:
         case UNKNOWN_INTERNAL:
           break;

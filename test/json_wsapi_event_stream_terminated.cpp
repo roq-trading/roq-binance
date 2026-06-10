@@ -12,7 +12,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::WSAPIEventStreamTerminated;
+using value_type = protocol::json::WSAPIEventStreamTerminated;
 
 TEST_CASE("empty", "[json_wsapi_event_stream_terminated]") {
   auto message = R"({)"

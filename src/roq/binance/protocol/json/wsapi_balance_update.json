@@ -1,0 +1,14 @@
+{
+  "name": "roq/binance/protocol/json/WSAPIBalanceUpdate",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "subscriptionId",
+      "type": "std/int32"
+    },
+    {
+      "name": "event",
+      "type": "roq/binance/protocol/json/BalanceUpdateData"
+    }
+  ]
+}

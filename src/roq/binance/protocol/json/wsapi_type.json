@@ -1,0 +1,33 @@
+{
+  "name": "roq/binance/protocol/json/WSAPIType",
+  "type": "enum",
+  "values": [
+    {
+      "name": "SESSION_LOGON"
+    },
+    {
+      "name": "USER_DATA_STREAM_SUBSCRIBE"
+    },
+    {
+      "name": "ACCOUNT_STATUS"
+    },
+    {
+      "name": "OPEN_ORDERS_STATUS"
+    },
+    {
+      "name": "MY_TRADES"
+    },
+    {
+      "name": "ORDER_PLACE"
+    },
+    {
+      "name": "ORDER_AMEND_KEEP_PRIORITY"
+    },
+    {
+      "name": "ORDER_CANCEL"
+    },
+    {
+      "name": "OPEN_ORDERS_CANCEL_ALL"
+    }
+  ]
+}

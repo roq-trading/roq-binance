@@ -20,10 +20,10 @@
 
 #include "roq/server/oms/exceptions.hpp"
 
-#include "roq/binance/json/encoder.hpp"
-#include "roq/binance/json/map.hpp"
-#include "roq/binance/json/utils.hpp"
-#include "roq/binance/json/wsapi_type.hpp"
+#include "roq/binance/protocol/json/encoder.hpp"
+#include "roq/binance/protocol/json/map.hpp"
+#include "roq/binance/protocol/json/utils.hpp"
+#include "roq/binance/protocol/json/wsapi_type.hpp"
 
 using namespace std::literals;
 
@@ -185,15 +185,15 @@ void DropCopyMargin::operator()(OrderEntry::ListenKeyUpdate const &listen_key_up
 
 void DropCopyMargin::session_logon() {
   auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
-  auto request = json::WSAPIRequest{
+  auto request = protocol::json::WSAPIRequest{
       .sequence = ++request_id_,
-      .type = json::WSAPIType::SESSION_LOGON,
+      .type = protocol::json::WSAPIType::SESSION_LOGON,
       .user_id = {},
       .order_id = {},
       .version = {},
       .order_id_2 = {},
   };
-  auto request_id = json::WSAPIRequest::encode(request_encode_buffer_, request);
+  auto request_id = protocol::json::WSAPIRequest::encode(request_encode_buffer_, request);
   auto signature = account_.create_session_logon_signature(timestamp);
   auto message = fmt::format(
       R"({{)"
@@ -216,15 +216,15 @@ void DropCopyMargin::session_logon() {
 // user-data-stream-subscribe
 
 void DropCopyMargin::subscribe_user_data_stream() {
-  auto request = json::WSAPIRequest{
+  auto request = protocol::json::WSAPIRequest{
       .sequence = ++request_id_,
-      .type = json::WSAPIType::USER_DATA_STREAM_SUBSCRIBE,
+      .type = protocol::json::WSAPIType::USER_DATA_STREAM_SUBSCRIBE,
       .user_id = {},
       .order_id = {},
       .version = {},
       .order_id_2 = {},
   };
-  auto request_id = json::WSAPIRequest::encode(request_encode_buffer_, request);
+  auto request_id = protocol::json::WSAPIRequest::encode(request_encode_buffer_, request);
   auto message = fmt::format(
       R"({{)"
       R"("id":"{}",)"
@@ -343,7 +343,7 @@ void DropCopyMargin::parse(std::string_view const &message) {
     auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     try {
       TraceInfo trace_info;
-      if (!json::WSAPIParser::dispatch(*this, message, decode_buffer_, trace_info)) {
+      if (!protocol::json::WSAPIParser::dispatch(*this, message, decode_buffer_, trace_info)) {
         log_message();
       }
     } catch (...) {
@@ -353,9 +353,9 @@ void DropCopyMargin::parse(std::string_view const &message) {
   });
 }
 
-// json::WSAPIParser::Handler
+// protocol::json::WSAPIParser::Handler
 
-void DropCopyMargin::operator()(Trace<json::WSAPISessionLogon> const &event) {
+void DropCopyMargin::operator()(Trace<protocol::json::WSAPISessionLogon> const &event) {
   auto const STATE = DropCopyStateMargin::SESSION_LOGON;
   profile_.session_logon([&]() {
     auto &[trace_info, wsapi_session_logon] = event;
@@ -365,7 +365,7 @@ void DropCopyMargin::operator()(Trace<json::WSAPISessionLogon> const &event) {
       download_.check_relaxed(STATE);
     } else {
       // XXX FIXME TODO review
-      [[maybe_unused]] auto error = json::guess_error(wsapi_session_logon.error.code);
+      [[maybe_unused]] auto error = protocol::json::guess_error(wsapi_session_logon.error.code);
       log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, wsapi_session_logon.error);
       if (download_.downloading()) {
         download_.retry(STATE);
@@ -375,7 +375,7 @@ void DropCopyMargin::operator()(Trace<json::WSAPISessionLogon> const &event) {
   });
 }
 
-void DropCopyMargin::operator()(Trace<json::WSAPIUserDataStreamSubscribe> const &event) {
+void DropCopyMargin::operator()(Trace<protocol::json::WSAPIUserDataStreamSubscribe> const &event) {
   auto const STATE = DropCopyStateMargin::USER_DATA_STREAM_SUBSCRIBE;
   profile_.user_data_stream_subscribe([&]() {
     auto &[trace_info, wsapi_user_data_stream_subscribe] = event;
@@ -384,7 +384,7 @@ void DropCopyMargin::operator()(Trace<json::WSAPIUserDataStreamSubscribe> const 
       download_.check_relaxed(STATE);
     } else {
       // XXX FIXME TODO review
-      [[maybe_unused]] auto error = json::guess_error(wsapi_user_data_stream_subscribe.error.code);
+      [[maybe_unused]] auto error = protocol::json::guess_error(wsapi_user_data_stream_subscribe.error.code);
       log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, wsapi_user_data_stream_subscribe.error);
       if (download_.downloading()) {
         download_.retry(STATE);
@@ -394,7 +394,7 @@ void DropCopyMargin::operator()(Trace<json::WSAPIUserDataStreamSubscribe> const 
   });
 }
 
-void DropCopyMargin::operator()(Trace<json::WSAPIEventStreamTerminated> const &) {
+void DropCopyMargin::operator()(Trace<protocol::json::WSAPIEventStreamTerminated> const &) {
   if (std::empty(listen_token_)) {
     return;
   }
@@ -405,35 +405,35 @@ void DropCopyMargin::operator()(Trace<json::WSAPIEventStreamTerminated> const &)
   download_listen_token_ = true;
 }
 
-void DropCopyMargin::operator()(Trace<json::WSAPIAccount> const &event) {
+void DropCopyMargin::operator()(Trace<protocol::json::WSAPIAccount> const &event) {
   log::fatal("{}"sv, event.value);
 }
 
-void DropCopyMargin::operator()(Trace<json::WSAPIOpenOrders> const &event) {
+void DropCopyMargin::operator()(Trace<protocol::json::WSAPIOpenOrders> const &event) {
   log::fatal("{}"sv, event.value);
 }
 
-void DropCopyMargin::operator()(Trace<json::WSAPITrades> const &event) {
+void DropCopyMargin::operator()(Trace<protocol::json::WSAPITrades> const &event) {
   log::fatal("{}"sv, event.value);
 }
 
-void DropCopyMargin::operator()(Trace<json::WSAPIOrderPlace> const &, json::WSAPIRequest const &) {
+void DropCopyMargin::operator()(Trace<protocol::json::WSAPIOrderPlace> const &, protocol::json::WSAPIRequest const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopyMargin::operator()(Trace<json::WSAPIOrderAmendKeepPriority> const &, json::WSAPIRequest const &) {
+void DropCopyMargin::operator()(Trace<protocol::json::WSAPIOrderAmendKeepPriority> const &, protocol::json::WSAPIRequest const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopyMargin::operator()(Trace<json::WSAPICancelOrder> const &, json::WSAPIRequest const &) {
+void DropCopyMargin::operator()(Trace<protocol::json::WSAPICancelOrder> const &, protocol::json::WSAPIRequest const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopyMargin::operator()(Trace<json::WSAPICancelOpenOrders> const &, json::WSAPIRequest const &) {
+void DropCopyMargin::operator()(Trace<protocol::json::WSAPICancelOpenOrders> const &, protocol::json::WSAPIRequest const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopyMargin::operator()(Trace<json::WSAPIOutboundAccountPosition> const &event) {
+void DropCopyMargin::operator()(Trace<protocol::json::WSAPIOutboundAccountPosition> const &event) {
   profile_.outbound_account_position([&]() {
     auto &[trace_info, wsapi_outbound_account_position] = event;
     log::info<2>("wsapi_outbound_account_position={}"sv, wsapi_outbound_account_position);
@@ -442,7 +442,7 @@ void DropCopyMargin::operator()(Trace<json::WSAPIOutboundAccountPosition> const 
   });
 }
 
-void DropCopyMargin::operator()(Trace<json::WSAPIBalanceUpdate> const &event) {
+void DropCopyMargin::operator()(Trace<protocol::json::WSAPIBalanceUpdate> const &event) {
   profile_.balance_update([&]() {
     auto &[trace_info, wsapi_balance_update] = event;
     log::info<2>("wsapi_balance_update={}"sv, wsapi_balance_update);
@@ -451,7 +451,7 @@ void DropCopyMargin::operator()(Trace<json::WSAPIBalanceUpdate> const &event) {
   });
 }
 
-void DropCopyMargin::operator()(Trace<json::WSAPIExecutionReport> const &event) {
+void DropCopyMargin::operator()(Trace<protocol::json::WSAPIExecutionReport> const &event) {
   profile_.execution_report([&]() {
     auto &[trace_info, wsapi_execution_report] = event;
     log::info<2>("wsapi_execution_report={}"sv, wsapi_execution_report);
@@ -462,7 +462,7 @@ void DropCopyMargin::operator()(Trace<json::WSAPIExecutionReport> const &event) 
 
 // helpers
 
-void DropCopyMargin::operator()(Trace<json::OutboundAccountPositionData> const &event) {
+void DropCopyMargin::operator()(Trace<protocol::json::OutboundAccountPositionData> const &event) {
   auto &[trace_info, outbound_account_position] = event;
   for (auto &item : outbound_account_position.balances) {
     auto funds_update = FundsUpdate{
@@ -483,11 +483,11 @@ void DropCopyMargin::operator()(Trace<json::OutboundAccountPositionData> const &
   }
 }
 
-void DropCopyMargin::operator()(Trace<json::BalanceUpdateData> const &) {
+void DropCopyMargin::operator()(Trace<protocol::json::BalanceUpdateData> const &) {
   // note! contains delta (changes) -- we're not going to use here
 }
 
-void DropCopyMargin::operator()(Trace<json::ExecutionReportData> const &event) {
+void DropCopyMargin::operator()(Trace<protocol::json::ExecutionReportData> const &event) {
   auto &[trace_info, execution_report] = event;
   auto external_order_id = fmt::format("{}"sv, execution_report.order_id);  // alloc
   auto average_traded_price = utils::is_zero(execution_report.cumulative_filled_quantity)
@@ -542,7 +542,7 @@ void DropCopyMargin::operator()(Trace<json::ExecutionReportData> const &event) {
     log::warn("*** EXTERNAL ORDER ***"sv);
     log::warn("execution_report={}"sv, execution_report);
   }
-  if (execution_report.current_execution_type != json::ExecutionType::TRADE) {
+  if (execution_report.current_execution_type != protocol::json::ExecutionType::TRADE) {
     return;
   }
   auto side = map(execution_report.side).template get<Side>();
@@ -592,7 +592,7 @@ void DropCopyMargin::update_rate_limits(auto &event) {
   for (auto &item : message.rate_limits) {
     auto type = [&]() -> RateLimitType {
       switch (item.rate_limit_type) {
-        using enum json::RateLimitType::type_t;
+        using enum protocol::json::RateLimitType::type_t;
         case UNDEFINED_INTERNAL:
         case UNKNOWN_INTERNAL:
           break;
@@ -610,7 +610,7 @@ void DropCopyMargin::update_rate_limits(auto &event) {
     }
     auto period = [&]() -> std::chrono::seconds {
       switch (item.interval) {
-        using enum json::Interval::type_t;
+        using enum protocol::json::Interval::type_t;
         case UNDEFINED_INTERNAL:
         case UNKNOWN_INTERNAL:
           break;

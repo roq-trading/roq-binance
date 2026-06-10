@@ -4,7 +4,7 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/binance/json/new_order_ack.hpp"
+#include "roq/binance/protocol/json/new_order_ack.hpp"
 
 using namespace roq;
 using namespace roq::binance;
@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::NewOrderAck;
+using value_type = protocol::json::NewOrderAck;
 
 TEST_CASE("cross", "[json_new_order_ack]") {
   auto message = R"({)"

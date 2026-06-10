@@ -1,0 +1,24 @@
+{
+  "name": "roq/binance/protocol/json/ExecutionType",
+  "type": "enum",
+  "values": [
+    {
+      "name": "NEW"
+    },
+    {
+      "name": "CANCELED"
+    },
+    {
+      "name": "REPLACED"
+    },
+    {
+      "name": "REJECTED"
+    },
+    {
+      "name": "TRADE"
+    },
+    {
+      "name": "EXPIRED"
+    }
+  ]
+}

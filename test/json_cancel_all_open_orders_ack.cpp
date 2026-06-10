@@ -4,7 +4,7 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/binance/json/cancel_all_open_orders_ack.hpp"
+#include "roq/binance/protocol/json/cancel_all_open_orders_ack.hpp"
 
 using namespace roq;
 using namespace roq::binance;
@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::CancelAllOpenOrdersAck;
+using value_type = protocol::json::CancelAllOpenOrdersAck;
 
 TEST_CASE("empty", "[json_cancel_all_open_orders_ack]") {
   auto message = "[]"sv;
@@ -54,10 +54,10 @@ TEST_CASE("simple_1", "[json_cancel_all_open_orders_ack]") {
     CHECK(data_0.orig_qty == 0.05_a);
     CHECK(data_0.executed_qty == 0.0_a);
     CHECK(data_0.cummulative_quote_qty == 0.0_a);
-    CHECK(data_0.status == json::OrderStatus::CANCELED);
-    CHECK(data_0.time_in_force == json::TimeInForce::GTC);
-    CHECK(data_0.type == json::OrderType::LIMIT);
-    CHECK(data_0.side == json::Side::BUY);
+    CHECK(data_0.status == protocol::json::OrderStatus::CANCELED);
+    CHECK(data_0.time_in_force == protocol::json::TimeInForce::GTC);
+    CHECK(data_0.type == protocol::json::OrderType::LIMIT);
+    CHECK(data_0.side == protocol::json::Side::BUY);
   };
   core::json::BufferStack buffers{8192, 1};
   value_type obj{message, buffers};
@@ -108,10 +108,10 @@ TEST_CASE("simple_2", "[json_cancel_all_open_orders_ack]") {
     CHECK(data_0.orig_qty == 0.05_a);
     CHECK(data_0.executed_qty == 0.0_a);
     CHECK(data_0.cummulative_quote_qty == 0.0_a);
-    CHECK(data_0.status == json::OrderStatus::CANCELED);
-    CHECK(data_0.time_in_force == json::TimeInForce::GTC);
-    CHECK(data_0.type == json::OrderType::LIMIT);
-    CHECK(data_0.side == json::Side::BUY);
+    CHECK(data_0.status == protocol::json::OrderStatus::CANCELED);
+    CHECK(data_0.time_in_force == protocol::json::TimeInForce::GTC);
+    CHECK(data_0.type == protocol::json::OrderType::LIMIT);
+    CHECK(data_0.side == protocol::json::Side::BUY);
     auto &data_1 = data[1];
     CHECK(data_1.symbol == "LTCBTC"sv);
     CHECK(data_1.orig_client_order_id == "XgAC7AMAAQAAWZxp3JMW"sv);
@@ -122,10 +122,10 @@ TEST_CASE("simple_2", "[json_cancel_all_open_orders_ack]") {
     CHECK(data_1.orig_qty == 0.05_a);
     CHECK(data_1.executed_qty == 0.0_a);
     CHECK(data_1.cummulative_quote_qty == 0.0_a);
-    CHECK(data_1.status == json::OrderStatus::CANCELED);
-    CHECK(data_1.time_in_force == json::TimeInForce::GTC);
-    CHECK(data_1.type == json::OrderType::LIMIT);
-    CHECK(data_1.side == json::Side::BUY);
+    CHECK(data_1.status == protocol::json::OrderStatus::CANCELED);
+    CHECK(data_1.time_in_force == protocol::json::TimeInForce::GTC);
+    CHECK(data_1.type == protocol::json::OrderType::LIMIT);
+    CHECK(data_1.side == protocol::json::Side::BUY);
   };
   core::json::BufferStack buffers{8192, 1};
   value_type obj{message, buffers};

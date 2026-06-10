@@ -1,0 +1,11 @@
+{
+  "name": "roq/binance/protocol/json/TradesAck",
+  "type": "array",
+  "values": [
+    {
+      "name": "data",
+      "type": "roq/binance/protocol/json/Trade2",
+      "array": "std/span"
+    }
+  ]
+}

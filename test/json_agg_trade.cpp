@@ -12,7 +12,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::AggTrade;
+using value_type = protocol::json::AggTrade;
 
 TEST_CASE("simple", "[json_agg_trade]") {
   auto message = R"({)"
@@ -33,7 +33,7 @@ TEST_CASE("simple", "[json_agg_trade]") {
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
     CHECK(obj.stream == "btcusdt@aggTrade"sv);
-    CHECK(obj.data.event_type == json::EventType::AGG_TRADE);
+    CHECK(obj.data.event_type == protocol::json::EventType::AGG_TRADE);
     CHECK(obj.data.event_time == 1768627409826ms);
     CHECK(obj.data.symbol == "BTCUSDT"sv);
   };

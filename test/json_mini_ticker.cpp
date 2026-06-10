@@ -12,7 +12,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::MiniTicker;
+using value_type = protocol::json::MiniTicker;
 
 TEST_CASE("simple", "[json_mini_ticker]") {
   auto message = R"({)"
@@ -31,7 +31,7 @@ TEST_CASE("simple", "[json_mini_ticker]") {
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
     CHECK(obj.stream == "btcusdt@miniTicker"sv);
-    CHECK(obj.data.event_type == json::EventType::_24HR_MINI_TICKER);
+    CHECK(obj.data.event_type == protocol::json::EventType::_24HR_MINI_TICKER);
     CHECK(obj.data.event_time == 1768627410022ms);
     CHECK(obj.data.symbol == "BTCUSDT"sv);
   };

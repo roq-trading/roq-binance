@@ -1,0 +1,74 @@
+{
+  "name": "roq/binance/protocol/json/AmendedOrder",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "symbol",
+      "type": "std/string_view"
+    },
+    {
+      "name": "orderId",
+      "type": "std/uint64"
+    },
+    {
+      "name": "orderListId",
+      "type": "std/int32"
+    },
+    {
+      "name": "origClientOrderId",
+      "type": "std/string_view"
+    },
+    {
+      "name": "clientOrderId",
+      "type": "std/string_view"
+    },
+    {
+      "name": "price",
+      "type": "std/double"
+    },
+    {
+      "name": "qty",
+      "type": "std/double"
+    },
+    {
+      "name": "executedQty",
+      "type": "std/double"
+    },
+    {
+      "name": "preventedQty",
+      "type": "std/double"
+    },
+    {
+      "name": "quoteOrderQty",
+      "type": "std/double"
+    },
+    {
+      "name": "cumulativeQuoteQty",
+      "type": "std/double"
+    },
+    {
+      "name": "status",
+      "type": "roq/binance/protocol/json/OrderStatus"
+    },
+    {
+      "name": "timeInForce",
+      "type": "roq/binance/protocol/json/TimeInForce"
+    },
+    {
+      "name": "type",
+      "type": "roq/binance/protocol/json/OrderType"
+    },
+    {
+      "name": "side",
+      "type": "roq/binance/protocol/json/Side"
+    },
+    {
+      "name": "workingTime",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "selfTradePreventionMode",
+      "type": "roq/binance/protocol/json/SelfTradePreventionMode"
+    }
+  ]
+}

@@ -18,10 +18,10 @@
 
 #include "roq/binance/utils.hpp"
 
-#include "roq/binance/json/error.hpp"
-#include "roq/binance/json/filters.hpp"
-#include "roq/binance/json/map.hpp"
-#include "roq/binance/json/utils.hpp"
+#include "roq/binance/protocol/json/error.hpp"
+#include "roq/binance/protocol/json/filters.hpp"
+#include "roq/binance/protocol/json/map.hpp"
+#include "roq/binance/protocol/json/utils.hpp"
 
 using namespace std::literals;
 
@@ -300,7 +300,7 @@ void Rest::get_exchange_info_ack(Trace<web::rest::Response> const &event, uint32
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
-        json::ExchangeInfoAck exchange_info_ack{body, decode_buffer_};
+        protocol::json::ExchangeInfoAck exchange_info_ack{body, decode_buffer_};
         Trace event_2{event, exchange_info_ack};
         (*this)(event_2);
         download_.check(STATE);
@@ -310,19 +310,19 @@ void Rest::get_exchange_info_ack(Trace<web::rest::Response> const &event, uint32
   });
 }
 
-void Rest::operator()(Trace<json::ExchangeInfoAck> const &event) {
+void Rest::operator()(Trace<protocol::json::ExchangeInfoAck> const &event) {
   auto &[trace_info, exchange_info_ack] = event;
   // rate-limits
   for (auto &item : exchange_info_ack.rate_limits) {
     log::info<2>("item={}"sv, item);
     switch (item.rate_limit_type) {
-      using enum json::RateLimitType::type_t;
+      using enum protocol::json::RateLimitType::type_t;
       case UNDEFINED_INTERNAL:
       case UNKNOWN_INTERNAL:
         break;
       case ORDERS:
         switch (item.interval) {
-          using enum json::Interval::type_t;
+          using enum protocol::json::Interval::type_t;
           case UNDEFINED_INTERNAL:
           case UNKNOWN_INTERNAL:
             break;
@@ -349,7 +349,7 @@ void Rest::operator()(Trace<json::ExchangeInfoAck> const &event) {
         shared_.limits.request_weight_1m = item.limit;
         break;
         switch (item.interval) {
-          using enum json::Interval::type_t;
+          using enum protocol::json::Interval::type_t;
           case UNDEFINED_INTERNAL:
           case UNKNOWN_INTERNAL:
             break;
@@ -386,7 +386,7 @@ void Rest::operator()(Trace<json::ExchangeInfoAck> const &event) {
     auto min_notional = NaN;
     for (auto &filter : item.filters) {
       switch (filter.filter_type) {
-        using enum json::FilterType::type_t;
+        using enum protocol::json::FilterType::type_t;
         case UNDEFINED_INTERNAL:
           break;
         case UNKNOWN_INTERNAL:
@@ -527,7 +527,7 @@ void Rest::get_depth_ack(Trace<web::rest::Response> const &event, std::string_vi
       // XXX WHAT ???
     };
     auto handle_success = [&](auto &body) {
-      json::DepthAck depth_ack{body, decode_buffer_};
+      protocol::json::DepthAck depth_ack{body, decode_buffer_};
       Trace event_2{event, depth_ack};
       (*this)(event_2, symbol);
     };
@@ -535,7 +535,7 @@ void Rest::get_depth_ack(Trace<web::rest::Response> const &event, std::string_vi
   });
 }
 
-void Rest::operator()(Trace<json::DepthAck> const &event, std::string_view const &symbol) {
+void Rest::operator()(Trace<protocol::json::DepthAck> const &event, std::string_view const &symbol) {
   auto &[trace_info, depth_ack] = event;
   log::info<4>(R"(depth_ack={}, symbol="{}")"sv, depth_ack, symbol);
   auto sequence = depth_ack.last_update_id;
@@ -643,8 +643,8 @@ void Rest::process_response(web::rest::Response const &response, auto error_hand
             assert(false);
             [[fallthrough]];
           default: {
-            json::ErrorError error{body};
-            error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, json::guess_error(error.code), error.msg);
+            protocol::json::ErrorError error{body};
+            error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, protocol::json::guess_error(error.code), error.msg);
           }
         }
         break;

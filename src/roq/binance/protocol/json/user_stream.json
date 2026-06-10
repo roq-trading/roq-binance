@@ -1,0 +1,14 @@
+{
+  "name": "roq/binance/protocol/json/UserStream",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "stream",
+      "type": "std/string_view"
+    },
+    {
+      "name": "data",
+      "type": "std/string_view"
+    }
+  ]
+}

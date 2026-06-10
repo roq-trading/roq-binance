@@ -1,0 +1,20 @@
+{
+  "name": "roq/binance/protocol/json/DepthAck",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "lastUpdateId",
+      "type": "std/uint64"
+    },
+    {
+      "name": "bids",
+      "type": "roq/binance/protocol/json/DepthItem",
+      "array": "std/span"
+    },
+    {
+      "name": "asks",
+      "type": "roq/binance/protocol/json/DepthItem",
+      "array": "std/span"
+    }
+  ]
+}

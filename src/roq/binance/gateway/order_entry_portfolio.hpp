@@ -31,13 +31,13 @@
 #include "roq/binance/gateway/request.hpp"
 #include "roq/binance/gateway/shared.hpp"
 
-#include "roq/binance/json/balances_ack.hpp"
-#include "roq/binance/json/cancel_all_open_orders_ack.hpp"
-#include "roq/binance/json/cancel_order_ack.hpp"
-#include "roq/binance/json/listen_key_ack.hpp"
-#include "roq/binance/json/new_order_ack.hpp"
-#include "roq/binance/json/open_orders_ack.hpp"
-#include "roq/binance/json/trades_ack.hpp"
+#include "roq/binance/protocol/json/balances_ack.hpp"
+#include "roq/binance/protocol/json/cancel_all_open_orders_ack.hpp"
+#include "roq/binance/protocol/json/cancel_order_ack.hpp"
+#include "roq/binance/protocol/json/listen_key_ack.hpp"
+#include "roq/binance/protocol/json/new_order_ack.hpp"
+#include "roq/binance/protocol/json/open_orders_ack.hpp"
+#include "roq/binance/protocol/json/trades_ack.hpp"
 
 namespace roq {
 namespace binance {
@@ -91,25 +91,25 @@ struct OrderEntryPortfolio final : public OrderEntry, public web::rest::Client::
 
   void get_listen_key();
   void get_listen_key_ack(Trace<web::rest::Response> const &);
-  void operator()(Trace<json::ListenKeyAck> const &);
+  void operator()(Trace<protocol::json::ListenKeyAck> const &);
 
   void get_account();
   void get_account_ack(Trace<web::rest::Response> const &);
-  void operator()(Trace<json::BalancesAck> const &);
+  void operator()(Trace<protocol::json::BalancesAck> const &);
 
   void get_open_orders();
   void get_open_orders_ack(Trace<web::rest::Response> const &);
-  void operator()(Trace<json::OpenOrdersAck> const &);
+  void operator()(Trace<protocol::json::OpenOrdersAck> const &);
 
   void get_trades();
   void get_trades_ack(Trace<web::rest::Response> const &);
-  void operator()(Trace<json::TradesAck> const &);
+  void operator()(Trace<protocol::json::TradesAck> const &);
 
   void refresh_listen_key(std::chrono::nanoseconds now);
 
   void new_order(Event<CreateOrder> const &, server::oms::Order const &, server::oms::RefData const &, std::string_view const &request_id);
   void new_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
-  void operator()(Trace<json::NewOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
+  void operator()(Trace<protocol::json::NewOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
 
   void cancel_order(
       Event<CancelOrder> const &,
@@ -118,11 +118,11 @@ struct OrderEntryPortfolio final : public OrderEntry, public web::rest::Client::
       std::string_view const &request_id,
       std::string_view const &previous_request_id);
   void cancel_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
-  void operator()(Trace<json::CancelOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
+  void operator()(Trace<protocol::json::CancelOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
 
   void cancel_all_open_orders(Event<CancelAllOrders> const &, std::string_view const &request_id);
   void cancel_all_open_orders_ack(Trace<web::rest::Response> const &, std::string_view const &request_id);
-  void operator()(Trace<json::CancelAllOpenOrdersAck> const &);
+  void operator()(Trace<protocol::json::CancelAllOpenOrdersAck> const &);
 
   // helpers
 

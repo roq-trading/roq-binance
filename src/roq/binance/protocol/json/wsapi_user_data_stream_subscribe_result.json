@@ -1,0 +1,14 @@
+{
+  "name": "roq/binance/protocol/json/WSAPIUserDataStreamSubscribeResult",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "subscriptionId",
+      "type": "std/uint32"
+    },
+    {
+      "name": "expirationTime",
+      "type": "std/milliseconds"
+    }
+  ]
+}

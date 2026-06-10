@@ -1,0 +1,21 @@
+{
+  "name": "roq/binance/protocol/json/ListStatusItem",
+  "type": "dictionary",
+  "values": [
+    {
+      "raw": "s",
+      "name": "symbol",
+      "type": "std/string_view"
+    },
+    {
+      "raw": "i",
+      "name": "order_id",
+      "type": "std/int64"
+    },
+    {
+      "raw": "c",
+      "name": "client_order_id",
+      "type": "std/string_view"
+    }
+  ]
+}

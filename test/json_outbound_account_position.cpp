@@ -12,7 +12,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::OutboundAccountPosition;
+using value_type = protocol::json::OutboundAccountPosition;
 
 TEST_CASE("simple", "[json_outbound_account_position]") {
   auto message = R"({)"
@@ -39,7 +39,7 @@ TEST_CASE("simple", "[json_outbound_account_position]") {
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
     CHECK(obj.stream == "sj9ht0LN4uqn6kILaJpcsmZ5q2bjVInmmJPl8PdStouqzwHiwHgbwEaBm1ai"sv);
-    CHECK(obj.data.event_type == json::EventType::OUTBOUND_ACCOUNT_POSITION);
+    CHECK(obj.data.event_type == protocol::json::EventType::OUTBOUND_ACCOUNT_POSITION);
     CHECK(obj.data.event_time == 1634285425303ms);
     CHECK(obj.data.time_of_last_account_update == 1634285425302ms);
     auto &balances = obj.data.balances;
@@ -84,7 +84,7 @@ TEST_CASE("maker_new", "[json_outbound_account_position]") {
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
     CHECK(obj.stream == "x4PghblTRhWAXEO9E0wrDhwIZ0kRXDp3I32Vg9B60nxqGNjiG1lknGi1omdX"sv);
-    CHECK(obj.data.event_type == json::EventType::OUTBOUND_ACCOUNT_POSITION);
+    CHECK(obj.data.event_type == protocol::json::EventType::OUTBOUND_ACCOUNT_POSITION);
     CHECK(obj.data.event_time == 1634906177360ms);
     CHECK(obj.data.time_of_last_account_update == 1634906177360ms);
     auto &balances = obj.data.balances;
@@ -130,7 +130,7 @@ TEST_CASE("maker_filled", "[json_outbound_account_position]") {
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
     CHECK(obj.stream == "x4PghblTRhWAXEO9E0wrDhwIZ0kRXDp3I32Vg9B60nxqGNjiG1lknGi1omdX"sv);
-    CHECK(obj.data.event_type == json::EventType::OUTBOUND_ACCOUNT_POSITION);
+    CHECK(obj.data.event_type == protocol::json::EventType::OUTBOUND_ACCOUNT_POSITION);
     CHECK(obj.data.event_time == 1634906229934ms);
     CHECK(obj.data.time_of_last_account_update == 1634906229933ms);
     auto &balances = obj.data.balances;

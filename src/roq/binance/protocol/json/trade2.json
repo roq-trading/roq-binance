@@ -1,0 +1,58 @@
+{
+  "name": "roq/binance/protocol/json/Trade2",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "symbol",
+      "type": "std/string_view"
+    },
+    {
+      "name": "id",
+      "type": "std/int64"
+    },
+    {
+      "name": "orderId",
+      "type": "std/int64"
+    },
+    {
+      "name": "orderListId",
+      "type": "std/int64"
+    },
+    {
+      "name": "price",
+      "type": "std/double"
+    },
+    {
+      "name": "qty",
+      "type": "std/double"
+    },
+    {
+      "name": "quoteQty",
+      "type": "std/double"
+    },
+    {
+      "name": "commission",
+      "type": "std/double"
+    },
+    {
+      "name": "commissionAsset",
+      "type": "std/string_view"
+    },
+    {
+      "name": "time",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "isBuyer",
+      "type": "std/bool"
+    },
+    {
+      "name": "isMaker",
+      "type": "std/bool"
+    },
+    {
+      "name": "isBestMatch",
+      "type": "std/bool"
+    }
+  ]
+}

@@ -4,7 +4,7 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/binance/json/account_ack.hpp"
+#include "roq/binance/protocol/json/account_ack.hpp"
 
 using namespace roq;
 using namespace roq::binance;
@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::AccountAck;
+using value_type = protocol::json::AccountAck;
 
 // note! truncated
 TEST_CASE("simple", "[json_account_ack]") {

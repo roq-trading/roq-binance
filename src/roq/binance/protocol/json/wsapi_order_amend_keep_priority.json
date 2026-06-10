@@ -1,0 +1,27 @@
+{
+  "name": "roq/binance/protocol/json/WSAPIOrderAmendKeepPriority",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "id",
+      "type": "std/string_view"
+    },
+    {
+      "name": "status",
+      "type": "std/int32"
+    },
+    {
+      "name": "result",
+      "type": "roq/binance/protocol/json/OrderAmendKeepPriority"
+    },
+    {
+      "name": "error",
+      "type": "roq/binance/protocol/json/ErrorError"
+    },
+    {
+      "name": "rateLimits",
+      "type": "roq/binance/protocol/json/WSAPIRateLimitsItem",
+      "array": "std/span"
+    }
+  ]
+}

@@ -12,7 +12,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::WSAPIUserDataStreamSubscribe;
+using value_type = protocol::json::WSAPIUserDataStreamSubscribe;
 
 TEST_CASE("empty", "[json_wsapi_user_data_stream_subscribe]") {
   auto message = R"({)"

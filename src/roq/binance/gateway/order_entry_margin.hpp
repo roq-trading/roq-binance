@@ -31,16 +31,16 @@
 #include "roq/binance/gateway/request.hpp"
 #include "roq/binance/gateway/shared.hpp"
 
-#include "roq/binance/json/account_ack.hpp"
-#include "roq/binance/json/cancel_all_open_orders_ack.hpp"
-#include "roq/binance/json/cancel_order_ack.hpp"
-#include "roq/binance/json/cancel_replace_order_ack.hpp"
-#include "roq/binance/json/cancel_replace_order_error.hpp"
-#include "roq/binance/json/cross_margin_account.hpp"
-#include "roq/binance/json/listen_key_ack_margin.hpp"
-#include "roq/binance/json/new_order_ack.hpp"
-#include "roq/binance/json/open_orders_ack.hpp"
-#include "roq/binance/json/trades_ack.hpp"
+#include "roq/binance/protocol/json/account_ack.hpp"
+#include "roq/binance/protocol/json/cancel_all_open_orders_ack.hpp"
+#include "roq/binance/protocol/json/cancel_order_ack.hpp"
+#include "roq/binance/protocol/json/cancel_replace_order_ack.hpp"
+#include "roq/binance/protocol/json/cancel_replace_order_error.hpp"
+#include "roq/binance/protocol/json/cross_margin_account.hpp"
+#include "roq/binance/protocol/json/listen_key_ack_margin.hpp"
+#include "roq/binance/protocol/json/new_order_ack.hpp"
+#include "roq/binance/protocol/json/open_orders_ack.hpp"
+#include "roq/binance/protocol/json/trades_ack.hpp"
 
 namespace roq {
 namespace binance {
@@ -96,30 +96,30 @@ struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Han
 
   void get_listen_key(MarginMode);
   void get_listen_key_ack(Trace<web::rest::Response> const &, MarginMode);
-  void operator()(Trace<json::ListenKeyAckMargin> const &, MarginMode);
+  void operator()(Trace<protocol::json::ListenKeyAckMargin> const &, MarginMode);
 
   void get_account(MarginMode);
   void get_account_ack(Trace<web::rest::Response> const &, MarginMode);
-  void operator()(Trace<json::AccountAck> const &, MarginMode);
-  void operator()(Trace<json::CrossMarginAccount> const &, MarginMode);
+  void operator()(Trace<protocol::json::AccountAck> const &, MarginMode);
+  void operator()(Trace<protocol::json::CrossMarginAccount> const &, MarginMode);
 
   void get_open_orders(MarginMode);
   void get_open_orders_ack(Trace<web::rest::Response> const &, MarginMode);
-  void operator()(Trace<json::OpenOrdersAck> const &, MarginMode);
+  void operator()(Trace<protocol::json::OpenOrdersAck> const &, MarginMode);
 
   void get_trades(MarginMode);
   void get_trades_ack(Trace<web::rest::Response> const &, MarginMode);
-  void operator()(Trace<json::TradesAck> const &, MarginMode);
+  void operator()(Trace<protocol::json::TradesAck> const &, MarginMode);
 
   void get_account_cross_on_timer();
   void get_account_cross_on_timer_ack(Trace<web::rest::Response> const &);
-  void operator()(Trace<json::CrossMarginAccount> const &);
+  void operator()(Trace<protocol::json::CrossMarginAccount> const &);
 
   void refresh_listen_key(std::chrono::nanoseconds now);
 
   void new_order(Event<CreateOrder> const &, server::oms::Order const &order, server::oms::RefData const &, std::string_view const &request_id);
   void new_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
-  void operator()(Trace<json::NewOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
+  void operator()(Trace<protocol::json::NewOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
 
   void cancel_order(
       Event<CancelOrder> const &,
@@ -128,11 +128,11 @@ struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Han
       std::string_view const &request_id,
       std::string_view const &previous_request_id);
   void cancel_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
-  void operator()(Trace<json::CancelOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
+  void operator()(Trace<protocol::json::CancelOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
 
   void cancel_all_open_orders(Event<CancelAllOrders> const &, std::string_view const &request_id);
   void cancel_all_open_orders_ack(Trace<web::rest::Response> const &, std::string_view const &request_id);
-  void operator()(Trace<json::CancelAllOpenOrdersAck> const &);
+  void operator()(Trace<protocol::json::CancelAllOpenOrdersAck> const &);
 
   // helpers
 

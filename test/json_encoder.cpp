@@ -4,7 +4,7 @@
 
 #include "roq/logging.hpp"
 
-#include "roq/binance/json/encoder.hpp"
+#include "roq/binance/protocol/json/encoder.hpp"
 
 using namespace roq;
 using namespace roq::binance;
@@ -107,8 +107,8 @@ TEST_CASE("create_json", "[json_encoder]") {
   auto order = create_order(1.0, 1.0, {});
   auto ref_data = create_ref_data();
   auto request_id = "oid:1234"sv;
-  json::CreateOrderTemplate create_order_template;
-  auto result = json::Encoder::place_order_json(buffer, create_order_2, order, ref_data, request_id, create_order_template, 5s, {});
+  protocol::json::CreateOrderTemplate create_order_template;
+  auto result = protocol::json::Encoder::place_order_json(buffer, create_order_2, order, ref_data, request_id, create_order_template, 5s, {});
   CHECK(
       result == R"({)"
                 R"("newClientOrderId":"oid:1234",)"

@@ -1,0 +1,14 @@
+{
+  "name": "roq/binance/protocol/json/ListenKeyAckMargin",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "token",
+      "type": "std/string_view"
+    },
+    {
+      "name": "expirationTime",
+      "type": "std/milliseconds"
+    }
+  ]
+}

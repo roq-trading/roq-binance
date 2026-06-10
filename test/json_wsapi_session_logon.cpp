@@ -12,7 +12,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::WSAPISessionLogon;
+using value_type = protocol::json::WSAPISessionLogon;
 
 TEST_CASE("empty", "[json_wsapi_session_logon]") {
   auto message = R"({)"

@@ -4,7 +4,7 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/binance/json/cancel_replace_order_ack.hpp"
+#include "roq/binance/protocol/json/cancel_replace_order_ack.hpp"
 
 using namespace roq;
 using namespace roq::binance;
@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::CancelReplaceOrderAck;
+using value_type = protocol::json::CancelReplaceOrderAck;
 
 TEST_CASE("simple", "[json_cancel_replace_order_ack]") {
   auto message = R"({)"
@@ -53,8 +53,8 @@ TEST_CASE("simple", "[json_cancel_replace_order_ack]") {
                  R"(})"
                  R"(})"sv;
   auto helper = [&](value_type &obj) {
-    CHECK(obj.cancel_result == json::SuccessOrFailure::SUCCESS);
-    CHECK(obj.new_order_result == json::SuccessOrFailure::SUCCESS);
+    CHECK(obj.cancel_result == protocol::json::SuccessOrFailure::SUCCESS);
+    CHECK(obj.new_order_result == protocol::json::SuccessOrFailure::SUCCESS);
     // cancel order
     auto &cancel = obj.cancel_response;
     CHECK(cancel.symbol == "BTCUSDT"sv);
@@ -66,10 +66,10 @@ TEST_CASE("simple", "[json_cancel_replace_order_ack]") {
     CHECK(cancel.orig_qty == 0.001_a);
     CHECK(cancel.executed_qty == 0.0_a);
     CHECK(cancel.cummulative_quote_qty == 0.0_a);
-    CHECK(cancel.status == json::OrderStatus::CANCELED);
-    CHECK(cancel.time_in_force == json::TimeInForce::GTC);
-    CHECK(cancel.type == json::OrderType::LIMIT);
-    CHECK(cancel.side == json::Side::BUY);
+    CHECK(cancel.status == protocol::json::OrderStatus::CANCELED);
+    CHECK(cancel.time_in_force == protocol::json::TimeInForce::GTC);
+    CHECK(cancel.type == protocol::json::OrderType::LIMIT);
+    CHECK(cancel.side == protocol::json::Side::BUY);
     // new order
     auto &new_order = obj.new_order_response;
     CHECK(new_order.symbol == "BTCUSDT"sv);
@@ -81,10 +81,10 @@ TEST_CASE("simple", "[json_cancel_replace_order_ack]") {
     CHECK(new_order.orig_qty == 0.001_a);
     CHECK(new_order.executed_qty == 0.0_a);
     CHECK(new_order.cummulative_quote_qty == 0.0_a);
-    CHECK(new_order.status == json::OrderStatus::NEW);
-    CHECK(new_order.time_in_force == json::TimeInForce::GTC);
-    CHECK(new_order.type == json::OrderType::LIMIT);
-    CHECK(new_order.side == json::Side::BUY);
+    CHECK(new_order.status == protocol::json::OrderStatus::NEW);
+    CHECK(new_order.time_in_force == protocol::json::TimeInForce::GTC);
+    CHECK(new_order.type == protocol::json::OrderType::LIMIT);
+    CHECK(new_order.side == protocol::json::Side::BUY);
     REQUIRE(std::empty(new_order.fills));
   };
   core::json::BufferStack buffers{8192, 1};

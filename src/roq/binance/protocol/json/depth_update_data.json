@@ -1,0 +1,43 @@
+{
+  "name": "roq/binance/protocol/json/DepthUpdateData",
+  "type": "dictionary",
+  "values": [
+    {
+      "raw": "e",
+      "name": "event_type",
+      "type": "roq/binance/protocol/json/EventType"
+    },
+    {
+      "raw": "E",
+      "name": "event_time",
+      "type": "std/milliseconds"
+    },
+    {
+      "raw": "s",
+      "name": "symbol",
+      "type": "std/string_view"
+    },
+    {
+      "raw": "U",
+      "name": "first_update_id",
+      "type": "std/uint64"
+    },
+    {
+      "raw": "u",
+      "name": "final_update_id",
+      "type": "std/uint64"
+    },
+    {
+      "raw": "b",
+      "name": "bids",
+      "type": "roq/binance/protocol/json/DepthItem",
+      "array": "std/span"
+    },
+    {
+      "raw": "a",
+      "name": "asks",
+      "type": "roq/binance/protocol/json/DepthItem",
+      "array": "std/span"
+    }
+  ]
+}

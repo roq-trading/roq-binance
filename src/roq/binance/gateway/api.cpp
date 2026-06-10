@@ -19,9 +19,9 @@ namespace gateway {
 namespace {
 auto parse_side_effect_type(auto &side_effect_type) {
   if (std::empty(side_effect_type)) {
-    return json::SideEffectType::UNDEFINED;
+    return protocol::json::SideEffectType::UNDEFINED;
   }
-  return utils::parse_enum<json::SideEffectType>(side_effect_type);
+  return utils::parse_enum<protocol::json::SideEffectType>(side_effect_type);
 }
 }  // namespace
 

@@ -4,7 +4,7 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/binance/json/wsapi_session_logon.hpp"
+#include "roq/binance/protocol/json/wsapi_session_logon.hpp"
 
 using namespace roq;
 using namespace roq::binance;
@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::WSAPISessionLogon;
+using value_type = protocol::json::WSAPISessionLogon;
 
 // === IMPLEMENTATION ===
 

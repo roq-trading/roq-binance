@@ -24,13 +24,13 @@
 #include "roq/binance/gateway/request.hpp"
 #include "roq/binance/gateway/shared.hpp"
 
-#include "roq/binance/json/user_stream_parser.hpp"
+#include "roq/binance/protocol/json/user_stream_parser.hpp"
 
 namespace roq {
 namespace binance {
 namespace gateway {
 
-struct DropCopyPortfolio final : public DropCopy, public web::socket::Client::Handler, public json::UserStreamParser::Handler {
+struct DropCopyPortfolio final : public DropCopy, public web::socket::Client::Handler, public protocol::json::UserStreamParser::Handler {
   DropCopyPortfolio(DropCopy::Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, std::string_view const &listen_key, MarginMode);
 
   void operator()(Event<Start> const &) override;
@@ -65,10 +65,10 @@ struct DropCopyPortfolio final : public DropCopy, public web::socket::Client::Ha
 
   void parse(std::string_view const &message);
 
-  void operator()(Trace<json::OutboundAccountPosition> const &) override;
-  void operator()(Trace<json::BalanceUpdate> const &) override;
-  void operator()(Trace<json::ExecutionReport> const &) override;
-  void operator()(Trace<json::ListStatus> const &) override;
+  void operator()(Trace<protocol::json::OutboundAccountPosition> const &) override;
+  void operator()(Trace<protocol::json::BalanceUpdate> const &) override;
+  void operator()(Trace<protocol::json::ExecutionReport> const &) override;
+  void operator()(Trace<protocol::json::ListStatus> const &) override;
 
   void request_account();
   void check_response_account();

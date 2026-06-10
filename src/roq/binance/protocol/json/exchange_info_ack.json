@@ -1,0 +1,29 @@
+{
+  "name": "roq/binance/protocol/json/ExchangeInfoAck",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "timezone",
+      "type": "std/string_view"
+    },
+    {
+      "name": "serverTime",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "rateLimits",
+      "type": "roq/binance/protocol/json/RateLimitsItem",
+      "array": "std/span"
+    },
+    {
+      "name": "exchangeFilters",
+      "type": "roq/binance/protocol/json/ExchangeFilter",
+      "array": "std/span"
+    },
+    {
+      "name": "symbols",
+      "type": "roq/binance/protocol/json/Symbol",
+      "array": "std/span"
+    }
+  ]
+}

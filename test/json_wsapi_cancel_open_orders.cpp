@@ -12,7 +12,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::WSAPICancelOpenOrders;
+using value_type = protocol::json::WSAPICancelOpenOrders;
 
 TEST_CASE("empty", "[json_wsapi_cancel_open_orders]") {
   auto message = R"({)"

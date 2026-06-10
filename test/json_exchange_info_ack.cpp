@@ -4,7 +4,7 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/binance/json/exchange_info_ack.hpp"
+#include "roq/binance/protocol/json/exchange_info_ack.hpp"
 
 using namespace roq;
 using namespace roq::binance;
@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::ExchangeInfoAck;
+using value_type = protocol::json::ExchangeInfoAck;
 
 TEST_CASE("simple", "[json_exchange_info_ack]") {
   auto message = R"({)"
@@ -113,7 +113,7 @@ TEST_CASE("simple", "[json_exchange_info_ack]") {
     REQUIRE(std::size(obj.symbols) == 2);
     auto &symbol_0 = symbols[0];
     CHECK(symbol_0.symbol == "ETHBTC"sv);
-    CHECK(symbol_0.status == json::SymbolStatus::TRADING);
+    CHECK(symbol_0.status == protocol::json::SymbolStatus::TRADING);
     CHECK(symbol_0.base_asset == "ETH"sv);
     CHECK(symbol_0.base_asset_precision == 8);
     CHECK(symbol_0.quote_asset == "BTC"sv);
@@ -131,7 +131,7 @@ TEST_CASE("simple", "[json_exchange_info_ack]") {
     // not parsed: permissions
     auto &symbol_1 = symbols[1];
     CHECK(symbol_1.symbol == "LTCBTC"sv);
-    CHECK(symbol_1.status == json::SymbolStatus::TRADING);
+    CHECK(symbol_1.status == protocol::json::SymbolStatus::TRADING);
     CHECK(symbol_1.base_asset == "LTC"sv);
     CHECK(symbol_1.base_asset_precision == 8);
     CHECK(symbol_1.quote_asset == "BTC"sv);

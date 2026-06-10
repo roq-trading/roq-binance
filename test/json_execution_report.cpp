@@ -12,7 +12,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::ExecutionReport;
+using value_type = protocol::json::ExecutionReport;
 /*
 TEST_CASE("simple", "[json_execution_report]") {
   auto message = R"({)"
@@ -50,21 +50,21 @@ TEST_CASE("simple", "[json_execution_report]") {
                  R"("Q":"0.00000000")"
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
-    CHECK(obj.event_type == json::EventType::EXECUTION_REPORT);
+    CHECK(obj.event_type == protocol::json::EventType::EXECUTION_REPORT);
     CHECK(obj.event_time == 1634211568285ms);
     CHECK(obj.symbol == "BTCBUSD"sv);
     CHECK(obj.client_order_id == "web_5440a9bd3e684127861fbc54783f70c4"sv);
-    CHECK(obj.side == json::Side::BUY);
-    CHECK(obj.order_type == json::OrderType::LIMIT);
-    CHECK(obj.time_in_force == json::TimeInForce::GTC);
+    CHECK(obj.side == protocol::json::Side::BUY);
+    CHECK(obj.order_type == protocol::json::OrderType::LIMIT);
+    CHECK(obj.time_in_force == protocol::json::TimeInForce::GTC);
     CHECK(obj.quantity == 0.00034_a);
     CHECK(obj.price == 57883.65_a);
     CHECK(obj.stop_price == 0.0_a);
     CHECK(obj.iceberg_quantity == 0.0_a);
     CHECK(obj.order_list_id == -1);
     CHECK(std::empty(obj.original_client_order_id));
-    CHECK(obj.current_execution_type == json::ExecutionType::NEW);
-    CHECK(obj.current_order_status == json::OrderStatus::NEW);
+    CHECK(obj.current_execution_type == protocol::json::ExecutionType::NEW);
+    CHECK(obj.current_order_status == protocol::json::OrderStatus::NEW);
     CHECK(obj.order_reject_reason == "NONE"sv);
     CHECK(obj.order_id == 3511418495);
     CHECK(obj.last_executed_quantity == 0.0_a);
@@ -120,21 +120,21 @@ TEST_CASE("json_execution_report_canceled", "[json_execution_report]") {
                  R"("Q":"0.00000000")"
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
-    CHECK(obj.event_type == json::EventType::EXECUTION_REPORT);
+    CHECK(obj.event_type == protocol::json::EventType::EXECUTION_REPORT);
     CHECK(obj.event_time == 1634215338588ms);
     CHECK(obj.symbol == "LTCBTC"sv);
     CHECK(obj.client_order_id == "web_24d4e429eb4f44d0ad03ab240c909ac2"sv);
-    CHECK(obj.side == json::Side::BUY);
-    CHECK(obj.order_type == json::OrderType::LIMIT);
-    CHECK(obj.time_in_force == json::TimeInForce::GTC);
+    CHECK(obj.side == protocol::json::Side::BUY);
+    CHECK(obj.order_type == protocol::json::OrderType::LIMIT);
+    CHECK(obj.time_in_force == protocol::json::TimeInForce::GTC);
     CHECK(obj.quantity == 0.1_a);
     CHECK(obj.price == 0.003041_a);
     CHECK(obj.stop_price == 0.0_a);
     CHECK(obj.iceberg_quantity == 0.0_a);
     CHECK(obj.order_list_id == -1);
     CHECK(obj.original_client_order_id == "qQAC6gMAAQAAS-jxw4MW"sv);
-    CHECK(obj.current_execution_type == json::ExecutionType::CANCELED);
-    CHECK(obj.current_order_status == json::OrderStatus::CANCELED);
+    CHECK(obj.current_execution_type == protocol::json::ExecutionType::CANCELED);
+    CHECK(obj.current_order_status == protocol::json::OrderStatus::CANCELED);
     CHECK(obj.order_reject_reason == "NONE"sv);
     CHECK(obj.order_id == 778507063);
     CHECK(obj.last_executed_quantity == 0.0_a);
@@ -194,7 +194,7 @@ TEST_CASE("simple", "[json_execution_report]") {
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
     CHECK(obj.stream == "UiujlmpQLUNOGNRDGzbC4NNza0fdtGtTFwrZPWwCR97UeUor2gZrpgvl4mz1"sv);
-    CHECK(obj.data.event_type == json::EventType::EXECUTION_REPORT);
+    CHECK(obj.data.event_type == protocol::json::EventType::EXECUTION_REPORT);
     CHECK(obj.data.event_time == 1634211568285ms);
   };
   UserStreamParserTester<value_type>::dispatch(helper, message, 8192, 1);
@@ -240,21 +240,21 @@ TEST_CASE("maker_new", "[json_execution_report]") {
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
     CHECK(obj.stream == "x4PghblTRhWAXEO9E0wrDhwIZ0kRXDp3I32Vg9B60nxqGNjiG1lknGi1omdX"sv);
-    CHECK(obj.data.event_type == json::EventType::EXECUTION_REPORT);
+    CHECK(obj.data.event_type == protocol::json::EventType::EXECUTION_REPORT);
     CHECK(obj.data.event_time == 1634906177360ms);
     CHECK(obj.data.symbol == "LTCUSDT"sv);
     CHECK(obj.data.client_order_id == "SwAC6wMAAQAA8foJ1iQX"sv);
-    CHECK(obj.data.side == json::Side::BUY);
-    CHECK(obj.data.order_type == json::OrderType::LIMIT);
-    CHECK(obj.data.time_in_force == json::TimeInForce::GTC);
+    CHECK(obj.data.side == protocol::json::Side::BUY);
+    CHECK(obj.data.order_type == protocol::json::OrderType::LIMIT);
+    CHECK(obj.data.time_in_force == protocol::json::TimeInForce::GTC);
     CHECK(obj.data.quantity == 0.1_a);
     CHECK(obj.data.price == 198.3_a);
     CHECK(obj.data.stop_price == 0.0_a);
     CHECK(obj.data.iceberg_quantity == 0.0_a);
     CHECK(obj.data.order_list_id == -1);
     CHECK(std::empty(obj.data.original_client_order_id));
-    CHECK(obj.data.current_execution_type == json::ExecutionType::NEW);
-    CHECK(obj.data.current_order_status == json::OrderStatus::NEW);
+    CHECK(obj.data.current_execution_type == protocol::json::ExecutionType::NEW);
+    CHECK(obj.data.current_order_status == protocol::json::OrderStatus::NEW);
     CHECK(obj.data.order_reject_reason == "NONE"sv);
     CHECK(obj.data.order_id == 2426862755);
     CHECK(obj.data.last_executed_quantity == 0.0_a);
@@ -314,21 +314,21 @@ TEST_CASE("maker_filled", "[json_execution_report]") {
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
     CHECK(obj.stream == "x4PghblTRhWAXEO9E0wrDhwIZ0kRXDp3I32Vg9B60nxqGNjiG1lknGi1omdX"sv);
-    CHECK(obj.data.event_type == json::EventType::EXECUTION_REPORT);
+    CHECK(obj.data.event_type == protocol::json::EventType::EXECUTION_REPORT);
     CHECK(obj.data.event_time == 1634906229934ms);
     CHECK(obj.data.symbol == "LTCUSDT"sv);
     CHECK(obj.data.client_order_id == "SwAC6wMAAQAA8foJ1iQX"sv);
-    CHECK(obj.data.side == json::Side::BUY);
-    CHECK(obj.data.order_type == json::OrderType::LIMIT);
-    CHECK(obj.data.time_in_force == json::TimeInForce::GTC);
+    CHECK(obj.data.side == protocol::json::Side::BUY);
+    CHECK(obj.data.order_type == protocol::json::OrderType::LIMIT);
+    CHECK(obj.data.time_in_force == protocol::json::TimeInForce::GTC);
     CHECK(obj.data.quantity == 0.1_a);
     CHECK(obj.data.price == 198.3_a);
     CHECK(obj.data.stop_price == 0.0_a);
     CHECK(obj.data.iceberg_quantity == 0.0_a);
     CHECK(obj.data.order_list_id == -1);
     CHECK(std::empty(obj.data.original_client_order_id));
-    CHECK(obj.data.current_execution_type == json::ExecutionType::TRADE);
-    CHECK(obj.data.current_order_status == json::OrderStatus::FILLED);
+    CHECK(obj.data.current_execution_type == protocol::json::ExecutionType::TRADE);
+    CHECK(obj.data.current_order_status == protocol::json::OrderStatus::FILLED);
     CHECK(obj.data.order_reject_reason == "NONE"sv);
     CHECK(obj.data.order_id == 2426862755);
     CHECK(obj.data.last_executed_quantity == 0.1_a);

@@ -42,9 +42,9 @@ Shared::Instrument &Shared::get_instrument(std::string_view const &symbol) {
   return (*iter).second;
 }
 
-json::CreateOrderTemplate const &Shared::get_create_order_template(std::string_view const &name) {
+protocol::json::CreateOrderTemplate const &Shared::get_create_order_template(std::string_view const &name) {
   if (std::empty(name)) {
-    static auto const empty = json::CreateOrderTemplate{};
+    static auto const empty = protocol::json::CreateOrderTemplate{};
     return empty;
   }
   auto iter = create_order_templates.find(name);
@@ -54,9 +54,9 @@ json::CreateOrderTemplate const &Shared::get_create_order_template(std::string_v
   throw server::oms::Rejected{Origin::GATEWAY, Error::INVALID_REQUEST_TEMPLATE, "create_order_template"sv};
 }
 
-json::CancelOrderTemplate const &Shared::get_cancel_order_template(std::string_view const &name) {
+protocol::json::CancelOrderTemplate const &Shared::get_cancel_order_template(std::string_view const &name) {
   if (std::empty(name)) {
-    static auto const empty = json::CancelOrderTemplate{};
+    static auto const empty = protocol::json::CancelOrderTemplate{};
     return empty;
   }
   auto iter = cancel_order_templates.find(name);

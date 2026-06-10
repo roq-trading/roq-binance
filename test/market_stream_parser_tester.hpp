@@ -2,13 +2,13 @@
 
 #include <catch2/catch_all.hpp>
 
-#include "roq/binance/json/market_stream_parser.hpp"
+#include "roq/binance/protocol/json/market_stream_parser.hpp"
 
 namespace roq {
 namespace binance {
 
 template <typename T>
-struct MarketStreamParserTester final : public json::MarketStreamParser::Handler {
+struct MarketStreamParserTester final : public protocol::json::MarketStreamParser::Handler {
   using value_type = std::remove_cvref_t<T>;
   using callback_type = std::function<void(value_type const &)>;
 
@@ -21,7 +21,7 @@ struct MarketStreamParserTester final : public json::MarketStreamParser::Handler
     // parser
     // XXX FIXME TODO catch2 block ???
     MarketStreamParserTester handler{callback};
-    auto res = json::MarketStreamParser::dispatch(handler, message, buffers, {}, false);
+    auto res = protocol::json::MarketStreamParser::dispatch(handler, message, buffers, {}, false);
     CHECK(res == true);
     CHECK(handler.found_ == true);
   }
@@ -29,14 +29,14 @@ struct MarketStreamParserTester final : public json::MarketStreamParser::Handler
  protected:
   explicit MarketStreamParserTester(callback_type const &callback) : callback_{callback} {}
 
-  void operator()(Trace<json::Error> const &event, [[maybe_unused]] int64_t id) override { dispatch(event); }
-  void operator()(Trace<json::Result> const &event, [[maybe_unused]] int64_t id) override { dispatch(event); }
-  void operator()(Trace<json::AggTrade> const &event) override { dispatch(event); }
-  void operator()(Trace<json::Trade> const &event) override { dispatch(event); }
-  void operator()(Trace<json::MiniTicker> const &event) override { dispatch(event); }
-  void operator()(Trace<json::BookTicker> const &event) override { dispatch(event); }
-  void operator()(Trace<json::Depth> const &event, [[maybe_unused]] std::string_view const &symbol) override { dispatch(event); }
-  void operator()(Trace<json::DepthUpdate> const &event) override { dispatch(event); }
+  void operator()(Trace<protocol::json::Error> const &event, [[maybe_unused]] int64_t id) override { dispatch(event); }
+  void operator()(Trace<protocol::json::Result> const &event, [[maybe_unused]] int64_t id) override { dispatch(event); }
+  void operator()(Trace<protocol::json::AggTrade> const &event) override { dispatch(event); }
+  void operator()(Trace<protocol::json::Trade> const &event) override { dispatch(event); }
+  void operator()(Trace<protocol::json::MiniTicker> const &event) override { dispatch(event); }
+  void operator()(Trace<protocol::json::BookTicker> const &event) override { dispatch(event); }
+  void operator()(Trace<protocol::json::Depth> const &event, [[maybe_unused]] std::string_view const &symbol) override { dispatch(event); }
+  void operator()(Trace<protocol::json::DepthUpdate> const &event) override { dispatch(event); }
 
   template <typename U>
   void dispatch(Trace<U> const &event) {

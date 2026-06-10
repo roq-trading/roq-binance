@@ -12,7 +12,7 @@ using namespace std::chrono_literals;
 
 using namespace Catch::literals;
 
-using value_type = json::WSAPITrades;
+using value_type = protocol::json::WSAPITrades;
 
 TEST_CASE("empty", "[json_wsapi_trades]") {
   auto message = R"({)"
