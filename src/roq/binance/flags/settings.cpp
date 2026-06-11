@@ -11,9 +11,9 @@ namespace binance {
 namespace flags {
 
 Settings::Settings(args::Parser const &args)
-    : server::flags::Settings{args, ROQ_PACKAGE_NAME, ROQ_BUILD_NUMBER}, flags::Flags{flags::Flags::create()}, misc{flags::Misc::create()},
-      rest{flags::REST::create()}, ws{flags::WS::create()}, ws_api_2{flags::WS_API::create()}, mbp{flags::MBP::create()}, oms{flags::OMS::create()},
-      request{flags::Request::create()} {
+    : server::flags::Settings{args, ROQ_PACKAGE_NAME, ROQ_BUILD_NUMBER, ROQ_GIT_DESCRIBE_HASH, {}}, flags::Flags{flags::Flags::create()},
+      misc{flags::Misc::create()}, rest{flags::REST::create()}, ws{flags::WS::create()}, ws_api_2{flags::WS_API::create()}, mbp{flags::MBP::create()},
+      oms{flags::OMS::create()}, request{flags::Request::create()} {
   log::info("settings={}"sv, *this);
 }
 
