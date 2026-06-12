@@ -97,6 +97,10 @@ std::unique_ptr<server::Handler> Controller::create(server::Dispatcher &dispatch
   return std::make_unique<Controller>(dispatcher, settings, config, context);
 }
 
+uint8_t Controller::parse_api(Settings const &) {
+  return {};
+}
+
 Controller::Controller(server::Dispatcher &dispatcher, Settings const &settings, Config const &config, io::Context &context)
     : dispatcher_{dispatcher}, accounts_(create_accounts<decltype(accounts_)>(config)), context_{context}, shared_{dispatcher, settings, config},
       rest_{*this, context_, ++stream_id_, shared_}, request_{create_request<decltype(request_)>(config)},
