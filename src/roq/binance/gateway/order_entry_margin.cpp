@@ -1040,6 +1040,7 @@ void OrderEntryMargin::new_order_ack(Trace<web::rest::Response> const &event, ui
           .version = version,
           .request_id = {},
           .external_order_id = {},
+          .client_order_id = {},
           .quantity = NaN,
           .price = NaN,
       };
@@ -1087,6 +1088,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::NewOrderAck> const &even
       .version = version,
       .request_id = {},
       .external_order_id = {},
+      .client_order_id = {},
       .quantity = NaN,
       .price = NaN,
   };
@@ -1196,6 +1198,7 @@ void OrderEntryMargin::cancel_order_ack(Trace<web::rest::Response> const &event,
           .version = version,
           .request_id = {},
           .external_order_id = {},
+          .client_order_id = {},
           .quantity = NaN,
           .price = NaN,
       };
@@ -1226,6 +1229,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::CancelOrderAck> const &e
       .version = version,
       .request_id = {},
       .external_order_id = {},
+      .client_order_id = {},
       .quantity = NaN,
       .price = NaN,
   };
