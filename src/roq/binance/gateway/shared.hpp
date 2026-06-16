@@ -41,11 +41,6 @@ struct Shared final {
   auto get_exchange_symbol(uint32_t symbol_id) { return dispatcher_.get_exchange_symbol(symbol_id); }
 
   template <typename... Args>
-  auto find_order(Args &&...args) {
-    return dispatcher_.find_order(std::forward<Args>(args)...);
-  }
-
-  template <typename... Args>
   auto update_order(Args &&...args) {
     return dispatcher_.update_order(std::forward<Args>(args)...);
   }
