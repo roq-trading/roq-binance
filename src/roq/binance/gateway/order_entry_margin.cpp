@@ -735,7 +735,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::OpenOrdersAck> const &ev
         .update_time_utc = order.update_time,
         .external_account = {},
         .external_order_id = external_order_id,
-        .client_order_id = {},
+        .client_order_id = order.client_order_id,
         .order_status = map(order.status),
         .error = {},
         .text = {},
@@ -757,7 +757,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::OpenOrdersAck> const &ev
         .sending_time_utc = {},
     };
     Trace event_2{trace_info, order_update};
-    (*this)(event_2, order.client_order_id);
+    (*this)(event_2);
   }
 }
 
@@ -872,7 +872,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::TradesAck> const &event,
         .update_time_utc = order.update_time,
         .external_account = {},
         .external_order_id = external_order_id,
-        .client_order_id = {},
+        .client_order_id = order.client_order_id,
         .order_status = order_status,
         .error={},.text={},
         .quantity = order.orig_qty,
@@ -893,7 +893,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::TradesAck> const &event,
         .sending_time_utc = {},
     };
     Trace event_2{trace_info, order_update};
-    (*this)(event_2, order.client_order_id);
+    (*this)(event_2);
     */
   }
 }
@@ -1087,7 +1087,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::NewOrderAck> const &even
       .text = {},
       .version = version,
       .request_id = {},
-      .external_order_id = {},
+      .external_order_id = external_order_id,
       .client_order_id = {},
       .quantity = NaN,
       .price = NaN,
@@ -1228,7 +1228,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::CancelOrderAck> const &e
       .text = {},
       .version = version,
       .request_id = {},
-      .external_order_id = {},
+      .external_order_id = external_order_id,
       .client_order_id = {},
       .quantity = NaN,
       .price = NaN,
@@ -1418,7 +1418,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::CancelAllOpenOrdersAck> 
         .update_time_utc = order.update_time,
         .external_account = {},
         .external_order_id = external_order_id,
-        .client_order_id = {},
+        .client_order_id = order.client_order_id,
         .order_status = map(order.status),
         .error = {},
         .text = {},
@@ -1439,7 +1439,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::CancelAllOpenOrdersAck> 
         .update_type = UpdateType::INCREMENTAL,
         .sending_time_utc = {},
     };
-    shared_.update_order(order.client_order_id, stream_id_, trace_info, order_update, []([[maybe_unused]] auto &order) {});
+    shared_.update_order(stream_id_, trace_info, order_update, []([[maybe_unused]] auto &order) {});
   }
 }
 
@@ -1505,9 +1505,9 @@ void OrderEntryMargin::operator()(Trace<server::oms::Response> const &event, uin
   }
 }
 
-void OrderEntryMargin::operator()(Trace<server::oms::OrderUpdate> const &event, std::string_view const &client_order_id) {
+void OrderEntryMargin::operator()(Trace<server::oms::OrderUpdate> const &event) {
   auto &[trace_info, order_update] = event;
-  if (shared_.update_order(client_order_id, stream_id_, trace_info, order_update, [&]([[maybe_unused]] auto &order) {})) {
+  if (shared_.update_order(stream_id_, trace_info, order_update, [&]([[maybe_unused]] auto &order) {})) {
   } else {
     log::warn("*** EXTERNAL ORDER ***"sv);
   }

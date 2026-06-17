@@ -809,7 +809,7 @@ void WebSocket::operator()(Trace<protocol::json::WSAPIOpenOrders> const &event) 
             .sending_time_utc = {},
         };
         Trace event_2{trace_info, order_update};
-        (*this)(event_2, item.client_order_id);
+        (*this)(event_2);
       }
       download_.check_relaxed(STATE);
     } else {
@@ -864,7 +864,7 @@ void WebSocket::operator()(Trace<protocol::json::WSAPITrades> const &event) {
             .update_time_utc = item.time,
             .external_account = {},
             .external_order_id = external_order_id,
-            .client_order_id = {},
+            .client_order_id = {},  // note! unavailable
             .fills = {&fill, 1},
             .routing_id = {},
             .update_type = UpdateType::INCREMENTAL,
@@ -872,8 +872,7 @@ void WebSocket::operator()(Trace<protocol::json::WSAPITrades> const &event) {
             .user = {},
             .strategy_id = {},
         };
-        std::string_view client_order_id;  // XXX MISSING
-        create_trace_and_dispatch(handler_, trace_info, trade_update, true, SOURCE_NONE, client_order_id);
+        create_trace_and_dispatch(handler_, trace_info, trade_update, true, SOURCE_NONE);
       }
       // XXX FIXME TODO here we need a countdown
       download_.check_relaxed(STATE);
@@ -921,7 +920,7 @@ void WebSocket::operator()(Trace<protocol::json::WSAPIOrderPlace> const &event, 
           .text = {},
           .version = request.version,
           .request_id = {},
-          .external_order_id = {},
+          .external_order_id = external_order_id,
           .client_order_id = {},
           .quantity = NaN,
           .price = NaN,
@@ -1003,7 +1002,7 @@ void WebSocket::operator()(Trace<protocol::json::WSAPIOrderAmendKeepPriority> co
           .text = {},
           .version = request.version,
           .request_id = {},
-          .external_order_id = {},
+          .external_order_id = external_order_id,
           .client_order_id = {},
           .quantity = NaN,
           .price = NaN,
@@ -1084,7 +1083,7 @@ void WebSocket::operator()(Trace<protocol::json::WSAPICancelOrder> const &event,
           .text = {},
           .version = request.version,
           .request_id = {},
-          .external_order_id = {},
+          .external_order_id = external_order_id,
           .client_order_id = {},
           .quantity = NaN,
           .price = NaN,
@@ -1177,7 +1176,7 @@ void WebSocket::operator()(Trace<protocol::json::WSAPICancelOpenOrders> const &e
             .update_time_utc = item.update_time,
             .external_account = {},
             .external_order_id = external_order_id,
-            .client_order_id = {},
+            .client_order_id = item.client_order_id,
             .order_status = map(item.status),
             .error = {},
             .text = {},
@@ -1198,7 +1197,7 @@ void WebSocket::operator()(Trace<protocol::json::WSAPICancelOpenOrders> const &e
             .update_type = UpdateType::INCREMENTAL,
             .sending_time_utc = {},
         };
-        shared_.update_order(item.client_order_id, stream_id_, trace_info, order_update, []([[maybe_unused]] auto &order) {});
+        shared_.update_order(stream_id_, trace_info, order_update, []([[maybe_unused]] auto &order) {});
       }
     } else {
       log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, wsapi_cancel_open_orders.error);
@@ -1283,7 +1282,7 @@ void WebSocket::operator()(Trace<protocol::json::ExecutionReportData> const &eve
       .update_time_utc = execution_report.transaction_time,
       .external_account = {},
       .external_order_id = external_order_id,
-      .client_order_id = {},
+      .client_order_id = execution_report.client_order_id,
       .order_status = map(execution_report.current_order_status),
       .error = {},
       .text = {},
@@ -1307,7 +1306,7 @@ void WebSocket::operator()(Trace<protocol::json::ExecutionReportData> const &eve
   auto user_id = SOURCE_NONE;
   auto order_id = ORDER_ID_NONE;
   auto strategy_id = STRATEGY_ID_NONE;
-  if (shared_.update_order(execution_report.client_order_id, stream_id_, trace_info, order_update, [&](auto &order) {
+  if (shared_.update_order(stream_id_, trace_info, order_update, [&](auto &order) {
         user_id = order.user_id;
         order_id = order.order_id;
         strategy_id = order.strategy_id;
@@ -1349,7 +1348,7 @@ void WebSocket::operator()(Trace<protocol::json::ExecutionReportData> const &eve
       .update_time_utc = execution_report.transaction_time,
       .external_account = {},
       .external_order_id = external_order_id,
-      .client_order_id = {},
+      .client_order_id = execution_report.client_order_id,
       .fills = {&fill, 1},
       .routing_id = {},
       .update_type = UpdateType::INCREMENTAL,
@@ -1357,7 +1356,7 @@ void WebSocket::operator()(Trace<protocol::json::ExecutionReportData> const &eve
       .user = {},
       .strategy_id = strategy_id,
   };
-  create_trace_and_dispatch(handler_, trace_info, trade_update, true, user_id, execution_report.client_order_id);
+  create_trace_and_dispatch(handler_, trace_info, trade_update, true, user_id);
 }
 
 void WebSocket::update_rate_limits(auto &event) {
@@ -1453,9 +1452,9 @@ void WebSocket::operator()(Trace<server::oms::Response> const &event, uint8_t us
   }
 }
 
-void WebSocket::operator()(Trace<server::oms::OrderUpdate> const &event, std::string_view const &client_order_id) {
+void WebSocket::operator()(Trace<server::oms::OrderUpdate> const &event) {
   auto &[trace_info, order_update] = event;
-  if (shared_.update_order(client_order_id, stream_id_, trace_info, order_update, [&]([[maybe_unused]] auto &order) {})) {
+  if (shared_.update_order(stream_id_, trace_info, order_update, [&]([[maybe_unused]] auto &order) {})) {
   } else {
     log::warn("*** EXTERNAL ORDER ***"sv);
   }

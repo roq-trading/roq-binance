@@ -306,7 +306,7 @@ void DropCopyPortfolio::operator()(Trace<protocol::json::ExecutionReport> const 
         .update_time_utc = execution_report.data.transaction_time,
         .external_account = {},
         .external_order_id = external_order_id,
-        .client_order_id = {},
+        .client_order_id = execution_report.data.client_order_id,
         .order_status = map(execution_report.data.current_order_status),
         .error = {},
         .text = {},
@@ -330,7 +330,7 @@ void DropCopyPortfolio::operator()(Trace<protocol::json::ExecutionReport> const 
     auto user_id = SOURCE_NONE;
     auto order_id = ORDER_ID_NONE;
     auto strategy_id = STRATEGY_ID_NONE;
-    if (shared_.update_order(execution_report.data.client_order_id, stream_id_, trace_info, order_update, [&](auto &order) {
+    if (shared_.update_order(stream_id_, trace_info, order_update, [&](auto &order) {
           user_id = order.user_id;
           order_id = order.order_id;
           strategy_id = order.strategy_id;
@@ -372,7 +372,7 @@ void DropCopyPortfolio::operator()(Trace<protocol::json::ExecutionReport> const 
         .update_time_utc = execution_report.data.transaction_time,
         .external_account = {},
         .external_order_id = external_order_id,
-        .client_order_id = {},
+        .client_order_id = execution_report.data.client_order_id,
         .fills = {&fill, 1},
         .routing_id = {},
         .update_type = UpdateType::INCREMENTAL,
@@ -380,7 +380,7 @@ void DropCopyPortfolio::operator()(Trace<protocol::json::ExecutionReport> const 
         .user = {},
         .strategy_id = strategy_id,
     };
-    create_trace_and_dispatch(handler_, trace_info, trade_update, true, user_id, execution_report.data.client_order_id);
+    create_trace_and_dispatch(handler_, trace_info, trade_update, true, user_id);
   });
 }
 

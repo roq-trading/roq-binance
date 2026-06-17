@@ -509,7 +509,7 @@ void DropCopyMargin::operator()(Trace<protocol::json::ExecutionReportData> const
       .update_time_utc = execution_report.transaction_time,
       .external_account = {},
       .external_order_id = external_order_id,
-      .client_order_id = {},
+      .client_order_id = execution_report.client_order_id,
       .order_status = map(execution_report.current_order_status),
       .error = {},
       .text = {},
@@ -533,7 +533,7 @@ void DropCopyMargin::operator()(Trace<protocol::json::ExecutionReportData> const
   auto user_id = SOURCE_NONE;
   auto order_id = ORDER_ID_NONE;
   auto strategy_id = STRATEGY_ID_NONE;
-  if (shared_.update_order(execution_report.client_order_id, stream_id_, trace_info, order_update, [&](auto &order) {
+  if (shared_.update_order(stream_id_, trace_info, order_update, [&](auto &order) {
         user_id = order.user_id;
         order_id = order.order_id;
         strategy_id = order.strategy_id;
@@ -575,7 +575,7 @@ void DropCopyMargin::operator()(Trace<protocol::json::ExecutionReportData> const
       .update_time_utc = execution_report.transaction_time,
       .external_account = {},
       .external_order_id = external_order_id,
-      .client_order_id = {},
+      .client_order_id = execution_report.client_order_id,
       .fills = {&fill, 1},
       .routing_id = {},
       .update_type = UpdateType::INCREMENTAL,
@@ -583,7 +583,7 @@ void DropCopyMargin::operator()(Trace<protocol::json::ExecutionReportData> const
       .user = {},
       .strategy_id = strategy_id,
   };
-  create_trace_and_dispatch(handler_, trace_info, trade_update, true, user_id, execution_report.client_order_id);
+  create_trace_and_dispatch(handler_, trace_info, trade_update, true, user_id);
 }
 
 void DropCopyMargin::update_rate_limits(auto &event) {
@@ -679,9 +679,9 @@ void DropCopyMargin::operator()(Trace<server::oms::Response> const &event, uint8
   }
 }
 
-void DropCopyMargin::operator()(Trace<server::oms::OrderUpdate> const &event, std::string_view const &client_order_id) {
+void DropCopyMargin::operator()(Trace<server::oms::OrderUpdate> const &event) {
   auto &[trace_info, order_update] = event;
-  if (shared_.update_order(client_order_id, stream_id_, trace_info, order_update, [&]([[maybe_unused]] auto &order) {})) {
+  if (shared_.update_order(stream_id_, trace_info, order_update, [&]([[maybe_unused]] auto &order) {})) {
   } else {
     log::warn("*** EXTERNAL ORDER ***"sv);
   }
