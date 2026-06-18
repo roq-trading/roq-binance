@@ -35,24 +35,19 @@ struct Shared final {
 
   Shared(Shared const &) = delete;
 
-  auto discard_symbol(std::string_view const &name) const { return dispatcher_.discard_symbol(name); }
+  auto discard_symbol(std::string_view const &name) const { return dispatcher.discard_symbol(name); }
 
-  auto get_symbol_id(std::string_view const &exchange, std::string_view const &symbol) { return dispatcher_.get_symbol_id(exchange, symbol); }
-  auto get_exchange_symbol(uint32_t symbol_id) { return dispatcher_.get_exchange_symbol(symbol_id); }
-
-  template <typename... Args>
-  auto update_order(Args &&...args) {
-    return dispatcher_.update_order(std::forward<Args>(args)...);
-  }
+  auto get_symbol_id(std::string_view const &exchange, std::string_view const &symbol) { return dispatcher.get_symbol_id(exchange, symbol); }
+  auto get_exchange_symbol(uint32_t symbol_id) { return dispatcher.get_exchange_symbol(symbol_id); }
 
   template <typename... Args>
   auto operator()(Args &&...args) {
-    return dispatcher_(std::forward<Args>(args)...);
+    return dispatcher(std::forward<Args>(args)...);
   }
 
   template <typename... Args>
   auto get_ref_data(Args &&...args) {
-    return dispatcher_.get_ref_data(std::forward<Args>(args)...);
+    return dispatcher.get_ref_data(std::forward<Args>(args)...);
   }
 
  private:
@@ -98,7 +93,8 @@ struct Shared final {
  private:
   utils::unordered_map<std::string, Instrument> instruments_;
 
-  server::Dispatcher &dispatcher_;
+ public:
+  server::Dispatcher &dispatcher;
 
  public:
   Settings const &settings;

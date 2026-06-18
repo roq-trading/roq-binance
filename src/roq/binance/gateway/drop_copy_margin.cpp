@@ -533,15 +533,12 @@ void DropCopyMargin::operator()(Trace<protocol::json::ExecutionReportData> const
   auto user_id = SOURCE_NONE;
   auto order_id = ORDER_ID_NONE;
   auto strategy_id = STRATEGY_ID_NONE;
-  if (shared_.update_order(stream_id_, trace_info, order_update, [&](auto &order) {
-        user_id = order.user_id;
-        order_id = order.order_id;
-        strategy_id = order.strategy_id;
-      })) {
-  } else {
-    log::warn("*** EXTERNAL ORDER ***"sv);
-    log::warn("execution_report={}"sv, execution_report);
-  }
+  auto callback = [&](auto &order) {
+    user_id = order.user_id;
+    order_id = order.order_id;
+    strategy_id = order.strategy_id;
+  };
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id_, callback);
   if (execution_report.current_execution_type != protocol::json::ExecutionType::TRADE) {
     return;
   }
@@ -668,23 +665,6 @@ void DropCopyMargin::update_rate_limits(auto &event) {
     handler_(event_2);
   }
   shared_.rate_limits.clear();
-}
-
-template <typename... Args>
-void DropCopyMargin::operator()(Trace<server::oms::Response> const &event, uint8_t user_id, uint64_t order_id, Args &&...args) {
-  auto &[trace_info, response] = event;
-  if (shared_.update_order(user_id, order_id, stream_id_, trace_info, response, std::forward<Args>(args)..., []([[maybe_unused]] auto &order) {})) {
-  } else {
-    log::warn("Did not find order: user_id={}, order_id={}"sv, user_id, order_id);
-  }
-}
-
-void DropCopyMargin::operator()(Trace<server::oms::OrderUpdate> const &event) {
-  auto &[trace_info, order_update] = event;
-  if (shared_.update_order(stream_id_, trace_info, order_update, [&]([[maybe_unused]] auto &order) {})) {
-  } else {
-    log::warn("*** EXTERNAL ORDER ***"sv);
-  }
 }
 
 void DropCopyMargin::check_response_listen_key() {

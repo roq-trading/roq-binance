@@ -103,11 +103,6 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
 
   void update_rate_limits(auto &event);
 
-  template <typename... Args>
-  void operator()(Trace<server::oms::Response> const &, uint8_t user_id, uint64_t order_id, Args &&...args);
-
-  void operator()(Trace<server::oms::OrderUpdate> const &);
-
   void check_response_listen_key();
   void check_response_account();
   void check_response_orders();

@@ -330,15 +330,12 @@ void DropCopyPortfolio::operator()(Trace<protocol::json::ExecutionReport> const 
     auto user_id = SOURCE_NONE;
     auto order_id = ORDER_ID_NONE;
     auto strategy_id = STRATEGY_ID_NONE;
-    if (shared_.update_order(stream_id_, trace_info, order_update, [&](auto &order) {
-          user_id = order.user_id;
-          order_id = order.order_id;
-          strategy_id = order.strategy_id;
-        })) {
-    } else {
-      log::warn("*** EXTERNAL ORDER ***"sv);
-      log::warn("execution_report={}"sv, execution_report);
-    }
+    auto callback = [&](auto &order) {
+      user_id = order.user_id;
+      order_id = order.order_id;
+      strategy_id = order.strategy_id;
+    };
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id_, callback);
     if (execution_report.data.current_execution_type != protocol::json::ExecutionType::TRADE) {
       return;
     }

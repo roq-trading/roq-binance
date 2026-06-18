@@ -141,11 +141,6 @@ struct WebSocket final : public OrderEntry, public web::socket::Client::Handler,
 
   void update_rate_limits(auto &event);
 
-  template <typename... Args>
-  void operator()(Trace<server::oms::Response> const &, uint8_t user_id, uint64_t order_id, Args &&...args);
-
-  void operator()(Trace<server::oms::OrderUpdate> const &);
-
   OrderEntry::Handler &handler_;
   // config
   uint16_t const stream_id_;
