@@ -276,7 +276,7 @@ void DropCopyMargin::operator()(web::socket::Client::Latency const &latency) {
       .account = account_.name,
       .latency = latency.sample,
   };
-  create_trace_and_dispatch(handler_, trace_info, external_latency);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, external_latency);
   latency_.ping.update(latency.sample);
 }
 
@@ -307,7 +307,7 @@ void DropCopyMargin::operator()(ConnectionStatus connection_status, std::string_
       .proxy = (*connection_).get_proxy(),
   };
   log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(handler_, trace_info, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
 }
 
 uint32_t DropCopyMargin::download(DropCopyStateMargin state) {
@@ -479,7 +479,7 @@ void DropCopyMargin::operator()(Trace<protocol::json::OutboundAccountPositionDat
         .exchange_time_utc = outbound_account_position.time_of_last_account_update,
         .sending_time_utc = outbound_account_position.event_time,
     };
-    create_trace_and_dispatch(handler_, trace_info, funds_update, true);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, funds_update, true);
   }
 }
 
@@ -543,7 +543,7 @@ void DropCopyMargin::operator()(Trace<protocol::json::ExecutionReportData> const
     return;
   }
   auto side = map(execution_report.side).template get<Side>();
-  auto ref_data = shared_.get_ref_data(shared_.settings.exchange, execution_report.symbol);
+  auto ref_data = shared_.dispatcher.get_ref_data(shared_.settings.exchange, execution_report.symbol);
   auto profit_loss_amount =
       utils::compute_profit_loss_amount(side, execution_report.last_executed_quantity, execution_report.last_executed_price, ref_data.multiplier);
   auto fill = Fill{
@@ -580,7 +580,7 @@ void DropCopyMargin::operator()(Trace<protocol::json::ExecutionReportData> const
       .user = {},
       .strategy_id = strategy_id,
   };
-  create_trace_and_dispatch(handler_, trace_info, trade_update, true, user_id);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, trade_update, true, user_id);
 }
 
 void DropCopyMargin::update_rate_limits(auto &event) {
@@ -661,8 +661,7 @@ void DropCopyMargin::update_rate_limits(auto &event) {
         .origin = Origin::EXCHANGE,
         .rate_limits = shared_.rate_limits,
     };
-    Trace event_2{trace_info, rate_limits_update};
-    handler_(event_2);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, rate_limits_update);
   }
   shared_.rate_limits.clear();
 }

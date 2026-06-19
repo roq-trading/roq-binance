@@ -179,7 +179,7 @@ void Rest::operator()(Trace<web::rest::Client::Latency> const &event) {
       .account = {},
       .latency = latency.sample,
   };
-  create_trace_and_dispatch(handler_, trace_info, external_latency);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, external_latency);
   latency_.ping.update(latency.sample);
 }
 
@@ -218,7 +218,7 @@ void Rest::operator()(Trace<web::rest::Client::MessageEnd> const &event) {
       .origin = Origin::EXCHANGE,
       .rate_limits = shared_.rate_limits,
   };
-  create_trace_and_dispatch(handler_, trace_info, rate_limits_update);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, rate_limits_update);
   shared_.rate_limits.clear();
 }
 
@@ -241,7 +241,7 @@ void Rest::operator()(ConnectionStatus connection_status, std::string_view const
       .proxy = (*connection_).get_proxy(),
   };
   log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(handler_, trace_info, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
 }
 
 uint32_t Rest::download(State state) {
@@ -377,7 +377,7 @@ void Rest::operator()(Trace<protocol::json::ExchangeInfoAck> const &event) {
   size_t counter = {};
   for (auto &item : exchange_info_ack.symbols) {
     log::info<2>("item={}"sv, item);
-    auto discard = shared_.discard_symbol(item.symbol);  // XXX should this be normalized symbol ???
+    auto discard = shared_.dispatcher.discard_symbol(item.symbol);  // XXX should this be normalized symbol ???
     // fall-back values
     auto tick_size = std::pow(10.0, -static_cast<double>(item.quote_precision));
     auto min_trade_vol = std::pow(10.0, -static_cast<double>(item.base_asset_precision));
@@ -466,7 +466,7 @@ void Rest::operator()(Trace<protocol::json::ExchangeInfoAck> const &event) {
         .sending_time_utc = exchange_info_ack.server_time,
         .discard = discard,
     };
-    create_trace_and_dispatch(handler_, trace_info, reference_data, false);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, reference_data, false);
     if (discard) {
       log::info<1>(R"(Drop symbol="{}")"sv, item.symbol);
       continue;
@@ -485,7 +485,7 @@ void Rest::operator()(Trace<protocol::json::ExchangeInfoAck> const &event) {
         .exchange_sequence = {},
         .sending_time_utc = exchange_info_ack.server_time,
     };
-    create_trace_and_dispatch(handler_, trace_info, market_status, true);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, market_status, true);
   }
   log::info("Exchange info: including symbols {}/{}"sv, counter, std::size(exchange_info_ack.symbols));
   if (!std::empty(symbols)) {
@@ -582,8 +582,7 @@ void Rest::operator()(Trace<protocol::json::DepthAck> const &event, std::string_
           .checksum = {},
       };
       auto apply_updates = [&](auto &market_by_price) { sequencer.apply(market_by_price, sequence, false); };
-      Trace event{trace_info, market_by_price_update};
-      shared_(event, true, apply_updates);
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, market_by_price_update, true, apply_updates);
     };
     auto request_snapshot = [&](auto retries) {
       log::info(R"(DEBUG REQUEST SNAPSHOT symbol="{}", retries={})"sv, symbol, retries);

@@ -291,7 +291,7 @@ void OrderEntryPortfolio::operator()(Trace<web::rest::Client::Latency> const &ev
       .account = account_.name,
       .latency = latency.sample,
   };
-  create_trace_and_dispatch(handler_, trace_info, external_latency);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, external_latency);
   latency_.ping.update(latency.sample);
 }
 
@@ -314,7 +314,7 @@ void OrderEntryPortfolio::operator()(ConnectionStatus connection_status, std::st
       .proxy = (*connection_).get_proxy(),
   };
   log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(handler_, trace_info, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
 }
 
 uint32_t OrderEntryPortfolio::download(State state) {
@@ -469,7 +469,7 @@ void OrderEntryPortfolio::operator()(Trace<protocol::json::BalancesAck> const &e
         .exchange_time_utc = item.update_time,
         .sending_time_utc = {},
     };
-    create_trace_and_dispatch(handler_, trace_info, funds_update, true);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, funds_update, true);
   }
 }
 
@@ -641,7 +641,7 @@ void OrderEntryPortfolio::operator()(Trace<protocol::json::TradesAck> const &eve
     log::info<2>("item={}"sv, item);
     auto liquidity = item.is_maker ? Liquidity::MAKER : Liquidity::TAKER;
     auto side = item.is_buyer ? Side::BUY : Side::SELL;
-    auto ref_data = shared_.get_ref_data(shared_.settings.exchange, item.symbol);
+    auto ref_data = shared_.dispatcher.get_ref_data(shared_.settings.exchange, item.symbol);
     auto profit_loss_amount = utils::compute_profit_loss_amount(side, item.qty, item.price, ref_data.multiplier);
     auto fill = Fill{
         .exchange_time_utc = item.time,
@@ -679,7 +679,7 @@ void OrderEntryPortfolio::operator()(Trace<protocol::json::TradesAck> const &eve
         .user = {},
         .strategy_id = {},
     };
-    create_trace_and_dispatch(handler_, trace_info, trade_update, true, SOURCE_NONE);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, trade_update, true, SOURCE_NONE);
   }
 }
 
@@ -989,8 +989,7 @@ void OrderEntryPortfolio::cancel_all_open_orders(Event<CancelAllOrders> const &e
           .strategy_id = cancel_all_orders.strategy_id,
       };
       TraceInfo trace_info{event};
-      Trace event_2{trace_info, cancel_all_orders_ack};
-      shared_(event_2);
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, cancel_all_orders_ack);
     };
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     for (auto &symbol : open_orders_symbols_) {
@@ -1025,6 +1024,7 @@ void OrderEntryPortfolio::cancel_all_open_orders(Event<CancelAllOrders> const &e
 
 void OrderEntryPortfolio::cancel_all_open_orders_ack(Trace<web::rest::Response> const &event, std::string_view const &request_id) {
   profile_.cancel_all_open_orders_ack([&]() {
+    auto &[trace_info, response] = event;
     auto send_ack = [&](auto status, Error error, std::string_view const &text) {
       auto cancel_all_orders_ack = CancelAllOrdersAck{
           .stream_id = stream_id_,
@@ -1044,8 +1044,7 @@ void OrderEntryPortfolio::cancel_all_open_orders_ack(Trace<web::rest::Response> 
           .user = {},
           .strategy_id = {},
       };
-      Trace event_2{event, cancel_all_orders_ack};
-      shared_(event_2);
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, cancel_all_orders_ack);
     };
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       switch (error) {

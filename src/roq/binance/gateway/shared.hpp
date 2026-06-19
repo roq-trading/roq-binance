@@ -2,12 +2,11 @@
 
 #pragma once
 
-#include <chrono>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "roq/api.hpp"
+
 #include "roq/server.hpp"
 
 #include "roq/utils/container.hpp"
@@ -34,21 +33,6 @@ struct Shared final {
   Shared(server::Dispatcher &, Settings const &, Config const &);
 
   Shared(Shared const &) = delete;
-
-  auto discard_symbol(std::string_view const &name) const { return dispatcher.discard_symbol(name); }
-
-  auto get_symbol_id(std::string_view const &exchange, std::string_view const &symbol) { return dispatcher.get_symbol_id(exchange, symbol); }
-  auto get_exchange_symbol(uint32_t symbol_id) { return dispatcher.get_exchange_symbol(symbol_id); }
-
-  template <typename... Args>
-  auto operator()(Args &&...args) {
-    return dispatcher(std::forward<Args>(args)...);
-  }
-
-  template <typename... Args>
-  auto get_ref_data(Args &&...args) {
-    return dispatcher.get_ref_data(std::forward<Args>(args)...);
-  }
 
  private:
   struct {
@@ -96,11 +80,11 @@ struct Shared final {
  public:
   server::Dispatcher &dispatcher;
 
- public:
   Settings const &settings;
   API const api;
 
   core::limit::RateLimiter rate_limiter;
+
   core::Symbols symbols;
   utils::unordered_set<std::string> all_symbols;
 
@@ -122,6 +106,8 @@ struct Shared final {
   std::vector<RateLimit> rate_limits;
 
   bool const allow_unknown_event_types;
+
+  std::vector<MBPUpdate> final_bids, final_asks;
 };
 
 }  // namespace gateway

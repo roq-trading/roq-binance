@@ -300,7 +300,7 @@ void OrderEntryMargin::operator()(Trace<web::rest::Client::Latency> const &event
       .account = account_.name,
       .latency = latency.sample,
   };
-  create_trace_and_dispatch(handler_, trace_info, external_latency);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, external_latency);
   latency_.ping.update(latency.sample);
 }
 
@@ -323,7 +323,7 @@ void OrderEntryMargin::operator()(ConnectionStatus connection_status, std::strin
       .proxy = (*connection_).get_proxy(),
   };
   log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(handler_, trace_info, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
 }
 
 uint32_t OrderEntryMargin::download(State state) {
@@ -595,7 +595,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::AccountAck> const &event
         .exchange_time_utc = account_ack.update_time,
         .sending_time_utc = account_ack.update_time,
     };
-    create_trace_and_dispatch(handler_, trace_info, funds_update, true);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, funds_update, true);
   }
 }
 
@@ -617,7 +617,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::CrossMarginAccount> cons
         .exchange_time_utc = {},
         .sending_time_utc = {},
     };
-    create_trace_and_dispatch(handler_, trace_info, funds_update, true);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, funds_update, true);
   }
 }
 
@@ -963,7 +963,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::CrossMarginAccount> cons
         .exchange_time_utc = {},
         .sending_time_utc = {},
     };
-    create_trace_and_dispatch(handler_, trace_info, funds_update, true);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, funds_update, true);
   }
 }
 
@@ -1295,8 +1295,7 @@ void OrderEntryMargin::cancel_all_open_orders(Event<CancelAllOrders> const &even
           .strategy_id = cancel_all_orders.strategy_id,
       };
       TraceInfo trace_info{message_info};
-      Trace event_2{trace_info, cancel_all_orders_ack};
-      shared_(event_2);
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, cancel_all_orders_ack);
     };
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     for (auto &symbol : open_orders_symbols_) {
@@ -1348,6 +1347,7 @@ void OrderEntryMargin::cancel_all_open_orders(Event<CancelAllOrders> const &even
 
 void OrderEntryMargin::cancel_all_open_orders_ack(Trace<web::rest::Response> const &event, std::string_view const &request_id) {
   profile_.cancel_all_open_orders_ack([&]() {
+    auto &[trace_info, response] = event;
     auto send_ack = [&](auto status, Error error, std::string_view const &text) {
       auto cancel_all_orders_ack = CancelAllOrdersAck{
           .stream_id = stream_id_,
@@ -1367,8 +1367,7 @@ void OrderEntryMargin::cancel_all_open_orders_ack(Trace<web::rest::Response> con
           .user = {},
           .strategy_id = {},
       };
-      Trace event_2{event, cancel_all_orders_ack};
-      shared_(event_2);
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, cancel_all_orders_ack);
     };
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       switch (error) {
