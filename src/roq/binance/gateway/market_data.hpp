@@ -69,6 +69,9 @@ struct MarketData final : public web::socket::Client::Handler, public protocol::
   void operator()(Trace<protocol::json::Error> const &, int64_t id) override;
   void operator()(Trace<protocol::json::Result> const &, int64_t id) override;
 
+  // server
+  void operator()(Trace<protocol::json::ServerShutdown> const &) override;
+
   // update
   void operator()(Trace<protocol::json::AggTrade> const &) override;
   void operator()(Trace<protocol::json::Trade> const &) override;
@@ -96,7 +99,7 @@ struct MarketData final : public web::socket::Client::Handler, public protocol::
     utils::metrics::Counter disconnect, total_bytes_received;
   } counter_;
   struct {
-    utils::metrics::Profile parse, error, result, agg_trade, trade, mini_ticker, book_ticker, depth, depth_update;
+    utils::metrics::Profile parse, error, result, server_shutdown, agg_trade, trade, mini_ticker, book_ticker, depth, depth_update;
   } profile_;
   struct {
     utils::metrics::Latency ping, heartbeat;

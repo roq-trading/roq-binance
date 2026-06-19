@@ -31,6 +31,7 @@ struct MarketStreamParserTester final : public protocol::json::MarketStreamParse
 
   void operator()(Trace<protocol::json::Error> const &event, [[maybe_unused]] int64_t id) override { dispatch(event); }
   void operator()(Trace<protocol::json::Result> const &event, [[maybe_unused]] int64_t id) override { dispatch(event); }
+  void operator()(Trace<protocol::json::ServerShutdown> const &event) override { dispatch(event); }
   void operator()(Trace<protocol::json::AggTrade> const &event) override { dispatch(event); }
   void operator()(Trace<protocol::json::Trade> const &event) override { dispatch(event); }
   void operator()(Trace<protocol::json::MiniTicker> const &event) override { dispatch(event); }

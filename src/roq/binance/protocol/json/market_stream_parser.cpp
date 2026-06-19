@@ -29,18 +29,22 @@ void dispatch_helper(auto &handler, auto &value, auto &buffer_stack, auto &trace
 }
 
 // <symbol>@<stream>[@<freq>]
-auto parse_stream(auto &value) {
+auto parse_stream(auto &value) -> std::pair<std::string, Stream> {
   auto full_name = std::get<std::string_view>(value);
   auto idx0 = full_name.find('@');
-  if (idx0 == std::string_view::npos) [[unlikely]] {
-    log::fatal(R"(Unexpected: name="{}")"sv, full_name);
+  if (idx0 != std::string_view::npos) [[likely]] {
+    std::string symbol{std::begin(full_name), idx0};
+    std::ranges::transform(symbol, std::begin(symbol), [](auto item) { return std::toupper(item); });  // note! convert to uppercase
+    auto idx1 = full_name.find('@', idx0 + 1);
+    std::string_view name{std::begin(full_name) + idx0 + 1, (idx1 == std::string_view::npos) ? std::size(full_name) - idx0 - 1 : idx1 - idx0 - 1};
+    Stream stream{name};
+    return {symbol, stream};
   }
-  std::string symbol{std::begin(full_name), idx0};
-  std::ranges::transform(symbol, std::begin(symbol), [](auto item) { return std::toupper(item); });  // note! convert to uppercase
-  auto idx1 = full_name.find('@', idx0 + 1);
-  std::string_view name{std::begin(full_name) + idx0 + 1, (idx1 == std::string_view::npos) ? std::size(full_name) - idx0 - 1 : idx1 - idx0 - 1};
-  Stream stream{name};
-  return std::make_pair(symbol, stream);
+  if (!std::empty(full_name) && full_name[0] == '!') {
+    Stream stream{full_name};
+    return {std::string{}, stream};
+  }
+  log::fatal(R"(Unexpected: name="{}")"sv, full_name);
 }
 }  // namespace
 
@@ -99,6 +103,9 @@ bool MarketStreamParser::dispatch(
                 return false;
               }
               break;  // ... might take another iteration, probably ok
+            case SERVER_SHUTDOWN:
+              dispatch_helper<ServerShutdown>(handler, message, buffer_stack, trace_info);
+              return true;
             case AGG_TRADE:
               dispatch_helper<AggTrade>(handler, message, buffer_stack, trace_info);
               return true;

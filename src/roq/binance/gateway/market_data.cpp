@@ -123,6 +123,7 @@ MarketData::MarketData(Handler &handler, io::Context &context, uint16_t stream_i
           .parse = create_metrics(shared.settings, name_, "parse"sv),
           .error = create_metrics(shared.settings, name_, "error"sv),
           .result = create_metrics(shared.settings, name_, "result"sv),
+          .server_shutdown = create_metrics(shared.settings, name_, "server_shutdown"sv),
           .agg_trade = create_metrics(shared.settings, name_, "agg_trade"sv),
           .trade = create_metrics(shared.settings, name_, "trade"sv),
           .mini_ticker = create_metrics(shared.settings, name_, "mini_ticker"sv),
@@ -162,6 +163,7 @@ void MarketData::operator()(metrics::Writer &writer) {
       .write(profile_.parse, metrics::Type::PROFILE)
       .write(profile_.error, metrics::Type::PROFILE)
       .write(profile_.result, metrics::Type::PROFILE)
+      .write(profile_.server_shutdown, metrics::Type::PROFILE)
       .write(profile_.agg_trade, metrics::Type::PROFILE)
       .write(profile_.trade, metrics::Type::PROFILE)
       .write(profile_.mini_ticker, metrics::Type::PROFILE)
@@ -306,6 +308,15 @@ void MarketData::operator()(Trace<protocol::json::Result> const &event, int64_t 
     } else {
       log::warn("error={}, id={}"sv, result, id);
     }
+  });
+}
+
+void MarketData::operator()(Trace<protocol::json::ServerShutdown> const &event) {
+  profile_.server_shutdown([&]() {
+    auto &[trace_info, server_shutdown] = event;
+    log::info("server_shutdown={}"sv, server_shutdown);
+    log::warn("*** DISCONNECT: SERVER SHUTDOWN ***"sv);
+    (*connection_).close();
   });
 }
 

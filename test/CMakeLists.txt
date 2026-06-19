@@ -21,10 +21,12 @@ set(SOURCES
     json_open_orders_ack.cpp
     json_outbound_account_position.cpp
     json_result.cpp
+    json_server_shutdown.cpp
     json_session_logon.cpp
     json_wsapi_account.cpp
     json_wsapi_cancel_open_orders.cpp
     json_wsapi_cancel_order.cpp
+    json_wsapi_event_stream_terminated.cpp
     json_wsapi_execution_report.cpp
     json_wsapi_open_orders.cpp
     json_wsapi_order_place.cpp
@@ -32,7 +34,6 @@ set(SOURCES
     json_wsapi_session_logon.cpp
     json_wsapi_trades.cpp
     json_wsapi_user_data_stream_subscribe.cpp
-    json_wsapi_event_stream_terminated.cpp
     tools_crypto.cpp
     main.cpp)
 

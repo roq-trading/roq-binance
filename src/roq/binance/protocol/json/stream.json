@@ -3,6 +3,10 @@
   "type": "enum",
   "values": [
     {
+      "raw": "!serverShutdown",
+      "name": "serverShutdown"
+    },
+    {
       "name": "aggTrade"
     },
     {
