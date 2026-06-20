@@ -2,13 +2,7 @@
 
 #include "roq/binance/gateway/controller.hpp"
 
-#include <algorithm>
-#include <cctype>
-#include <limits>
-
 #include "roq/logging.hpp"
-
-#include "roq/clock.hpp"
 
 #include "roq/server/oms/exceptions.hpp"
 
@@ -16,8 +10,6 @@
 #include "roq/binance/gateway/order_entry_margin.hpp"
 #include "roq/binance/gateway/order_entry_portfolio.hpp"
 #include "roq/binance/gateway/web_socket.hpp"
-
-#include "roq/binance/protocol/json/utils.hpp"
 
 using namespace std::literals;
 

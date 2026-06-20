@@ -2,21 +2,11 @@
 
 #include "roq/binance/gateway/rest.hpp"
 
-#include <algorithm>
-#include <utility>
-
 #include "roq/mask.hpp"
-
-#include "roq/utils/compare.hpp"
-#include "roq/utils/update.hpp"
-
-#include "roq/utils/charconv/from_chars.hpp"
 
 #include "roq/utils/metrics/factory.hpp"
 
-#include "roq/web/rest/client.hpp"
-
-#include "roq/binance/utils.hpp"
+#include "roq/binance/gateway/utils.hpp"
 
 #include "roq/binance/protocol/json/error.hpp"
 #include "roq/binance/protocol/json/filters.hpp"

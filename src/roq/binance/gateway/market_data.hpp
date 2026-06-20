@@ -3,9 +3,6 @@
 #pragma once
 
 #include <string>
-#include <string_view>
-#include <utility>
-#include <vector>
 
 #include "roq/utils/metrics/counter.hpp"
 #include "roq/utils/metrics/latency.hpp"
@@ -15,12 +12,9 @@
 
 #include "roq/web/socket/client.hpp"
 
-#include "roq/core/download.hpp"
 #include "roq/core/timer_queue.hpp"
 
 #include "roq/core/json/buffer_stack.hpp"
-
-#include "roq/server.hpp"
 
 #include "roq/binance/gateway/shared.hpp"
 
@@ -48,6 +42,8 @@ struct MarketData final : public web::socket::Client::Handler, public protocol::
   void subscribe(size_t start_from = 0);
 
  protected:
+  // web::socket::Client::Handler
+
   void operator()(web::socket::Client::Connected const &) override;
   void operator()(web::socket::Client::Disconnected const &) override;
   void operator()(web::socket::Client::Ready const &) override;
@@ -56,7 +52,8 @@ struct MarketData final : public web::socket::Client::Handler, public protocol::
   void operator()(web::socket::Client::Text const &) override;
   void operator()(web::socket::Client::Binary const &) override;
 
- private:
+  // helpers
+
   void operator()(ConnectionStatus, std::string_view const &reason = {});
 
   void subscribe(std::span<Symbol const> const &symbols);
@@ -64,6 +61,8 @@ struct MarketData final : public web::socket::Client::Handler, public protocol::
   void subscribe(std::span<Symbol const> const &symbols, std::string_view const &channel);
 
   void parse(std::string_view const &message);
+
+  // protocol::json::MarketStreamParser::Handler
 
   // response
   void operator()(Trace<protocol::json::Error> const &, int64_t id) override;
@@ -80,8 +79,11 @@ struct MarketData final : public web::socket::Client::Handler, public protocol::
   void operator()(Trace<protocol::json::Depth> const &, std::string_view const &symbol) override;
   void operator()(Trace<protocol::json::DepthUpdate> const &) override;
 
+  // helpers
+
   void check_subscribe_queue(std::chrono::nanoseconds now);
 
+ private:
   Handler &handler_;
   // config
   uint16_t const stream_id_;

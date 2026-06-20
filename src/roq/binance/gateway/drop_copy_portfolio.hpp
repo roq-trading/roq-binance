@@ -3,7 +3,6 @@
 #pragma once
 
 #include <string>
-#include <string_view>
 
 #include "roq/utils/metrics/counter.hpp"
 #include "roq/utils/metrics/latency.hpp"
@@ -33,13 +32,17 @@ namespace gateway {
 struct DropCopyPortfolio final : public DropCopy, public web::socket::Client::Handler, public protocol::json::UserStreamParser::Handler {
   DropCopyPortfolio(DropCopy::Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, std::string_view const &listen_key, MarginMode);
 
+ protected:
+  // DropCopy
+
   void operator()(Event<Start> const &) override;
   void operator()(Event<Stop> const &) override;
   void operator()(Event<Timer> const &) override;
 
   void operator()(metrics::Writer &) const override;
 
- protected:
+  // web::socket::Client::Handler
+
   void operator()(web::socket::Client::Connected const &) override;
   void operator()(web::socket::Client::Disconnected const &) override;
   void operator()(web::socket::Client::Ready const &) override;
@@ -47,10 +50,11 @@ struct DropCopyPortfolio final : public DropCopy, public web::socket::Client::Ha
   void operator()(web::socket::Client::Latency const &) override;
   void operator()(web::socket::Client::Text const &) override;
   void operator()(web::socket::Client::Binary const &) override;
-  //
+
+  // helpers
+
   std::string_view get_query() const override { return query_; }
 
- private:
   void operator()(ConnectionStatus, std::string_view const &reason = {});
 
   enum class State {
@@ -65,10 +69,14 @@ struct DropCopyPortfolio final : public DropCopy, public web::socket::Client::Ha
 
   void parse(std::string_view const &message);
 
+  // protocol::json::UserStreamParser::Handler
+
   void operator()(Trace<protocol::json::OutboundAccountPosition> const &) override;
   void operator()(Trace<protocol::json::BalanceUpdate> const &) override;
   void operator()(Trace<protocol::json::ExecutionReport> const &) override;
   void operator()(Trace<protocol::json::ListStatus> const &) override;
+
+  // helpers
 
   void request_account();
   void check_response_account();
@@ -79,6 +87,7 @@ struct DropCopyPortfolio final : public DropCopy, public web::socket::Client::Ha
   void request_trades();
   void check_response_trades();
 
+ private:
   DropCopy::Handler &handler_;
   // config
   uint16_t const stream_id_;

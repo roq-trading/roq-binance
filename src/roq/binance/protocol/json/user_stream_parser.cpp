@@ -41,6 +41,11 @@ bool try_dispatch(auto &handler, auto &message, auto &buffer_stack, auto event_t
         return false;
       }
       break;
+    case SERVER_SHUTDOWN:
+      if (allow_unknown_event_types) {
+        return false;
+      }
+      break;
     case AGG_TRADE:
     case TRADE:
     case _24HR_MINI_TICKER:

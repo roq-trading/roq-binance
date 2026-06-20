@@ -7,6 +7,7 @@
 
 namespace roq {
 namespace binance {
+namespace gateway {
 
 inline auto normalized_symbol(auto const &value) {
   std::string tmp{value};
@@ -14,5 +15,6 @@ inline auto normalized_symbol(auto const &value) {
   return tmp;
 };
 
+}  // namespace gateway
 }  // namespace binance
 }  // namespace roq

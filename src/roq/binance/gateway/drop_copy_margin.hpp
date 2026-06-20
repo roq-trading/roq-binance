@@ -3,10 +3,6 @@
 #pragma once
 
 #include <string>
-#include <string_view>
-#include <vector>
-
-#include "roq/utils/container.hpp"
 
 #include "roq/utils/metrics/counter.hpp"
 #include "roq/utils/metrics/gauge.hpp"
@@ -25,7 +21,6 @@
 
 #include "roq/binance/gateway/account.hpp"
 #include "roq/binance/gateway/drop_copy.hpp"
-#include "roq/binance/gateway/drop_copy_state_margin.hpp"
 #include "roq/binance/gateway/order_entry.hpp"
 #include "roq/binance/gateway/request.hpp"
 #include "roq/binance/gateway/shared.hpp"
@@ -41,20 +36,35 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
 
   DropCopyMargin(DropCopyMargin const &) = delete;
 
+  // cross-communication
+
+  void operator()(OrderEntry::ListenKeyUpdate const &);
+
+  // DropCopy
+
   void operator()(Event<Start> const &) override;
   void operator()(Event<Stop> const &) override;
   void operator()(Event<Timer> const &) override;
 
   void operator()(metrics::Writer &) const override;
 
-  void operator()(OrderEntry::ListenKeyUpdate const &);
-
  protected:
+  // helpers
+
   bool ready() const { return connection_status_ == ConnectionStatus::READY; }
 
   void operator()(ConnectionStatus, std::string_view const &reason = {});
 
-  uint32_t download(DropCopyStateMargin);
+  enum class State {
+    UNDEFINED = 0,
+    SESSION_LOGON,
+    USER_DATA_STREAM_SUBSCRIBE,
+    ACCOUNT,
+    ORDERS,
+    DONE,
+  };
+
+  uint32_t download(State);
 
   void session_logon();
 
@@ -72,6 +82,8 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
   void operator()(web::socket::Client::Latency const &) override;
   void operator()(web::socket::Client::Text const &) override;
   void operator()(web::socket::Client::Binary const &) override;
+
+  // helpers
 
   void parse(std::string_view const &message);
 
@@ -107,6 +119,7 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
   void check_response_account();
   void check_response_orders();
 
+ private:
   DropCopy::Handler &handler_;
   // config
   uint16_t const stream_id_;
@@ -146,7 +159,7 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
   // state
   bool ready_ = false;
   ConnectionStatus connection_status_ = {};
-  core::Download<DropCopyStateMargin> download_;
+  core::Download<State> download_;
   //
   bool download_listen_token_ = false;
 };

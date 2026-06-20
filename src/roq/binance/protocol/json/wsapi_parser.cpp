@@ -75,6 +75,11 @@ bool dispatch_event(auto &handler, auto &message, auto &buffer_stack, auto &trac
         return false;
       }
       break;
+    case SERVER_SHUTDOWN:
+      if (allow_unknown_event_types) {
+        return false;
+      }
+      break;
     case AGG_TRADE:
       break;
     case TRADE:

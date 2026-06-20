@@ -5,7 +5,6 @@
 #include "roq/mask.hpp"
 
 #include "roq/utils/common.hpp"
-#include "roq/utils/update.hpp"
 
 #include "roq/utils/exceptions/unhandled.hpp"
 

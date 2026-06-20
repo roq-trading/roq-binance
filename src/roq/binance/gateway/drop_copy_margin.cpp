@@ -2,21 +2,13 @@
 
 #include "roq/binance/gateway/drop_copy_margin.hpp"
 
-#include <algorithm>
-#include <memory>
-#include <utility>
-
 #include "roq/mask.hpp"
 
 #include "roq/utils/common.hpp"
-#include "roq/utils/safe_cast.hpp"
-#include "roq/utils/update.hpp"
 
 #include "roq/utils/exceptions/unhandled.hpp"
 
 #include "roq/utils/metrics/factory.hpp"
-
-#include "roq/web/socket/client.hpp"
 
 #include "roq/server/oms/exceptions.hpp"
 
@@ -310,9 +302,9 @@ void DropCopyMargin::operator()(ConnectionStatus connection_status, std::string_
   create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
 }
 
-uint32_t DropCopyMargin::download(DropCopyStateMargin state) {
+uint32_t DropCopyMargin::download(State state) {
   switch (state) {
-    using enum DropCopyStateMargin;
+    using enum State;
     case UNDEFINED:
       assert(false);
       break;
@@ -356,7 +348,7 @@ void DropCopyMargin::parse(std::string_view const &message) {
 // protocol::json::WSAPIParser::Handler
 
 void DropCopyMargin::operator()(Trace<protocol::json::WSAPISessionLogon> const &event) {
-  auto const STATE = DropCopyStateMargin::SESSION_LOGON;
+  auto const STATE = State::SESSION_LOGON;
   profile_.session_logon([&]() {
     auto &[trace_info, wsapi_session_logon] = event;
     log::info<2>("wsapi_session_logon={}"sv, wsapi_session_logon);
@@ -376,7 +368,7 @@ void DropCopyMargin::operator()(Trace<protocol::json::WSAPISessionLogon> const &
 }
 
 void DropCopyMargin::operator()(Trace<protocol::json::WSAPIUserDataStreamSubscribe> const &event) {
-  auto const STATE = DropCopyStateMargin::USER_DATA_STREAM_SUBSCRIBE;
+  auto const STATE = State::USER_DATA_STREAM_SUBSCRIBE;
   profile_.user_data_stream_subscribe([&]() {
     auto &[trace_info, wsapi_user_data_stream_subscribe] = event;
     log::info<2>("wsapi_user_data_stream_subscribe={}"sv, wsapi_user_data_stream_subscribe);
@@ -674,22 +666,22 @@ void DropCopyMargin::check_response_listen_key() {
 }
 
 void DropCopyMargin::check_response_account() {
-  if (download_.state() != DropCopyStateMargin::ACCOUNT) {
+  if (download_.state() != State::ACCOUNT) {
     return;
   }
   if (request_.request_account_cross < request_.respond_account_cross) {
     log::info("Account download has completed!"sv);
-    download_.check(DropCopyStateMargin::ACCOUNT);
+    download_.check(State::ACCOUNT);
   }
 }
 
 void DropCopyMargin::check_response_orders() {
-  if (download_.state() != DropCopyStateMargin::ORDERS) {
+  if (download_.state() != State::ORDERS) {
     return;
   }
   if (request_.request_orders_cross < request_.respond_orders_cross) {
     log::info("Orders download has completed!"sv);
-    download_.check(DropCopyStateMargin::ORDERS);
+    download_.check(State::ORDERS);
   }
 }
 

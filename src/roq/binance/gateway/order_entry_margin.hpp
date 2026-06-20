@@ -4,7 +4,6 @@
 
 #include <memory>
 #include <string>
-#include <string_view>
 
 #include "roq/utils/container.hpp"
 
@@ -22,8 +21,6 @@
 #include "roq/core/json/buffer_stack.hpp"
 
 #include "roq/server.hpp"
-
-#include "roq/server/cache/cancel_order_request.hpp"
 
 #include "roq/binance/gateway/order_entry.hpp"
 
@@ -49,6 +46,9 @@ namespace gateway {
 struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Handler {
   OrderEntryMargin(OrderEntry::Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &);
 
+ protected:
+  // OrderEntry
+
   void operator()(Event<Start> const &) override;
   void operator()(Event<Stop> const &) override;
   void operator()(Event<Timer> const &) override;
@@ -70,7 +70,8 @@ struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Han
       std::string_view const &previous_request_id) override;
   uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id) override;
 
- protected:
+  // helpers
+
   bool ready() const { return connection_status_ == ConnectionStatus::READY; }
 
   bool downloading() const {
@@ -79,10 +80,13 @@ struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Han
   }
 
   // web::rest::Client::Handler
+
   void operator()(Trace<web::rest::Client::Connected> const &) override;
   void operator()(Trace<web::rest::Client::Disconnected> const &) override;
   void operator()(Trace<web::rest::Client::Header> const &) override;
   void operator()(Trace<web::rest::Client::Latency> const &) override;
+
+  // helpers
 
   void operator()(ConnectionStatus, std::string_view const &reason = {});
 
@@ -94,32 +98,48 @@ struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Han
 
   uint32_t download(State state);
 
+  // listen-key
+
   void get_listen_key(MarginMode);
   void get_listen_key_ack(Trace<web::rest::Response> const &, MarginMode);
   void operator()(Trace<protocol::json::ListenKeyAckMargin> const &, MarginMode);
+
+  // account
 
   void get_account(MarginMode);
   void get_account_ack(Trace<web::rest::Response> const &, MarginMode);
   void operator()(Trace<protocol::json::AccountAck> const &, MarginMode);
   void operator()(Trace<protocol::json::CrossMarginAccount> const &, MarginMode);
 
+  // open-orders
+
   void get_open_orders(MarginMode);
   void get_open_orders_ack(Trace<web::rest::Response> const &, MarginMode);
   void operator()(Trace<protocol::json::OpenOrdersAck> const &, MarginMode);
+
+  // trades
 
   void get_trades(MarginMode);
   void get_trades_ack(Trace<web::rest::Response> const &, MarginMode);
   void operator()(Trace<protocol::json::TradesAck> const &, MarginMode);
 
+  // account-cross
+
   void get_account_cross_on_timer();
   void get_account_cross_on_timer_ack(Trace<web::rest::Response> const &);
   void operator()(Trace<protocol::json::CrossMarginAccount> const &);
 
+  // listen-key
+
   void refresh_listen_key(std::chrono::nanoseconds now);
+
+  // new-order
 
   void new_order(Event<CreateOrder> const &, server::oms::Order const &order, server::oms::RefData const &, std::string_view const &request_id);
   void new_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
   void operator()(Trace<protocol::json::NewOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
+
+  // cancel-order
 
   void cancel_order(
       Event<CancelOrder> const &,
@@ -129,6 +149,8 @@ struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Han
       std::string_view const &previous_request_id);
   void cancel_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
   void operator()(Trace<protocol::json::CancelOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
+
+  // cancel-all-open-orders
 
   void cancel_all_open_orders(Event<CancelAllOrders> const &, std::string_view const &request_id);
   void cancel_all_open_orders_ack(Trace<web::rest::Response> const &, std::string_view const &request_id);

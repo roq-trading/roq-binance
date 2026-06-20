@@ -3,8 +3,6 @@
 #pragma once
 
 #include <string>
-#include <string_view>
-#include <vector>
 
 #include "roq/utils/container.hpp"
 
@@ -23,8 +21,6 @@
 
 #include "roq/server.hpp"
 
-#include "roq/server/cache/cancel_order_request.hpp"
-
 #include "roq/binance/gateway/account.hpp"
 #include "roq/binance/gateway/order_entry.hpp"
 #include "roq/binance/gateway/shared.hpp"
@@ -41,6 +37,8 @@ struct WebSocket final : public OrderEntry, public web::socket::Client::Handler,
   WebSocket(WebSocket const &) = delete;
 
  protected:
+  // OrderEntry
+
   void operator()(Event<Start> const &) override;
   void operator()(Event<Stop> const &) override;
   void operator()(Event<Timer> const &) override;
@@ -61,6 +59,8 @@ struct WebSocket final : public OrderEntry, public web::socket::Client::Handler,
       std::string_view const &request_id,
       std::string_view const &previous_request_id) override;
   uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id) override;
+
+  // helpers
 
   bool ready() const { return connection_status_ == ConnectionStatus::READY; }
 
@@ -96,6 +96,8 @@ struct WebSocket final : public OrderEntry, public web::socket::Client::Handler,
   void operator()(web::socket::Client::Latency const &) override;
   void operator()(web::socket::Client::Text const &) override;
   void operator()(web::socket::Client::Binary const &) override;
+
+  // helpers
 
   void operator()(ConnectionStatus, std::string_view const &reason = {});
 
@@ -141,6 +143,7 @@ struct WebSocket final : public OrderEntry, public web::socket::Client::Handler,
 
   void update_rate_limits(auto &event);
 
+ private:
   OrderEntry::Handler &handler_;
   // config
   uint16_t const stream_id_;
