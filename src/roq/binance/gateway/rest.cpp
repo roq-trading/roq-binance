@@ -198,7 +198,7 @@ void Rest::operator()(Trace<web::rest::Client::Header> const &event) {
 }
 
 void Rest::operator()(Trace<web::rest::Client::MessageEnd> const &event) {
-  auto &trace_info = event.trace_info;
+  auto &[trace_info, message_end] = event;
   if (std::empty(shared_.rate_limits)) {
     return;
   }

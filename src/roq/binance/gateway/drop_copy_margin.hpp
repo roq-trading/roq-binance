@@ -120,7 +120,7 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
   void check_response_orders();
 
  private:
-  DropCopy::Handler &handler_;
+  [[maybe_unused]] DropCopy::Handler &handler_;
   // config
   uint16_t const stream_id_;
   std::string const name_;

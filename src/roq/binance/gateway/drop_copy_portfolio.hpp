@@ -88,7 +88,7 @@ struct DropCopyPortfolio final : public DropCopy, public web::socket::Client::Ha
   void check_response_trades();
 
  private:
-  DropCopy::Handler &handler_;
+  [[maybe_unused]] DropCopy::Handler &handler_;
   // config
   uint16_t const stream_id_;
   std::string const name_;
