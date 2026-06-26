@@ -13,7 +13,6 @@
       "name": "uri",
       "type": "roq/io/web/URI",
       "validator": "roq/core/flags/URI",
-      "default": "wss://ws-api.binance.com/ws-api/v3",
       "description": "Exchange end-point"
     },
     {

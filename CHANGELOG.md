@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Removed
+
+* BREAKING CHANGE: Remove default URIs (#611)
+
 ### Fixed
 
 * Exchange channel shutdown wasn't processed (#609)
