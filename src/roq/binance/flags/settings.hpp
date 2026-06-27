@@ -21,7 +21,7 @@ namespace roq {
 namespace binance {
 namespace flags {
 
-struct ROQ_PUBLIC Settings final : public server::flags::Settings, public flags::Flags {
+struct ROQ_PUBLIC Settings : public server::flags::Settings, public flags::Flags {
   explicit Settings(args::Parser const &);
 
   flags::Misc misc;

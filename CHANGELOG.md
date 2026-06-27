@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Added
+
+* Merge FIX-Bridge into gateways (#612)
+
 ### Removed
 
 * BREAKING CHANGE: Remove default URIs (#611)

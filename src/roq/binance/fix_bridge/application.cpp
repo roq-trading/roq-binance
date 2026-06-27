@@ -1,0 +1,41 @@
+/* Copyright (c) 2017-2026, Hans Erik Thrane */
+
+#include "roq/binance/fix_bridge/application.hpp"
+
+#include "roq/logging.hpp"
+
+#include "roq/server/fix_bridge/controller.hpp"
+
+#include "roq/binance/gateway/controller.hpp"
+
+#include "roq/binance/fix_bridge/config.hpp"
+#include "roq/binance/fix_bridge/settings.hpp"
+
+using namespace std::literals;
+
+namespace roq {
+namespace binance {
+namespace fix_bridge {
+
+// === IMPLEMENTATION ===
+
+int Application::main(args::Parser const &args) {
+  Settings settings{args};
+  Config config{settings};
+  log::warn("config={}"sv, config);
+  auto context = server::create_io_context(settings);
+  //
+  auto helper = [&](client::Handler &handler) {
+    auto helper_2 = [](auto &dispatcher, auto &settings, auto &config, auto &context) {
+      return gateway::Controller::create(dispatcher, settings, config, context);
+    };
+    return std::make_unique<server::Strategy>(handler, settings, config, *context, "fix"sv, "trader"sv, helper_2);
+  };
+  auto controller = server::fix_bridge::Controller::create(settings.fix_bridge, config, *context, helper);
+  (*controller).dispatch();
+  return EXIT_SUCCESS;
+}
+
+}  // namespace fix_bridge
+}  // namespace binance
+}  // namespace roq
