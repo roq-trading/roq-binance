@@ -24,15 +24,7 @@ int Application::main(args::Parser const &args) {
   Config config{settings};
   log::warn("config={}"sv, config);
   auto context = server::create_io_context(settings);
-  //
-  auto helper = [&](client::Handler &handler) {
-    auto helper_2 = [](auto &dispatcher, auto &settings, auto &config, auto &context) {
-      return gateway::Controller::create(dispatcher, settings, config, context);
-    };
-    return std::make_unique<server::Strategy>(handler, settings, config, *context, "fix"sv, "trader"sv, helper_2);
-  };
-  auto controller = server::fix_bridge::Controller::create(settings.fix_bridge, config, *context, helper);
-  (*controller).dispatch();
+  server::fix_bridge::Controller2<gateway::Controller>{settings, config, *context, "trader"sv}.dispatch();
   return EXIT_SUCCESS;
 }
 
