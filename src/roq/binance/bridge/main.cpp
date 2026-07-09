@@ -6,7 +6,7 @@
 
 #include "roq/logging/flags/settings.hpp"
 
-#include "roq/binance/proto_bridge/application.hpp"
+#include "roq/binance/bridge/application.hpp"
 
 using namespace std::literals;
 
@@ -28,5 +28,5 @@ auto const INFO = roq::Service::Info{
 int main(int argc, char **argv) {
   roq::flags::Args args{argc, argv, INFO.description, INFO.build_version};
   roq::logging::flags::Settings settings{args};
-  return roq::binance::proto_bridge::Application{args, settings, INFO}.run();
+  return roq::binance::bridge::Application{args, settings, INFO}.run();
 }

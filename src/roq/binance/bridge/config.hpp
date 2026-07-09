@@ -6,10 +6,10 @@
 
 namespace roq {
 namespace binance {
-namespace proto_bridge {
+namespace bridge {
 
 using Config = gateway::Config;
 
-}  // namespace proto_bridge
+}  // namespace bridge
 }  // namespace binance
 }  // namespace roq
