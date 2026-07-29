@@ -100,6 +100,10 @@
     {
       "name": "totalMarginOpenLoss",
       "type": "std/double"
+    },
+    {
+      "name": "tradeGroupId",
+      "type": "std/int64"
     }
   ]
 }
