@@ -125,7 +125,6 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
   uint16_t const stream_id_;
   std::string const name_;
   std::string listen_token_;
-  MarginMode const margin_mode_;
   // web socket
   std::unique_ptr<web::socket::Client> connection_;
   // buffers

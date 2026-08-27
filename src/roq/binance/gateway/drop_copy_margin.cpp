@@ -97,7 +97,7 @@ DropCopyMargin::DropCopyMargin(
     Request &request,
     OrderEntry::ListenKeyUpdate const &listen_key_update)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)}, listen_token_{listen_key_update.listen_key},
-      margin_mode_{listen_key_update.margin_mode}, connection_{create_connection(*this, shared.settings, context, account)},
+      connection_{create_connection(*this, shared.settings, context, account)},
       decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
