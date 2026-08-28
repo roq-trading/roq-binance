@@ -75,15 +75,6 @@ struct create_metrics final : public utils::metrics::Factory {
   create_metrics(auto &settings, auto &group, auto const &function) : utils::metrics::Factory{settings.app.name, group, function} {}
   create_metrics(auto &settings, auto &group, auto const &function, auto const &params) : utils::metrics::Factory{settings.app.name, group, function, params} {}
 };
-
-auto get_download_trades_lookback(auto const &settings, auto download_trades_is_first) {
-  if (download_trades_is_first) {
-    if (settings.download.trades_lookback_on_restart.count()) {
-      return settings.download.trades_lookback_on_restart;
-    }
-  }
-  return settings.download.trades_lookback;
-}
 }  // namespace
 
 // === IMPLEMENTATION ===

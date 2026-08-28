@@ -57,21 +57,6 @@ json::TimeInForce map_time_in_force(auto &create_order) {
   }
   return map(create_order.time_in_force);
 }
-
-auto get_cancel_replace_mode(auto &cancel_order_template, bool stop_on_failure) {
-  switch (cancel_order_template.cancel_replace_mode) {
-    using enum CancelReplaceMode::type_t;
-    case UNDEFINED_INTERNAL:
-      break;
-    case UNKNOWN_INTERNAL:
-      log::fatal("Unexpected"sv);
-      break;
-    case STOP_ON_FAILURE:
-    case ALLOW_FAILURE:
-      return cancel_order_template.cancel_replace_mode.as_raw_text();
-  }
-  return stop_on_failure ? "STOP_ON_FAILURE"sv : "ALLOW_FAILURE"sv;
-}
 }  // namespace
 
 // === IMPLEMENTATION ===
