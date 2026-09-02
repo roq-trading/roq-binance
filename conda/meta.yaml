@@ -30,8 +30,7 @@ requirements:
     - magic_enum
     - openssl  # roq-utils
     - roq-api
-    - roq-binance-sbe-spot
-    - roq-binance-sbe-stream
+    - roq-binance-cpp-schema
     - roq-cache
     - roq-codec
     - roq-core
