@@ -124,9 +124,10 @@ void Rest::operator()(Event<Stop> const &) {
 
 void Rest::operator()(Event<Timer> const &event) {
   auto &[message_info, timer] = event;
-  (*connection_).refresh(timer.now);
-  if (ready()) {
-    check_request_queue(timer.now);
+  if ((*connection_).refresh(timer.now)) {
+    if (ready()) {
+      check_request_queue(timer.now);
+    }
   }
 }
 
