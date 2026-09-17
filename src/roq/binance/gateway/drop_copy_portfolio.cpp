@@ -301,6 +301,7 @@ void DropCopyPortfolio::operator()(Trace<protocol::json::ExecutionReport> const 
         .order_type = map(execution_report.data.order_type),
         .time_in_force = map(execution_report.data.time_in_force),
         .execution_instructions = {},
+        .execution_destination = {},
         .create_time_utc = {},
         .update_time_utc = execution_report.data.transaction_time,
         .external_account = {},
