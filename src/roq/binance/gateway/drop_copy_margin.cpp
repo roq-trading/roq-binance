@@ -383,7 +383,7 @@ void DropCopyMargin::operator()(Trace<protocol::json::WSAPIEventStreamTerminated
   }
   log::warn("REQUEST LISTEN TOKEN"sv);
   listen_token_.clear();
-  (*connection_).suspend(60s);
+  (*connection_).suspend_for(60s);
   request_.request_listen_key_cross = clock::get_system();
   download_listen_token_ = true;
 }

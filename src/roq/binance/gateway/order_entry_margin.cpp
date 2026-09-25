@@ -1516,7 +1516,7 @@ void OrderEntryMargin::dispatch_error_2(
           case TOO_MANY_REQUESTS: {  // 429
             auto retry_after = get_retry_after(response);
             if (retry_after.count()) {
-              (*connection_).suspend(retry_after);
+              (*connection_).suspend_for(retry_after);
             }
             auto text = fmt::format("{}"sv, status);
             callback(RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, text);
@@ -1555,7 +1555,7 @@ void OrderEntryMargin::waf_limit_violation() {
     log::fatal("WAF limit violation"sv);
   } else {
     log::warn("WAF limit violation"sv);
-    (*connection_).suspend(shared_.settings.rest.back_off_delay);
+    (*connection_).suspend_for(shared_.settings.rest.back_off_delay);
   }
 }
 

@@ -1136,7 +1136,7 @@ void OrderEntryPortfolio::process_response(web::rest::Response const &response, 
           case TOO_MANY_REQUESTS: {  // 429
             auto retry_after = get_retry_after(response);
             if (retry_after.count()) {
-              (*connection_).suspend(retry_after);
+              (*connection_).suspend_for(retry_after);
             }
             auto message = fmt::format("{}"sv, status);  // alloc
             error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, message);
@@ -1174,7 +1174,7 @@ void OrderEntryPortfolio::waf_limit_violation() {
     log::fatal("WAF limit violation"sv);
   } else {
     log::warn("WAF limit violation"sv);
-    (*connection_).suspend(shared_.settings.rest.back_off_delay);
+    (*connection_).suspend_for(shared_.settings.rest.back_off_delay);
   }
 }
 
