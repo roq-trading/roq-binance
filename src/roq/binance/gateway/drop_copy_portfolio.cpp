@@ -52,7 +52,7 @@ auto create_uri(auto &settings) {
   return io::web::URI{result};
 }
 
-auto create_connection(auto &handler, auto &settings, auto &context) {
+auto create_connection(auto &handler, auto &settings, auto &context, auto &shared) {
   auto uri = create_uri(settings);
   auto config = web::socket::Client::Config{
       // connection
@@ -74,7 +74,7 @@ auto create_connection(auto &handler, auto &settings, auto &context) {
       .decode_buffer_size = settings.misc.decode_buffer_size,
       .encode_buffer_size = settings.misc.encode_buffer_size,
   };
-  return web::socket::Client::create(handler, context, config, []() -> std::string { return {}; });
+  return web::socket::Client::create(handler, context, config, shared.rate_limit, []() -> std::string { return {}; });
 }
 
 struct create_metrics final : public utils::metrics::Factory {
@@ -94,7 +94,7 @@ DropCopyPortfolio::DropCopyPortfolio(
     std::string_view const &listen_key,
     [[maybe_unused]] MarginMode margin_mode)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)}, query_{create_query(listen_key)},
-      connection_{create_connection(*this, shared.settings, context)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
+      connection_{create_connection(*this, shared.settings, context, shared)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },

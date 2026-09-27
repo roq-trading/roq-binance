@@ -49,7 +49,7 @@ auto create_name(auto stream_id, auto const &account) {
   return fmt::format("{}:{}:{}"sv, stream_id, NAME, account);
 }
 
-auto create_connection(auto &handler, auto &settings, auto &shared, auto &context, auto &interface) {
+auto create_connection(auto &handler, auto &settings, auto &context, auto &shared, auto &interface) {
   auto uri = settings.rest.pm_uri;
   auto ping_path = shared.api.papi.ping_path;
   auto config = web::rest::Client::Config{
@@ -77,7 +77,7 @@ auto create_connection(auto &handler, auto &settings, auto &shared, auto &contex
       .decode_buffer_size = settings.misc.decode_buffer_size,
       .encode_buffer_size = settings.misc.encode_buffer_size,
   };
-  return web::rest::Client::create(handler, context, config);
+  return web::rest::Client::create(handler, context, config, shared.rate_limit);
 }
 
 struct create_metrics final : public utils::metrics::Factory {
@@ -121,7 +121,7 @@ OrderEntryPortfolio::OrderEntryPortfolio(
     bool master,
     std::string_view const &interface)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)}, master_{master},
-      connection_{create_connection(*this, shared.settings, shared, context, interface)},
+      connection_{create_connection(*this, shared.settings, context, shared, interface)},
       decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -243,7 +243,7 @@ uint16_t OrderEntryPortfolio::operator()(Event<CancelAllOrders> const &event, st
   return stream_id_;
 }
 
-void OrderEntryPortfolio::operator()(Trace<web::rest::Client::Connected> const &) {
+void OrderEntryPortfolio::operator()(Trace<web::rest::Connected> const &) {
   if (download_.downloading()) {
     download_.bump();
   } else {
@@ -251,7 +251,7 @@ void OrderEntryPortfolio::operator()(Trace<web::rest::Client::Connected> const &
   }
 }
 
-void OrderEntryPortfolio::operator()(Trace<web::rest::Client::Disconnected> const &) {
+void OrderEntryPortfolio::operator()(Trace<web::rest::Disconnected> const &) {
   ++counter_.disconnect;
   ready_ = false;
   (*this)(ConnectionStatus::DISCONNECTED);
@@ -263,7 +263,7 @@ void OrderEntryPortfolio::operator()(Trace<web::rest::Client::Disconnected> cons
   download_trades_ = false;
 }
 
-void OrderEntryPortfolio::operator()(Trace<web::rest::Client::Header> const &event) {
+void OrderEntryPortfolio::operator()(Trace<web::rest::MessageHeader> const &event) {
   auto &[trace_info, header] = event;
   if (utils::case_insensitive_compare(header.name, X_MBX_USED_WEIGHT_1M) == 0) {
     try {
@@ -275,7 +275,7 @@ void OrderEntryPortfolio::operator()(Trace<web::rest::Client::Header> const &eve
   }
 }
 
-void OrderEntryPortfolio::operator()(Trace<web::rest::Client::Latency> const &event) {
+void OrderEntryPortfolio::operator()(Trace<web::rest::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
       .stream_id = stream_id_,

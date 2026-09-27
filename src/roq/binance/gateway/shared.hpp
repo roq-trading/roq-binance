@@ -22,6 +22,8 @@
 #include "roq/binance/gateway/config.hpp"
 #include "roq/binance/gateway/settings.hpp"
 
+#include "roq/binance/tools/rate_limit.hpp"
+
 #include "roq/binance/protocol/json/cancel_order_template.hpp"
 #include "roq/binance/protocol/json/create_order_template.hpp"
 
@@ -82,6 +84,8 @@ struct Shared final {
 
   Settings const &settings;
   API const api;
+
+  tools::RateLimit rate_limit;
 
   core::limit::RateLimiter rate_limiter;
 
