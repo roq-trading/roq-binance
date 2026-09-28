@@ -158,7 +158,7 @@ struct OrderEntryMargin final : public OrderEntry, public web::rest::Client::Han
 
   // helpers
 
-  void process_response(web::rest::Response const &, auto error_handler, auto success_handler);
+  void process_response(Trace<web::rest::Response> const &, auto error_handler, auto success_handler);
 
   template <typename Parse, typename Callback>
   void dispatch_error_2(web::rest::Response const &, web::http::Category, web::http::Status, Parse, Callback);  // XXX

@@ -69,7 +69,7 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &share
       .encode_buffer_size = settings.misc.encode_buffer_size,
   };
   return web::socket::Client::create(
-      handler, context, config, shared.rate_limit, [headers = std::string{account.get_rest_headers_new()}]() { return headers; });
+      handler, context, config, shared.throttle, [headers = std::string{account.get_rest_headers_new()}]() { return headers; });
 }
 
 struct create_metrics final : public utils::metrics::Factory {
@@ -235,26 +235,26 @@ void DropCopyMargin::get_orders() {
   (*this)(ConnectionStatus::DOWNLOADING, "orders"sv);
 }
 
-void DropCopyMargin::operator()(web::socket::Client::Connected const &) {
+void DropCopyMargin::operator()(Trace<web::socket::Connected> const &) {
   // wait for ready
 }
 
-void DropCopyMargin::operator()(web::socket::Client::Disconnected const &) {
+void DropCopyMargin::operator()(Trace<web::socket::Disconnected> const &) {
   ++counter_.disconnect;
   ready_ = false;
   (*this)(ConnectionStatus::DISCONNECTED);
   download_.reset();
 }
 
-void DropCopyMargin::operator()(web::socket::Client::Ready const &) {
+void DropCopyMargin::operator()(Trace<web::socket::Ready> const &) {
   download_.begin();
 }
 
-void DropCopyMargin::operator()(web::socket::Client::Close const &) {
+void DropCopyMargin::operator()(Trace<web::socket::Close> const &) {
 }
 
-void DropCopyMargin::operator()(web::socket::Client::Latency const &latency) {
-  TraceInfo trace_info;
+void DropCopyMargin::operator()(Trace<web::socket::Latency> const &event) {
+  auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
       .stream_id = stream_id_,
       .account = account_.name,
@@ -264,11 +264,12 @@ void DropCopyMargin::operator()(web::socket::Client::Latency const &latency) {
   latency_.ping.update(latency.sample);
 }
 
-void DropCopyMargin::operator()(web::socket::Client::Text const &text) {
+void DropCopyMargin::operator()(Trace<web::socket::Text> const &event) {
+  auto &[trace_info, text] = event;
   parse(text.payload);
 }
 
-void DropCopyMargin::operator()(web::socket::Client::Binary const &) {
+void DropCopyMargin::operator()(Trace<web::socket::Binary> const &) {
   log::fatal("Unexpected"sv);
 }
 

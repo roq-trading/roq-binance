@@ -86,7 +86,7 @@ struct Rest final : public web::rest::Client::Handler {
 
   void check_request_queue(std::chrono::nanoseconds now);
 
-  void process_response(web::rest::Response const &, auto error_handler, auto success_handler);
+  void process_response(Trace<web::rest::Response> const &, auto error_handler, auto success_handler);
 
   void test(web::http::Status);  // XXX
   void waf_limit_violation();

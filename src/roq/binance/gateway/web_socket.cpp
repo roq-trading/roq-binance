@@ -563,26 +563,26 @@ void WebSocket::open_orders_cancel_all(Event<CancelAllOrders> const &event, std:
   });
 }
 
-void WebSocket::operator()(web::socket::Client::Connected const &) {
+void WebSocket::operator()(Trace<web::socket::Connected> const &) {
   // wait for ready
 }
 
-void WebSocket::operator()(web::socket::Client::Disconnected const &) {
+void WebSocket::operator()(Trace<web::socket::Disconnected> const &) {
   ++counter_.disconnect;
   ready_ = false;
   (*this)(ConnectionStatus::DISCONNECTED);
   download_.reset();
 }
 
-void WebSocket::operator()(web::socket::Client::Ready const &) {
+void WebSocket::operator()(Trace<web::socket::Ready> const &) {
   download_.begin();
 }
 
-void WebSocket::operator()(web::socket::Client::Close const &) {
+void WebSocket::operator()(Trace<web::socket::Close> const &) {
 }
 
-void WebSocket::operator()(web::socket::Client::Latency const &latency) {
-  TraceInfo trace_info;
+void WebSocket::operator()(Trace<web::socket::Latency> const &event) {
+  auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
       .stream_id = stream_id_,
       .account = account_.name,
@@ -592,11 +592,12 @@ void WebSocket::operator()(web::socket::Client::Latency const &latency) {
   latency_.ping.update(latency.sample);
 }
 
-void WebSocket::operator()(web::socket::Client::Text const &text) {
+void WebSocket::operator()(Trace<web::socket::Text> const &event) {
+  auto &[trace_info, text] = event;
   parse(text.payload);
 }
 
-void WebSocket::operator()(web::socket::Client::Binary const &) {
+void WebSocket::operator()(Trace<web::socket::Binary> const &) {
   log::fatal("Unexpected"sv);
 }
 

@@ -73,7 +73,7 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &share
       .decode_buffer_size = settings.misc.decode_buffer_size,
       .encode_buffer_size = settings.misc.encode_buffer_size,
   };
-  return web::rest::Client::create(handler, context, config, shared.rate_limit);
+  return web::rest::Client::create(handler, context, config, shared.throttle);
 }
 
 struct create_metrics final : public utils::metrics::Factory {
@@ -1434,7 +1434,8 @@ void OrderEntryMargin::operator()(Trace<protocol::json::CancelAllOpenOrdersAck> 
   }
 }
 
-void OrderEntryMargin::process_response(web::rest::Response const &response, auto error_handler, auto success_handler) {
+void OrderEntryMargin::process_response(Trace<web::rest::Response> const &event, auto error_handler, auto success_handler) {
+  auto &[trace_info, response] = event;
   try {
     auto [status, category, body] = response.result();
     switch (category) {
