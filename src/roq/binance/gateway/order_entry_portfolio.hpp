@@ -16,15 +16,16 @@
 
 #include "roq/web/rest/client.hpp"
 
-#include "roq/core/download.hpp"
+#include "roq/core/download_2.hpp"
 
 #include "roq/core/json/buffer_stack.hpp"
 
 #include "roq/server.hpp"
 
-#include "roq/binance/gateway/order_entry.hpp"
+#include "roq/server/stream.hpp"
 
 #include "roq/binance/gateway/account.hpp"
+#include "roq/binance/gateway/listen_key_update.hpp"
 #include "roq/binance/gateway/request.hpp"
 #include "roq/binance/gateway/shared.hpp"
 
@@ -40,18 +41,31 @@ namespace roq {
 namespace binance {
 namespace gateway {
 
-struct OrderEntryPortfolio final : public OrderEntry, public web::rest::Client::Handler {
-  OrderEntryPortfolio(
-      OrderEntry::Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, bool master = true, std::string_view const &interface = {});
+struct OrderEntryPortfolio final : public Base<OrderEntryPortfolio>, public server::OrderActionStream, public web::rest::Client::Handler {
+  struct Handler {
+    virtual void operator()(ListenKeyUpdate const &) = 0;
+  };
 
- protected:
-  // OrderEntry
+  OrderEntryPortfolio(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, bool master = true, std::string_view const &interface = {});
+
+  // protected:
+  friend base_type;
+
+  // server::Stream
+
+  uint16_t stream_id() const override { return stream_id_; }
+
+  bool ready() const override { return connection_status_ == ConnectionStatus::READY; }
 
   void operator()(Event<Start> const &) override;
   void operator()(Event<Stop> const &) override;
   void operator()(Event<Timer> const &) override;
 
   void operator()(metrics::Writer &) const override;
+
+  void operator()(Trace<ConnectionStatus> const &, std::string_view const &reason = {}) override;
+
+  // server::OrderActionStream
 
   uint16_t operator()(Event<CreateOrder> const &, server::oms::Order const &, server::oms::RefData const &, std::string_view const &request_id) override;
   uint16_t operator()(
@@ -68,12 +82,6 @@ struct OrderEntryPortfolio final : public OrderEntry, public web::rest::Client::
       std::string_view const &previous_request_id) override;
   uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id) override;
 
-  // helpers
-
-  bool ready() const { return connection_status_ == ConnectionStatus::READY; }
-
-  bool downloading() const { return download_account_ || download_orders_ || download_trades_; }
-
   // web::rest::Client::Handler
 
   void operator()(Trace<web::rest::Connected> const &) override;
@@ -81,9 +89,7 @@ struct OrderEntryPortfolio final : public OrderEntry, public web::rest::Client::
   void operator()(Trace<web::rest::MessageHeader> const &) override;
   void operator()(Trace<web::rest::Latency> const &) override;
 
-  // helpers
-
-  void operator()(ConnectionStatus, std::string_view const &reason = {});
+  // core::Download
 
   enum class State {
     UNDEFINED = 0,
@@ -91,7 +97,7 @@ struct OrderEntryPortfolio final : public OrderEntry, public web::rest::Client::
     DONE,
   };
 
-  uint32_t download(State state);
+  int32_t download(Trace<State> const &);
 
   // listen-key
 
@@ -150,8 +156,12 @@ struct OrderEntryPortfolio final : public OrderEntry, public web::rest::Client::
 
   void waf_limit_violation();
 
+  // helpers
+
+  bool downloading() const { return download_account_ || download_orders_ || download_trades_; }
+
  private:
-  OrderEntry::Handler &handler_;
+  Handler &handler_;
   // config
   uint16_t const stream_id_;
   std::string const name_;
@@ -190,7 +200,7 @@ struct OrderEntryPortfolio final : public OrderEntry, public web::rest::Client::
   bool ready_ = false;
   std::chrono::nanoseconds listen_key_refresh_ = {};
   ConnectionStatus connection_status_ = {};
-  core::Download<State> download_;
+  core::Download2<State> download_;
   // experimental
   utils::unordered_set<std::string> open_orders_symbols_;
   bool download_account_ = false;

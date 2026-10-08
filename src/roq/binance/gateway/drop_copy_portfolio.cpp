@@ -85,7 +85,7 @@ struct create_metrics final : public utils::metrics::Factory {
 // === IMPLEMENTATION ===
 
 DropCopyPortfolio::DropCopyPortfolio(
-    DropCopy::Handler &handler,
+    Handler &handler,
     io::Context &context,
     uint16_t stream_id,
     Account &account,
@@ -109,10 +109,12 @@ DropCopyPortfolio::DropCopyPortfolio(
           .ping = create_metrics(shared.settings, name_, "ping"sv),
           .heartbeat = create_metrics(shared.settings, name_, "heartbeat"sv),
       },
-      account_{account}, shared_{shared}, request_{request}, download_{{}, [this](auto state) { return download(state); }} {
+      account_{account}, shared_{shared}, request_{request}, download_{{}, [this](auto &event) { return download(event); }} {
   log::info<5>(R"(stream_id={}, account="{}", listen_key="{}")"sv, stream_id_, account_.name, listen_key);
   assert(margin_mode == MarginMode::PORTFOLIO);
 }
+
+// server::Stream
 
 void DropCopyPortfolio::operator()(Event<Start> const &) {
   (*connection_).start();
@@ -123,10 +125,11 @@ void DropCopyPortfolio::operator()(Event<Stop> const &) {
 }
 
 void DropCopyPortfolio::operator()(Event<Timer> const &event) {
-  (*connection_).refresh(event.value.now);
-  check_response_account();
-  check_response_orders();
-  check_response_trades();
+  auto &[trace_info, timer] = event;
+  (*connection_).refresh(timer.now);
+  check_response_account(trace_info);
+  check_response_orders(trace_info);
+  check_response_trades(trace_info);
 }
 
 void DropCopyPortfolio::operator()(metrics::Writer &writer) const {
@@ -144,21 +147,49 @@ void DropCopyPortfolio::operator()(metrics::Writer &writer) const {
       .write(latency_.heartbeat, metrics::Type::LATENCY);
 }
 
+void DropCopyPortfolio::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
+  auto &[trace_info, connection_status] = event;
+  connection_status_ = connection_status;
+  auto stream_status = StreamStatus{
+      .stream_id = stream_id_,
+      .account = account_.name,
+      .supports = SUPPORTS,
+      .transport = Transport::TCP,
+      .protocol = Protocol::WS,
+      .encoding = {Encoding::JSON},
+      .priority = Priority::PRIMARY,
+      .connection_status = connection_status_,
+      .reason = reason,
+      .interface = (*connection_).get_interface(),
+      .authority = (*connection_).get_current_authority(),
+      .path = (*connection_).get_current_path(),
+      .proxy = (*connection_).get_proxy(),
+  };
+  log::info("stream_status={}"sv, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+}
+
+// web::socket::Client::Handler
+
 void DropCopyPortfolio::operator()(Trace<web::socket::Connected> const &) {
 }
 
-void DropCopyPortfolio::operator()(Trace<web::socket::Disconnected> const &) {
+void DropCopyPortfolio::operator()(Trace<web::socket::Disconnected> const &event) {
+  auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
   ready_ = false;
-  (*this)(ConnectionStatus::DISCONNECTED);
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
   download_.reset();
 }
 
-void DropCopyPortfolio::operator()(Trace<web::socket::Ready> const &) {
-  download_.begin();
+void DropCopyPortfolio::operator()(Trace<web::socket::Ready> const &event) {
+  auto &[trace_info, ready] = event;
+  download_.begin(trace_info);
 }
 
-void DropCopyPortfolio::operator()(Trace<web::socket::Close> const &) {
+void DropCopyPortfolio::operator()(Trace<web::socket::Close> const &event) {
+  auto &[trace_info, close] = event;
+  log::warn("close={}"sv, close);
 }
 
 void DropCopyPortfolio::operator()(Trace<web::socket::Latency> const &event) {
@@ -181,52 +212,33 @@ void DropCopyPortfolio::operator()(Trace<web::socket::Binary> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopyPortfolio::operator()(ConnectionStatus connection_status, std::string_view const &reason) {
-  connection_status_ = connection_status;
-  TraceInfo trace_info;
-  auto stream_status = StreamStatus{
-      .stream_id = stream_id_,
-      .account = account_.name,
-      .supports = SUPPORTS,
-      .transport = Transport::TCP,
-      .protocol = Protocol::WS,
-      .encoding = {Encoding::JSON},
-      .priority = Priority::PRIMARY,
-      .connection_status = connection_status_,
-      .reason = reason,
-      .interface = (*connection_).get_interface(),
-      .authority = (*connection_).get_current_authority(),
-      .path = (*connection_).get_current_path(),
-      .proxy = (*connection_).get_proxy(),
-  };
-  log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
-}
+// core::Download
 
-uint32_t DropCopyPortfolio::download(State state) {
+int32_t DropCopyPortfolio::download(Trace<State> const &event) {
+  auto &[trace_info, state] = event;
   switch (state) {
     using enum State;
     case UNDEFINED:
       assert(false);
       break;
     case ACCOUNT:
-      (*this)(ConnectionStatus::DOWNLOADING, "account"sv);
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "account"sv);
       request_account();
       return 1;
     case ORDERS:
-      (*this)(ConnectionStatus::DOWNLOADING, "orders"sv);
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "orders"sv);
       request_orders();
       return 1;
     case TRADES:
       if (shared_.settings.download.trades_lookback.count() != 0 && !std::empty(shared_.settings.download.symbols)) {
-        (*this)(ConnectionStatus::DOWNLOADING, "trades"sv);
+        create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "trades"sv);
         request_trades();
         return 1;
       } else {
         return 0;
       }
     case DONE:
-      (*this)(ConnectionStatus::READY);
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
       assert(!ready_);
       ready_ = true;
       return 0;
@@ -235,20 +247,7 @@ uint32_t DropCopyPortfolio::download(State state) {
   return 0;
 }
 
-void DropCopyPortfolio::parse(std::string_view const &message) {
-  profile_.parse([&]() {
-    auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
-    try {
-      TraceInfo trace_info;
-      if (!protocol::json::UserStreamParser::dispatch_papi(*this, message, decode_buffer_, trace_info, shared_.allow_unknown_event_types)) {
-        log_message();
-      }
-    } catch (...) {
-      log_message();
-      utils::exceptions::Unhandled::terminate();
-    }
-  });
-}
+// protocol::json::UserStreamParser::Handler
 
 void DropCopyPortfolio::operator()(Trace<protocol::json::OutboundAccountPosition> const &event) {
   profile_.outbound_account_position([&]() {
@@ -389,18 +388,35 @@ void DropCopyPortfolio::operator()(Trace<protocol::json::ListStatus> const &even
   });
 }
 
+// helpers
+
+void DropCopyPortfolio::parse(std::string_view const &message) {
+  profile_.parse([&]() {
+    auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
+    try {
+      TraceInfo trace_info;
+      if (!protocol::json::UserStreamParser::dispatch_papi(*this, message, decode_buffer_, trace_info, shared_.allow_unknown_event_types)) {
+        log_message();
+      }
+    } catch (...) {
+      log_message();
+      utils::exceptions::Unhandled::terminate();
+    }
+  });
+}
+
 void DropCopyPortfolio::request_account() {
   log::info("Requesting account download..."sv);
   request_.request_account = clock::get_system();
 }
 
-void DropCopyPortfolio::check_response_account() {
+void DropCopyPortfolio::check_response_account(TraceInfo const &trace_info) {
   if (download_.state() != State::ACCOUNT) {
     return;
   }
   if (request_.request_account < request_.respond_account) {
     log::info("Account download has completed!"sv);
-    download_.check(State::ACCOUNT);
+    download_.check(trace_info, State::ACCOUNT);
   }
 }
 
@@ -409,13 +425,13 @@ void DropCopyPortfolio::request_orders() {
   request_.request_orders = clock::get_system();
 }
 
-void DropCopyPortfolio::check_response_orders() {
+void DropCopyPortfolio::check_response_orders(TraceInfo const &trace_info) {
   if (download_.state() != State::ORDERS) {
     return;
   }
   if (request_.request_orders < request_.respond_orders) {
     log::info("Order download has completed!"sv);
-    download_.check(State::ORDERS);
+    download_.check(trace_info, State::ORDERS);
   }
 }
 
@@ -424,13 +440,13 @@ void DropCopyPortfolio::request_trades() {
   request_.request_trades = clock::get_system();
 }
 
-void DropCopyPortfolio::check_response_trades() {
+void DropCopyPortfolio::check_response_trades(TraceInfo const &trace_info) {
   if (download_.state() != State::TRADES) {
     return;
   }
   if (request_.request_trades < request_.respond_trades) {
     log::info("Trade download has completed!"sv);
-    download_.check(State::TRADES);
+    download_.check(trace_info, State::TRADES);
   }
 }
 

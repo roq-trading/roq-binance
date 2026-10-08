@@ -68,8 +68,7 @@ auto create_connection(auto &handler, auto &settings, auto &context, auto &share
       .decode_buffer_size = settings.misc.decode_buffer_size,
       .encode_buffer_size = settings.misc.encode_buffer_size,
   };
-  return web::socket::Client::create(
-      handler, context, config, shared.throttle, [headers = std::string{account.get_rest_headers_new()}]() { return headers; });
+  return web::socket::Client::create(handler, context, config, shared.throttle, [headers = std::string{account.get_rest_headers_new()}]() { return headers; });
 }
 
 struct create_metrics final : public utils::metrics::Factory {
@@ -81,13 +80,7 @@ struct create_metrics final : public utils::metrics::Factory {
 // === IMPLEMENTATION ===
 
 DropCopyMargin::DropCopyMargin(
-    DropCopy::Handler &handler,
-    io::Context &context,
-    uint16_t stream_id,
-    Account &account,
-    Shared &shared,
-    Request &request,
-    OrderEntry::ListenKeyUpdate const &listen_key_update)
+    Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared, Request &request, ListenKeyUpdate const &listen_key_update)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)}, listen_token_{listen_key_update.listen_key},
       connection_{create_connection(*this, shared.settings, context, shared, account)},
       decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
@@ -115,9 +108,18 @@ DropCopyMargin::DropCopyMargin(
           .create_order_1d = create_metrics(shared.settings, name_, "create_order"sv, "1d"sv),
       },
       account_{account}, shared_{shared}, request_{request}, request_id_{REQUEST_ID * stream_id},
-      download_{shared.settings.rest.request_timeout, [this](auto state) { return download(state); }} {
+      download_{shared.settings.rest.request_timeout, [this](auto &event) { return download(event); }} {
   log::info<5>(R"(stream_id={}, account="{}")"sv, stream_id_, account_.name);
 }
+
+void DropCopyMargin::operator()(ListenKeyUpdate const &listen_key_update) {
+  assert(std::empty(listen_token_));
+  listen_token_ = listen_key_update.listen_key;
+  log::warn(R"(DEBUG listen_token_="{}")"sv, listen_token_);
+  (*connection_).resume();
+}
+
+// server::Stream
 
 void DropCopyMargin::operator()(Event<Start> const &) {
   (*connection_).start();
@@ -131,8 +133,8 @@ void DropCopyMargin::operator()(Event<Timer> const &event) {
   auto &[message_info, timer] = event;
   (*connection_).refresh(timer.now);
   check_response_listen_key();
-  check_response_account();
-  check_response_orders();
+  check_response_account(message_info);
+  check_response_orders(message_info);
 }
 
 void DropCopyMargin::operator()(metrics::Writer &writer) const {
@@ -158,99 +160,50 @@ void DropCopyMargin::operator()(metrics::Writer &writer) const {
       .write(rate_limiter_.create_order_1d, metrics::Type::RATE_LIMITER);
 }
 
-void DropCopyMargin::operator()(OrderEntry::ListenKeyUpdate const &listen_key_update) {
-  assert(std::empty(listen_token_));
-  listen_token_ = listen_key_update.listen_key;
-  log::warn(R"(DEBUG listen_token_="{}")"sv, listen_token_);
-  (*connection_).resume();
-}
-
-// session-logon
-
-void DropCopyMargin::session_logon() {
-  auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
-  auto request = protocol::json::WSAPIRequest{
-      .sequence = ++request_id_,
-      .type = protocol::json::WSAPIType::SESSION_LOGON,
-      .user_id = {},
-      .order_id = {},
-      .version = {},
-      .order_id_2 = {},
+void DropCopyMargin::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
+  auto &[trace_info, connection_status] = event;
+  connection_status_ = connection_status;
+  auto stream_status = StreamStatus{
+      .stream_id = stream_id_,
+      .account = account_.name,
+      .supports = SUPPORTS,
+      .transport = Transport::TCP,
+      .protocol = Protocol::WS,
+      .encoding = {Encoding::JSON},
+      .priority = Priority::PRIMARY,
+      .connection_status = connection_status_,
+      .reason = reason,
+      .interface = (*connection_).get_interface(),
+      .authority = (*connection_).get_current_authority(),
+      .path = (*connection_).get_current_path(),
+      .proxy = (*connection_).get_proxy(),
   };
-  auto request_id = protocol::json::WSAPIRequest::encode(request_encode_buffer_, request);
-  auto signature = account_.create_session_logon_signature(timestamp);
-  auto message = fmt::format(
-      R"({{)"
-      R"("id":"{}",)"
-      R"("method":"session.logon",)"
-      R"("params":{{)"
-      R"("apiKey":"{}",)"
-      R"("timestamp":{},)"
-      R"("signature":"{}")"
-      R"(}})"
-      R"(}})"sv,
-      request_id,
-      account_.get_key(),
-      timestamp.count(),
-      signature);
-  (*connection_).send_text(message);
-  (*this)(ConnectionStatus::LOGIN_SENT, "session.logon"sv);
+  log::info("stream_status={}"sv, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
 }
 
-// user-data-stream-subscribe
-
-void DropCopyMargin::subscribe_user_data_stream() {
-  auto request = protocol::json::WSAPIRequest{
-      .sequence = ++request_id_,
-      .type = protocol::json::WSAPIType::USER_DATA_STREAM_SUBSCRIBE,
-      .user_id = {},
-      .order_id = {},
-      .version = {},
-      .order_id_2 = {},
-  };
-  auto request_id = protocol::json::WSAPIRequest::encode(request_encode_buffer_, request);
-  auto message = fmt::format(
-      R"({{)"
-      R"("id":"{}",)"
-      R"("method":"userDataStream.subscribe.listenToken",)"
-      R"("params":{{)"
-      R"("listenToken":"{}")"
-      R"(}})"
-      R"(}})"sv,
-      request_id,
-      listen_token_);
-  (*connection_).send_text(message);
-  (*this)(ConnectionStatus::DOWNLOADING, "userDataStream.subscribe.listenToken"sv);
-}
-
-void DropCopyMargin::get_account() {
-  request_.request_account_cross = clock::get_system();
-  (*this)(ConnectionStatus::DOWNLOADING, "account"sv);
-}
-
-// open-orders
-
-void DropCopyMargin::get_orders() {
-  request_.request_orders_cross = clock::get_system();
-  (*this)(ConnectionStatus::DOWNLOADING, "orders"sv);
-}
+// protocol::json::WSAPIParser::Handler
 
 void DropCopyMargin::operator()(Trace<web::socket::Connected> const &) {
   // wait for ready
 }
 
-void DropCopyMargin::operator()(Trace<web::socket::Disconnected> const &) {
+void DropCopyMargin::operator()(Trace<web::socket::Disconnected> const &event) {
+  auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
   ready_ = false;
-  (*this)(ConnectionStatus::DISCONNECTED);
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
   download_.reset();
 }
 
-void DropCopyMargin::operator()(Trace<web::socket::Ready> const &) {
-  download_.begin();
+void DropCopyMargin::operator()(Trace<web::socket::Ready> const &event) {
+  auto &[trace_info, connected] = event;
+  download_.begin(trace_info);
 }
 
-void DropCopyMargin::operator()(Trace<web::socket::Close> const &) {
+void DropCopyMargin::operator()(Trace<web::socket::Close> const &event) {
+  auto &[trace_info, close] = event;
+  log::warn("close={}"sv, close);
 }
 
 void DropCopyMargin::operator()(Trace<web::socket::Latency> const &event) {
@@ -273,69 +226,35 @@ void DropCopyMargin::operator()(Trace<web::socket::Binary> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopyMargin::operator()(ConnectionStatus connection_status, std::string_view const &reason) {
-  connection_status_ = connection_status;
-  TraceInfo trace_info;
-  auto stream_status = StreamStatus{
-      .stream_id = stream_id_,
-      .account = account_.name,
-      .supports = SUPPORTS,
-      .transport = Transport::TCP,
-      .protocol = Protocol::WS,
-      .encoding = {Encoding::JSON},
-      .priority = Priority::PRIMARY,
-      .connection_status = connection_status_,
-      .reason = reason,
-      .interface = (*connection_).get_interface(),
-      .authority = (*connection_).get_current_authority(),
-      .path = (*connection_).get_current_path(),
-      .proxy = (*connection_).get_proxy(),
-  };
-  log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
-}
+// core::Download
 
-uint32_t DropCopyMargin::download(State state) {
+int32_t DropCopyMargin::download(Trace<State> const &event) {
+  auto &[trace_info, state] = event;
   switch (state) {
     using enum State;
     case UNDEFINED:
       assert(false);
       break;
     case SESSION_LOGON:
-      session_logon();
+      session_logon(trace_info);
       return 1;
     case USER_DATA_STREAM_SUBSCRIBE:
-      subscribe_user_data_stream();
+      subscribe_user_data_stream(trace_info);
       return 1;
     case ACCOUNT:
-      get_account();
+      get_account(trace_info);
       return 1;
     case ORDERS:
-      get_orders();
+      get_orders(trace_info);
       return 1;
     case DONE:
-      (*this)(ConnectionStatus::READY);
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
       assert(!ready_);
       ready_ = true;
       return 0;
   }
   assert(false);
   return 0;
-}
-
-void DropCopyMargin::parse(std::string_view const &message) {
-  profile_.parse([&]() {
-    auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
-    try {
-      TraceInfo trace_info;
-      if (!protocol::json::WSAPIParser::dispatch(*this, message, decode_buffer_, trace_info)) {
-        log_message();
-      }
-    } catch (...) {
-      log_message();
-      utils::exceptions::Unhandled::terminate();
-    }
-  });
 }
 
 // protocol::json::WSAPIParser::Handler
@@ -347,7 +266,7 @@ void DropCopyMargin::operator()(Trace<protocol::json::WSAPISessionLogon> const &
     log::info<2>("wsapi_session_logon={}"sv, wsapi_session_logon);
     if (wsapi_session_logon.status == 200) {
       [[maybe_unused]] auto &result = wsapi_session_logon.result;
-      download_.check_relaxed(STATE);
+      download_.check_relaxed(trace_info, STATE);
     } else {
       // XXX FIXME TODO review
       [[maybe_unused]] auto error = protocol::json::guess_error(wsapi_session_logon.error.code);
@@ -366,7 +285,7 @@ void DropCopyMargin::operator()(Trace<protocol::json::WSAPIUserDataStreamSubscri
     auto &[trace_info, wsapi_user_data_stream_subscribe] = event;
     log::info<2>("wsapi_user_data_stream_subscribe={}"sv, wsapi_user_data_stream_subscribe);
     if (wsapi_user_data_stream_subscribe.status == 200) {
-      download_.check_relaxed(STATE);
+      download_.check_relaxed(trace_info, STATE);
     } else {
       // XXX FIXME TODO review
       [[maybe_unused]] auto error = protocol::json::guess_error(wsapi_user_data_stream_subscribe.error.code);
@@ -422,8 +341,7 @@ void DropCopyMargin::operator()(Trace<protocol::json::WSAPIOutboundAccountPositi
   profile_.outbound_account_position([&]() {
     auto &[trace_info, wsapi_outbound_account_position] = event;
     log::info<2>("wsapi_outbound_account_position={}"sv, wsapi_outbound_account_position);
-    Trace event_2{trace_info, wsapi_outbound_account_position.event};
-    (*this)(event_2);
+    create_trace_and_dispatch_2(trace_info, wsapi_outbound_account_position.event);
   });
 }
 
@@ -431,8 +349,7 @@ void DropCopyMargin::operator()(Trace<protocol::json::WSAPIBalanceUpdate> const 
   profile_.balance_update([&]() {
     auto &[trace_info, wsapi_balance_update] = event;
     log::info<2>("wsapi_balance_update={}"sv, wsapi_balance_update);
-    Trace event_2{trace_info, wsapi_balance_update.event};
-    (*this)(event_2);
+    create_trace_and_dispatch_2(trace_info, wsapi_balance_update.event);
   });
 }
 
@@ -440,8 +357,94 @@ void DropCopyMargin::operator()(Trace<protocol::json::WSAPIExecutionReport> cons
   profile_.execution_report([&]() {
     auto &[trace_info, wsapi_execution_report] = event;
     log::info<2>("wsapi_execution_report={}"sv, wsapi_execution_report);
-    Trace event_2{trace_info, wsapi_execution_report.event};
-    (*this)(event_2);
+    create_trace_and_dispatch_2(trace_info, wsapi_execution_report.event);
+  });
+}
+
+// helpers
+
+// session-logon
+
+void DropCopyMargin::session_logon(TraceInfo const &trace_info) {
+  auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
+  auto request = protocol::json::WSAPIRequest{
+      .sequence = ++request_id_,
+      .type = protocol::json::WSAPIType::SESSION_LOGON,
+      .user_id = {},
+      .order_id = {},
+      .version = {},
+      .order_id_2 = {},
+  };
+  auto request_id = protocol::json::WSAPIRequest::encode(request_encode_buffer_, request);
+  auto signature = account_.create_session_logon_signature(timestamp);
+  auto message = fmt::format(
+      R"({{)"
+      R"("id":"{}",)"
+      R"("method":"session.logon",)"
+      R"("params":{{)"
+      R"("apiKey":"{}",)"
+      R"("timestamp":{},)"
+      R"("signature":"{}")"
+      R"(}})"
+      R"(}})"sv,
+      request_id,
+      account_.get_key(),
+      timestamp.count(),
+      signature);
+  (*connection_).send_text(message);
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::LOGIN_SENT, "session.logon"sv);
+}
+
+// user-data-stream-subscribe
+
+void DropCopyMargin::subscribe_user_data_stream(TraceInfo const &trace_info) {
+  auto request = protocol::json::WSAPIRequest{
+      .sequence = ++request_id_,
+      .type = protocol::json::WSAPIType::USER_DATA_STREAM_SUBSCRIBE,
+      .user_id = {},
+      .order_id = {},
+      .version = {},
+      .order_id_2 = {},
+  };
+  auto request_id = protocol::json::WSAPIRequest::encode(request_encode_buffer_, request);
+  auto message = fmt::format(
+      R"({{)"
+      R"("id":"{}",)"
+      R"("method":"userDataStream.subscribe.listenToken",)"
+      R"("params":{{)"
+      R"("listenToken":"{}")"
+      R"(}})"
+      R"(}})"sv,
+      request_id,
+      listen_token_);
+  (*connection_).send_text(message);
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "userDataStream.subscribe.listenToken"sv);
+}
+
+void DropCopyMargin::get_account(TraceInfo const &trace_info) {
+  request_.request_account_cross = clock::get_system();
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "account"sv);
+}
+
+// open-orders
+
+void DropCopyMargin::get_orders(TraceInfo const &trace_info) {
+  request_.request_orders_cross = clock::get_system();
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "orders"sv);
+}
+
+void DropCopyMargin::parse(std::string_view const &message) {
+  profile_.parse([&]() {
+    auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
+    try {
+      TraceInfo trace_info;
+      if (!protocol::json::WSAPIParser::dispatch(*this, message, decode_buffer_, trace_info)) {
+        log_message();
+      }
+    } catch (...) {
+      log_message();
+      utils::exceptions::Unhandled::terminate();
+    }
   });
 }
 
@@ -659,23 +662,23 @@ void DropCopyMargin::check_response_listen_key() {
   }
 }
 
-void DropCopyMargin::check_response_account() {
+void DropCopyMargin::check_response_account(TraceInfo const &trace_info) {
   if (download_.state() != State::ACCOUNT) {
     return;
   }
   if (request_.request_account_cross < request_.respond_account_cross) {
     log::info("Account download has completed!"sv);
-    download_.check(State::ACCOUNT);
+    download_.check(trace_info, State::ACCOUNT);
   }
 }
 
-void DropCopyMargin::check_response_orders() {
+void DropCopyMargin::check_response_orders(TraceInfo const &trace_info) {
   if (download_.state() != State::ORDERS) {
     return;
   }
   if (request_.request_orders_cross < request_.respond_orders_cross) {
     log::info("Orders download has completed!"sv);
-    download_.check(State::ORDERS);
+    download_.check(trace_info, State::ORDERS);
   }
 }
 

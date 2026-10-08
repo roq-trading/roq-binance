@@ -12,14 +12,15 @@
 
 #include "roq/web/socket/client.hpp"
 
-#include "roq/core/download.hpp"
+#include "roq/core/download_2.hpp"
 
 #include "roq/core/json/buffer_stack.hpp"
 
 #include "roq/server.hpp"
 
+#include "roq/server/stream.hpp"
+
 #include "roq/binance/gateway/account.hpp"
-#include "roq/binance/gateway/drop_copy.hpp"
 #include "roq/binance/gateway/request.hpp"
 #include "roq/binance/gateway/shared.hpp"
 
@@ -29,17 +30,30 @@ namespace roq {
 namespace binance {
 namespace gateway {
 
-struct DropCopyPortfolio final : public DropCopy, public web::socket::Client::Handler, public protocol::json::UserStreamParser::Handler {
-  DropCopyPortfolio(DropCopy::Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, std::string_view const &listen_key, MarginMode);
+struct DropCopyPortfolio final : public Base<DropCopyPortfolio>,
+                                 public server::Stream,
+                                 public web::socket::Client::Handler,
+                                 public protocol::json::UserStreamParser::Handler {
+  struct Handler {};
 
- protected:
-  // DropCopy
+  DropCopyPortfolio(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, std::string_view const &listen_key, MarginMode);
+
+  // protected:
+  friend base_type;
+
+  // server::Stream
+
+  uint16_t stream_id() const override { return stream_id_; }
+
+  bool ready() const override { return connection_status_ == ConnectionStatus::READY; }
 
   void operator()(Event<Start> const &) override;
   void operator()(Event<Stop> const &) override;
   void operator()(Event<Timer> const &) override;
 
   void operator()(metrics::Writer &) const override;
+
+  void operator()(Trace<ConnectionStatus> const &, std::string_view const &reason = {}) override;
 
   // web::socket::Client::Handler
 
@@ -50,12 +64,10 @@ struct DropCopyPortfolio final : public DropCopy, public web::socket::Client::Ha
   void operator()(Trace<web::socket::Latency> const &) override;
   void operator()(Trace<web::socket::Text> const &) override;
   void operator()(Trace<web::socket::Binary> const &) override;
-
-  // helpers
-
+  //
   std::string_view get_query() const override { return query_; }
 
-  void operator()(ConnectionStatus, std::string_view const &reason = {});
+  // core::Download
 
   enum class State {
     UNDEFINED = 0,
@@ -65,9 +77,7 @@ struct DropCopyPortfolio final : public DropCopy, public web::socket::Client::Ha
     DONE,
   };
 
-  uint32_t download(State);
-
-  void parse(std::string_view const &message);
+  int32_t download(Trace<State> const &);
 
   // protocol::json::UserStreamParser::Handler
 
@@ -79,16 +89,18 @@ struct DropCopyPortfolio final : public DropCopy, public web::socket::Client::Ha
   // helpers
 
   void request_account();
-  void check_response_account();
+  void check_response_account(TraceInfo const &);
 
   void request_orders();
-  void check_response_orders();
+  void check_response_orders(TraceInfo const &);
 
   void request_trades();
-  void check_response_trades();
+  void check_response_trades(TraceInfo const &);
+
+  void parse(std::string_view const &message);
 
  private:
-  [[maybe_unused]] DropCopy::Handler &handler_;
+  [[maybe_unused]] Handler &handler_;
   // config
   uint16_t const stream_id_;
   std::string const name_;
@@ -115,7 +127,7 @@ struct DropCopyPortfolio final : public DropCopy, public web::socket::Client::Ha
   // state
   bool ready_ = false;
   ConnectionStatus connection_status_ = {};
-  core::Download<State> download_;
+  core::Download2<State> download_;
 };
 
 }  // namespace gateway

@@ -13,15 +13,16 @@
 
 #include "roq/web/socket/client.hpp"
 
-#include "roq/core/download.hpp"
+#include "roq/core/download_2.hpp"
 
 #include "roq/core/json/buffer_stack.hpp"
 
 #include "roq/server.hpp"
 
+#include "roq/server/stream.hpp"
+
 #include "roq/binance/gateway/account.hpp"
-#include "roq/binance/gateway/drop_copy.hpp"
-#include "roq/binance/gateway/order_entry.hpp"
+#include "roq/binance/gateway/listen_key_update.hpp"
 #include "roq/binance/gateway/request.hpp"
 #include "roq/binance/gateway/shared.hpp"
 
@@ -31,16 +32,24 @@ namespace roq {
 namespace binance {
 namespace gateway {
 
-struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handler, public protocol::json::WSAPIParser::Handler {
-  DropCopyMargin(DropCopy::Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, OrderEntry::ListenKeyUpdate const &);
+struct DropCopyMargin final : public Base<DropCopyMargin>,
+                              public server::Stream,
+                              public web::socket::Client::Handler,
+                              public protocol::json::WSAPIParser::Handler {
+  struct Handler {};
 
-  DropCopyMargin(DropCopyMargin const &) = delete;
+  DropCopyMargin(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, ListenKeyUpdate const &);
 
-  // cross-communication
+  void operator()(ListenKeyUpdate const &);
 
-  void operator()(OrderEntry::ListenKeyUpdate const &);
+  // protected:
+  friend base_type;
 
-  // DropCopy
+  // server::Stream
+
+  uint16_t stream_id() const override { return stream_id_; }
+
+  bool ready() const override { return connection_status_ == ConnectionStatus::READY; }
 
   void operator()(Event<Start> const &) override;
   void operator()(Event<Stop> const &) override;
@@ -48,30 +57,7 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
 
   void operator()(metrics::Writer &) const override;
 
- protected:
-  // helpers
-
-  bool ready() const { return connection_status_ == ConnectionStatus::READY; }
-
-  void operator()(ConnectionStatus, std::string_view const &reason = {});
-
-  enum class State {
-    UNDEFINED = 0,
-    SESSION_LOGON,
-    USER_DATA_STREAM_SUBSCRIBE,
-    ACCOUNT,
-    ORDERS,
-    DONE,
-  };
-
-  uint32_t download(State);
-
-  void session_logon();
-
-  void subscribe_user_data_stream();
-
-  void get_account();
-  void get_orders();
+  void operator()(Trace<ConnectionStatus> const &, std::string_view const &reason = {}) override;
 
   // web::socket::Client::Handler
 
@@ -83,9 +69,18 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
   void operator()(Trace<web::socket::Text> const &) override;
   void operator()(Trace<web::socket::Binary> const &) override;
 
-  // helpers
+  // core::Download
 
-  void parse(std::string_view const &message);
+  enum class State {
+    UNDEFINED = 0,
+    SESSION_LOGON,
+    USER_DATA_STREAM_SUBSCRIBE,
+    ACCOUNT,
+    ORDERS,
+    DONE,
+  };
+
+  int32_t download(Trace<State> const &);
 
   // protocol::json::WSAPIParser::Handler
 
@@ -109,6 +104,15 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
 
   // helpers
 
+  void session_logon(TraceInfo const &);
+
+  void subscribe_user_data_stream(TraceInfo const &);
+
+  void get_account(TraceInfo const &);
+  void get_orders(TraceInfo const &);
+
+  void parse(std::string_view const &message);
+
   void operator()(Trace<protocol::json::OutboundAccountPositionData> const &);
   void operator()(Trace<protocol::json::BalanceUpdateData> const &);
   void operator()(Trace<protocol::json::ExecutionReportData> const &);
@@ -116,11 +120,12 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
   void update_rate_limits(auto &event);
 
   void check_response_listen_key();
-  void check_response_account();
-  void check_response_orders();
+
+  void check_response_account(TraceInfo const &);
+  void check_response_orders(TraceInfo const &);
 
  private:
-  [[maybe_unused]] DropCopy::Handler &handler_;
+  [[maybe_unused]] Handler &handler_;
   // config
   uint16_t const stream_id_;
   std::string const name_;
@@ -158,7 +163,7 @@ struct DropCopyMargin final : public DropCopy, public web::socket::Client::Handl
   // state
   bool ready_ = false;
   ConnectionStatus connection_status_ = {};
-  core::Download<State> download_;
+  core::Download2<State> download_;
   //
   bool download_listen_token_ = false;
 };

@@ -16,6 +16,10 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
+#include "roq/server.hpp"
+
+#include "roq/server/stream.hpp"
+
 #include "roq/binance/gateway/shared.hpp"
 
 #include "roq/binance/protocol/json/market_stream_parser.hpp"
@@ -24,22 +28,34 @@ namespace roq {
 namespace binance {
 namespace gateway {
 
-struct MarketData final : public web::socket::Client::Handler, public protocol::json::MarketStreamParser::Handler {
+struct MarketData final : public Base<MarketData>,
+                          public server::MarketDataStream,
+                          public web::socket::Client::Handler,
+                          public protocol::json::MarketStreamParser::Handler {
   struct Handler {};
 
   MarketData(Handler &, io::Context &, uint16_t stream_id, Priority, Shared &, size_t index);
 
-  MarketData(MarketData const &) = delete;
+  // protected:
+  friend base_type;
 
-  bool ready() const { return connection_status_ == ConnectionStatus::READY; }
+  // server::Stream
 
-  void operator()(Event<Start> const &);
-  void operator()(Event<Stop> const &);
-  void operator()(Event<Timer> const &);
+  uint16_t stream_id() const override { return stream_id_; }
 
-  void operator()(metrics::Writer &);
+  bool ready() const override { return connection_status_ == ConnectionStatus::READY; }
 
-  void subscribe(size_t start_from = 0);
+  void operator()(Event<Start> const &) override;
+  void operator()(Event<Stop> const &) override;
+  void operator()(Event<Timer> const &) override;
+
+  void operator()(metrics::Writer &) const override;
+
+  void operator()(Trace<ConnectionStatus> const &, std::string_view const &reason = {}) override;
+
+  // server::MarketDataStream
+
+  void subscribe(size_t start_from = 0) override;
 
  protected:
   // web::socket::Client::Handler
@@ -51,16 +67,6 @@ struct MarketData final : public web::socket::Client::Handler, public protocol::
   void operator()(Trace<web::socket::Latency> const &) override;
   void operator()(Trace<web::socket::Text> const &) override;
   void operator()(Trace<web::socket::Binary> const &) override;
-
-  // helpers
-
-  void operator()(ConnectionStatus, std::string_view const &reason = {});
-
-  void subscribe(std::span<Symbol const> const &symbols);
-
-  void subscribe(std::span<Symbol const> const &symbols, std::string_view const &channel);
-
-  void parse(std::string_view const &message);
 
   // protocol::json::MarketStreamParser::Handler
 
@@ -82,6 +88,12 @@ struct MarketData final : public web::socket::Client::Handler, public protocol::
   // helpers
 
   void check_subscribe_queue(std::chrono::nanoseconds now);
+
+  void subscribe(std::span<Symbol const> const &symbols);
+
+  void subscribe(std::span<Symbol const> const &symbols, std::string_view const &channel);
+
+  void parse(std::string_view const &message);
 
  private:
   [[maybe_unused]] Handler &handler_;

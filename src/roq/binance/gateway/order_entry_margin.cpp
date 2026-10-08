@@ -107,7 +107,7 @@ auto get_retry_after(auto &response) {
 
 // === IMPLEMENTATION ===
 
-OrderEntryMargin::OrderEntryMargin(OrderEntry::Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared, Request &request)
+OrderEntryMargin::OrderEntryMargin(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared, Request &request)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)},
       connection_{create_connection(*this, shared.settings, context, shared)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
@@ -135,8 +135,10 @@ OrderEntryMargin::OrderEntryMargin(OrderEntry::Handler &handler, io::Context &co
       rate_limiter_{
           .requests_1m = create_metrics(shared.settings, name_, "requests"sv, "1m"sv),
       },
-      account_{account}, shared_{shared}, request_{request}, download_{shared.settings.rest.request_timeout, [this](auto state) { return download(state); }} {
+      account_{account}, shared_{shared}, request_{request}, download_{shared.settings.rest.request_timeout, [this](auto &event) { return download(event); }} {
 }
+
+// server::Stream
 
 void OrderEntryMargin::operator()(Event<Start> const &) {
   (*connection_).start();
@@ -216,6 +218,30 @@ void OrderEntryMargin::operator()(metrics::Writer &writer) const {
       .write(rate_limiter_.requests_1m, metrics::Type::RATE_LIMITER);
 }
 
+void OrderEntryMargin::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
+  auto &[trace_info, connection_status] = event;
+  connection_status_ = connection_status;
+  auto stream_status = StreamStatus{
+      .stream_id = stream_id_,
+      .account = account_.name,
+      .supports = SUPPORTS,
+      .transport = Transport::TCP,
+      .protocol = Protocol::HTTP,
+      .encoding = {Encoding::JSON},
+      .priority = Priority::PRIMARY,
+      .connection_status = connection_status_,
+      .reason = reason,
+      .interface = (*connection_).get_interface(),
+      .authority = (*connection_).get_current_authority(),
+      .path = (*connection_).get_current_path(),
+      .proxy = (*connection_).get_proxy(),
+  };
+  log::info("stream_status={}"sv, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+}
+
+// server::OrderActionStream
+
 uint16_t OrderEntryMargin::operator()(
     Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
   new_order(event, order, ref_data, request_id);
@@ -247,18 +273,22 @@ uint16_t OrderEntryMargin::operator()(Event<CancelAllOrders> const &event, std::
   return stream_id_;
 }
 
-void OrderEntryMargin::operator()(Trace<web::rest::Connected> const &) {
+// web::rest::Client::Handler
+
+void OrderEntryMargin::operator()(Trace<web::rest::Connected> const &event) {
+  auto &[trace_info, connected] = event;
   if (download_.downloading()) {
-    download_.bump();
+    download_.bump(trace_info);
   } else {
-    download_.begin();
+    download_.begin(trace_info);
   }
 }
 
-void OrderEntryMargin::operator()(Trace<web::rest::Disconnected> const &) {
+void OrderEntryMargin::operator()(Trace<web::rest::Disconnected> const &event) {
+  auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
   ready_ = false;
-  (*this)(ConnectionStatus::DISCONNECTED);
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
   if (!download_.downloading()) {
     download_.reset();
   }
@@ -295,29 +325,10 @@ void OrderEntryMargin::operator()(Trace<web::rest::Latency> const &event) {
   latency_.ping.update(latency.sample);
 }
 
-void OrderEntryMargin::operator()(ConnectionStatus connection_status, std::string_view const &reason) {
-  connection_status_ = connection_status;
-  TraceInfo trace_info;
-  auto stream_status = StreamStatus{
-      .stream_id = stream_id_,
-      .account = account_.name,
-      .supports = SUPPORTS,
-      .transport = Transport::TCP,
-      .protocol = Protocol::HTTP,
-      .encoding = {Encoding::JSON},
-      .priority = Priority::PRIMARY,
-      .connection_status = connection_status_,
-      .reason = reason,
-      .interface = (*connection_).get_interface(),
-      .authority = (*connection_).get_current_authority(),
-      .path = (*connection_).get_current_path(),
-      .proxy = (*connection_).get_proxy(),
-  };
-  log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
-}
+// core::Download
 
-uint32_t OrderEntryMargin::download(State state) {
+int32_t OrderEntryMargin::download(Trace<State> const &event) {
+  auto &[trace_info, state] = event;
   switch (state) {
     using enum State;
     case UNDEFINED:
@@ -327,12 +338,12 @@ uint32_t OrderEntryMargin::download(State state) {
       if (has_listen_key_cross_) {
         return 0;
       } else {
-        (*this)(ConnectionStatus::DOWNLOADING, "listen-key"sv);
+        create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "listen-key"sv);
         get_listen_key(MarginMode::CROSS);  // note! isolated requires the symbol... don't know how to
         return 1;
       }
     case DONE:
-      (*this)(ConnectionStatus::READY);
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
       assert(!ready_);
       ready_ = true;
       return 0;
@@ -385,6 +396,7 @@ void OrderEntryMargin::get_listen_key(MarginMode margin_mode) {
 void OrderEntryMargin::get_listen_key_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
   auto const STATE = State::LISTEN_KEY;
   profile_.listen_key_ack([&]() {
+    auto &[trace_info, response] = event;
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
       if (download_.downloading()) {
@@ -395,8 +407,7 @@ void OrderEntryMargin::get_listen_key_ack(Trace<web::rest::Response> const &even
     };
     auto handle_success = [&](auto &body) {
       protocol::json::ListenKeyAckMargin listen_key{body};
-      Trace event_2{event, listen_key};
-      (*this)(event_2, margin_mode);
+      create_trace_and_dispatch_2(trace_info, listen_key, margin_mode);
       switch (margin_mode) {
         using enum MarginMode;
         case UNDEFINED:
@@ -407,7 +418,7 @@ void OrderEntryMargin::get_listen_key_ack(Trace<web::rest::Response> const &even
           get_listen_key(MarginMode::CROSS);
           break;
         case CROSS:
-          download_.check_relaxed(STATE);                           // note! done
+          download_.check_relaxed(trace_info, STATE);               // note! done
           request_.respond_listen_key_cross = clock::get_system();  // completion
           download_listen_key_cross_ = false;
           break;
@@ -520,6 +531,7 @@ void OrderEntryMargin::get_account(MarginMode margin_mode) {
 
 void OrderEntryMargin::get_account_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
   profile_.account_ack([&]() {
+    auto &[trace_info, response] = event;
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
       switch (margin_mode) {
@@ -544,8 +556,7 @@ void OrderEntryMargin::get_account_ack(Trace<web::rest::Response> const &event, 
         using enum MarginMode;
         case UNDEFINED: {
           protocol::json::AccountAck account_ack{body, decode_buffer_};
-          Trace event_2{event, account_ack};
-          (*this)(event_2, margin_mode);
+          create_trace_and_dispatch_2(trace_info, account_ack, margin_mode);
           request_.respond_account = clock::get_system();  // completion
           download_account_ = false;
           break;
@@ -554,8 +565,7 @@ void OrderEntryMargin::get_account_ack(Trace<web::rest::Response> const &event, 
           log::fatal("Unexpected"sv);  // note! not implemented
         case CROSS: {
           protocol::json::CrossMarginAccount account{body, decode_buffer_};
-          Trace event_2{event, account};
-          (*this)(event_2, margin_mode);
+          create_trace_and_dispatch_2(trace_info, account, margin_mode);
           request_.respond_account_cross = clock::get_system();  // completion
           download_account_cross_ = false;
           break;
@@ -658,6 +668,7 @@ void OrderEntryMargin::get_open_orders(MarginMode margin_mode) {
 
 void OrderEntryMargin::get_open_orders_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
   profile_.open_orders_ack([&]() {
+    auto &[trace_info, response] = event;
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
       switch (margin_mode) {
@@ -679,8 +690,7 @@ void OrderEntryMargin::get_open_orders_ack(Trace<web::rest::Response> const &eve
     auto handle_success = [&](auto &body) {
       log::debug("body={}"sv, body);
       protocol::json::OpenOrdersAck open_orders_ack{body, decode_buffer_};
-      Trace event_2{event, open_orders_ack};
-      (*this)(event_2, margin_mode);
+      create_trace_and_dispatch_2(trace_info, open_orders_ack, margin_mode);
       switch (margin_mode) {
         using enum MarginMode;
         case UNDEFINED:
@@ -791,6 +801,7 @@ void OrderEntryMargin::get_trades(MarginMode margin_mode) {
 
 void OrderEntryMargin::get_trades_ack(Trace<web::rest::Response> const &event, MarginMode margin_mode) {
   profile_.trades_ack([&]() {
+    auto &[trace_info, response] = event;
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
       switch (margin_mode) {
@@ -811,8 +822,7 @@ void OrderEntryMargin::get_trades_ack(Trace<web::rest::Response> const &event, M
     };
     auto handle_success = [&](auto &body) {
       protocol::json::TradesAck trades_ack{body, decode_buffer_};
-      Trace event_2{event, trades_ack};
-      (*this)(event_2, margin_mode);
+      create_trace_and_dispatch_2(trace_info, trades_ack, margin_mode);
       switch (margin_mode) {
         using enum MarginMode;
         case UNDEFINED:
@@ -921,6 +931,7 @@ void OrderEntryMargin::get_account_cross_on_timer() {
 
 void OrderEntryMargin::get_account_cross_on_timer_ack(Trace<web::rest::Response> const &event) {
   profile_.account_ack([&]() {
+    auto &[trace_info, response] = event;
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
       request_.respond_account_cross = clock::get_system();  // completion
@@ -929,8 +940,7 @@ void OrderEntryMargin::get_account_cross_on_timer_ack(Trace<web::rest::Response>
     auto handle_success = [&](auto &body) {
       // log::warn(R"(DEBUG body="{}")"sv, body);
       protocol::json::CrossMarginAccount account{body, decode_buffer_};
-      Trace event_2{event, account};
-      (*this)(event_2);
+      create_trace_and_dispatch_2(trace_info, account);
       request_.respond_account_cross = clock::get_system();  // completion
       download_account_cross_on_timer_ = false;
     };
@@ -1041,8 +1051,7 @@ void OrderEntryMargin::new_order_ack(Trace<web::rest::Response> const &event, ui
     auto handle_success = [&](auto &body) {
       // log::warn(R"(DEBUG body="{}")"sv, body);
       protocol::json::NewOrderAck new_order_ack{body, decode_buffer_};
-      Trace event_2{event, new_order_ack};
-      (*this)(event_2, user_id, order_id, version);
+      create_trace_and_dispatch_2(trace_info, new_order_ack, user_id, order_id, version);
     };
     process_response(event, handle_error, handle_success);
   });
@@ -1199,8 +1208,7 @@ void OrderEntryMargin::cancel_order_ack(Trace<web::rest::Response> const &event,
     auto handle_success = [&](auto &body) {
       // log::warn(R"(DEBUG body="{}")"sv, body);
       protocol::json::CancelOrderAck cancel_order_ack{body};
-      Trace event_2{event, cancel_order_ack};
-      (*this)(event_2, user_id, order_id, version);
+      create_trace_and_dispatch_2(trace_info, cancel_order_ack, user_id, order_id, version);
     };
     process_response(event, handle_error, handle_success);
   });
@@ -1377,8 +1385,7 @@ void OrderEntryMargin::cancel_all_open_orders_ack(Trace<web::rest::Response> con
     auto handle_success = [&](auto &body) {
       // log::warn(R"(DEBUG body="{}")"sv, body);
       protocol::json::CancelAllOpenOrdersAck cancel_all_open_orders_ack{body, decode_buffer_};
-      Trace event_2{event, cancel_all_open_orders_ack};
-      (*this)(event_2);
+      create_trace_and_dispatch_2(trace_info, cancel_all_open_orders_ack);
       send_ack(RequestStatus::ACCEPTED, {}, {});
     };
     process_response(event, handle_error, handle_success);

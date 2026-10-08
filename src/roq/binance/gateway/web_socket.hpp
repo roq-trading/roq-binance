@@ -15,14 +15,15 @@
 
 #include "roq/web/socket/client.hpp"
 
-#include "roq/core/download.hpp"
+#include "roq/core/download_2.hpp"
 
 #include "roq/core/json/buffer_stack.hpp"
 
 #include "roq/server.hpp"
 
+#include "roq/server/stream.hpp"
+
 #include "roq/binance/gateway/account.hpp"
-#include "roq/binance/gateway/order_entry.hpp"
 #include "roq/binance/gateway/shared.hpp"
 
 #include "roq/binance/protocol/json/wsapi_parser.hpp"
@@ -31,19 +32,32 @@ namespace roq {
 namespace binance {
 namespace gateway {
 
-struct WebSocket final : public OrderEntry, public web::socket::Client::Handler, public protocol::json::WSAPIParser::Handler {
-  WebSocket(OrderEntry::Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, std::string_view const &interface = {});
+struct WebSocket final : public Base<WebSocket>,
+                         public server::OrderActionStream,
+                         public web::socket::Client::Handler,
+                         public protocol::json::WSAPIParser::Handler {
+  struct Handler {};
 
-  WebSocket(WebSocket const &) = delete;
+  WebSocket(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, std::string_view const &interface = {});
 
- protected:
-  // OrderEntry
+  // protected:
+  friend base_type;
+
+  // server::Stream
+
+  uint16_t stream_id() const override { return stream_id_; }
+
+  bool ready() const override { return connection_status_ == ConnectionStatus::READY; }
 
   void operator()(Event<Start> const &) override;
   void operator()(Event<Stop> const &) override;
   void operator()(Event<Timer> const &) override;
 
   void operator()(metrics::Writer &) const override;
+
+  void operator()(Trace<ConnectionStatus> const &, std::string_view const &reason = {}) override;
+
+  // server::OrderActionStream
 
   uint16_t operator()(Event<CreateOrder> const &, server::oms::Order const &, server::oms::RefData const &, std::string_view const &request_id) override;
   uint16_t operator()(
@@ -60,33 +74,6 @@ struct WebSocket final : public OrderEntry, public web::socket::Client::Handler,
       std::string_view const &previous_request_id) override;
   uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id) override;
 
-  // helpers
-
-  bool ready() const { return connection_status_ == ConnectionStatus::READY; }
-
-  void session_logon();
-
-  void user_data_stream_subscribe();
-
-  void account_status();
-  void open_orders_status();
-  void my_trades();
-
-  void order_place(Event<CreateOrder> const &, server::oms::Order const &, server::oms::RefData const &, std::string_view const &request_id);
-  void order_amend_keep_priority(
-      Event<ModifyOrder> const &,
-      server::oms::Order const &,
-      server::oms::RefData const &,
-      std::string_view const &request_id,
-      std::string_view const &previous_request_id);
-  void order_cancel(
-      Event<CancelOrder> const &,
-      server::oms::Order const &,
-      server::oms::RefData const &,
-      std::string_view const &request_id,
-      std::string_view const &previous_request_id);
-  void open_orders_cancel_all(Event<CancelAllOrders> const &, std::string_view const &request_id);
-
   // web::socket::Client::Handler
 
   void operator()(Trace<web::socket::Connected> const &) override;
@@ -97,9 +84,7 @@ struct WebSocket final : public OrderEntry, public web::socket::Client::Handler,
   void operator()(Trace<web::socket::Text> const &) override;
   void operator()(Trace<web::socket::Binary> const &) override;
 
-  // helpers
-
-  void operator()(ConnectionStatus, std::string_view const &reason = {});
+  // core::Download
 
   enum class State {
     UNDEFINED = 0,
@@ -111,9 +96,7 @@ struct WebSocket final : public OrderEntry, public web::socket::Client::Handler,
     DONE,
   };
 
-  uint32_t download(State);
-
-  void parse(std::string_view const &message);
+  int32_t download(Trace<State> const &);
 
   // protocol::json::WSAPIParser::Handler
 
@@ -137,6 +120,31 @@ struct WebSocket final : public OrderEntry, public web::socket::Client::Handler,
 
   // helpers
 
+  void session_logon(TraceInfo const &);
+
+  void user_data_stream_subscribe(TraceInfo const &);
+
+  void account_status(TraceInfo const &);
+  void open_orders_status(TraceInfo const &);
+  void my_trades(TraceInfo const &);
+
+  void order_place(Event<CreateOrder> const &, server::oms::Order const &, server::oms::RefData const &, std::string_view const &request_id);
+  void order_amend_keep_priority(
+      Event<ModifyOrder> const &,
+      server::oms::Order const &,
+      server::oms::RefData const &,
+      std::string_view const &request_id,
+      std::string_view const &previous_request_id);
+  void order_cancel(
+      Event<CancelOrder> const &,
+      server::oms::Order const &,
+      server::oms::RefData const &,
+      std::string_view const &request_id,
+      std::string_view const &previous_request_id);
+  void open_orders_cancel_all(Event<CancelAllOrders> const &, std::string_view const &request_id);
+
+  void parse(std::string_view const &message);
+
   void operator()(Trace<protocol::json::OutboundAccountPositionData> const &);
   void operator()(Trace<protocol::json::BalanceUpdateData> const &);
   void operator()(Trace<protocol::json::ExecutionReportData> const &);
@@ -144,7 +152,7 @@ struct WebSocket final : public OrderEntry, public web::socket::Client::Handler,
   void update_rate_limits(auto &event);
 
  private:
-  [[maybe_unused]] OrderEntry::Handler &handler_;
+  [[maybe_unused]] Handler &handler_;
   // config
   uint16_t const stream_id_;
   std::string const name_;
@@ -187,7 +195,7 @@ struct WebSocket final : public OrderEntry, public web::socket::Client::Handler,
   // state
   bool ready_ = false;
   ConnectionStatus connection_status_ = {};
-  core::Download<State> download_;
+  core::Download2<State> download_;
   bool download_trades_is_first_ = true;  // note! lookback depends on it
 };
 

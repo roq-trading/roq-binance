@@ -218,7 +218,7 @@ void Controller::operator()(metrics::Writer &writer) const {
 
 // OrderEntry::Handler
 
-void Controller::operator()(OrderEntry::ListenKeyUpdate const &listen_key_update) {
+void Controller::operator()(ListenKeyUpdate const &listen_key_update) {
   switch (listen_key_update.margin_mode) {
     using enum MarginMode;
     case UNDEFINED:
@@ -330,8 +330,8 @@ Account &Controller::get_account(std::string_view const &account) {
   return *(*iter).second;
 }
 
-OrderEntry &Controller::get_order_entry(std::string_view const &account, MarginMode margin_mode) {
-  auto helper = [&](auto &lookup) -> OrderEntry & {
+server::OrderActionStream &Controller::get_order_entry(std::string_view const &account, MarginMode margin_mode) {
+  auto helper = [&](auto &lookup) -> server::OrderActionStream & {
     auto iter = lookup.find(account);
     if (iter == std::end(lookup)) [[unlikely]] {
       throw RuntimeError{R"(Unknown account="{}")"sv, account};
