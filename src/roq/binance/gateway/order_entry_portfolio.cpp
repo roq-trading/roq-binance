@@ -358,12 +358,8 @@ void OrderEntryPortfolio::get_listen_key() {
         .body = {},
         .quality_of_service = {},
     };
-    auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
-      get_listen_key_ack(event);
-    };
-    (*connection_)("listen-key"sv, request, callback);
+    auto callback = [this](auto &event, [[maybe_unused]] auto &request_id) { get_listen_key_ack(event); };
+    (*connection_)(request, callback, "listen-key"sv);
   });
 }
 
@@ -424,12 +420,8 @@ void OrderEntryPortfolio::get_account() {
         .body = {},
         .quality_of_service = {},
     };
-    auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
-      get_account_ack(event);
-    };
-    (*connection_)("balance"sv, request, callback);
+    auto callback = [this](auto &event, [[maybe_unused]] auto &request_id) { get_account_ack(event); };
+    (*connection_)(request, callback, "balance"sv);
   });
 }
 
@@ -502,12 +494,8 @@ void OrderEntryPortfolio::get_open_orders() {
         .body = {},
         .quality_of_service = {},
     };
-    auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
-      get_open_orders_ack(event);
-    };
-    (*connection_)("margin-open-orders"sv, request, callback);
+    auto callback = [this](auto &event, [[maybe_unused]] auto &request_id) { get_open_orders_ack(event); };
+    (*connection_)(request, callback, "margin-open-orders"sv);
   });
 }
 
@@ -607,12 +595,8 @@ void OrderEntryPortfolio::get_trades() {
           .body = {},
           .quality_of_service = {},
       };
-      auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
-        TraceInfo trace_info;
-        Trace event{trace_info, response};
-        get_trades_ack(event);
-      };
-      (*connection_)("margin-my-trades"sv, request, callback);
+      auto callback = [this](auto &event, [[maybe_unused]] auto &request_id) { get_trades_ack(event); };
+      (*connection_)(request, callback, "margin-my-trades"sv);
     }
   });
 }
@@ -728,13 +712,11 @@ void OrderEntryPortfolio::new_order(
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
     log::debug("request={}"sv, request);
-    auto callback = [this, user_id = message_info.source, order_id = create_order.order_id]([[maybe_unused]] auto &request_id, auto &response) {
+    auto callback = [this, user_id = message_info.source, order_id = create_order.order_id](auto &event, [[maybe_unused]] auto &request_id) {
       uint32_t version = 1;
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
       new_order_ack(event, user_id, order_id, version);
     };
-    (*connection_)(request_id, request, callback);
+    (*connection_)(request, callback, request_id);
   });
 }
 
@@ -871,12 +853,8 @@ void OrderEntryPortfolio::cancel_order(
     };
     log::debug("request={}"sv, request);
     auto callback = [this, user_id = message_info.source, order_id = cancel_order.order_id, version = cancel_order.version](
-                        [[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
-      cancel_order_ack(event, user_id, order_id, version);
-    };
-    (*connection_)(request_id, request, callback);
+                        auto &event, [[maybe_unused]] auto &request_id) { cancel_order_ack(event, user_id, order_id, version); };
+    (*connection_)(request, callback, request_id);
   });
 }
 
@@ -1014,12 +992,8 @@ void OrderEntryPortfolio::cancel_all_open_orders(Event<CancelAllOrders> const &e
           .quality_of_service = io::QualityOfService::IMMEDIATE,
       };
       log::debug("request={}"sv, request);
-      auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
-        TraceInfo trace_info;
-        Trace event{trace_info, response};
-        cancel_all_open_orders_ack(event, request_id);
-      };
-      (*connection_)(request_id, request, callback);
+      auto callback = [this](auto &event, [[maybe_unused]] auto &request_id) { cancel_all_open_orders_ack(event, request_id); };
+      (*connection_)(request, callback, request_id);
       send_ack(symbol);
     }
   });

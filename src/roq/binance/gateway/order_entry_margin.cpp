@@ -384,12 +384,8 @@ void OrderEntryMargin::get_listen_key(MarginMode margin_mode) {
         .quality_of_service = {},
     };
     log::debug("request={}"sv, request);
-    auto callback = [this, margin_mode = margin_mode]([[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
-      get_listen_key_ack(event, margin_mode);
-    };
-    (*connection_)("listen_key"sv, request, callback);
+    auto callback = [this, margin_mode = margin_mode](auto &event, [[maybe_unused]] auto &request_id) { get_listen_key_ack(event, margin_mode); };
+    (*connection_)(request, callback, "listen_key"sv);
   });
 }
 
@@ -520,12 +516,8 @@ void OrderEntryMargin::get_account(MarginMode margin_mode) {
         .quality_of_service = {},
     };
     log::debug("request={}"sv, request);
-    auto callback = [this, margin_mode = margin_mode]([[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
-      get_account_ack(event, margin_mode);
-    };
-    (*connection_)("account"sv, request, callback);
+    auto callback = [this, margin_mode = margin_mode](auto &event, [[maybe_unused]] auto &request_id) { get_account_ack(event, margin_mode); };
+    (*connection_)(request, callback, "account"sv);
   });
 }
 
@@ -657,12 +649,8 @@ void OrderEntryMargin::get_open_orders(MarginMode margin_mode) {
         .quality_of_service = {},
     };
     log::debug("request={}"sv, request);
-    auto callback = [this, margin_mode = margin_mode]([[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
-      get_open_orders_ack(event, margin_mode);
-    };
-    (*connection_)("open_orders"sv, request, callback);
+    auto callback = [this, margin_mode = margin_mode](auto &event, [[maybe_unused]] auto &request_id) { get_open_orders_ack(event, margin_mode); };
+    (*connection_)(request, callback, "open_orders"sv);
   });
 }
 
@@ -789,12 +777,8 @@ void OrderEntryMargin::get_trades(MarginMode margin_mode) {
           .quality_of_service = {},
       };
       log::debug("request={}"sv, request);
-      auto callback = [this, margin_mode = margin_mode]([[maybe_unused]] auto &request_id, auto &response) {
-        TraceInfo trace_info;
-        Trace event{trace_info, response};
-        get_trades_ack(event, margin_mode);
-      };
-      (*connection_)("my-trades"sv, request, callback);
+      auto callback = [this, margin_mode = margin_mode](auto &event, [[maybe_unused]] auto &request_id) { get_trades_ack(event, margin_mode); };
+      (*connection_)(request, callback, "my-trades"sv);
     }
   });
 }
@@ -920,12 +904,8 @@ void OrderEntryMargin::get_account_cross_on_timer() {
         .quality_of_service = {},
     };
     log::debug("request={}"sv, request);
-    auto callback = [this]([[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
-      get_account_cross_on_timer_ack(event);
-    };
-    (*connection_)("account"sv, request, callback);
+    auto callback = [this](auto &event, [[maybe_unused]] auto &request_id) { get_account_cross_on_timer_ack(event); };
+    (*connection_)(request, callback, "account"sv);
   });
 }
 
@@ -1019,13 +999,11 @@ void OrderEntryMargin::new_order(
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
     log::debug("request={}"sv, request);
-    auto callback = [this, user_id = message_info.source, order_id = create_order.order_id]([[maybe_unused]] auto &request_id, auto &response) {
+    auto callback = [this, user_id = message_info.source, order_id = create_order.order_id](auto &event, [[maybe_unused]] auto &request_id) {
       uint32_t version = 1;
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
       new_order_ack(event, user_id, order_id, version);
     };
-    (*connection_)(request_id, request, callback);
+    (*connection_)(request, callback, request_id);
   });
 }
 
@@ -1177,12 +1155,8 @@ void OrderEntryMargin::cancel_order(
     };
     log::debug("request={}"sv, request);
     auto callback = [this, user_id = message_info.source, order_id = cancel_order.order_id, version = cancel_order.version](
-                        [[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
-      cancel_order_ack(event, user_id, order_id, version);
-    };
-    (*connection_)(request_id, request, callback);
+                        auto &event, [[maybe_unused]] auto &request_id) { cancel_order_ack(event, user_id, order_id, version); };
+    (*connection_)(request, callback, request_id);
   });
 }
 
@@ -1334,12 +1308,8 @@ void OrderEntryMargin::cancel_all_open_orders(Event<CancelAllOrders> const &even
             .quality_of_service = io::QualityOfService::IMMEDIATE,
         };
         log::debug("request={}"sv, request);
-        auto callback = [this](auto &request_id, auto &response) {
-          TraceInfo trace_info;
-          Trace event{trace_info, response};
-          cancel_all_open_orders_ack(event, request_id);
-        };
-        (*connection_)(request_id, request, callback);
+        auto callback = [this](auto &event, auto &request_id) { cancel_all_open_orders_ack(event, request_id); };
+        (*connection_)(request, callback, request_id);
       };
       helper(MarginMode::ISOLATED);
       helper(MarginMode::CROSS);
