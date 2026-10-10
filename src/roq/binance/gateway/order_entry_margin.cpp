@@ -140,16 +140,16 @@ OrderEntryMargin::OrderEntryMargin(Handler &handler, io::Context &context, uint1
 
 // server::Stream
 
-void OrderEntryMargin::operator()(Event<Start> const &) {
+void OrderEntryMargin::operator()(Trace<Start> const &) {
   (*connection_).start();
 }
 
-void OrderEntryMargin::operator()(Event<Stop> const &) {
+void OrderEntryMargin::operator()(Trace<Stop> const &) {
   (*connection_).stop();
 }
 
-void OrderEntryMargin::operator()(Event<Timer> const &event) {
-  auto &[message_info, timer] = event;
+void OrderEntryMargin::operator()(Trace<Timer> const &event) {
+  auto &[trace_info, timer] = event;
   (*connection_).refresh(timer.now);
   refresh_listen_key(timer.now);
   // XXX HANS only master

@@ -121,20 +121,20 @@ void DropCopyMargin::operator()(ListenKeyUpdate const &listen_key_update) {
 
 // server::Stream
 
-void DropCopyMargin::operator()(Event<Start> const &) {
+void DropCopyMargin::operator()(Trace<Start> const &) {
   (*connection_).start();
 }
 
-void DropCopyMargin::operator()(Event<Stop> const &) {
+void DropCopyMargin::operator()(Trace<Stop> const &) {
   (*connection_).stop();
 }
 
-void DropCopyMargin::operator()(Event<Timer> const &event) {
-  auto &[message_info, timer] = event;
+void DropCopyMargin::operator()(Trace<Timer> const &event) {
+  auto &[trace_info, timer] = event;
   (*connection_).refresh(timer.now);
   check_response_listen_key();
-  check_response_account(message_info);
-  check_response_orders(message_info);
+  check_response_account(trace_info);
+  check_response_orders(trace_info);
 }
 
 void DropCopyMargin::operator()(metrics::Writer &writer) const {

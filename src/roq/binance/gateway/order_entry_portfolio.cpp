@@ -156,16 +156,16 @@ OrderEntryPortfolio::OrderEntryPortfolio(
 
 // server::Stream
 
-void OrderEntryPortfolio::operator()(Event<Start> const &) {
+void OrderEntryPortfolio::operator()(Trace<Start> const &) {
   (*connection_).start();
 }
 
-void OrderEntryPortfolio::operator()(Event<Stop> const &) {
+void OrderEntryPortfolio::operator()(Trace<Stop> const &) {
   (*connection_).stop();
 }
 
-void OrderEntryPortfolio::operator()(Event<Timer> const &event) {
-  auto &[message_info, timer] = event;
+void OrderEntryPortfolio::operator()(Trace<Timer> const &event) {
+  auto &[trace_info, timer] = event;
   (*connection_).refresh(timer.now);
   refresh_listen_key(timer.now);
   if (master_ && ready() && !downloading()) {

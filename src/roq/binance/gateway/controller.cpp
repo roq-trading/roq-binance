@@ -105,36 +105,20 @@ Controller::Controller(server::Dispatcher &dispatcher, Settings const &settings,
 
 // server::Handler
 
-void Controller::operator()(Event<Start> const &event) {
+void Controller::operator()(Trace<Start> const &event) {
   log::info("Starting..."sv);
   assert(std::empty(market_data_1_));
   assert(std::empty(market_data_2_));
   dispatch(event);
 }
 
-void Controller::operator()(Event<Stop> const &event) {
+void Controller::operator()(Trace<Stop> const &event) {
   log::info("Stopping..."sv);
   dispatch(event);
 }
 
-void Controller::operator()(Event<Timer> const &event) {
+void Controller::operator()(Trace<Timer> const &event) {
   dispatch(event);
-}
-
-void Controller::operator()(Event<Control> const &event) {
-  auto &[message_info, control] = event;
-  switch (control.action) {
-    using enum Action;
-    case UNDEFINED:
-      assert(false);
-      break;
-    case ENABLE:
-      dispatcher_(State::ENABLED);
-      break;
-    case DISABLE:
-      dispatcher_(State::DISABLED);
-      break;
-  }
 }
 
 void Controller::operator()(Event<Connected> const &) {
@@ -157,6 +141,22 @@ void Controller::operator()(Event<Subscribe> const &event) {
       .symbols = symbols,
   };
   (*this)(symbols_update);
+}
+
+void Controller::operator()(Event<Control> const &event) {
+  auto &[message_info, control] = event;
+  switch (control.action) {
+    using enum Action;
+    case UNDEFINED:
+      assert(false);
+      break;
+    case ENABLE:
+      dispatcher_(State::ENABLED);
+      break;
+    case DISABLE:
+      dispatcher_(State::DISABLED);
+      break;
+  }
 }
 
 uint16_t Controller::operator()(
@@ -233,9 +233,9 @@ void Controller::operator()(ListenKeyUpdate const &listen_key_update) {
         auto &account_2 = get_account(listen_key_update.account);
         auto &request = request_[listen_key_update.account];  // XXX
         instance = std::make_unique<DropCopyMargin>(*this, context_, ++stream_id_, account_2, shared_, request, listen_key_update);
-        MessageInfo message_info;
+        TraceInfo trace_info;  // XXX FIXME TODO
         Start start;
-        create_event_and_dispatch(*instance, message_info, start);
+        create_trace_and_dispatch(*instance, trace_info, start);
       }
       break;
     }
@@ -247,9 +247,9 @@ void Controller::operator()(ListenKeyUpdate const &listen_key_update) {
         auto &request = request_[listen_key_update.account];
         instance = std::make_unique<DropCopyPortfolio>(
             *this, context_, ++stream_id_, account_2, shared_, request, listen_key_update.listen_key, listen_key_update.margin_mode);
-        MessageInfo message_info;
+        TraceInfo trace_info;  // XXX FIXME TODO
         Start start;
-        create_event_and_dispatch(*instance, message_info, start);
+        create_trace_and_dispatch(*instance, trace_info, start);
       }
       break;
     }
@@ -277,9 +277,9 @@ void Controller::ensure_symbol_slices(size_t size) {
     auto index = std::size(container);
     log::info("Create MarketData (stream_id={}, priority={}, index={})"sv, stream_id, priority, index);
     auto market_data = std::make_unique<MarketData>(*this, context_, stream_id, priority, shared_, index);
-    MessageInfo message_info;
+    TraceInfo trace_info;  // XXX FIXME TODO
     Start start;
-    create_event_and_dispatch(*market_data, message_info, start);
+    create_trace_and_dispatch(*market_data, trace_info, start);
     container.emplace_back(std::move(market_data));
   };
   while (std::size(market_data_1_) < size) {
