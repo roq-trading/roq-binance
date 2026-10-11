@@ -137,10 +137,10 @@ void Controller::operator()(Event<Subscribe> const &event) {
       log::warn(R"(*** DUPLICATE SUBSCRIPTION *** (symbol="{}")"sv, item);
     }
   }
-  auto symbols_update = Rest::SymbolsUpdate{
+  auto symbols_update = SymbolsUpdate{
       .symbols = symbols,
   };
-  (*this)(symbols_update);
+  create_trace_and_dispatch_2(message_info, symbols_update);
 }
 
 void Controller::operator()(Event<Control> const &event) {
@@ -218,7 +218,8 @@ void Controller::operator()(metrics::Writer &writer) const {
 
 // OrderEntry::Handler
 
-void Controller::operator()(ListenKeyUpdate const &listen_key_update) {
+void Controller::operator()(Trace<ListenKeyUpdate> const &event) {
+  auto &[trace_info, listen_key_update] = event;
   switch (listen_key_update.margin_mode) {
     using enum MarginMode;
     case UNDEFINED:
@@ -227,13 +228,12 @@ void Controller::operator()(ListenKeyUpdate const &listen_key_update) {
     case CROSS: {
       auto &instance = drop_copy_margin_[listen_key_update.account];
       if (instance) {
-        (*instance)(listen_key_update);
+        (*instance)(event);
       } else {
         log::info(R"(Create drop-copy (user-stream) for account="{}", margin_mode={})"sv, listen_key_update.account, listen_key_update.margin_mode);
         auto &account_2 = get_account(listen_key_update.account);
         auto &request = request_[listen_key_update.account];  // XXX
         instance = std::make_unique<DropCopyMargin>(*this, context_, ++stream_id_, account_2, shared_, request, listen_key_update);
-        TraceInfo trace_info;  // XXX FIXME TODO
         Start start;
         create_trace_and_dispatch(*instance, trace_info, start);
       }
@@ -247,7 +247,6 @@ void Controller::operator()(ListenKeyUpdate const &listen_key_update) {
         auto &request = request_[listen_key_update.account];
         instance = std::make_unique<DropCopyPortfolio>(
             *this, context_, ++stream_id_, account_2, shared_, request, listen_key_update.listen_key, listen_key_update.margin_mode);
-        TraceInfo trace_info;  // XXX FIXME TODO
         Start start;
         create_trace_and_dispatch(*instance, trace_info, start);
       }
@@ -258,9 +257,10 @@ void Controller::operator()(ListenKeyUpdate const &listen_key_update) {
 
 // Rest::Handler
 
-void Controller::operator()(Rest::SymbolsUpdate &symbols_update) {
+void Controller::operator()(Trace<SymbolsUpdate> const &event) {
+  auto &[trace_info, symbols_update] = event;
   auto [size, start_from] = shared_.symbols(symbols_update.symbols);
-  ensure_symbol_slices(size);
+  ensure_symbol_slices(trace_info, size);
   for (auto &item : market_data_1_) {
     (*item).subscribe(start_from);
   }
@@ -271,13 +271,12 @@ void Controller::operator()(Rest::SymbolsUpdate &symbols_update) {
 
 // utilities
 
-void Controller::ensure_symbol_slices(size_t size) {
+void Controller::ensure_symbol_slices(TraceInfo const &trace_info, size_t size) {
   auto helper = [&](auto &container, auto priority) {
     auto stream_id = ++stream_id_;
     auto index = std::size(container);
     log::info("Create MarketData (stream_id={}, priority={}, index={})"sv, stream_id, priority, index);
     auto market_data = std::make_unique<MarketData>(*this, context_, stream_id, priority, shared_, index);
-    TraceInfo trace_info;  // XXX FIXME TODO
     Start start;
     create_trace_and_dispatch(*market_data, trace_info, start);
     container.emplace_back(std::move(market_data));

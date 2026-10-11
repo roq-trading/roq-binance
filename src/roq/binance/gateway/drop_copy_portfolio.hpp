@@ -97,7 +97,7 @@ struct DropCopyPortfolio final : public Base<DropCopyPortfolio>,
   void request_trades();
   void check_response_trades(TraceInfo const &);
 
-  void parse(std::string_view const &message);
+  void parse(TraceInfo const &, std::string_view const &message);
 
  private:
   [[maybe_unused]] Handler &handler_;

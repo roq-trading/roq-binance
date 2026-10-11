@@ -112,7 +112,8 @@ DropCopyMargin::DropCopyMargin(
   log::info<5>(R"(stream_id={}, account="{}")"sv, stream_id_, account_.name);
 }
 
-void DropCopyMargin::operator()(ListenKeyUpdate const &listen_key_update) {
+void DropCopyMargin::operator()(Trace<ListenKeyUpdate> const &event) {
+  auto &[trace_info, listen_key_update] = event;
   assert(std::empty(listen_token_));
   listen_token_ = listen_key_update.listen_key;
   log::warn(R"(DEBUG listen_token_="{}")"sv, listen_token_);
@@ -219,7 +220,7 @@ void DropCopyMargin::operator()(Trace<web::socket::Latency> const &event) {
 
 void DropCopyMargin::operator()(Trace<web::socket::Text> const &event) {
   auto &[trace_info, text] = event;
-  parse(text.payload);
+  parse(trace_info, text.payload);
 }
 
 void DropCopyMargin::operator()(Trace<web::socket::Binary> const &) {
@@ -310,15 +311,18 @@ void DropCopyMargin::operator()(Trace<protocol::json::WSAPIEventStreamTerminated
 }
 
 void DropCopyMargin::operator()(Trace<protocol::json::WSAPIAccount> const &event) {
-  log::fatal("{}"sv, event.value);
+  auto &[trace_info, account] = event;
+  log::fatal("{}"sv, account);
 }
 
 void DropCopyMargin::operator()(Trace<protocol::json::WSAPIOpenOrders> const &event) {
-  log::fatal("{}"sv, event.value);
+  auto &[trace_info, open_orders] = event;
+  log::fatal("{}"sv, open_orders);
 }
 
 void DropCopyMargin::operator()(Trace<protocol::json::WSAPITrades> const &event) {
-  log::fatal("{}"sv, event.value);
+  auto &[trace_info, trades] = event;
+  log::fatal("{}"sv, trades);
 }
 
 void DropCopyMargin::operator()(Trace<protocol::json::WSAPIOrderPlace> const &, protocol::json::WSAPIRequest const &) {
@@ -433,11 +437,10 @@ void DropCopyMargin::get_orders(TraceInfo const &trace_info) {
   create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "orders"sv);
 }
 
-void DropCopyMargin::parse(std::string_view const &message) {
+void DropCopyMargin::parse(TraceInfo const &trace_info, std::string_view const &message) {
   profile_.parse([&]() {
     auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     try {
-      TraceInfo trace_info;
       if (!protocol::json::WSAPIParser::dispatch(*this, message, decode_buffer_, trace_info)) {
         log_message();
       }

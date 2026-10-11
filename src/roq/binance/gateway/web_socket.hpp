@@ -143,7 +143,7 @@ struct WebSocket final : public Base<WebSocket>,
       std::string_view const &previous_request_id);
   void open_orders_cancel_all(Event<CancelAllOrders> const &, std::string_view const &request_id);
 
-  void parse(std::string_view const &message);
+  void parse(TraceInfo const &, std::string_view const &message);
 
   void operator()(Trace<protocol::json::OutboundAccountPositionData> const &);
   void operator()(Trace<protocol::json::BalanceUpdateData> const &);

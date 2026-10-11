@@ -490,7 +490,7 @@ void Rest::operator()(Trace<protocol::json::ExchangeInfoAck> const &event) {
     auto symbols_update = SymbolsUpdate{
         .symbols = symbols,
     };
-    handler_(symbols_update);
+    create_trace_and_dispatch(handler_, trace_info, symbols_update);
   }
 }
 

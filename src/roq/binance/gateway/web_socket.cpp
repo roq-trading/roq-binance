@@ -282,7 +282,7 @@ void WebSocket::operator()(Trace<web::socket::Latency> const &event) {
 
 void WebSocket::operator()(Trace<web::socket::Text> const &event) {
   auto &[trace_info, text] = event;
-  parse(text.payload);
+  parse(trace_info, text.payload);
 }
 
 void WebSocket::operator()(Trace<web::socket::Binary> const &) {
@@ -1219,11 +1219,10 @@ void WebSocket::open_orders_cancel_all(Event<CancelAllOrders> const &event, std:
   });
 }
 
-void WebSocket::parse(std::string_view const &message) {
+void WebSocket::parse(TraceInfo const &trace_info, std::string_view const &message) {
   profile_.parse([&]() {
     auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     try {
-      TraceInfo trace_info;
       if (!protocol::json::WSAPIParser::dispatch(*this, message, decode_buffer_, trace_info)) {
         log_message();
       }

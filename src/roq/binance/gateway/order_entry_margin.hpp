@@ -46,7 +46,7 @@ namespace gateway {
 
 struct OrderEntryMargin final : public Base<OrderEntryMargin>, public server::OrderActionStream, public web::rest::Client::Handler {
   struct Handler {
-    virtual void operator()(ListenKeyUpdate const &) = 0;
+    virtual void operator()(Trace<ListenKeyUpdate> const &) = 0;
   };
 
   OrderEntryMargin(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &);

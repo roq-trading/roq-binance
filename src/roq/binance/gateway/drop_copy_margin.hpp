@@ -40,7 +40,7 @@ struct DropCopyMargin final : public Base<DropCopyMargin>,
 
   DropCopyMargin(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, ListenKeyUpdate const &);
 
-  void operator()(ListenKeyUpdate const &);
+  void operator()(Trace<ListenKeyUpdate> const &);
 
   // protected:
   friend base_type;
@@ -111,7 +111,7 @@ struct DropCopyMargin final : public Base<DropCopyMargin>,
   void get_account(TraceInfo const &);
   void get_orders(TraceInfo const &);
 
-  void parse(std::string_view const &message);
+  void parse(TraceInfo const &, std::string_view const &message);
 
   void operator()(Trace<protocol::json::OutboundAccountPositionData> const &);
   void operator()(Trace<protocol::json::BalanceUpdateData> const &);

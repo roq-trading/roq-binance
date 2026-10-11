@@ -43,7 +43,7 @@ namespace gateway {
 
 struct OrderEntryPortfolio final : public Base<OrderEntryPortfolio>, public server::OrderActionStream, public web::rest::Client::Handler {
   struct Handler {
-    virtual void operator()(ListenKeyUpdate const &) = 0;
+    virtual void operator()(Trace<ListenKeyUpdate> const &) = 0;
   };
 
   OrderEntryPortfolio(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, bool master = true, std::string_view const &interface = {});
