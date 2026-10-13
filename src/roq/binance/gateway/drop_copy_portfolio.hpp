@@ -88,13 +88,13 @@ struct DropCopyPortfolio final : public Base<DropCopyPortfolio>,
 
   // helpers
 
-  void request_account();
+  void request_account(TraceInfo const &);
   void check_response_account(TraceInfo const &);
 
-  void request_orders();
+  void request_orders(TraceInfo const &);
   void check_response_orders(TraceInfo const &);
 
-  void request_trades();
+  void request_trades(TraceInfo const &);
   void check_response_trades(TraceInfo const &);
 
   void parse(TraceInfo const &, std::string_view const &message);

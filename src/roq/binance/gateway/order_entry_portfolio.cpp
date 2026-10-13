@@ -171,17 +171,17 @@ void OrderEntryPortfolio::operator()(Trace<Timer> const &event) {
   if (master_ && ready() && !downloading()) {
     if (!downloading() && request_.respond_account < request_.request_account) {
       log::info("Download account..."sv);
-      get_account();
+      get_account(trace_info);
       download_account_ = true;
     }
     if (!downloading() && request_.respond_orders < request_.request_orders) {
       log::info("Download orders..."sv);
-      get_open_orders();
+      get_open_orders(trace_info);
       download_orders_ = true;
     }
     if (!downloading() && request_.respond_trades < request_.request_trades) {
       log::info("Download trades..."sv);
-      get_trades();
+      get_trades(trace_info);
       download_trades_ = true;
     }
   }
@@ -399,15 +399,14 @@ void OrderEntryPortfolio::operator()(Trace<protocol::json::ListenKeyAck> const &
       log::info<1>("Listen key has been refreshed!"sv);
     }
   }
-  auto now = clock::get_system();
-  listen_key_refresh_ = now + shared_.settings.rest.listen_key_refresh;
+  listen_key_refresh_ = trace_info.origin_create_time + shared_.settings.rest.listen_key_refresh;
 }
 
 // account
 
-void OrderEntryPortfolio::get_account() {
+void OrderEntryPortfolio::get_account(TraceInfo const &trace_info) {
   profile_.account([&]() {
-    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
     auto query = account_.create_rest_signature_old(now_utc);
     auto headers = account_.get_rest_headers_old();
     auto request = web::rest::Request{
@@ -431,14 +430,14 @@ void OrderEntryPortfolio::get_account_ack(Trace<web::rest::Response> const &even
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
       // completion
-      request_.respond_account = clock::get_system();
+      request_.respond_account = trace_info.origin_create_time;
       download_account_ = false;
     };
     auto handle_success = [&](auto &body) {
       protocol::json::BalancesAck balances_ack{body, decode_buffer_};
       create_trace_and_dispatch_2(trace_info, balances_ack);
       // completion
-      request_.respond_account = clock::get_system();
+      request_.respond_account = trace_info.origin_create_time;
       download_account_ = false;
     };
     process_response(event, handle_error, handle_success);
@@ -470,12 +469,12 @@ void OrderEntryPortfolio::operator()(Trace<protocol::json::BalancesAck> const &e
 // orders
 
 // XXX should prefer to add filter on symbol -- cost is multiplied by number of symbols traded on exchange
-void OrderEntryPortfolio::get_open_orders() {
+void OrderEntryPortfolio::get_open_orders(TraceInfo const &trace_info) {
   profile_.open_orders([&]() {
-    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
     auto query = account_.create_rest_signature_old(now_utc);
     auto headers = account_.get_rest_headers_old();
-    auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
+    auto timestamp = now_utc;
     encode_buffer_.clear();
     fmt::format_to(
         std::back_inserter(encode_buffer_),
@@ -505,14 +504,14 @@ void OrderEntryPortfolio::get_open_orders_ack(Trace<web::rest::Response> const &
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
       // completion
-      request_.respond_orders = clock::get_system();
+      request_.respond_orders = trace_info.origin_create_time;
       download_orders_ = false;
     };
     auto handle_success = [&](auto &body) {
       protocol::json::OpenOrdersAck open_orders_ack{body, decode_buffer_};
       create_trace_and_dispatch_2(trace_info, open_orders_ack);
       // completion
-      request_.respond_orders = clock::get_system();
+      request_.respond_orders = trace_info.origin_create_time;
       download_orders_ = false;
     };
     process_response(event, handle_error, handle_success);
@@ -574,11 +573,11 @@ void OrderEntryPortfolio::operator()(Trace<protocol::json::OpenOrdersAck> const 
 // trades
 
 // note! GET only supports query string (no body)
-void OrderEntryPortfolio::get_trades() {
+void OrderEntryPortfolio::get_trades(TraceInfo const &trace_info) {
   profile_.trades([&]() {
     auto &symbols = shared_.settings.download.symbols;
     for (auto &symbol : symbols) {
-      auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+      auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
       auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
       auto limit = shared_.settings.download.trades_limit ? shared_.settings.download.trades_limit : DOWNLOAD_TRADES_LIMIT;
       log::info<1>("Download trades: lookback={}"sv, lookback);
@@ -607,14 +606,14 @@ void OrderEntryPortfolio::get_trades_ack(Trace<web::rest::Response> const &event
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
       // completion
-      request_.respond_trades = clock::get_system();
+      request_.respond_trades = trace_info.origin_create_time;
       download_trades_ = false;
     };
     auto handle_success = [&](auto &body) {
       protocol::json::TradesAck trades_ack{body, decode_buffer_};
       create_trace_and_dispatch_2(trace_info, trades_ack);
       // completion
-      request_.respond_trades = clock::get_system();
+      request_.respond_trades = trace_info.origin_create_time;
       download_trades_ = false;
       download_trades_is_first_ = false;
     };
@@ -696,7 +695,7 @@ void OrderEntryPortfolio::new_order(
     open_orders_symbols_.emplace(create_order.symbol);
     auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
     auto body = protocol::json::Encoder::new_order_url(
         encode_buffer_, create_order, order, ref_data, request_id, create_order_template, recv_window, now_utc, shared_.api.margin_side_effect_type);
     auto query = account_.create_rest_signature_old_body(now_utc, body);
@@ -835,7 +834,7 @@ void OrderEntryPortfolio::cancel_order(
     }
     auto &[message_info, cancel_order] = event;
     auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
-    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
     auto body = protocol::json::Encoder::cancel_order_url(
         encode_buffer_, cancel_order, order, ref_data, request_id, previous_request_id, cancel_order_template, recv_window, now_utc);
@@ -977,7 +976,7 @@ void OrderEntryPortfolio::cancel_all_open_orders(Event<CancelAllOrders> const &e
       if (!std::empty(cancel_all_orders.symbol) && symbol != cancel_all_orders.symbol) {
         continue;
       }
-      auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+      auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
       auto body = protocol::json::Encoder::cancel_all_open_orders_url(encode_buffer_, symbol, MarginMode::PORTFOLIO, recv_window, now_utc);
       auto query = account_.create_rest_signature_old_body(now_utc, body);
       auto headers = account_.get_rest_headers_old();

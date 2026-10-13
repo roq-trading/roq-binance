@@ -299,14 +299,15 @@ void DropCopyMargin::operator()(Trace<protocol::json::WSAPIUserDataStreamSubscri
   });
 }
 
-void DropCopyMargin::operator()(Trace<protocol::json::WSAPIEventStreamTerminated> const &) {
+void DropCopyMargin::operator()(Trace<protocol::json::WSAPIEventStreamTerminated> const &event) {
+  auto &[trace_info, event_stream_terminated] = event;
   if (std::empty(listen_token_)) {
     return;
   }
   log::warn("REQUEST LISTEN TOKEN"sv);
   listen_token_.clear();
   (*connection_).suspend_for(60s);
-  request_.request_listen_key_cross = clock::get_system();
+  request_.request_listen_key_cross = trace_info.origin_create_time;
   download_listen_token_ = true;
 }
 
@@ -370,7 +371,7 @@ void DropCopyMargin::operator()(Trace<protocol::json::WSAPIExecutionReport> cons
 // session-logon
 
 void DropCopyMargin::session_logon(TraceInfo const &trace_info) {
-  auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
+  auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
   auto request = protocol::json::WSAPIRequest{
       .sequence = ++request_id_,
       .type = protocol::json::WSAPIType::SESSION_LOGON,
@@ -426,14 +427,14 @@ void DropCopyMargin::subscribe_user_data_stream(TraceInfo const &trace_info) {
 }
 
 void DropCopyMargin::get_account(TraceInfo const &trace_info) {
-  request_.request_account_cross = clock::get_system();
+  request_.request_account_cross = trace_info.origin_create_time;
   create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "account"sv);
 }
 
 // open-orders
 
 void DropCopyMargin::get_orders(TraceInfo const &trace_info) {
-  request_.request_orders_cross = clock::get_system();
+  request_.request_orders_cross = trace_info.origin_create_time;
   create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "orders"sv);
 }
 

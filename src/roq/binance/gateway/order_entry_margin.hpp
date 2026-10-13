@@ -110,26 +110,26 @@ struct OrderEntryMargin final : public Base<OrderEntryMargin>, public server::Or
 
   // account
 
-  void get_account(MarginMode);
+  void get_account(TraceInfo const &, MarginMode);
   void get_account_ack(Trace<web::rest::Response> const &, MarginMode);
   void operator()(Trace<protocol::json::AccountAck> const &, MarginMode);
   void operator()(Trace<protocol::json::CrossMarginAccount> const &, MarginMode);
 
   // open-orders
 
-  void get_open_orders(MarginMode);
+  void get_open_orders(TraceInfo const &, MarginMode);
   void get_open_orders_ack(Trace<web::rest::Response> const &, MarginMode);
   void operator()(Trace<protocol::json::OpenOrdersAck> const &, MarginMode);
 
   // trades
 
-  void get_trades(MarginMode);
+  void get_trades(TraceInfo const &, MarginMode);
   void get_trades_ack(Trace<web::rest::Response> const &, MarginMode);
   void operator()(Trace<protocol::json::TradesAck> const &, MarginMode);
 
   // account-cross
 
-  void get_account_cross_on_timer();
+  void get_account_cross_on_timer(TraceInfo const &);
   void get_account_cross_on_timer_ack(Trace<web::rest::Response> const &);
   void operator()(Trace<protocol::json::CrossMarginAccount> const &);
 

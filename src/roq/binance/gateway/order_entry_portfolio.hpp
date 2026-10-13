@@ -107,19 +107,19 @@ struct OrderEntryPortfolio final : public Base<OrderEntryPortfolio>, public serv
 
   // account
 
-  void get_account();
+  void get_account(TraceInfo const &);
   void get_account_ack(Trace<web::rest::Response> const &);
   void operator()(Trace<protocol::json::BalancesAck> const &);
 
   // open-orders
 
-  void get_open_orders();
+  void get_open_orders(TraceInfo const &);
   void get_open_orders_ack(Trace<web::rest::Response> const &);
   void operator()(Trace<protocol::json::OpenOrdersAck> const &);
 
   // trades
 
-  void get_trades();
+  void get_trades(TraceInfo const &);
   void get_trades_ack(Trace<web::rest::Response> const &);
   void operator()(Trace<protocol::json::TradesAck> const &);
 

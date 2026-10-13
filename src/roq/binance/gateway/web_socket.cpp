@@ -880,7 +880,7 @@ void WebSocket::operator()(Trace<protocol::json::WSAPIExecutionReport> const &ev
 // weight: 2
 
 void WebSocket::session_logon(TraceInfo const &trace_info) {
-  auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
+  auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
   auto request = protocol::json::WSAPIRequest{
       .sequence = ++request_id_,
       .type = protocol::json::WSAPIType::SESSION_LOGON,
@@ -936,7 +936,7 @@ void WebSocket::user_data_stream_subscribe(TraceInfo const &trace_info) {
 // weight: 20
 
 void WebSocket::account_status(TraceInfo const &trace_info) {
-  auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
+  auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
   auto request = protocol::json::WSAPIRequest{
       .sequence = ++request_id_,
       .type = protocol::json::WSAPIType::ACCOUNT_STATUS,
@@ -964,7 +964,7 @@ void WebSocket::account_status(TraceInfo const &trace_info) {
 // weight: 80 (symbol=none)
 
 void WebSocket::open_orders_status(TraceInfo const &trace_info) {
-  auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
+  auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
   auto request = protocol::json::WSAPIRequest{
       .sequence = ++request_id_,
       .type = protocol::json::WSAPIType::OPEN_ORDERS_STATUS,
@@ -996,7 +996,7 @@ void WebSocket::my_trades(TraceInfo const &trace_info) {
   auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
   if (lookback.count() && !std::empty(shared_.settings.download.symbols)) {
     log::info<1>("Download trades: lookback={}, symbol={}"sv, lookback, shared_.settings.download.symbols);
-    auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
+    auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
     auto start_time = std::chrono::duration_cast<std::chrono::milliseconds>(timestamp - lookback);
     auto limit = shared_.settings.download.trades_limit ? shared_.settings.download.trades_limit : DOWNLOAD_TRADES_LIMIT;
     for (auto &symbol : shared_.settings.download.symbols) {
@@ -1047,7 +1047,7 @@ void WebSocket::order_place(
     open_orders_symbols_.emplace(create_order.symbol);
     auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
+    auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
     auto params =
         protocol::json::Encoder::place_order_json(encode_buffer_, create_order, order, ref_data, request_id, create_order_template, recv_window, timestamp);
     auto request = protocol::json::WSAPIRequest{
@@ -1087,7 +1087,7 @@ void WebSocket::order_amend_keep_priority(
     }
     auto &[message_info, modify_order] = event;
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
+    auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
     auto params = protocol::json::Encoder::amend_order_keep_priority_json(
         encode_buffer_, modify_order, order, ref_data, request_id, previous_request_id, recv_window, timestamp);
     auto request = protocol::json::WSAPIRequest{
@@ -1128,7 +1128,7 @@ void WebSocket::order_cancel(
     auto &[message_info, cancel_order] = event;
     auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
+    auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
     auto params = protocol::json::Encoder::cancel_order_json(
         encode_buffer_, cancel_order, order, ref_data, request_id, previous_request_id, cancel_order_template, recv_window, timestamp);
     auto request = protocol::json::WSAPIRequest{
@@ -1190,7 +1190,7 @@ void WebSocket::open_orders_cancel_all(Event<CancelAllOrders> const &event, std:
       if (!std::empty(cancel_all_orders.symbol) && symbol != cancel_all_orders.symbol) {
         continue;
       }
-      auto timestamp = clock::get_realtime<std::chrono::milliseconds>();
+      auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
       auto request = protocol::json::WSAPIRequest{
           .sequence = ++request_id_,
           .type = protocol::json::WSAPIType::OPEN_ORDERS_CANCEL_ALL,

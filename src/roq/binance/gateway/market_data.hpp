@@ -12,7 +12,7 @@
 
 #include "roq/web/socket/client.hpp"
 
-#include "roq/core/timer_queue.hpp"
+#include "roq/core/limit/queue.hpp"
 
 #include "roq/core/json/buffer_stack.hpp"
 
@@ -87,7 +87,7 @@ struct MarketData final : public Base<MarketData>,
 
   // helpers
 
-  void check_subscribe_queue(std::chrono::nanoseconds now);
+  void check_subscribe_queue(TraceInfo const &);
 
   void subscribe(std::span<Symbol const> const &symbols);
 
@@ -123,7 +123,7 @@ struct MarketData final : public Base<MarketData>,
   // state
   ConnectionStatus connection_status_ = {};
   // queue
-  core::TimerQueue<std::string> subscribe_queue_;
+  core::limit::Queue<std::string> subscribe_queue_;
 };
 
 }  // namespace gateway

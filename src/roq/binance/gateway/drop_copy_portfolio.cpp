@@ -223,16 +223,16 @@ int32_t DropCopyPortfolio::download(Trace<State> const &event) {
       break;
     case ACCOUNT:
       create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "account"sv);
-      request_account();
+      request_account(trace_info);
       return 1;
     case ORDERS:
       create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "orders"sv);
-      request_orders();
+      request_orders(trace_info);
       return 1;
     case TRADES:
       if (shared_.settings.download.trades_lookback.count() != 0 && !std::empty(shared_.settings.download.symbols)) {
         create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "trades"sv);
-        request_trades();
+        request_trades(trace_info);
         return 1;
       } else {
         return 0;
@@ -404,9 +404,9 @@ void DropCopyPortfolio::parse(TraceInfo const &trace_info, std::string_view cons
   });
 }
 
-void DropCopyPortfolio::request_account() {
+void DropCopyPortfolio::request_account(TraceInfo const &trace_info) {
   log::info("Requesting account download..."sv);
-  request_.request_account = clock::get_system();
+  request_.request_account = trace_info.origin_create_time;
 }
 
 void DropCopyPortfolio::check_response_account(TraceInfo const &trace_info) {
@@ -419,9 +419,9 @@ void DropCopyPortfolio::check_response_account(TraceInfo const &trace_info) {
   }
 }
 
-void DropCopyPortfolio::request_orders() {
+void DropCopyPortfolio::request_orders(TraceInfo const &trace_info) {
   log::info("Requesting order download..."sv);
-  request_.request_orders = clock::get_system();
+  request_.request_orders = trace_info.origin_create_time;
 }
 
 void DropCopyPortfolio::check_response_orders(TraceInfo const &trace_info) {
@@ -434,9 +434,9 @@ void DropCopyPortfolio::check_response_orders(TraceInfo const &trace_info) {
   }
 }
 
-void DropCopyPortfolio::request_trades() {
+void DropCopyPortfolio::request_trades(TraceInfo const &trace_info) {
   log::info("Requesting trades download..."sv);
-  request_.request_trades = clock::get_system();
+  request_.request_trades = trace_info.origin_create_time;
 }
 
 void DropCopyPortfolio::check_response_trades(TraceInfo const &trace_info) {

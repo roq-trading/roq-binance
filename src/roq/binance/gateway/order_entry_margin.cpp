@@ -156,15 +156,15 @@ void OrderEntryMargin::operator()(Trace<Timer> const &event) {
   if (ready() && !downloading()) {
     // spot
     if (!downloading() && request_.respond_account < request_.request_account) {
-      get_account({});
+      get_account(trace_info, {});
       download_account_ = true;
     }
     if (!downloading() && request_.respond_orders < request_.request_orders) {
-      get_open_orders({});
+      get_open_orders(trace_info, {});
       download_orders_ = true;
     }
     if (!downloading() && request_.respond_trades < request_.request_trades) {
-      get_trades({});
+      get_trades(trace_info, {});
       download_trades_ = true;
     }
     // margin cross
@@ -173,20 +173,20 @@ void OrderEntryMargin::operator()(Trace<Timer> const &event) {
       download_listen_key_cross_ = true;
     }
     if (!downloading() && request_.respond_account_cross < request_.request_account_cross) {
-      get_account(MarginMode::CROSS);
+      get_account(trace_info, MarginMode::CROSS);
       download_account_cross_ = true;
     }
     if (!downloading() && request_.respond_orders_cross < request_.request_orders_cross) {
-      get_open_orders(MarginMode::CROSS);
+      get_open_orders(trace_info, MarginMode::CROSS);
       download_orders_cross_ = true;
     }
     if (!downloading() && request_.respond_trades_cross < request_.request_trades_cross) {
-      get_trades(MarginMode::CROSS);
+      get_trades(trace_info, MarginMode::CROSS);
       download_trades_cross_ = true;
     }
     // timer
     if (!downloading() && shared_.settings.rest.download_borrowed_freq.count() && (next_poll_borrowed_ < timer.now || next_poll_borrowed_.count() == 0)) {
-      get_account_cross_on_timer();
+      get_account_cross_on_timer(trace_info);
       download_account_cross_on_timer_ = true;
       next_poll_borrowed_ = timer.now + shared_.settings.rest.download_borrowed_freq;
     }
@@ -398,7 +398,7 @@ void OrderEntryMargin::get_listen_key_ack(Trace<web::rest::Response> const &even
       if (download_.downloading()) {
         download_.retry(STATE);
       }
-      request_.respond_listen_key_cross = clock::get_system();  // completion
+      request_.respond_listen_key_cross = trace_info.origin_create_time;  // completion
       download_listen_key_cross_ = false;
     };
     auto handle_success = [&](auto &body) {
@@ -414,8 +414,8 @@ void OrderEntryMargin::get_listen_key_ack(Trace<web::rest::Response> const &even
           get_listen_key(MarginMode::CROSS);
           break;
         case CROSS:
-          download_.check_relaxed(trace_info, STATE);               // note! done
-          request_.respond_listen_key_cross = clock::get_system();  // completion
+          download_.check_relaxed(trace_info, STATE);                         // note! done
+          request_.respond_listen_key_cross = trace_info.origin_create_time;  // completion
           download_listen_key_cross_ = false;
           break;
         case PORTFOLIO:
@@ -448,8 +448,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::ListenKeyAckMargin> cons
     if (utils::update(listen_key_, listen_key_ack.token)) {
       dispatch(initial);
     }
-    auto now = clock::get_system();
-    listen_key_refresh_ = now + shared_.settings.rest.listen_key_refresh;
+    listen_key_refresh_ = trace_info.origin_create_time + shared_.settings.rest.listen_key_refresh;
   };
   auto update_margin_cross = [&]() {
     /*
@@ -459,8 +458,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::ListenKeyAckMargin> cons
     }
     */
     dispatch(true);
-    // auto now = clock::get_system();
-    // listen_key_refresh_cross_ = now + shared_.settings.rest.listen_key_refresh;
+    // listen_key_refresh_cross_ = trace_info.origin_create_time + shared_.settings.rest.listen_key_refresh;
     has_listen_key_cross_ = true;
   };
   switch (margin_mode) {
@@ -482,10 +480,10 @@ void OrderEntryMargin::operator()(Trace<protocol::json::ListenKeyAckMargin> cons
 
 // account
 
-void OrderEntryMargin::get_account(MarginMode margin_mode) {
+void OrderEntryMargin::get_account(TraceInfo const &trace_info, MarginMode margin_mode) {
   profile_.account([&]() {
     log::info("Download account... (margin_mode={})"sv, margin_mode);
-    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
     auto path = [&]() {
       switch (margin_mode) {
         using enum MarginMode;
@@ -529,14 +527,14 @@ void OrderEntryMargin::get_account_ack(Trace<web::rest::Response> const &event, 
       switch (margin_mode) {
         using enum MarginMode;
         case UNDEFINED:
-          request_.respond_account = clock::get_system();  // completion
+          request_.respond_account = trace_info.origin_create_time;  // completion
           download_account_ = false;
           break;
         case ISOLATED:
           log::fatal("Unexpected"sv);  // note! not implemented
           break;
         case CROSS:
-          request_.respond_account_cross = clock::get_system();  // completion
+          request_.respond_account_cross = trace_info.origin_create_time;  // completion
           download_account_cross_ = false;
           break;
         case PORTFOLIO:
@@ -549,7 +547,7 @@ void OrderEntryMargin::get_account_ack(Trace<web::rest::Response> const &event, 
         case UNDEFINED: {
           protocol::json::AccountAck account_ack{body, decode_buffer_};
           create_trace_and_dispatch_2(trace_info, account_ack, margin_mode);
-          request_.respond_account = clock::get_system();  // completion
+          request_.respond_account = trace_info.origin_create_time;  // completion
           download_account_ = false;
           break;
         }
@@ -558,7 +556,7 @@ void OrderEntryMargin::get_account_ack(Trace<web::rest::Response> const &event, 
         case CROSS: {
           protocol::json::CrossMarginAccount account{body, decode_buffer_};
           create_trace_and_dispatch_2(trace_info, account, margin_mode);
-          request_.respond_account_cross = clock::get_system();  // completion
+          request_.respond_account_cross = trace_info.origin_create_time;  // completion
           download_account_cross_ = false;
           break;
         }
@@ -617,7 +615,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::CrossMarginAccount> cons
 // orders
 
 // XXX FIXME TODO for margin => isIsolated true/false
-void OrderEntryMargin::get_open_orders(MarginMode margin_mode) {
+void OrderEntryMargin::get_open_orders(TraceInfo const &trace_info, MarginMode margin_mode) {
   profile_.open_orders([&]() {
     log::info("Download open orders... (margin_mode={})"sv, margin_mode);
     auto path = [&]() {
@@ -634,7 +632,7 @@ void OrderEntryMargin::get_open_orders(MarginMode margin_mode) {
       };
       log::fatal("Unexpected"sv);
     }();
-    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
     auto body = fmt::format("timestamp={}"sv, now_utc.count());
     auto query = account_.create_rest_signature_body_new(body);
     auto headers = account_.get_rest_headers_new();
@@ -662,13 +660,13 @@ void OrderEntryMargin::get_open_orders_ack(Trace<web::rest::Response> const &eve
       switch (margin_mode) {
         using enum MarginMode;
         case UNDEFINED:
-          request_.respond_orders = clock::get_system();  // completion
+          request_.respond_orders = trace_info.origin_create_time;  // completion
           download_orders_ = false;
           break;
         case ISOLATED:
           log::fatal("Unexpected"sv);  // note! not implemented
         case CROSS:
-          request_.respond_orders_cross = clock::get_system();  // completion
+          request_.respond_orders_cross = trace_info.origin_create_time;  // completion
           download_orders_cross_ = false;
           break;
         case PORTFOLIO:
@@ -682,13 +680,13 @@ void OrderEntryMargin::get_open_orders_ack(Trace<web::rest::Response> const &eve
       switch (margin_mode) {
         using enum MarginMode;
         case UNDEFINED:
-          request_.respond_orders = clock::get_system();  // completion
+          request_.respond_orders = trace_info.origin_create_time;  // completion
           download_orders_ = false;
           break;
         case ISOLATED:
           log::fatal("Unexpected"sv);  // note! not implemented
         case CROSS:
-          request_.respond_orders_cross = clock::get_system();  // completion
+          request_.respond_orders_cross = trace_info.origin_create_time;  // completion
           download_orders_cross_ = false;
           break;
         case PORTFOLIO:
@@ -754,12 +752,12 @@ void OrderEntryMargin::operator()(Trace<protocol::json::OpenOrdersAck> const &ev
 
 // XXX FIXME TODO download margin => isIsolated true/false
 
-void OrderEntryMargin::get_trades(MarginMode margin_mode) {
+void OrderEntryMargin::get_trades(TraceInfo const &trace_info, MarginMode margin_mode) {
   profile_.trades([&]() {
     log::info("Download trades... (margin_mode={})"sv, margin_mode);
     auto &symbols = shared_.settings.download.symbols;
     for (auto &symbol : symbols) {
-      auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+      auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
       auto lookback = get_download_trades_lookback(shared_.settings, download_trades_is_first_);
       auto limit = shared_.settings.download.trades_limit ? shared_.settings.download.trades_limit : DOWNLOAD_TRADES_LIMIT;
       log::info<1>("Download trades: lookback={}"sv, lookback);
@@ -791,13 +789,13 @@ void OrderEntryMargin::get_trades_ack(Trace<web::rest::Response> const &event, M
       switch (margin_mode) {
         using enum MarginMode;
         case UNDEFINED:
-          request_.respond_trades = clock::get_system();  // completion
+          request_.respond_trades = trace_info.origin_create_time;  // completion
           download_trades_ = false;
           break;
         case ISOLATED:
           log::fatal("Unexpected"sv);  // note! not implemented
         case CROSS:
-          request_.respond_trades_cross = clock::get_system();  // completion
+          request_.respond_trades_cross = trace_info.origin_create_time;  // completion
           download_trades_cross_ = false;
           break;
         case PORTFOLIO:
@@ -810,14 +808,14 @@ void OrderEntryMargin::get_trades_ack(Trace<web::rest::Response> const &event, M
       switch (margin_mode) {
         using enum MarginMode;
         case UNDEFINED:
-          request_.respond_trades = clock::get_system();  // completion
+          request_.respond_trades = trace_info.origin_create_time;  // completion
           download_trades_ = false;
           download_trades_is_first_ = false;
           break;
         case ISOLATED:
           log::fatal("Unexpected"sv);  // note! not implemented
         case CROSS:
-          request_.respond_trades_cross = clock::get_system();  // completion
+          request_.respond_trades_cross = trace_info.origin_create_time;  // completion
           download_trades_cross_ = false;
           download_trades_cross_is_first_ = false;
           break;
@@ -885,10 +883,10 @@ void OrderEntryMargin::operator()(Trace<protocol::json::TradesAck> const &event,
 
 // timer
 
-void OrderEntryMargin::get_account_cross_on_timer() {
+void OrderEntryMargin::get_account_cross_on_timer(TraceInfo const &trace_info) {
   profile_.account([&]() {
     log::warn("DEBUG Download borrowed amount ON TIMER..."sv);
-    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
     auto path = shared_.api.sapi.cross_account;
     auto body = fmt::format("timestamp={}"sv, now_utc.count());
     auto query = account_.create_rest_signature_body_new(body);
@@ -914,14 +912,14 @@ void OrderEntryMargin::get_account_cross_on_timer_ack(Trace<web::rest::Response>
     auto &[trace_info, response] = event;
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(account="{}", origin={}, error={}, status={}, text="{}")"sv, account_.name, origin, error, status, text);
-      request_.respond_account_cross = clock::get_system();  // completion
+      request_.respond_account_cross = trace_info.origin_create_time;  // completion
       download_account_cross_on_timer_ = false;
     };
     auto handle_success = [&](auto &body) {
       // log::warn(R"(DEBUG body="{}")"sv, body);
       protocol::json::CrossMarginAccount account{body, decode_buffer_};
       create_trace_and_dispatch_2(trace_info, account);
-      request_.respond_account_cross = clock::get_system();  // completion
+      request_.respond_account_cross = trace_info.origin_create_time;  // completion
       download_account_cross_on_timer_ = false;
     };
     process_response(event, handle_error, handle_success);
@@ -982,7 +980,7 @@ void OrderEntryMargin::new_order(
     open_orders_symbols_.emplace(create_order.symbol);
     auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
     auto body = protocol::json::Encoder::new_order_url(
         encode_buffer_, create_order, order, ref_data, request_id, create_order_template, recv_window, now_utc, shared_.api.margin_side_effect_type);
     auto query = account_.create_rest_signature_body_new(body);
@@ -1125,7 +1123,7 @@ void OrderEntryMargin::cancel_order(
     auto &[message_info, cancel_order] = event;
     auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
     auto body = protocol::json::Encoder::cancel_order_url(
         encode_buffer_, cancel_order, order, ref_data, request_id, previous_request_id, cancel_order_template, recv_window, now_utc);
     auto query = account_.create_rest_signature_body_new(body);
@@ -1293,7 +1291,7 @@ void OrderEntryMargin::cancel_all_open_orders(Event<CancelAllOrders> const &even
           };
           log::fatal("Unexpected"sv);
         }();
-        auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+        auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
         auto body = protocol::json::Encoder::cancel_all_open_orders_url(encode_buffer_, symbol, margin_mode, recv_window, now_utc);
         auto query = account_.create_rest_signature_body_new(body);
         auto headers = account_.get_rest_headers_new();
