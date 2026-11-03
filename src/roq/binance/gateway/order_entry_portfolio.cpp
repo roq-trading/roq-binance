@@ -28,11 +28,11 @@ namespace {
 auto const NAME = "om"sv;
 
 auto const SUPPORTS = Mask{
+    SupportType::FUNDS,
     SupportType::CREATE_ORDER,
     SupportType::CANCEL_ORDER,
     SupportType::ORDER_ACK,
     SupportType::TRADE,
-    SupportType::FUNDS,
 };
 
 auto const X_MBX_USED_WEIGHT_1M = "x-mbx-used-weight-1m"sv;
@@ -166,23 +166,26 @@ void OrderEntryPortfolio::operator()(Trace<Stop> const &) {
 
 void OrderEntryPortfolio::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  (*connection_).refresh(timer.now);
-  refresh_listen_key(timer.now);
-  if (master_ && ready() && !downloading()) {
-    if (!downloading() && request_.respond_account < request_.request_account) {
-      log::info("Download account..."sv);
-      get_account(trace_info);
-      download_account_ = true;
-    }
-    if (!downloading() && request_.respond_orders < request_.request_orders) {
-      log::info("Download orders..."sv);
-      get_open_orders(trace_info);
-      download_orders_ = true;
-    }
-    if (!downloading() && request_.respond_trades < request_.request_trades) {
-      log::info("Download trades..."sv);
-      get_trades(trace_info);
-      download_trades_ = true;
+  if ((*connection_).refresh(timer.now)) {
+    refresh_listen_key(timer.now);
+    if (ready()) {
+      if (master_ && !downloading()) {
+        if (!downloading() && request_.respond_account < request_.request_account) {
+          log::info("Download account..."sv);
+          get_account(trace_info);
+          download_account_ = true;
+        }
+        if (!downloading() && request_.respond_orders < request_.request_orders) {
+          log::info("Download orders..."sv);
+          get_open_orders(trace_info);
+          download_orders_ = true;
+        }
+        if (!downloading() && request_.respond_trades < request_.request_trades) {
+          log::info("Download trades..."sv);
+          get_trades(trace_info);
+          download_trades_ = true;
+        }
+      }
     }
   }
 }
@@ -320,6 +323,7 @@ void OrderEntryPortfolio::operator()(Trace<web::rest::Latency> const &event) {
 
 int32_t OrderEntryPortfolio::download(Trace<State> const &event) {
   auto &[trace_info, state] = event;
+  auto publish_downloading = [&]() { create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, magic_enum::enum_name(state)); };
   switch (state) {
     using enum State;
     case UNDEFINED:
@@ -327,7 +331,7 @@ int32_t OrderEntryPortfolio::download(Trace<State> const &event) {
       break;
     case LISTEN_KEY:
       if (master_) {
-        create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "listen-key"sv);
+        publish_downloading();
         get_listen_key();
         return 1;
       } else {

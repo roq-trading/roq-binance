@@ -29,9 +29,9 @@ namespace {
 auto const NAME = "ws"sv;
 
 auto const SUPPORTS = Mask{
+    SupportType::FUNDS,
     SupportType::ORDER_ACK,
     SupportType::ORDER,
-    SupportType::FUNDS,
 };
 
 uint32_t const REQUEST_ID = 1'000'000;
@@ -132,10 +132,13 @@ void DropCopyMargin::operator()(Trace<Stop> const &) {
 
 void DropCopyMargin::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  (*connection_).refresh(timer.now);
-  check_response_listen_key();
-  check_response_account(trace_info);
-  check_response_orders(trace_info);
+  if ((*connection_).refresh(timer.now)) {
+    if (ready()) {
+      check_response_listen_key();
+      check_response_account(trace_info);
+      check_response_orders(trace_info);
+    }
+  }
 }
 
 void DropCopyMargin::operator()(metrics::Writer &writer) const {
@@ -231,21 +234,26 @@ void DropCopyMargin::operator()(Trace<web::socket::Binary> const &) {
 
 int32_t DropCopyMargin::download(Trace<State> const &event) {
   auto &[trace_info, state] = event;
+  auto publish_downloading = [&]() { create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, magic_enum::enum_name(state)); };
   switch (state) {
     using enum State;
     case UNDEFINED:
       assert(false);
       break;
     case SESSION_LOGON:
+      publish_downloading();
       session_logon(trace_info);
       return 1;
     case USER_DATA_STREAM_SUBSCRIBE:
+      publish_downloading();
       subscribe_user_data_stream(trace_info);
       return 1;
     case ACCOUNT:
+      publish_downloading();
       get_account(trace_info);
       return 1;
     case ORDERS:
+      publish_downloading();
       get_orders(trace_info);
       return 1;
     case DONE:

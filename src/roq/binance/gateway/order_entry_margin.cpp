@@ -27,11 +27,11 @@ namespace {
 auto const NAME = "om"sv;
 
 auto const SUPPORTS = Mask{
+    SupportType::FUNDS,
     SupportType::CREATE_ORDER,
     SupportType::CANCEL_ORDER,
     SupportType::ORDER_ACK,
     SupportType::TRADE,
-    SupportType::FUNDS,
 };
 
 size_t const MAX_DECODE_BUFFER_DEPTH = 1;
@@ -150,45 +150,48 @@ void OrderEntryMargin::operator()(Trace<Stop> const &) {
 
 void OrderEntryMargin::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  (*connection_).refresh(timer.now);
-  refresh_listen_key(timer.now);
-  // XXX HANS only master
-  if (ready() && !downloading()) {
-    // spot
-    if (!downloading() && request_.respond_account < request_.request_account) {
-      get_account(trace_info, {});
-      download_account_ = true;
-    }
-    if (!downloading() && request_.respond_orders < request_.request_orders) {
-      get_open_orders(trace_info, {});
-      download_orders_ = true;
-    }
-    if (!downloading() && request_.respond_trades < request_.request_trades) {
-      get_trades(trace_info, {});
-      download_trades_ = true;
-    }
-    // margin cross
-    if (!downloading() && request_.respond_listen_key_cross < request_.request_listen_key_cross) {
-      get_listen_key(MarginMode::CROSS);
-      download_listen_key_cross_ = true;
-    }
-    if (!downloading() && request_.respond_account_cross < request_.request_account_cross) {
-      get_account(trace_info, MarginMode::CROSS);
-      download_account_cross_ = true;
-    }
-    if (!downloading() && request_.respond_orders_cross < request_.request_orders_cross) {
-      get_open_orders(trace_info, MarginMode::CROSS);
-      download_orders_cross_ = true;
-    }
-    if (!downloading() && request_.respond_trades_cross < request_.request_trades_cross) {
-      get_trades(trace_info, MarginMode::CROSS);
-      download_trades_cross_ = true;
-    }
-    // timer
-    if (!downloading() && shared_.settings.rest.download_borrowed_freq.count() && (next_poll_borrowed_ < timer.now || next_poll_borrowed_.count() == 0)) {
-      get_account_cross_on_timer(trace_info);
-      download_account_cross_on_timer_ = true;
-      next_poll_borrowed_ = timer.now + shared_.settings.rest.download_borrowed_freq;
+  if ((*connection_).refresh(timer.now)) {
+    refresh_listen_key(timer.now);
+    // XXX HANS only master
+    if (ready()) {
+      if (!downloading()) {
+        // spot
+        if (!downloading() && request_.respond_account < request_.request_account) {
+          get_account(trace_info, {});
+          download_account_ = true;
+        }
+        if (!downloading() && request_.respond_orders < request_.request_orders) {
+          get_open_orders(trace_info, {});
+          download_orders_ = true;
+        }
+        if (!downloading() && request_.respond_trades < request_.request_trades) {
+          get_trades(trace_info, {});
+          download_trades_ = true;
+        }
+        // margin cross
+        if (!downloading() && request_.respond_listen_key_cross < request_.request_listen_key_cross) {
+          get_listen_key(MarginMode::CROSS);
+          download_listen_key_cross_ = true;
+        }
+        if (!downloading() && request_.respond_account_cross < request_.request_account_cross) {
+          get_account(trace_info, MarginMode::CROSS);
+          download_account_cross_ = true;
+        }
+        if (!downloading() && request_.respond_orders_cross < request_.request_orders_cross) {
+          get_open_orders(trace_info, MarginMode::CROSS);
+          download_orders_cross_ = true;
+        }
+        if (!downloading() && request_.respond_trades_cross < request_.request_trades_cross) {
+          get_trades(trace_info, MarginMode::CROSS);
+          download_trades_cross_ = true;
+        }
+        // timer
+        if (!downloading() && shared_.settings.rest.download_borrowed_freq.count() && (next_poll_borrowed_ < timer.now || next_poll_borrowed_.count() == 0)) {
+          get_account_cross_on_timer(trace_info);
+          download_account_cross_on_timer_ = true;
+          next_poll_borrowed_ = timer.now + shared_.settings.rest.download_borrowed_freq;
+        }
+      }
     }
   }
 }
@@ -329,6 +332,7 @@ void OrderEntryMargin::operator()(Trace<web::rest::Latency> const &event) {
 
 int32_t OrderEntryMargin::download(Trace<State> const &event) {
   auto &[trace_info, state] = event;
+  auto publish_downloading = [&]() { create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, magic_enum::enum_name(state)); };
   switch (state) {
     using enum State;
     case UNDEFINED:
@@ -338,7 +342,7 @@ int32_t OrderEntryMargin::download(Trace<State> const &event) {
       if (has_listen_key_cross_) {
         return 0;
       } else {
-        create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "listen-key"sv);
+        publish_downloading();
         get_listen_key(MarginMode::CROSS);  // note! isolated requires the symbol... don't know how to
         return 1;
       }

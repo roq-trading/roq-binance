@@ -29,13 +29,12 @@ namespace {
 auto const NAME = "ws"sv;
 
 auto const SUPPORTS = Mask{
+    SupportType::FUNDS,
     SupportType::CREATE_ORDER,
     SupportType::MODIFY_ORDER,
     SupportType::CANCEL_ORDER,
     SupportType::ORDER_ACK,
-    SupportType::ORDER,
     SupportType::TRADE,
-    SupportType::FUNDS,
 };
 
 uint32_t const REQUEST_ID = 1'000'000;
@@ -151,7 +150,10 @@ void WebSocket::operator()(Trace<Stop> const &) {
 
 void WebSocket::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  (*connection_).refresh(timer.now);
+  if ((*connection_).refresh(timer.now)) {
+    if (ready()) {
+    }
+  }
 }
 
 void WebSocket::operator()(metrics::Writer &writer) const {
@@ -293,24 +295,30 @@ void WebSocket::operator()(Trace<web::socket::Binary> const &) {
 
 int32_t WebSocket::download(Trace<State> const &event) {
   auto &[trace_info, state] = event;
+  auto publish_downloading = [&]() { create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, magic_enum::enum_name(state)); };
   switch (state) {
     using enum State;
     case UNDEFINED:
       assert(false);
       break;
     case SESSION_LOGON:
+      publish_downloading();
       session_logon(trace_info);
       return 1;
     case USER_DATA_STREAM_SUBSCRIBE:
+      publish_downloading();
       user_data_stream_subscribe(trace_info);
       return 1;
     case ACCOUNT_STATUS:
+      publish_downloading();
       account_status(trace_info);
       return 1;
     case OPEN_ORDERS_STATUS:
+      publish_downloading();
       open_orders_status(trace_info);
       return 1;
     case MY_TRADES:
+      publish_downloading();
       my_trades(trace_info);
       return 1;  // XXX FIXME TODO here we need a countdown
     case DONE:

@@ -245,13 +245,14 @@ void Rest::operator()(Trace<web::rest::MessageEnd> const &event) {
 
 int32_t Rest::download(Trace<State> const &event) {
   auto &[trace_info, state] = event;
+  auto publish_downloading = [&]() { create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, magic_enum::enum_name(state)); };
   switch (state) {
     using enum State;
     case UNDEFINED:
       assert(false);
       break;
     case EXCHANGE_INFO:
-      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "exchange-info");
+      publish_downloading();
       get_exchange_info();
       return 1;
     case DONE:

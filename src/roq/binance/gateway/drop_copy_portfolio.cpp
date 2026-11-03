@@ -25,10 +25,10 @@ namespace {
 auto const NAME = "ex"sv;
 
 auto const SUPPORTS = Mask{
+    SupportType::FUNDS,
     SupportType::ORDER_ACK,
     SupportType::ORDER,
     SupportType::TRADE,
-    SupportType::FUNDS,
 };
 
 size_t const MAX_DECODE_BUFFER_DEPTH = 1;
@@ -126,10 +126,13 @@ void DropCopyPortfolio::operator()(Trace<Stop> const &) {
 
 void DropCopyPortfolio::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  (*connection_).refresh(timer.now);
-  check_response_account(trace_info);
-  check_response_orders(trace_info);
-  check_response_trades(trace_info);
+  if ((*connection_).refresh(timer.now)) {
+    if (ready()) {
+      check_response_account(trace_info);
+      check_response_orders(trace_info);
+      check_response_trades(trace_info);
+    }
+  }
 }
 
 void DropCopyPortfolio::operator()(metrics::Writer &writer) const {
@@ -216,22 +219,23 @@ void DropCopyPortfolio::operator()(Trace<web::socket::Binary> const &) {
 
 int32_t DropCopyPortfolio::download(Trace<State> const &event) {
   auto &[trace_info, state] = event;
+  auto publish_downloading = [&]() { create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, magic_enum::enum_name(state)); };
   switch (state) {
     using enum State;
     case UNDEFINED:
       assert(false);
       break;
     case ACCOUNT:
-      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "account"sv);
+      publish_downloading();
       request_account(trace_info);
       return 1;
     case ORDERS:
-      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "orders"sv);
+      publish_downloading();
       request_orders(trace_info);
       return 1;
     case TRADES:
       if (shared_.settings.download.trades_lookback.count() != 0 && !std::empty(shared_.settings.download.symbols)) {
-        create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "trades"sv);
+        publish_downloading();
         request_trades(trace_info);
         return 1;
       } else {
