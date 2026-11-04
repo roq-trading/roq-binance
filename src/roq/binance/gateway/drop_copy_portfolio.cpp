@@ -126,7 +126,7 @@ void DropCopyPortfolio::operator()(Trace<Stop> const &) {
 
 void DropCopyPortfolio::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  if ((*connection_).refresh(timer.now)) {
+  if ((*connection_).refresh(trace_info)) {
     if (ready()) {
       check_response_account(trace_info);
       check_response_orders(trace_info);

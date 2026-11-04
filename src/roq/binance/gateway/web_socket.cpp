@@ -150,7 +150,7 @@ void WebSocket::operator()(Trace<Stop> const &) {
 
 void WebSocket::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  if ((*connection_).refresh(timer.now)) {
+  if ((*connection_).refresh(trace_info)) {
     if (ready()) {
     }
   }

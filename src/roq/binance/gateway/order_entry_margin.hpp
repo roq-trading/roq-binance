@@ -135,7 +135,7 @@ struct OrderEntryMargin final : public Base<OrderEntryMargin>, public server::Or
 
   // listen-key
 
-  void refresh_listen_key(std::chrono::nanoseconds now);
+  void refresh_listen_key(TraceInfo const &);
 
   // new-order
 

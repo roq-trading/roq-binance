@@ -166,8 +166,8 @@ void OrderEntryPortfolio::operator()(Trace<Stop> const &) {
 
 void OrderEntryPortfolio::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  if ((*connection_).refresh(timer.now)) {
-    refresh_listen_key(timer.now);
+  if ((*connection_).refresh(trace_info)) {
+    refresh_listen_key(trace_info);
     if (ready()) {
       if (master_ && !downloading()) {
         if (!downloading() && request_.respond_account < request_.request_account) {
@@ -675,15 +675,15 @@ void OrderEntryPortfolio::operator()(Trace<protocol::json::TradesAck> const &eve
 
 // ...
 
-void OrderEntryPortfolio::refresh_listen_key(std::chrono::nanoseconds now) {
+void OrderEntryPortfolio::refresh_listen_key(TraceInfo const &trace_info) {
   if (!ready_) {
     return;
   }
-  if (listen_key_refresh_.count() == 0 || now < listen_key_refresh_) {
+  if (listen_key_refresh_.count() == 0 || trace_info.origin_create_time < listen_key_refresh_) {
     return;
   }
   log::info<1>("Refreshing listen key..."sv);
-  listen_key_refresh_ = now + shared_.settings.rest.listen_key_refresh;
+  listen_key_refresh_ = trace_info.origin_create_time + shared_.settings.rest.listen_key_refresh;
   get_listen_key();
 }
 

@@ -132,7 +132,7 @@ void DropCopyMargin::operator()(Trace<Stop> const &) {
 
 void DropCopyMargin::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  if ((*connection_).refresh(timer.now)) {
+  if ((*connection_).refresh(trace_info)) {
     if (ready()) {
       check_response_listen_key();
       check_response_account(trace_info);

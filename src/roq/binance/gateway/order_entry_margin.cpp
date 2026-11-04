@@ -150,8 +150,8 @@ void OrderEntryMargin::operator()(Trace<Stop> const &) {
 
 void OrderEntryMargin::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  if ((*connection_).refresh(timer.now)) {
-    refresh_listen_key(timer.now);
+  if ((*connection_).refresh(trace_info)) {
+    refresh_listen_key(trace_info);
     // XXX HANS only master
     if (ready()) {
       if (!downloading()) {
@@ -954,7 +954,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::CrossMarginAccount> cons
 
 // ...
 
-void OrderEntryMargin::refresh_listen_key([[maybe_unused]] std::chrono::nanoseconds now) {
+void OrderEntryMargin::refresh_listen_key(TraceInfo const &) {
   if (!ready_) {
     return;
   }
