@@ -46,7 +46,6 @@ struct fmt::formatter<roq::binance::flags::Settings> {
         context.out(),
         R"({{)"
         R"(exchange="{}", )"
-        R"(use_ws_api={}, )"
         R"(misc={}, )"
         R"(rest={}, )"
         R"(ws={}, )"
@@ -57,7 +56,6 @@ struct fmt::formatter<roq::binance::flags::Settings> {
         R"(server={})"
         R"(}})"sv,
         value.exchange,
-        value.ws_api,
         value.misc,
         value.rest,
         value.ws,

@@ -17,8 +17,6 @@ FLAGFILE="../../../share/flags/prod/flags.cfg"
 DOWNLOAD_SYMBOLS="BTCUSDT,ETHUSDT"
 DOWNLOAD_TRADES_LOOKBACK="60m"
 
-WS_API=true
-
 $PREFIX ./roq-binance \
   --name "$NAME" \
   --config_file "$CONFIG_FILE" \
@@ -29,5 +27,4 @@ $PREFIX ./roq-binance \
   --service_listen_address "$HOME/run/metrics/${NAME}.sock" \
   --download_symbols="$DOWNLOAD_SYMBOLS" \
   --download_trades_lookback="$DOWNLOAD_TRADES_LOOKBACK" \
-  --ws_api=$WS_API \
   $@

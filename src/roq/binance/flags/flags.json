@@ -8,12 +8,6 @@
       "required": true,
       "default": "binance",
       "description": "Exchange identifier"
-    },
-    {
-      "name": "ws_api",
-      "type": "std/bool",
-      "default": true,
-      "description": "Use WebSocket API?"
     }
   ]
 }

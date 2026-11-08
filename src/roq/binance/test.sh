@@ -16,8 +16,6 @@ FLAGFILE="../../../share/flags/test/flags.cfg"
 
 DOWNLOAD_SYMBOLS="BTCUSDT,ETHUSDT"
 
-WS_API=true
-
 $PREFIX ./roq-binance \
   --name "$NAME" \
   --config_file "$CONFIG_FILE" \
@@ -28,5 +26,4 @@ $PREFIX ./roq-binance \
   --client_listen_address "$HOME/run/$NAME.sock" \
   --service_listen_address "$HOME/run/metrics/${NAME}.sock" \
   --download_symbols="$DOWNLOAD_SYMBOLS" \
-  --ws_api=$WS_API \
   $@

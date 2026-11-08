@@ -27,6 +27,12 @@
       "type": "std/bool",
       "default": false,
       "description": "TEST"
+    },
+    {
+      "name": "disable_ws_api",
+      "type": "std/bool",
+      "default": false,
+      "description": "Disable WebSocket API?"
     }
   ]
 }
