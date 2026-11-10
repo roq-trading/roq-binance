@@ -28,7 +28,7 @@ auto parse_side_effect_type(auto &side_effect_type) {
 // === IMPLEMENTATION ===
 
 API API::create(Settings const &settings) {
-  auto side_effect_type = parse_side_effect_type(settings.oms.margin_side_effect_type);
+  auto side_effect_type = parse_side_effect_type(settings.misc.margin_side_effect_type);
   return {
       .market_data{
           .exchange_info = "/api/v3/exchangeInfo"sv,

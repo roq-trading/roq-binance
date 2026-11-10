@@ -6,7 +6,6 @@ set(AUTOGEN_SCHEMAS
     flags.json
     mbp.json
     misc.json
-    oms.json
     request.json
     rest.json
     ws_api.json

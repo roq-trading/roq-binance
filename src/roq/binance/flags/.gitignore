@@ -3,7 +3,6 @@ roq-binance-flags
 flags.rstinc
 mbp.rstinc
 misc.rstinc
-oms.rstinc
 request.rstinc
 rest.rstinc
 ws_api.rstinc
@@ -11,7 +10,6 @@ ws.rstinc
 flags.hpp
 mbp.hpp
 misc.hpp
-oms.hpp
 request.hpp
 rest.hpp
 ws_api.hpp
@@ -19,7 +17,6 @@ ws.hpp
 flags.cpp
 mbp.cpp
 misc.cpp
-oms.cpp
 request.cpp
 rest.cpp
 ws_api.cpp

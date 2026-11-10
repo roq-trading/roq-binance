@@ -175,10 +175,6 @@ Flags
 
    .. include:: flags/mbp.rstinc
 
-.. tab:: OMS
-
-   .. include:: flags/oms.rstinc
-
 .. tab:: Request
 
    .. include:: flags/request.rstinc
