@@ -1,13 +1,6 @@
 set(TARGET_NAME ${PROJECT_NAME}-protocol-json)
 
-set(SOURCES
-    encoder.cpp
-    map.cpp
-    market_stream_parser.cpp
-    user_stream_parser.cpp
-    utils.cpp
-    wsapi_parser.cpp
-    wsapi_request.cpp)
+set(SOURCES encoder.cpp map.cpp market_stream_parser.cpp user_stream_parser.cpp wsapi_parser.cpp wsapi_request.cpp)
 
 include(RoqAutogen)
 

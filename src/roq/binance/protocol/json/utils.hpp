@@ -34,8 +34,6 @@ inline void update(std::chrono::milliseconds &result, core::json::Value const &v
       value);
 }
 
-extern roq::Error guess_error(int32_t code);
-
 }  // namespace json
 }  // namespace protocol
 }  // namespace binance

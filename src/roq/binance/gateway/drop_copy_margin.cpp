@@ -278,8 +278,8 @@ void DropCopyMargin::operator()(Trace<protocol::json::WSAPISessionLogon> const &
       download_.check_relaxed(trace_info, STATE);
     } else {
       // XXX FIXME TODO review
-      [[maybe_unused]] auto error = protocol::json::guess_error(wsapi_session_logon.error.code);
-      log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, wsapi_session_logon.error);
+      auto error = map(wsapi_session_logon.error.code).template get<Error>();
+      log::error(R"(Unexpected: account="{}", error={}/{})"sv, account_.name, error, wsapi_session_logon.error);
       if (download_.downloading()) {
         download_.retry(STATE);
       }
@@ -297,8 +297,8 @@ void DropCopyMargin::operator()(Trace<protocol::json::WSAPIUserDataStreamSubscri
       download_.check_relaxed(trace_info, STATE);
     } else {
       // XXX FIXME TODO review
-      [[maybe_unused]] auto error = protocol::json::guess_error(wsapi_user_data_stream_subscribe.error.code);
-      log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, wsapi_user_data_stream_subscribe.error);
+      auto error = map(wsapi_user_data_stream_subscribe.error.code).template get<Error>();
+      log::error(R"(Unexpected: account="{}", error={}/{})"sv, account_.name, error, wsapi_user_data_stream_subscribe.error);
       if (download_.downloading()) {
         download_.retry(STATE);
       }

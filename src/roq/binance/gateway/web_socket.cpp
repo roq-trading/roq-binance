@@ -343,8 +343,8 @@ void WebSocket::operator()(Trace<protocol::json::WSAPISessionLogon> const &event
       download_.check_relaxed(trace_info, STATE);
     } else {
       // XXX FIXME TODO review
-      [[maybe_unused]] auto error = protocol::json::guess_error(wsapi_session_logon.error.code);
-      log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, wsapi_session_logon.error);
+      auto error = map(wsapi_session_logon.error.code).template get<Error>();
+      log::error(R"(Unexpected: account="{}", error={}/{})"sv, account_.name, error, wsapi_session_logon.error);
       if (download_.downloading()) {
         download_.retry(STATE);
       }
@@ -362,8 +362,8 @@ void WebSocket::operator()(Trace<protocol::json::WSAPIUserDataStreamSubscribe> c
       download_.check_relaxed(trace_info, STATE);
     } else {
       // XXX FIXME TODO review
-      [[maybe_unused]] auto error = protocol::json::guess_error(wsapi_user_data_stream_subscribe.error.code);
-      log::error(R"(Unexpected: account="{}", error={})"sv, account_.name, wsapi_user_data_stream_subscribe.error);
+      auto error = map(wsapi_user_data_stream_subscribe.error.code).template get<Error>();
+      log::error(R"(Unexpected: account="{}", error={}/{})"sv, account_.name, error, wsapi_user_data_stream_subscribe.error);
       if (download_.downloading()) {
         download_.retry(STATE);
       }
@@ -619,12 +619,11 @@ void WebSocket::operator()(Trace<protocol::json::WSAPIOrderPlace> const &event, 
       create_trace_and_dispatch(shared_.dispatcher, trace_info, response, order_update, stream_id_, request.user_id, request.order_id);
     } else {
       auto &error = wsapi_order_place.error;
-      auto error_2 = protocol::json::guess_error(error.code);
       auto response = server::oms::Response{
           .request_type = RequestType::CREATE_ORDER,
           .origin = Origin::EXCHANGE,
           .request_status = RequestStatus::REJECTED,
-          .error = error_2,
+          .error = map(error.code),
           .text = error.msg,
           .version = request.version,
           .request_id = {},
@@ -700,12 +699,11 @@ void WebSocket::operator()(Trace<protocol::json::WSAPIOrderAmendKeepPriority> co
       create_trace_and_dispatch(shared_.dispatcher, trace_info, response, order_update, stream_id_, request.user_id, request.order_id);
     } else {
       auto &error = wsapi_order_amend_keep_priority.error;
-      auto error_2 = protocol::json::guess_error(error.code);
       auto response = server::oms::Response{
           .request_type = RequestType::CANCEL_ORDER,
           .origin = Origin::EXCHANGE,
           .request_status = RequestStatus::REJECTED,
-          .error = error_2,
+          .error = map(error.code),
           .text = error.msg,
           .version = request.version,
           .request_id = {},
@@ -780,12 +778,11 @@ void WebSocket::operator()(Trace<protocol::json::WSAPICancelOrder> const &event,
       create_trace_and_dispatch(shared_.dispatcher, trace_info, response, order_update, stream_id_, request.user_id, request.order_id);
     } else {
       auto &error = wsapi_cancel_order.error;
-      auto error_2 = protocol::json::guess_error(error.code);
       auto response = server::oms::Response{
           .request_type = RequestType::CANCEL_ORDER,
           .origin = Origin::EXCHANGE,
           .request_status = RequestStatus::REJECTED,
-          .error = error_2,
+          .error = map(error.code),
           .text = error.msg,
           .version = request.version,
           .request_id = {},

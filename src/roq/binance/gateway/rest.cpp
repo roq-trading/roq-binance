@@ -639,7 +639,8 @@ void Rest::process_response(Trace<web::rest::Response> const &event, auto error_
             [[fallthrough]];
           default: {
             protocol::json::ErrorError error{body};
-            error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, protocol::json::guess_error(error.code), error.msg);
+            auto error_2 = map(error.code).template get<Error>();
+            error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, error_2, error.msg);
           }
         }
         break;
