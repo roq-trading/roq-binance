@@ -509,6 +509,7 @@ void DropCopyMargin::operator()(Trace<protocol::json::ExecutionReportData> const
       .execution_destination = {},
       .create_time_utc = {},
       .update_time_utc = execution_report.transaction_time,
+      .external_trace_id = {},
       .external_account = {},
       .external_order_id = external_order_id,
       .client_order_id = execution_report.client_order_id,
