@@ -17,22 +17,28 @@
       "description": "Encode buffer size"
     },
     {
-      "name": "continue_with_unknown_event_type",
+      "name": "disable_ws_api",
       "type": "std/bool",
       "default": false,
-      "description": "Continue when receiving updates for unexpected event-types?"
+      "description": "Disable WebSocket API?"
+    },
+    {
+      "name": "mbp_max_depth",
+      "type": "std/uint16",
+      "description": "Maximum depth"
+    },
+    {
+      "name": "mbp_sequencer_timeout",
+      "type": "std/nanoseconds",
+      "validator": "roq/flags/validators/TimePeriod",
+      "default": "120s",
+      "description": "Sequencer timeout"
     },
     {
       "name": "experimental_drop_margin",
       "type": "std/bool",
       "default": false,
       "description": "TEST"
-    },
-    {
-      "name": "disable_ws_api",
-      "type": "std/bool",
-      "default": false,
-      "description": "Disable WebSocket API?"
     },
     {
       "name": "cancel_replace_stop_on_failure",

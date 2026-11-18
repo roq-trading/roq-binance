@@ -109,8 +109,6 @@ struct Shared final {
   } limits;
   std::vector<RateLimit> rate_limits;
 
-  bool const allow_unknown_event_types;
-
   std::vector<MBPUpdate> final_bids, final_asks;
 };
 

@@ -217,6 +217,18 @@ void WebSocket::operator()(Trace<ConnectionStatus> const &event, std::string_vie
 
 // server::OrderActionStream
 
+void WebSocket::operator()(Trace<server::oms::OrderActionBatchBegin> const &) {
+  throw server::oms::NotSupported{"not supported"sv};
+}
+
+void WebSocket::operator()(Trace<server::oms::OrderActionBatchCommit> const &) {
+  throw server::oms::NotSupported{"not supported"sv};
+}
+
+void WebSocket::operator()(Trace<server::oms::OrderActionBatchRollback> const &) {
+  throw server::oms::NotSupported{"not supported"sv};
+}
+
 uint16_t WebSocket::operator()(
     Trace<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
   order_place(event, order, ref_data, request_id);
@@ -1239,7 +1251,7 @@ void WebSocket::parse(TraceInfo const &trace_info, std::string_view const &messa
   profile_.parse([&]() {
     auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     try {
-      if (!protocol::json::WSAPIParser::dispatch(*this, message, decode_buffer_, trace_info)) {
+      if (!protocol::json::WSAPIParser::dispatch(*this, message, decode_buffer_, trace_info, shared_.settings.app.disable_strict_parsing)) {
         log_message();
       }
     } catch (...) {

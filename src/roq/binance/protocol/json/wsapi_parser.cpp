@@ -24,13 +24,13 @@ void dispatch_helper(auto &handler, auto &value, auto &buffer_stack, auto &trace
   create_trace_and_dispatch(handler, trace_info, obj, std::forward<Args>(args)...);
 }
 
-bool dispatch_response(auto &handler, auto &message, auto &buffer_stack, auto &trace_info, auto allow_unknown_event_types, auto &request) {
+bool dispatch_response(auto &handler, auto &message, auto &buffer_stack, auto &trace_info, auto disable_strict_parsing, auto &request) {
   switch (request.type) {
     using enum WSAPIType::type_t;
     case UNDEFINED_INTERNAL:
       break;
     case UNKNOWN_INTERNAL:
-      if (allow_unknown_event_types) {
+      if (disable_strict_parsing) {
         return false;
       }
       break;
@@ -65,18 +65,18 @@ bool dispatch_response(auto &handler, auto &message, auto &buffer_stack, auto &t
   log::fatal(R"(Unexpected: message="{}")"sv, message);
 }
 
-bool dispatch_event(auto &handler, auto &message, auto &buffer_stack, auto &trace_info, auto allow_unknown_event_types, auto &event_type) {
+bool dispatch_event(auto &handler, auto &message, auto &buffer_stack, auto &trace_info, auto disable_strict_parsing, auto &event_type) {
   switch (event_type) {
     using enum EventType::type_t;
     case UNDEFINED_INTERNAL:
       break;
     case UNKNOWN_INTERNAL:
-      if (allow_unknown_event_types) {
+      if (disable_strict_parsing) {
         return false;
       }
       break;
     case SERVER_SHUTDOWN:
-      if (allow_unknown_event_types) {
+      if (disable_strict_parsing) {
         return false;
       }
       break;
@@ -124,24 +124,24 @@ bool WSAPIParser::dispatch(
     std::string_view const &message,
     core::json::BufferStack &buffer_stack,
     TraceInfo const &trace_info,
-    bool allow_unknown_event_types) {
+    bool disable_strict_parsing) {
   core::json::Parser parser{message};
   auto root = parser.root();
   for (auto [key, value] : std::get<core::json::Object>(root)) {
     if (key == "id"sv) {
       auto id = core::json::get<std::string_view>(value);
       auto request = WSAPIRequest::decode(id);
-      return dispatch_response(handler, message, buffer_stack, trace_info, allow_unknown_event_types, request);
+      return dispatch_response(handler, message, buffer_stack, trace_info, disable_strict_parsing, request);
     } else if (key == "event"sv) {
       for (auto [k, v] : std::get<core::json::Object>(value)) {
         if (k == "e"sv) {
           EventType event_type{v};
-          return dispatch_event(handler, message, buffer_stack, trace_info, allow_unknown_event_types, event_type);
+          return dispatch_event(handler, message, buffer_stack, trace_info, disable_strict_parsing, event_type);
         }
       }
     }
   }
-  if (allow_unknown_event_types) {
+  if (disable_strict_parsing) {
     return false;
   }
   log::fatal(R"(Unexpected: message="{}")"sv, message);

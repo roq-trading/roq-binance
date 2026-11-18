@@ -400,7 +400,7 @@ void DropCopyPortfolio::parse(TraceInfo const &trace_info, std::string_view cons
   profile_.parse([&]() {
     auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     try {
-      if (!protocol::json::UserStreamParser::dispatch_papi(*this, message, decode_buffer_, trace_info, shared_.allow_unknown_event_types)) {
+      if (!protocol::json::UserStreamParser::dispatch_papi(*this, message, decode_buffer_, trace_info, shared_.settings.app.disable_strict_parsing)) {
         log_message();
       }
     } catch (...) {

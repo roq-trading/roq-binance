@@ -451,7 +451,7 @@ void DropCopyMargin::parse(TraceInfo const &trace_info, std::string_view const &
   profile_.parse([&]() {
     auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     try {
-      if (!protocol::json::WSAPIParser::dispatch(*this, message, decode_buffer_, trace_info)) {
+      if (!protocol::json::WSAPIParser::dispatch(*this, message, decode_buffer_, trace_info, shared_.settings.app.disable_strict_parsing)) {
         log_message();
       }
     } catch (...) {

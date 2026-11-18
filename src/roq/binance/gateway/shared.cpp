@@ -15,7 +15,7 @@ namespace gateway {
 namespace {
 auto create_sequencer(auto &settings) {
   auto options = market::mbp::Sequencer::Options{
-      .timeout = settings.mbp.sequencer_timeout,
+      .timeout = settings.misc.mbp_sequencer_timeout,
       .max_updates = {},
   };
   return market::mbp::Sequencer{options};
@@ -28,8 +28,7 @@ Shared::Shared(server::Dispatcher &dispatcher, Settings const &settings, Config 
     : dispatcher{dispatcher}, settings{settings}, api{API::create(settings)}, throttle{settings},
       rate_limiter{settings.request.limit, settings.request.limit_interval}, depth_request_queue{rate_limiter, settings.ws.mbp_request_delay},
       symbols{settings.ws.max_subscriptions_per_stream}, create_order_templates{config.create_order_templates},
-      cancel_order_templates{config.cancel_order_templates},
-      allow_unknown_event_types{settings.experimental.allow_unknown_event_types || settings.misc.continue_with_unknown_event_type} {
+      cancel_order_templates{config.cancel_order_templates} {
   log::info("api={}"sv, api);
 }
 

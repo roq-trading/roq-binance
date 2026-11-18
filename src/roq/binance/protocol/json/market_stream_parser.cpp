@@ -55,7 +55,7 @@ bool MarketStreamParser::dispatch(
     std::string_view const &message,
     core::json::BufferStack &buffer_stack,
     TraceInfo const &trace_info,
-    bool allow_unknown_event_types) {
+    bool disable_strict_parsing) {
   // note! find id, symbol and stream before parsing a specific message
   int64_t id = -1;
   std::string symbol;  // note! alloc
@@ -99,7 +99,7 @@ bool MarketStreamParser::dispatch(
             case UNDEFINED_INTERNAL:
               break;  // note! need one more iteration
             case UNKNOWN_INTERNAL:
-              if (allow_unknown_event_types) {
+              if (disable_strict_parsing) {
                 return false;
               }
               break;  // ... might take another iteration, probably ok
