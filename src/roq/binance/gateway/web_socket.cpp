@@ -218,13 +218,13 @@ void WebSocket::operator()(Trace<ConnectionStatus> const &event, std::string_vie
 // server::OrderActionStream
 
 uint16_t WebSocket::operator()(
-    Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
+    Trace<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
   order_place(event, order, ref_data, request_id);
   return stream_id_;
 }
 
 uint16_t WebSocket::operator()(
-    Event<ModifyOrder> const &event,
+    Trace<ModifyOrder> const &event,
     server::oms::Order const &order,
     server::oms::RefData const &ref_data,
     std::string_view const &request_id,
@@ -234,7 +234,7 @@ uint16_t WebSocket::operator()(
 }
 
 uint16_t WebSocket::operator()(
-    Event<CancelOrder> const &event,
+    Trace<CancelOrder> const &event,
     server::oms::Order const &order,
     server::oms::RefData const &ref_data,
     std::string_view const &request_id,
@@ -243,7 +243,7 @@ uint16_t WebSocket::operator()(
   return stream_id_;
 }
 
-uint16_t WebSocket::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
+uint16_t WebSocket::operator()(Trace<CancelAllOrders> const &event, std::string_view const &request_id) {
   open_orders_cancel_all(event, request_id);
   return stream_id_;
 }
@@ -1055,23 +1055,23 @@ void WebSocket::my_trades(TraceInfo const &trace_info) {
 // weight: 1
 
 void WebSocket::order_place(
-    Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
+    Trace<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
   profile_.order_place([&]() {
     if (!ready()) {
       throw server::oms::NotReady{"not ready"sv};
     }
-    auto &[message_info, create_order] = event;
+    auto &[trace_info, create_order] = event;
     open_orders_symbols_.emplace(create_order.symbol);
     auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
+    auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
     auto params =
         protocol::json::Encoder::place_order_json(encode_buffer_, create_order, order, ref_data, request_id, create_order_template, recv_window, timestamp);
     auto request = protocol::json::WSAPIRequest{
         .sequence = ++request_id_,
         .type = protocol::json::WSAPIType::ORDER_PLACE,
-        .user_id = message_info.source,
-        .order_id = create_order.order_id,
+        .user_id = order.user_id,
+        .order_id = order.order_id,
         .version = 1,
         .order_id_2 = {},
     };
@@ -1093,7 +1093,7 @@ void WebSocket::order_place(
 // weight: 4
 
 void WebSocket::order_amend_keep_priority(
-    Event<ModifyOrder> const &event,
+    Trace<ModifyOrder> const &event,
     server::oms::Order const &order,
     server::oms::RefData const &ref_data,
     std::string_view const &request_id,
@@ -1102,16 +1102,16 @@ void WebSocket::order_amend_keep_priority(
     if (!ready()) {
       throw server::oms::NotReady{"not ready"sv};
     }
-    auto &[message_info, modify_order] = event;
+    auto &[trace_info, modify_order] = event;
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
+    auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
     auto params = protocol::json::Encoder::amend_order_keep_priority_json(
         encode_buffer_, modify_order, order, ref_data, request_id, previous_request_id, recv_window, timestamp);
     auto request = protocol::json::WSAPIRequest{
         .sequence = ++request_id_,
         .type = protocol::json::WSAPIType::ORDER_AMEND_KEEP_PRIORITY,
-        .user_id = message_info.source,
-        .order_id = modify_order.order_id,
+        .user_id = order.user_id,
+        .order_id = order.order_id,
         .version = modify_order.version,
         .order_id_2 = {},
     };
@@ -1133,7 +1133,7 @@ void WebSocket::order_amend_keep_priority(
 // weight: 1
 
 void WebSocket::order_cancel(
-    Event<CancelOrder> const &event,
+    Trace<CancelOrder> const &event,
     server::oms::Order const &order,
     server::oms::RefData const &ref_data,
     std::string_view const &request_id,
@@ -1142,17 +1142,17 @@ void WebSocket::order_cancel(
     if (!ready()) {
       throw server::oms::NotReady{"not ready"sv};
     }
-    auto &[message_info, cancel_order] = event;
+    auto &[trace_info, cancel_order] = event;
     auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
+    auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
     auto params = protocol::json::Encoder::cancel_order_json(
         encode_buffer_, cancel_order, order, ref_data, request_id, previous_request_id, cancel_order_template, recv_window, timestamp);
     auto request = protocol::json::WSAPIRequest{
         .sequence = ++request_id_,
         .type = protocol::json::WSAPIType::ORDER_CANCEL,
-        .user_id = message_info.source,
-        .order_id = cancel_order.order_id,
+        .user_id = order.user_id,
+        .order_id = order.order_id,
         .version = cancel_order.version,
         .order_id_2 = {},
     };
@@ -1174,12 +1174,12 @@ void WebSocket::order_cancel(
 // note! one request per symbol
 // weight: 1
 
-void WebSocket::open_orders_cancel_all(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
+void WebSocket::open_orders_cancel_all(Trace<CancelAllOrders> const &event, std::string_view const &request_id) {
   profile_.open_orders_cancel_all([&]() {
     if (!ready()) [[unlikely]] {
       throw server::oms::NotReady{"not ready"sv};
     }
-    auto &[message_info, cancel_all_orders] = event;
+    auto &[trace_info, cancel_all_orders] = event;
     auto send_ack = [&](auto &symbol) {
       auto cancel_all_orders_ack = CancelAllOrdersAck{
           .stream_id = stream_id_,
@@ -1199,7 +1199,6 @@ void WebSocket::open_orders_cancel_all(Event<CancelAllOrders> const &event, std:
           .user = {},
           .strategy_id = cancel_all_orders.strategy_id,
       };
-      TraceInfo trace_info{event};
       create_trace_and_dispatch(shared_.dispatcher, trace_info, cancel_all_orders_ack);
     };
     // XXX FIXME TODO roq-server provides this
@@ -1207,11 +1206,11 @@ void WebSocket::open_orders_cancel_all(Event<CancelAllOrders> const &event, std:
       if (!std::empty(cancel_all_orders.symbol) && symbol != cancel_all_orders.symbol) {
         continue;
       }
-      auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
+      auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
       auto request = protocol::json::WSAPIRequest{
           .sequence = ++request_id_,
           .type = protocol::json::WSAPIType::OPEN_ORDERS_CANCEL_ALL,
-          .user_id = message_info.source,
+          .user_id = {},
           .order_id = {},
           .version = {},
           .order_id_2 = {},

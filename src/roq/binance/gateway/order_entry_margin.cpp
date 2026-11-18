@@ -246,14 +246,26 @@ void OrderEntryMargin::operator()(Trace<ConnectionStatus> const &event, std::str
 
 // server::OrderActionStream
 
+void OrderEntryMargin::operator()(Trace<server::oms::OrderActionBatchBegin> const &) {
+  throw server::oms::NotSupported{"not supported"sv};
+}
+
+void OrderEntryMargin::operator()(Trace<server::oms::OrderActionBatchCommit> const &) {
+  throw server::oms::NotSupported{"not supported"sv};
+}
+
+void OrderEntryMargin::operator()(Trace<server::oms::OrderActionBatchRollback> const &) {
+  throw server::oms::NotSupported{"not supported"sv};
+}
+
 uint16_t OrderEntryMargin::operator()(
-    Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
+    Trace<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
   new_order(event, order, ref_data, request_id);
   return stream_id_;
 }
 
 uint16_t OrderEntryMargin::operator()(
-    Event<ModifyOrder> const &,
+    Trace<ModifyOrder> const &,
     server::oms::Order const &,
     server::oms::RefData const &,
     [[maybe_unused]] std::string_view const &request_id,
@@ -263,7 +275,7 @@ uint16_t OrderEntryMargin::operator()(
 }
 
 uint16_t OrderEntryMargin::operator()(
-    Event<CancelOrder> const &event,
+    Trace<CancelOrder> const &event,
     server::oms::Order const &order,
     server::oms::RefData const &ref_data,
     std::string_view const &request_id,
@@ -272,7 +284,7 @@ uint16_t OrderEntryMargin::operator()(
   return stream_id_;
 }
 
-uint16_t OrderEntryMargin::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
+uint16_t OrderEntryMargin::operator()(Trace<CancelAllOrders> const &event, std::string_view const &request_id) {
   cancel_all_open_orders(event, request_id);
   return stream_id_;
 }
@@ -978,16 +990,16 @@ void OrderEntryMargin::refresh_listen_key(TraceInfo const &) {
 // new-order
 
 void OrderEntryMargin::new_order(
-    Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
+    Trace<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
   profile_.new_order([&]() {
     if (!ready()) {
       throw server::oms::NotReady{"not ready"sv};
     }
-    auto &[message_info, create_order] = event;
+    auto &[trace_info, create_order] = event;
     open_orders_symbols_.emplace(create_order.symbol);
     auto &create_order_template = shared_.get_create_order_template(create_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
+    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
     auto body = protocol::json::Encoder::new_order_url(
         encode_buffer_, create_order, order, ref_data, request_id, create_order_template, recv_window, now_utc, shared_.api.margin_side_effect_type);
     auto query = account_.create_rest_signature_body_new(body);
@@ -1004,7 +1016,7 @@ void OrderEntryMargin::new_order(
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
     log::debug("request={}"sv, request);
-    auto callback = [this, user_id = message_info.source, order_id = create_order.order_id](auto &event, [[maybe_unused]] auto &request_id) {
+    auto callback = [this, user_id = order.user_id, order_id = order.order_id](auto &event, [[maybe_unused]] auto &request_id) {
       uint32_t version = 1;
       new_order_ack(event, user_id, order_id, version);
     };
@@ -1121,7 +1133,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::NewOrderAck> const &even
 // cancel-order
 
 void OrderEntryMargin::cancel_order(
-    Event<CancelOrder> const &event,
+    Trace<CancelOrder> const &event,
     server::oms::Order const &order,
     server::oms::RefData const &ref_data,
     std::string_view const &request_id,
@@ -1130,10 +1142,10 @@ void OrderEntryMargin::cancel_order(
     if (!ready()) {
       throw server::oms::NotReady{"not ready"sv};
     }
-    auto &[message_info, cancel_order] = event;
+    auto &[trace_info, cancel_order] = event;
     auto &cancel_order_template = shared_.get_cancel_order_template(cancel_order.request_template);
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
-    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
+    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
     auto body = protocol::json::Encoder::cancel_order_url(
         encode_buffer_, cancel_order, order, ref_data, request_id, previous_request_id, cancel_order_template, recv_window, now_utc);
     auto query = account_.create_rest_signature_body_new(body);
@@ -1162,8 +1174,9 @@ void OrderEntryMargin::cancel_order(
         .quality_of_service = io::QualityOfService::IMMEDIATE,
     };
     log::debug("request={}"sv, request);
-    auto callback = [this, user_id = message_info.source, order_id = cancel_order.order_id, version = cancel_order.version](
-                        auto &event, [[maybe_unused]] auto &request_id) { cancel_order_ack(event, user_id, order_id, version); };
+    auto callback = [this, user_id = order.user_id, order_id = order.order_id, version = cancel_order.version](auto &event, [[maybe_unused]] auto &request_id) {
+      cancel_order_ack(event, user_id, order_id, version);
+    };
     (*connection_)(request, callback, request_id);
   });
 }
@@ -1257,12 +1270,12 @@ void OrderEntryMargin::operator()(Trace<protocol::json::CancelOrderAck> const &e
   create_trace_and_dispatch(shared_.dispatcher, trace_info, response, order_update, stream_id_, user_id, order_id);
 }
 
-void OrderEntryMargin::cancel_all_open_orders(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
+void OrderEntryMargin::cancel_all_open_orders(Trace<CancelAllOrders> const &event, std::string_view const &request_id) {
   profile_.cancel_all_open_orders([&]() {
     if (!ready()) [[unlikely]] {
       throw server::oms::NotReady{"not ready"sv};
     }
-    auto &[message_info, cancel_all_orders] = event;
+    auto &[trace_info, cancel_all_orders] = event;
     auto send_ack = [&](auto &symbol) {
       auto cancel_all_orders_ack = CancelAllOrdersAck{
           .stream_id = stream_id_,
@@ -1282,7 +1295,6 @@ void OrderEntryMargin::cancel_all_open_orders(Event<CancelAllOrders> const &even
           .user = {},
           .strategy_id = cancel_all_orders.strategy_id,
       };
-      TraceInfo trace_info{message_info};
       create_trace_and_dispatch(shared_.dispatcher, trace_info, cancel_all_orders_ack);
     };
     auto recv_window = std::chrono::duration_cast<std::chrono::milliseconds>(shared_.settings.rest.order_recv_window);
@@ -1304,7 +1316,7 @@ void OrderEntryMargin::cancel_all_open_orders(Event<CancelAllOrders> const &even
           };
           log::fatal("Unexpected"sv);
         }();
-        auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
+        auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
         auto body = protocol::json::Encoder::cancel_all_open_orders_url(encode_buffer_, symbol, margin_mode, recv_window, now_utc);
         auto query = account_.create_rest_signature_body_new(body);
         auto headers = account_.get_rest_headers_new();
