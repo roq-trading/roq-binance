@@ -935,7 +935,7 @@ void WebSocket::session_logon(TraceInfo const &trace_info) {
       timestamp.count(),
       signature);
   (*connection_).send_text(message);
-  create_trace_and_dispatch_2(trace_info, ConnectionStatus::LOGIN_SENT, "session.logon"sv);
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::AUTHENTICATING, "session.logon"sv);
 }
 
 // user-data-stream-subscribe
