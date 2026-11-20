@@ -102,6 +102,14 @@
     {
       "name": "opoAllowed",
       "type": "std/bool"
+    },
+    {
+      "name": "limitQuoteNotionalLimitAllowed",
+      "type": "std/bool"
+    },
+    {
+      "name": "marketQuoteNotionalLimitAllowed",
+      "type": "std/bool"
     }
   ]
 }
