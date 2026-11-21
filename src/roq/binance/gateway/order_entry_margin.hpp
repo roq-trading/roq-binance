@@ -183,14 +183,12 @@ struct OrderEntryMargin final : public Base<OrderEntryMargin>, public server::Or
 
  private:
   Handler &handler_;
-  // config
+  //
   uint16_t const stream_id_;
   std::string const name_;
-  // connection
-  std::unique_ptr<web::rest::Client> connection_;
-  // buffers
+  std::unique_ptr<web::rest::Client> const connection_;
+  //
   core::json::BufferStack decode_buffer_;
-  // metrics
   struct {
     utils::metrics::Counter disconnect;
   } counter_;
@@ -209,19 +207,17 @@ struct OrderEntryMargin final : public Base<OrderEntryMargin>, public server::Or
   struct {
     utils::metrics::Gauge requests_1m;
   } rate_limiter_;
-  // authentication
   Account &account_;
-  // shared
   Shared &shared_;
   Request &request_;
   std::string listen_key_;
   std::string listen_key_cross_;
-  // state
-  bool ready_ = false;
   std::chrono::nanoseconds listen_key_refresh_ = {};
   ConnectionStatus connection_status_ = {};
   core::Download2<State> download_;
-  // experimental
+  std::chrono::nanoseconds next_poll_borrowed_ = {};
+  bool has_listen_key_cross_ = false;
+  // XXX FIXME TODO replace with new request queue design
   utils::unordered_set<std::string> open_orders_symbols_;
   bool download_account_ = false;
   bool download_orders_ = false;
@@ -234,10 +230,6 @@ struct OrderEntryMargin final : public Base<OrderEntryMargin>, public server::Or
   std::string encode_buffer_;
   bool download_trades_is_first_ = true;
   bool download_trades_cross_is_first_ = true;
-  //
-  std::chrono::nanoseconds next_poll_borrowed_ = {};
-  //
-  bool has_listen_key_cross_ = false;
 };
 
 }  // namespace gateway

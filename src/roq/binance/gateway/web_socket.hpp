@@ -157,14 +157,12 @@ struct WebSocket final : public Base<WebSocket>,
 
  private:
   [[maybe_unused]] Handler &handler_;
-  // config
+  //
   uint16_t const stream_id_;
   std::string const name_;
-  // web socket
-  std::unique_ptr<web::socket::Client> connection_;
-  // buffers
+  std::unique_ptr<web::socket::Client> const connection_;
+  //
   core::json::BufferStack decode_buffer_;
-  // metrics
   struct {
     utils::metrics::Counter disconnect;
   } counter_;
@@ -187,20 +185,15 @@ struct WebSocket final : public Base<WebSocket>,
   struct {
     utils::metrics::Gauge request_weight_1m, create_order_10s, create_order_1d;
   } rate_limiter_;
-  // authentication
   Account &account_;
-  // shared
   Shared &shared_;
-  // experimental
-  uint32_t request_id_;
+  uint32_t request_id_ = {};
   utils::unordered_set<std::string> open_orders_symbols_;
   std::string request_encode_buffer_;
   std::string encode_buffer_;
-  // state
-  bool ready_ = false;
   ConnectionStatus connection_status_ = {};
   core::Download2<State> download_;
-  bool download_trades_is_first_ = true;  // note! lookback depends on it
+  bool download_trades_is_first_ = true;
 };
 
 }  // namespace gateway

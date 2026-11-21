@@ -303,7 +303,6 @@ void OrderEntryMargin::operator()(Trace<web::rest::Connected> const &event) {
 void OrderEntryMargin::operator()(Trace<web::rest::Disconnected> const &event) {
   auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
-  ready_ = false;
   create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
   if (!download_.downloading()) {
     download_.reset();
@@ -361,8 +360,6 @@ int32_t OrderEntryMargin::download(Trace<State> const &event) {
       }
     case DONE:
       create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
-      assert(!ready_);
-      ready_ = true;
       return 0;
   }
   assert(false);
@@ -970,7 +967,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::CrossMarginAccount> cons
 // ...
 
 void OrderEntryMargin::refresh_listen_key(TraceInfo const &) {
-  if (!ready_) {
+  if (!ready()) {
     return;
   }
   /*

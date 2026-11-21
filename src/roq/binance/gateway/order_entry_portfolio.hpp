@@ -166,15 +166,12 @@ struct OrderEntryPortfolio final : public Base<OrderEntryPortfolio>, public serv
 
  private:
   Handler &handler_;
-  // config
+  //
   uint16_t const stream_id_;
   std::string const name_;
   bool const master_;
-  // connection
-  std::unique_ptr<web::rest::Client> connection_;
-  // buffers
+  std::unique_ptr<web::rest::Client> const connection_;
   core::json::BufferStack decode_buffer_;
-  // metrics
   struct {
     utils::metrics::Counter disconnect;
   } counter_;
@@ -194,24 +191,20 @@ struct OrderEntryPortfolio final : public Base<OrderEntryPortfolio>, public serv
   struct {
     utils::metrics::Gauge requests_1m;
   } rate_limiter_;
-  // authentication
   Account &account_;
-  // shared
   Shared &shared_;
   Request &request_;
   std::string listen_key_;
-  // state
-  bool ready_ = false;
   std::chrono::nanoseconds listen_key_refresh_ = {};
   ConnectionStatus connection_status_ = {};
   core::Download2<State> download_;
-  // experimental
+  std::string encode_buffer_;
+  bool download_trades_is_first_ = true;
+  // XXX FIXME TODO replace with new request queue design
   utils::unordered_set<std::string> open_orders_symbols_;
   bool download_account_ = false;
   bool download_orders_ = false;
   bool download_trades_ = false;
-  std::string encode_buffer_;
-  bool download_trades_is_first_ = true;
 };
 
 }  // namespace gateway

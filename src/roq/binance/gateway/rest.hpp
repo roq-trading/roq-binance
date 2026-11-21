@@ -98,14 +98,12 @@ struct Rest final : public Base<Rest>, public server::Stream, public web::rest::
 
  private:
   Handler &handler_;
-  // config
+  //
   uint16_t const stream_id_;
   std::string const name_;
-  // connection
-  std::unique_ptr<web::rest::Client> connection_;
-  // buffers
+  std::unique_ptr<web::rest::Client> const connection_;
+  //
   core::json::BufferStack decode_buffer_;
-  // metrics
   struct {
     utils::metrics::Counter disconnect;
   } counter_;
@@ -118,10 +116,7 @@ struct Rest final : public Base<Rest>, public server::Stream, public web::rest::
   struct {
     utils::metrics::Gauge request_weight_1m;
   } rate_limiter_;
-  // cache
   Shared &shared_;
-  // state
-  bool ready_ = false;
   ConnectionStatus connection_status_ = {};
   core::Download2<State> download_;
 };

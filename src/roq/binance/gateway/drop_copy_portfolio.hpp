@@ -101,31 +101,26 @@ struct DropCopyPortfolio final : public Base<DropCopyPortfolio>,
 
  private:
   [[maybe_unused]] Handler &handler_;
-  // config
+  //
   uint16_t const stream_id_;
   std::string const name_;
-  // web socket
-  std::string query_;
-  std::unique_ptr<web::socket::Client> connection_;
-  // buffers
+  std::string const query_;
+  std::unique_ptr<web::socket::Client> const connection_;
+  //
   core::json::BufferStack decode_buffer_;
-  // metrics
   struct {
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile parse, outbound_account_position, balance_update, execution_report, list_status;
+    utils::metrics::Profile parse,  //
+        outbound_account_position, balance_update, execution_report, list_status;
   } profile_;
   struct {
     utils::metrics::Latency ping, heartbeat;
   } latency_;
-  // accounts
   Account &account_;
-  // shared
   Shared &shared_;
   Request &request_;
-  // state
-  bool ready_ = false;
   ConnectionStatus connection_status_ = {};
   core::Download2<State> download_;
 };

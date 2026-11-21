@@ -81,7 +81,7 @@ struct create_metrics final : public utils::metrics::Factory {
 
 DropCopyMargin::DropCopyMargin(
     Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared, Request &request, ListenKeyUpdate const &listen_key_update)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)}, listen_token_{listen_key_update.listen_key},
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)},
       connection_{create_connection(*this, shared.settings, context, shared, account)},
       decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
@@ -108,7 +108,7 @@ DropCopyMargin::DropCopyMargin(
           .create_order_1d = create_metrics(shared.settings, name_, "create_order"sv, "1d"sv),
       },
       account_{account}, shared_{shared}, request_{request}, request_id_{REQUEST_ID * stream_id},
-      download_{shared.settings.rest.request_timeout, [this](auto &event) { return download(event); }} {
+      download_{shared.settings.rest.request_timeout, [this](auto &event) { return download(event); }}, listen_token_{listen_key_update.listen_key} {
   log::info<5>(R"(stream_id={}, account="{}")"sv, stream_id_, account_.name);
 }
 
@@ -196,7 +196,6 @@ void DropCopyMargin::operator()(Trace<web::socket::Connected> const &) {
 void DropCopyMargin::operator()(Trace<web::socket::Disconnected> const &event) {
   auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
-  ready_ = false;
   create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
   download_.reset();
 }
@@ -259,8 +258,6 @@ int32_t DropCopyMargin::download(Trace<State> const &event) {
       return 1;
     case DONE:
       create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
-      assert(!ready_);
-      ready_ = true;
       return 0;
   }
   assert(false);
