@@ -115,18 +115,16 @@ struct Controller final : public Base<Controller>,
 
  private:
   server::Dispatcher &dispatcher_;
-  // accounts
-  utils::unordered_map<std::string, std::unique_ptr<Account>> const accounts_;
-  // io
+  //
   io::Context &context_;
-  // shared
   Shared shared_;
-  // seed
   uint16_t stream_id_ = {};
-  // streams
-  Rest rest_;
-  std::vector<std::unique_ptr<MarketData>> market_data_1_, market_data_2_;
+  //
+  utils::unordered_map<std::string, std::unique_ptr<Account>> const accounts_;
   utils::unordered_map<std::string, Request> request_;
+  //
+  std::unique_ptr<Rest> rest_;
+  std::vector<std::unique_ptr<MarketData>> market_data_1_, market_data_2_;
   utils::unordered_map<std::string, std::unique_ptr<server::OrderActionStream>> order_entry_;
   utils::unordered_map<std::string, std::unique_ptr<server::Stream>> drop_copy_;
   utils::unordered_map<std::string, std::unique_ptr<server::OrderActionStream>> order_entry_margin_;

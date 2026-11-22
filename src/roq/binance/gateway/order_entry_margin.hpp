@@ -51,7 +51,7 @@ struct OrderEntryMargin final : public Base<OrderEntryMargin>, public server::Or
 
   OrderEntryMargin(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &);
 
-  // protected:
+ protected:
   friend base_type;
 
   // server::Stream

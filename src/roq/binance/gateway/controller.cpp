@@ -41,6 +41,10 @@ R create_request(auto &config) {
   return result;
 }
 
+auto create_rest(auto &gateway, auto &context, auto &stream_id, auto &shared) {
+  return std::make_unique<Rest>(gateway, context, ++stream_id, shared);
+}
+
 template <typename R>
 R create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared, auto &request) {
   using result_type = std::remove_cvref_t<R>;
@@ -94,8 +98,8 @@ uint8_t Controller::parse_api(Settings const &) {
 }
 
 Controller::Controller(server::Dispatcher &dispatcher, Settings const &settings, Config const &config, io::Context &context)
-    : dispatcher_{dispatcher}, accounts_(create_accounts<decltype(accounts_)>(config)), context_{context}, shared_{dispatcher, settings, config},
-      rest_{*this, context_, ++stream_id_, shared_}, request_{create_request<decltype(request_)>(config)},
+    : dispatcher_{dispatcher}, context_{context}, shared_{dispatcher, settings, config}, accounts_(create_accounts<decltype(accounts_)>(config)),
+      request_{create_request<decltype(request_)>(config)}, rest_{create_rest(*this, context_, stream_id_, shared_)},
       order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_, request_)},
       order_entry_margin_{create_order_entry_margin<decltype(order_entry_)>(*this, settings, context_, stream_id_, accounts_, shared_, request_)} {
   if (settings.rest.cancel_on_disconnect) {
@@ -229,29 +233,29 @@ void Controller::operator()(Trace<ListenKeyUpdate> const &event) {
       log::fatal("Unexpected"sv);
     case ISOLATED:
     case CROSS: {
-      auto &instance = drop_copy_margin_[listen_key_update.account];
-      if (instance) {
-        (*instance)(event);
+      auto &obj = drop_copy_margin_[listen_key_update.account];
+      if (obj) {
+        (*obj)(event);
       } else {
         log::info(R"(Create drop-copy (user-stream) for account="{}", margin_mode={})"sv, listen_key_update.account, listen_key_update.margin_mode);
         auto &account_2 = get_account(listen_key_update.account);
         auto &request = request_[listen_key_update.account];  // XXX
-        instance = std::make_unique<DropCopyMargin>(*this, context_, ++stream_id_, account_2, shared_, request, listen_key_update);
+        obj = std::make_unique<DropCopyMargin>(*this, context_, ++stream_id_, account_2, shared_, request, listen_key_update);
         Start start;
-        create_trace_and_dispatch(*instance, trace_info, start);
+        create_trace_and_dispatch(dynamic_cast<server::Stream &>(*obj), trace_info, start);
       }
       break;
     }
     case PORTFOLIO: {
-      auto &instance = drop_copy_[listen_key_update.account];
-      if (!instance) {
+      auto &obj = drop_copy_[listen_key_update.account];
+      if (!obj) {
         log::info(R"(Create drop-copy (user-stream) for account="{}", margin_mode={})"sv, listen_key_update.account, listen_key_update.margin_mode);
         auto &account_2 = get_account(listen_key_update.account);
         auto &request = request_[listen_key_update.account];
-        instance = std::make_unique<DropCopyPortfolio>(
+        obj = std::make_unique<DropCopyPortfolio>(
             *this, context_, ++stream_id_, account_2, shared_, request, listen_key_update.listen_key, listen_key_update.margin_mode);
         Start start;
-        create_trace_and_dispatch(*instance, trace_info, start);
+        create_trace_and_dispatch(dynamic_cast<server::Stream &>(*obj), trace_info, start);
       }
       break;
     }
@@ -265,10 +269,10 @@ void Controller::operator()(Trace<SymbolsUpdate> const &event) {
   auto [size, start_from] = shared_.symbols(symbols_update.symbols);
   ensure_symbol_slices(trace_info, size);
   for (auto &item : market_data_1_) {
-    (*item).subscribe(start_from);
+    dynamic_cast<server::MarketDataStream &>(*item).subscribe(start_from);
   }
   for (auto &item : market_data_2_) {
-    (*item).subscribe(start_from);
+    dynamic_cast<server::MarketDataStream &>(*item).subscribe(start_from);
   }
 }
 
@@ -279,10 +283,10 @@ void Controller::ensure_symbol_slices(TraceInfo const &trace_info, size_t size) 
     auto stream_id = ++stream_id_;
     auto index = std::size(container);
     log::info("Create MarketData (stream_id={}, priority={}, index={})"sv, stream_id, priority, index);
-    auto market_data = std::make_unique<MarketData>(*this, context_, stream_id, priority, shared_, index);
+    auto obj = std::make_unique<MarketData>(*this, context_, stream_id, priority, shared_, index);
     Start start;
-    create_trace_and_dispatch(*market_data, trace_info, start);
-    container.emplace_back(std::move(market_data));
+    create_trace_and_dispatch(dynamic_cast<server::MarketDataStream &>(*obj), trace_info, start);
+    container.emplace_back(std::move(obj));
   };
   while (std::size(market_data_1_) < size) {
     helper(market_data_1_, Priority::PRIMARY);
@@ -302,8 +306,14 @@ void Controller::dispatch(Args &&...args) {
 
 template <typename... Args>
 void Controller::dispatch_helper(auto &self, Args &&...args) {
-  auto helper = [&](auto &target) { target(args...); };
-  helper(self.rest_);
+  auto helper = [&](auto &target) {
+    if constexpr (std::is_const_v<decltype(self)>) {
+      dynamic_cast<server::Stream const &>(target)(std::forward<Args>(args)...);
+    } else {
+      dynamic_cast<server::Stream &>(target)(std::forward<Args>(args)...);
+    }
+  };
+  helper(*self.rest_);
   for (auto &item : self.market_data_1_) {
     helper(*item);
   }

@@ -48,7 +48,7 @@ struct OrderEntryPortfolio final : public Base<OrderEntryPortfolio>, public serv
 
   OrderEntryPortfolio(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, bool master = true, std::string_view const &interface = {});
 
-  // protected:
+ protected:
   friend base_type;
 
   // server::Stream

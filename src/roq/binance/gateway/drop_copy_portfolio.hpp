@@ -38,7 +38,7 @@ struct DropCopyPortfolio final : public Base<DropCopyPortfolio>,
 
   DropCopyPortfolio(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, Request &, std::string_view const &listen_key, MarginMode);
 
-  // protected:
+ protected:
   friend base_type;
 
   // server::Stream

@@ -40,7 +40,7 @@ struct WebSocket final : public Base<WebSocket>,
 
   WebSocket(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &, std::string_view const &interface = {});
 
-  // protected:
+ protected:
   friend base_type;
 
   // server::Stream

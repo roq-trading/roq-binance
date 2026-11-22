@@ -42,7 +42,7 @@ struct DropCopyMargin final : public Base<DropCopyMargin>,
 
   void operator()(Trace<ListenKeyUpdate> const &);
 
-  // protected:
+ protected:
   friend base_type;
 
   // server::Stream
