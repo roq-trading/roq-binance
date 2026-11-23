@@ -116,17 +116,17 @@ DropCopyPortfolio::DropCopyPortfolio(
 
 // server::Stream
 
-void DropCopyPortfolio::operator()(Trace<Start> const &) {
-  (*connection_).start();
+void DropCopyPortfolio::operator()(Trace<Start> const &event) {
+  (*connection_)(event);
 }
 
-void DropCopyPortfolio::operator()(Trace<Stop> const &) {
-  (*connection_).stop();
+void DropCopyPortfolio::operator()(Trace<Stop> const &event) {
+  (*connection_)(event);
 }
 
 void DropCopyPortfolio::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  if ((*connection_).refresh(trace_info)) {
+  if ((*connection_)(event)) {
     if (ready()) {
       check_response_account(trace_info);
       check_response_orders(trace_info);

@@ -164,20 +164,20 @@ void Controller::operator()(Trace<Control> const &event) {
 }
 
 void Controller::operator()(Trace<server::oms::OrderActionBatchBegin> const &event) {
-  dispatch_order_action<void>(event);
+  dispatch_order_action(event);
 }
 
 void Controller::operator()(Trace<server::oms::OrderActionBatchCommit> const &event) {
-  dispatch_order_action<void>(event);
+  dispatch_order_action(event);
 }
 
 void Controller::operator()(Trace<server::oms::OrderActionBatchRollback> const &event) {
-  dispatch_order_action<void>(event);
+  dispatch_order_action(event);
 }
 
 uint16_t Controller::operator()(
     Trace<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
-  return dispatch_order_action<uint16_t>(event, order, ref_data, request_id);
+  return dispatch_order_action(event, order, ref_data, request_id);
 }
 
 uint16_t Controller::operator()(
@@ -186,7 +186,7 @@ uint16_t Controller::operator()(
     server::oms::RefData const &ref_data,
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
-  return dispatch_order_action<uint16_t>(event, order, ref_data, request_id, previous_request_id);
+  return dispatch_order_action(event, order, ref_data, request_id, previous_request_id);
 }
 
 uint16_t Controller::operator()(
@@ -195,7 +195,7 @@ uint16_t Controller::operator()(
     server::oms::RefData const &ref_data,
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
-  return dispatch_order_action<uint16_t>(event, order, ref_data, request_id, previous_request_id);
+  return dispatch_order_action(event, order, ref_data, request_id, previous_request_id);
 }
 
 uint16_t Controller::operator()(Trace<CancelAllOrders> const &event, std::string_view const &request_id) {
@@ -342,8 +342,8 @@ Account &Controller::get_account(std::string_view const &account) {
   return *(*iter).second;
 }
 
-template <typename Res, typename T, typename... Args>
-Res Controller::dispatch_order_action(Trace<T> const &event, Args &&...args) {
+template <typename T, typename... Args>
+uint16_t Controller::dispatch_order_action(Trace<T> const &event, Args &&...args) {
   auto &[trace_info, value] = event;
   auto margin_mode = [&]() -> MarginMode {
     constexpr bool has_margin_mode = requires(T const &t) { t.margin_mode; };
@@ -365,12 +365,17 @@ Res Controller::dispatch_order_action(Trace<T> const &event, Args &&...args) {
     case UNDEFINED:
       break;
     case ISOLATED:
-    case CROSS:
-      return helper(order_entry_margin_)(event, args...);
+    case CROSS: {
+      auto &stream = helper(order_entry_margin_);
+      stream(event, args...);
+      return stream.stream_id();
+    }
     case PORTFOLIO:
       break;
   }
-  return helper(order_entry_)(event, args...);
+  auto &stream = helper(order_entry_);
+  stream(event, args...);
+  return stream.stream_id();
 }
 
 }  // namespace gateway

@@ -140,17 +140,16 @@ WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id,
 
 // server::Stream
 
-void WebSocket::operator()(Trace<Start> const &) {
-  (*connection_).start();
+void WebSocket::operator()(Trace<Start> const &event) {
+  (*connection_)(event);
 }
 
-void WebSocket::operator()(Trace<Stop> const &) {
-  (*connection_).stop();
+void WebSocket::operator()(Trace<Stop> const &event) {
+  (*connection_)(event);
 }
 
 void WebSocket::operator()(Trace<Timer> const &event) {
-  auto &[trace_info, timer] = event;
-  if ((*connection_).refresh(trace_info)) {
+  if ((*connection_)(event)) {
     if (ready()) {
     }
   }
@@ -230,35 +229,31 @@ void WebSocket::operator()(Trace<server::oms::OrderActionBatchRollback> const &)
   throw server::oms::NotSupported{"not supported"sv};
 }
 
-uint16_t WebSocket::operator()(
+void WebSocket::operator()(
     Trace<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
   order_place(event, order, ref_data, request_id);
-  return stream_id();
 }
 
-uint16_t WebSocket::operator()(
+void WebSocket::operator()(
     Trace<ModifyOrder> const &event,
     server::oms::Order const &order,
     server::oms::RefData const &ref_data,
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
   order_amend_keep_priority(event, order, ref_data, request_id, previous_request_id);
-  return stream_id();
 }
 
-uint16_t WebSocket::operator()(
+void WebSocket::operator()(
     Trace<CancelOrder> const &event,
     server::oms::Order const &order,
     server::oms::RefData const &ref_data,
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
   order_cancel(event, order, ref_data, request_id, previous_request_id);
-  return stream_id();
 }
 
-uint16_t WebSocket::operator()(Trace<CancelAllOrders> const &event, std::string_view const &request_id) {
+void WebSocket::operator()(Trace<CancelAllOrders> const &event, std::string_view const &request_id) {
   open_orders_cancel_all(event, request_id);
-  return stream_id();
 }
 
 // web::socket::Client::Handler

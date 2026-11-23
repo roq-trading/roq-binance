@@ -140,17 +140,17 @@ OrderEntryMargin::OrderEntryMargin(Handler &handler, io::Context &context, uint1
 
 // server::Stream
 
-void OrderEntryMargin::operator()(Trace<Start> const &) {
-  (*connection_).start();
+void OrderEntryMargin::operator()(Trace<Start> const &event) {
+  (*connection_)(event);
 }
 
-void OrderEntryMargin::operator()(Trace<Stop> const &) {
-  (*connection_).stop();
+void OrderEntryMargin::operator()(Trace<Stop> const &event) {
+  (*connection_)(event);
 }
 
 void OrderEntryMargin::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  if ((*connection_).refresh(trace_info)) {
+  if ((*connection_)(event)) {
     refresh_listen_key(trace_info);
     // XXX HANS only master
     if (ready()) {
@@ -259,35 +259,31 @@ void OrderEntryMargin::operator()(Trace<server::oms::OrderActionBatchRollback> c
   throw server::oms::NotSupported{"not supported"sv};
 }
 
-uint16_t OrderEntryMargin::operator()(
+void OrderEntryMargin::operator()(
     Trace<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
   new_order(event, order, ref_data, request_id);
-  return stream_id();
 }
 
-uint16_t OrderEntryMargin::operator()(
+void OrderEntryMargin::operator()(
     Trace<ModifyOrder> const &,
     server::oms::Order const &,
     server::oms::RefData const &,
     [[maybe_unused]] std::string_view const &request_id,
     [[maybe_unused]] std::string_view const &previous_request_id) {
   throw server::oms::NotSupported{"not supported"sv};
-  return stream_id();
 }
 
-uint16_t OrderEntryMargin::operator()(
+void OrderEntryMargin::operator()(
     Trace<CancelOrder> const &event,
     server::oms::Order const &order,
     server::oms::RefData const &ref_data,
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
   (*this).cancel_order(event, order, ref_data, request_id, previous_request_id);
-  return stream_id();
 }
 
-uint16_t OrderEntryMargin::operator()(Trace<CancelAllOrders> const &event, std::string_view const &request_id) {
+void OrderEntryMargin::operator()(Trace<CancelAllOrders> const &event, std::string_view const &request_id) {
   cancel_all_open_orders(event, request_id);
-  return stream_id();
 }
 
 // web::rest::Client::Handler
