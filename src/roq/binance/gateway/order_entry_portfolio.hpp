@@ -53,10 +53,6 @@ struct OrderEntryPortfolio final : public Base<OrderEntryPortfolio>, public serv
 
   // server::Stream
 
-  uint16_t stream_id() const override { return stream_id_; }
-
-  bool ready() const override { return connection_status_ == ConnectionStatus::READY; }
-
   void operator()(Trace<Start> const &) override;
   void operator()(Trace<Stop> const &) override;
   void operator()(Trace<Timer> const &) override;
@@ -167,7 +163,6 @@ struct OrderEntryPortfolio final : public Base<OrderEntryPortfolio>, public serv
  private:
   Handler &handler_;
   //
-  uint16_t const stream_id_;
   std::string const name_;
   bool const master_;
   std::unique_ptr<web::rest::Client> const connection_;
@@ -196,7 +191,6 @@ struct OrderEntryPortfolio final : public Base<OrderEntryPortfolio>, public serv
   Request &request_;
   std::string listen_key_;
   std::chrono::nanoseconds listen_key_refresh_ = {};
-  ConnectionStatus connection_status_ = {};
   core::Download2<State> download_;
   std::string encode_buffer_;
   bool download_trades_is_first_ = true;

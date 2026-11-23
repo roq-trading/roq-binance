@@ -93,7 +93,7 @@ DropCopyPortfolio::DropCopyPortfolio(
     Request &request,
     std::string_view const &listen_key,
     [[maybe_unused]] MarginMode margin_mode)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)}, query_{create_query(listen_key)},
+    : server::Stream{stream_id}, handler_{handler}, name_{create_name(stream_id, account.name)}, query_{create_query(listen_key)},
       connection_{create_connection(*this, shared.settings, context, shared)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -110,7 +110,7 @@ DropCopyPortfolio::DropCopyPortfolio(
           .heartbeat = create_metrics(shared.settings, name_, "heartbeat"sv),
       },
       account_{account}, shared_{shared}, request_{request}, download_{{}, [this](auto &event) { return download(event); }} {
-  log::info<5>(R"(stream_id={}, account="{}", listen_key="{}")"sv, stream_id_, account_.name, listen_key);
+  log::info<5>(R"(stream_id={}, account="{}", listen_key="{}")"sv, stream_id, account_.name, listen_key);
   assert(margin_mode == MarginMode::PORTFOLIO);
 }
 
@@ -152,25 +152,26 @@ void DropCopyPortfolio::operator()(metrics::Writer &writer) const {
 
 void DropCopyPortfolio::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
   auto &[trace_info, connection_status] = event;
-  connection_status_ = connection_status;
-  auto stream_status = StreamStatus{
-      .stream_id = stream_id_,
-      .account = account_.name,
-      .supports = SUPPORTS,
-      .transport = Transport::TCP,
-      .protocol = Protocol::WS,
-      .encoding = {Encoding::JSON},
-      .priority = Priority::PRIMARY,
-      .connection_status = connection_status_,
-      .reason = reason,
-      .interface = (*connection_).get_interface(),
-      .proxy = (*connection_).get_proxy(),
-      .peer = (*connection_).get_current_peer(),
-      .authority = (*connection_).get_current_authority(),
-      .path = (*connection_).get_current_path(),
-  };
-  log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+  if (update(connection_status, reason)) {
+    auto stream_status = StreamStatus{
+        .stream_id = stream_id(),
+        .account = account_.name,
+        .supports = SUPPORTS,
+        .transport = Transport::TCP,
+        .protocol = Protocol::WS,
+        .encoding = {Encoding::JSON},
+        .priority = Priority::PRIMARY,
+        .connection_status = connection_status,
+        .reason = reason,
+        .interface = (*connection_).get_interface(),
+        .proxy = (*connection_).get_proxy(),
+        .peer = (*connection_).get_current_peer(),
+        .authority = (*connection_).get_current_authority(),
+        .path = (*connection_).get_current_path(),
+    };
+    log::info("stream_status={}"sv, stream_status);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+  }
 }
 
 // web::socket::Client::Handler
@@ -181,7 +182,7 @@ void DropCopyPortfolio::operator()(Trace<web::socket::Connected> const &) {
 void DropCopyPortfolio::operator()(Trace<web::socket::Disconnected> const &event) {
   auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
-  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
+  publish(trace_info, ConnectionStatus::DISCONNECTED);
   download_.reset();
 }
 
@@ -198,7 +199,7 @@ void DropCopyPortfolio::operator()(Trace<web::socket::Close> const &event) {
 void DropCopyPortfolio::operator()(Trace<web::socket::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
-      .stream_id = stream_id_,
+      .stream_id = stream_id(),
       .account = account_.name,
       .latency = latency.sample,
   };
@@ -219,30 +220,29 @@ void DropCopyPortfolio::operator()(Trace<web::socket::Binary> const &) {
 
 int32_t DropCopyPortfolio::download(Trace<State> const &event) {
   auto &[trace_info, state] = event;
-  auto publish_downloading = [&]() { create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, magic_enum::enum_name(state)); };
   switch (state) {
     using enum State;
     case UNDEFINED:
       assert(false);
       break;
     case ACCOUNT:
-      publish_downloading();
+      publish(trace_info, ConnectionStatus::DOWNLOADING, state);
       request_account(trace_info);
       return 1;
     case ORDERS:
-      publish_downloading();
+      publish(trace_info, ConnectionStatus::DOWNLOADING, state);
       request_orders(trace_info);
       return 1;
     case TRADES:
       if (shared_.settings.download.trades_lookback.count() != 0 && !std::empty(shared_.settings.download.symbols)) {
-        publish_downloading();
+        publish(trace_info, ConnectionStatus::DOWNLOADING, state);
         request_trades(trace_info);
         return 1;
       } else {
         return 0;
       }
     case DONE:
-      create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
+      publish(trace_info, ConnectionStatus::READY);
       return 0;
   }
   assert(false);
@@ -257,7 +257,7 @@ void DropCopyPortfolio::operator()(Trace<protocol::json::OutboundAccountPosition
     log::info<2>("outbound_account_position={}"sv, outbound_account_position);
     for (auto &item : outbound_account_position.data.balances) {
       auto funds_update = FundsUpdate{
-          .stream_id = stream_id_,
+          .stream_id = stream_id(),
           .account = account_.name,
           .currency = item.asset,
           .margin_mode = MarginMode::PORTFOLIO,
@@ -338,7 +338,7 @@ void DropCopyPortfolio::operator()(Trace<protocol::json::ExecutionReport> const 
       order_id = order.order_id;
       strategy_id = order.strategy_id;
     };
-    create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id_, callback);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id(), callback);
     if (execution_report.data.current_execution_type != protocol::json::ExecutionType::TRADE) {
       return;
     }
@@ -359,7 +359,7 @@ void DropCopyPortfolio::operator()(Trace<protocol::json::ExecutionReport> const 
     };
     fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"sv, execution_report.data.trade_id);
     auto trade_update = TradeUpdate{
-        .stream_id = stream_id_,
+        .stream_id = stream_id(),
         .account = account_.name,
         .order_id = order_id,
         .exchange = shared_.settings.exchange,

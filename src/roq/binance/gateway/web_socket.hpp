@@ -45,10 +45,6 @@ struct WebSocket final : public Base<WebSocket>,
 
   // server::Stream
 
-  uint16_t stream_id() const override { return stream_id_; }
-
-  bool ready() const override { return connection_status_ == ConnectionStatus::READY; }
-
   void operator()(Trace<Start> const &) override;
   void operator()(Trace<Stop> const &) override;
   void operator()(Trace<Timer> const &) override;
@@ -158,7 +154,6 @@ struct WebSocket final : public Base<WebSocket>,
  private:
   [[maybe_unused]] Handler &handler_;
   //
-  uint16_t const stream_id_;
   std::string const name_;
   std::unique_ptr<web::socket::Client> const connection_;
   //
@@ -191,7 +186,6 @@ struct WebSocket final : public Base<WebSocket>,
   utils::unordered_set<std::string> open_orders_symbols_;
   std::string request_encode_buffer_;
   std::string encode_buffer_;
-  ConnectionStatus connection_status_ = {};
   core::Download2<State> download_;
   bool download_trades_is_first_ = true;
 };

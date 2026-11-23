@@ -81,7 +81,7 @@ struct create_metrics final : public utils::metrics::Factory {
 
 DropCopyMargin::DropCopyMargin(
     Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared, Request &request, ListenKeyUpdate const &listen_key_update)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_, account.name)},
+    : server::Stream{stream_id}, handler_{handler}, name_{create_name(stream_id, account.name)},
       connection_{create_connection(*this, shared.settings, context, shared, account)},
       decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
@@ -109,7 +109,7 @@ DropCopyMargin::DropCopyMargin(
       },
       account_{account}, shared_{shared}, request_{request}, request_id_{REQUEST_ID * stream_id},
       download_{shared.settings.rest.request_timeout, [this](auto &event) { return download(event); }}, listen_token_{listen_key_update.listen_key} {
-  log::info<5>(R"(stream_id={}, account="{}")"sv, stream_id_, account_.name);
+  log::info<5>(R"(stream_id={}, account="{}")"sv, stream_id, account_.name);
 }
 
 void DropCopyMargin::operator()(Trace<ListenKeyUpdate> const &event) {
@@ -166,25 +166,26 @@ void DropCopyMargin::operator()(metrics::Writer &writer) const {
 
 void DropCopyMargin::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
   auto &[trace_info, connection_status] = event;
-  connection_status_ = connection_status;
-  auto stream_status = StreamStatus{
-      .stream_id = stream_id_,
-      .account = account_.name,
-      .supports = SUPPORTS,
-      .transport = Transport::TCP,
-      .protocol = Protocol::WS,
-      .encoding = {Encoding::JSON},
-      .priority = Priority::PRIMARY,
-      .connection_status = connection_status_,
-      .reason = reason,
-      .interface = (*connection_).get_interface(),
-      .proxy = (*connection_).get_proxy(),
-      .peer = (*connection_).get_current_peer(),
-      .authority = (*connection_).get_current_authority(),
-      .path = (*connection_).get_current_path(),
-  };
-  log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+  if (update(connection_status, reason)) {
+    auto stream_status = StreamStatus{
+        .stream_id = stream_id(),
+        .account = account_.name,
+        .supports = SUPPORTS,
+        .transport = Transport::TCP,
+        .protocol = Protocol::WS,
+        .encoding = {Encoding::JSON},
+        .priority = Priority::PRIMARY,
+        .connection_status = connection_status,
+        .reason = reason,
+        .interface = (*connection_).get_interface(),
+        .proxy = (*connection_).get_proxy(),
+        .peer = (*connection_).get_current_peer(),
+        .authority = (*connection_).get_current_authority(),
+        .path = (*connection_).get_current_path(),
+    };
+    log::info("stream_status={}"sv, stream_status);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+  }
 }
 
 // protocol::json::WSAPIParser::Handler
@@ -196,7 +197,7 @@ void DropCopyMargin::operator()(Trace<web::socket::Connected> const &) {
 void DropCopyMargin::operator()(Trace<web::socket::Disconnected> const &event) {
   auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
-  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
+  publish(trace_info, ConnectionStatus::DISCONNECTED);
   download_.reset();
 }
 
@@ -213,7 +214,7 @@ void DropCopyMargin::operator()(Trace<web::socket::Close> const &event) {
 void DropCopyMargin::operator()(Trace<web::socket::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
-      .stream_id = stream_id_,
+      .stream_id = stream_id(),
       .account = account_.name,
       .latency = latency.sample,
   };
@@ -234,30 +235,29 @@ void DropCopyMargin::operator()(Trace<web::socket::Binary> const &) {
 
 int32_t DropCopyMargin::download(Trace<State> const &event) {
   auto &[trace_info, state] = event;
-  auto publish_downloading = [&]() { create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, magic_enum::enum_name(state)); };
   switch (state) {
     using enum State;
     case UNDEFINED:
       assert(false);
       break;
     case SESSION_LOGON:
-      publish_downloading();
+      publish(trace_info, ConnectionStatus::DOWNLOADING, state);
       session_logon(trace_info);
       return 1;
     case USER_DATA_STREAM_SUBSCRIBE:
-      publish_downloading();
+      publish(trace_info, ConnectionStatus::DOWNLOADING, state);
       subscribe_user_data_stream(trace_info);
       return 1;
     case ACCOUNT:
-      publish_downloading();
+      publish(trace_info, ConnectionStatus::DOWNLOADING, state);
       get_account(trace_info);
       return 1;
     case ORDERS:
-      publish_downloading();
+      publish(trace_info, ConnectionStatus::DOWNLOADING, state);
       get_orders(trace_info);
       return 1;
     case DONE:
-      create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
+      publish(trace_info, ConnectionStatus::READY);
       return 0;
   }
   assert(false);
@@ -403,7 +403,7 @@ void DropCopyMargin::session_logon(TraceInfo const &trace_info) {
       timestamp.count(),
       signature);
   (*connection_).send_text(message);
-  create_trace_and_dispatch_2(trace_info, ConnectionStatus::AUTHENTICATING, "session.logon"sv);
+  publish(trace_info, ConnectionStatus::AUTHENTICATING, "session.logon"sv);
 }
 
 // user-data-stream-subscribe
@@ -429,19 +429,19 @@ void DropCopyMargin::subscribe_user_data_stream(TraceInfo const &trace_info) {
       request_id,
       listen_token_);
   (*connection_).send_text(message);
-  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "userDataStream.subscribe.listenToken"sv);
+  publish(trace_info, ConnectionStatus::DOWNLOADING, "userDataStream.subscribe.listenToken"sv);
 }
 
 void DropCopyMargin::get_account(TraceInfo const &trace_info) {
   request_.request_account_cross = trace_info.origin_create_time;
-  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "account"sv);
+  publish(trace_info, ConnectionStatus::DOWNLOADING, "account"sv);
 }
 
 // open-orders
 
 void DropCopyMargin::get_orders(TraceInfo const &trace_info) {
   request_.request_orders_cross = trace_info.origin_create_time;
-  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "orders"sv);
+  publish(trace_info, ConnectionStatus::DOWNLOADING, "orders"sv);
 }
 
 void DropCopyMargin::parse(TraceInfo const &trace_info, std::string_view const &message) {
@@ -464,7 +464,7 @@ void DropCopyMargin::operator()(Trace<protocol::json::OutboundAccountPositionDat
   auto &[trace_info, outbound_account_position] = event;
   for (auto &item : outbound_account_position.balances) {
     auto funds_update = FundsUpdate{
-        .stream_id = stream_id_,
+        .stream_id = stream_id(),
         .account = account_.name,
         .currency = item.asset,
         .margin_mode = {},  // XXX FIXME TODO margin_mode
@@ -538,7 +538,7 @@ void DropCopyMargin::operator()(Trace<protocol::json::ExecutionReportData> const
     order_id = order.order_id;
     strategy_id = order.strategy_id;
   };
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id_, callback);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id(), callback);
   if (execution_report.current_execution_type != protocol::json::ExecutionType::TRADE) {
     return;
   }
@@ -559,7 +559,7 @@ void DropCopyMargin::operator()(Trace<protocol::json::ExecutionReportData> const
   };
   fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"sv, execution_report.trade_id);
   auto trade_update = TradeUpdate{
-      .stream_id = stream_id_,
+      .stream_id = stream_id(),
       .account = account_.name,
       .order_id = order_id,
       .exchange = shared_.settings.exchange,
@@ -656,7 +656,7 @@ void DropCopyMargin::update_rate_limits(auto &event) {
   }
   if (!std::empty(shared_.rate_limits)) {
     auto rate_limits_update = RateLimitsUpdate{
-        .stream_id = stream_id_,
+        .stream_id = stream_id(),
         .account = account_.name,
         .origin = Origin::EXCHANGE,
         .rate_limits = shared_.rate_limits,

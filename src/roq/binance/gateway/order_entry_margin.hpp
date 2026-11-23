@@ -56,10 +56,6 @@ struct OrderEntryMargin final : public Base<OrderEntryMargin>, public server::Or
 
   // server::Stream
 
-  uint16_t stream_id() const override { return stream_id_; }
-
-  bool ready() const override { return connection_status_ == ConnectionStatus::READY; }
-
   void operator()(Trace<Start> const &) override;
   void operator()(Trace<Stop> const &) override;
   void operator()(Trace<Timer> const &) override;
@@ -184,7 +180,6 @@ struct OrderEntryMargin final : public Base<OrderEntryMargin>, public server::Or
  private:
   Handler &handler_;
   //
-  uint16_t const stream_id_;
   std::string const name_;
   std::unique_ptr<web::rest::Client> const connection_;
   //
@@ -213,7 +208,6 @@ struct OrderEntryMargin final : public Base<OrderEntryMargin>, public server::Or
   std::string listen_key_;
   std::string listen_key_cross_;
   std::chrono::nanoseconds listen_key_refresh_ = {};
-  ConnectionStatus connection_status_ = {};
   core::Download2<State> download_;
   std::chrono::nanoseconds next_poll_borrowed_ = {};
   bool has_listen_key_cross_ = false;
