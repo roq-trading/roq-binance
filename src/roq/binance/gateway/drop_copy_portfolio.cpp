@@ -93,7 +93,7 @@ DropCopyPortfolio::DropCopyPortfolio(
     Request &request,
     std::string_view const &listen_key,
     [[maybe_unused]] MarginMode margin_mode)
-    : server::Stream{stream_id}, handler_{handler}, name_{create_name(stream_id, account.name)}, query_{create_query(listen_key)},
+    : server::Stream{stream_id, account.name, SUPPORTS}, handler_{handler}, name_{create_name(stream_id, account.name)}, query_{create_query(listen_key)},
       connection_{create_connection(*this, shared.settings, context, shared)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -154,9 +154,9 @@ void DropCopyPortfolio::operator()(Trace<ConnectionStatus> const &event, std::st
   auto &[trace_info, connection_status] = event;
   if (update(connection_status, reason)) {
     auto stream_status = StreamStatus{
-        .stream_id = stream_id(),
-        .account = account_.name,
-        .supports = SUPPORTS,
+        .stream_id = stream_id,
+        .account = account,
+        .supports = supports,
         .transport = Transport::TCP,
         .protocol = Protocol::WS,
         .encoding = {Encoding::JSON},
@@ -199,7 +199,7 @@ void DropCopyPortfolio::operator()(Trace<web::socket::Close> const &event) {
 void DropCopyPortfolio::operator()(Trace<web::socket::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
-      .stream_id = stream_id(),
+      .stream_id = stream_id,
       .account = account_.name,
       .latency = latency.sample,
   };
@@ -257,7 +257,7 @@ void DropCopyPortfolio::operator()(Trace<protocol::json::OutboundAccountPosition
     log::info<2>("outbound_account_position={}"sv, outbound_account_position);
     for (auto &item : outbound_account_position.data.balances) {
       auto funds_update = FundsUpdate{
-          .stream_id = stream_id(),
+          .stream_id = stream_id,
           .account = account_.name,
           .currency = item.asset,
           .margin_mode = MarginMode::PORTFOLIO,
@@ -338,7 +338,7 @@ void DropCopyPortfolio::operator()(Trace<protocol::json::ExecutionReport> const 
       order_id = order.order_id;
       strategy_id = order.strategy_id;
     };
-    create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id(), callback);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id, callback);
     if (execution_report.data.current_execution_type != protocol::json::ExecutionType::TRADE) {
       return;
     }
@@ -359,7 +359,7 @@ void DropCopyPortfolio::operator()(Trace<protocol::json::ExecutionReport> const 
     };
     fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"sv, execution_report.data.trade_id);
     auto trade_update = TradeUpdate{
-        .stream_id = stream_id(),
+        .stream_id = stream_id,
         .account = account_.name,
         .order_id = order_id,
         .exchange = shared_.settings.exchange,

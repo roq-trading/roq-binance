@@ -120,7 +120,7 @@ OrderEntryPortfolio::OrderEntryPortfolio(
     Request &request,
     bool master,
     std::string_view const &interface)
-    : server::OrderActionStream{stream_id}, handler_{handler}, name_{create_name(stream_id, account.name)}, master_{master},
+    : server::OrderActionStream{stream_id, account.name, SUPPORTS}, handler_{handler}, name_{create_name(stream_id, account.name)}, master_{master},
       connection_{create_connection(*this, shared.settings, context, shared, interface)},
       decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
@@ -221,9 +221,9 @@ void OrderEntryPortfolio::operator()(Trace<ConnectionStatus> const &event, std::
   auto &[trace_info, connection_status] = event;
   if (update(connection_status, reason)) {
     auto stream_status = StreamStatus{
-        .stream_id = stream_id(),
-        .account = account_.name,
-        .supports = SUPPORTS,
+        .stream_id = stream_id,
+        .account = account,
+        .supports = supports,
         .transport = Transport::TCP,
         .protocol = Protocol::HTTP,
         .encoding = {Encoding::JSON},
@@ -320,7 +320,7 @@ void OrderEntryPortfolio::operator()(Trace<web::rest::MessageHeader> const &even
 void OrderEntryPortfolio::operator()(Trace<web::rest::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
-      .stream_id = stream_id(),
+      .stream_id = stream_id,
       .account = account_.name,
       .latency = latency.sample,
   };
@@ -459,7 +459,7 @@ void OrderEntryPortfolio::operator()(Trace<protocol::json::BalancesAck> const &e
   for (auto &item : balances_ack.data) {
     log::info<2>("item={}"sv, item);
     auto funds_update = FundsUpdate{
-        .stream_id = stream_id(),
+        .stream_id = stream_id,
         .account = account_.name,
         .currency = item.asset,
         .margin_mode = MarginMode::PORTFOLIO,
@@ -577,7 +577,7 @@ void OrderEntryPortfolio::operator()(Trace<protocol::json::OpenOrdersAck> const 
         .update_type = UpdateType::SNAPSHOT,
         .sending_time_utc = {},
     };
-    create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id());
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id);
   }
 }
 
@@ -655,7 +655,7 @@ void OrderEntryPortfolio::operator()(Trace<protocol::json::TradesAck> const &eve
     fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"sv, item.id);
     auto external_order_id = fmt::format("{}"sv, item.order_id);  // alloc
     auto trade_update = TradeUpdate{
-        .stream_id = stream_id(),
+        .stream_id = stream_id,
         .account = account_.name,
         .order_id = {},
         .exchange = shared_.settings.exchange,
@@ -748,7 +748,7 @@ void OrderEntryPortfolio::new_order_ack(Trace<web::rest::Response> const &event,
           .quantity = NaN,
           .price = NaN,
       };
-      create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id(), user_id, order_id);
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id, user_id, order_id);
     };
     auto handle_success = [&](auto &body) {
       protocol::json::NewOrderAck new_order_ack{body, decode_buffer_};
@@ -831,7 +831,7 @@ void OrderEntryPortfolio::operator()(Trace<protocol::json::NewOrderAck> const &e
       .update_type = UpdateType::INCREMENTAL,
       .sending_time_utc = {},
   };
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, response, order_update, stream_id(), user_id, order_id);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, response, order_update, stream_id, user_id, order_id);
 }
 
 // cancel-order
@@ -890,7 +890,7 @@ void OrderEntryPortfolio::cancel_order_ack(Trace<web::rest::Response> const &eve
           .quantity = NaN,
           .price = NaN,
       };
-      create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id(), user_id, order_id);
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id, user_id, order_id);
     };
     auto handle_success = [&](auto &body) {
       protocol::json::CancelOrderAck cancel_order_ack{body};
@@ -956,7 +956,7 @@ void OrderEntryPortfolio::operator()(Trace<protocol::json::CancelOrderAck> const
       .update_type = UpdateType::INCREMENTAL,
       .sending_time_utc = {},
   };
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, response, order_update, stream_id(), user_id, order_id);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, response, order_update, stream_id, user_id, order_id);
 }
 
 // cancel-all-orders
@@ -969,7 +969,7 @@ void OrderEntryPortfolio::cancel_all_open_orders(Trace<CancelAllOrders> const &e
     auto &[trace_info, cancel_all_orders] = event;
     auto send_ack = [&](auto &symbol) {
       auto cancel_all_orders_ack = CancelAllOrdersAck{
-          .stream_id = stream_id(),
+          .stream_id = stream_id,
           .account = account_.name,
           .order_id = cancel_all_orders.order_id,
           .exchange = cancel_all_orders.exchange,
@@ -1020,7 +1020,7 @@ void OrderEntryPortfolio::cancel_all_open_orders_ack(Trace<web::rest::Response> 
     auto &[trace_info, response] = event;
     auto send_ack = [&](auto status, Error error, std::string_view const &text) {
       auto cancel_all_orders_ack = CancelAllOrdersAck{
-          .stream_id = stream_id(),
+          .stream_id = stream_id,
           .account = account_.name,
           .order_id = {},
           .exchange = {},
@@ -1105,7 +1105,7 @@ void OrderEntryPortfolio::operator()(Trace<protocol::json::CancelAllOpenOrdersAc
         .sending_time_utc = {},
     };
     // note! client_order_id is auto-generated by exchange
-    create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id());
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id);
   }
 }
 

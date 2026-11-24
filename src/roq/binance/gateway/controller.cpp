@@ -368,14 +368,14 @@ uint16_t Controller::dispatch_order_action(Trace<T> const &event, Args &&...args
     case CROSS: {
       auto &stream = helper(order_entry_margin_);
       stream(event, args...);
-      return stream.stream_id();
+      return stream.stream_id;
     }
     case PORTFOLIO:
       break;
   }
   auto &stream = helper(order_entry_);
   stream(event, args...);
-  return stream.stream_id();
+  return stream.stream_id;
 }
 
 }  // namespace gateway

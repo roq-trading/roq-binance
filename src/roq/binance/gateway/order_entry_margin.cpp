@@ -108,7 +108,7 @@ auto get_retry_after(auto &response) {
 // === IMPLEMENTATION ===
 
 OrderEntryMargin::OrderEntryMargin(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared, Request &request)
-    : server::OrderActionStream{stream_id}, handler_{handler}, name_{create_name(stream_id, account.name)},
+    : server::OrderActionStream{stream_id, account.name, SUPPORTS}, handler_{handler}, name_{create_name(stream_id, account.name)},
       connection_{create_connection(*this, shared.settings, context, shared)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -225,9 +225,9 @@ void OrderEntryMargin::operator()(Trace<ConnectionStatus> const &event, std::str
   auto &[trace_info, connection_status] = event;
   if (update(connection_status, reason)) {
     auto stream_status = StreamStatus{
-        .stream_id = stream_id(),
-        .account = account_.name,
-        .supports = SUPPORTS,
+        .stream_id = stream_id,
+        .account = account,
+        .supports = supports,
         .transport = Transport::TCP,
         .protocol = Protocol::HTTP,
         .encoding = {Encoding::JSON},
@@ -329,7 +329,7 @@ void OrderEntryMargin::operator()(Trace<web::rest::MessageHeader> const &event) 
 void OrderEntryMargin::operator()(Trace<web::rest::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
-      .stream_id = stream_id(),
+      .stream_id = stream_id,
       .account = account_.name,
       .latency = latency.sample,
   };
@@ -583,7 +583,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::AccountAck> const &event
   log::info<2>("account_ack={}"sv, account_ack);
   for (auto &item : account_ack.balances) {
     auto funds_update = FundsUpdate{
-        .stream_id = stream_id(),
+        .stream_id = stream_id,
         .account = account_.name,
         .currency = item.asset,
         .margin_mode = margin_mode,
@@ -605,7 +605,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::CrossMarginAccount> cons
   log::info<2>("account={}"sv, account);
   for (auto &item : account.user_assets) {
     auto funds_update = FundsUpdate{
-        .stream_id = stream_id(),
+        .stream_id = stream_id,
         .account = account_.name,
         .currency = item.asset,
         .margin_mode = margin_mode,
@@ -755,7 +755,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::OpenOrdersAck> const &ev
         .update_type = UpdateType::SNAPSHOT,
         .sending_time_utc = {},
     };
-    create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id());
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id);
   }
 }
 
@@ -888,7 +888,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::TradesAck> const &event,
         .update_type = UpdateType::SNAPSHOT,
         .sending_time_utc = {},
     };
-      create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update,stream_id());
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update,stream_id);
     */
   }
 }
@@ -943,7 +943,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::CrossMarginAccount> cons
   log::info<2>("account={}"sv, account);
   for (auto &item : account.user_assets) {
     auto funds_update = FundsUpdate{
-        .stream_id = stream_id(),
+        .stream_id = stream_id,
         .account = account_.name,
         .currency = item.asset,
         .margin_mode = MarginMode::CROSS,
@@ -1035,7 +1035,7 @@ void OrderEntryMargin::new_order_ack(Trace<web::rest::Response> const &event, ui
           .quantity = NaN,
           .price = NaN,
       };
-      create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id(), user_id, order_id);
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id, user_id, order_id);
     };
     auto handle_success = [&](auto &body) {
       // log::warn(R"(DEBUG body="{}")"sv, body);
@@ -1120,7 +1120,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::NewOrderAck> const &even
       .update_type = UpdateType::INCREMENTAL,
       .sending_time_utc = {},
   };
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, response, order_update, stream_id(), user_id, order_id);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, response, order_update, stream_id, user_id, order_id);
 }
 
 // cancel-order
@@ -1192,7 +1192,7 @@ void OrderEntryMargin::cancel_order_ack(Trace<web::rest::Response> const &event,
           .quantity = NaN,
           .price = NaN,
       };
-      create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id(), user_id, order_id);
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id, user_id, order_id);
     };
     auto handle_success = [&](auto &body) {
       // log::warn(R"(DEBUG body="{}")"sv, body);
@@ -1260,7 +1260,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::CancelOrderAck> const &e
       .update_type = UpdateType::INCREMENTAL,
       .sending_time_utc = {},
   };
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, response, order_update, stream_id(), user_id, order_id);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, response, order_update, stream_id, user_id, order_id);
 }
 
 void OrderEntryMargin::cancel_all_open_orders(Trace<CancelAllOrders> const &event, std::string_view const &request_id) {
@@ -1271,7 +1271,7 @@ void OrderEntryMargin::cancel_all_open_orders(Trace<CancelAllOrders> const &even
     auto &[trace_info, cancel_all_orders] = event;
     auto send_ack = [&](auto &symbol) {
       auto cancel_all_orders_ack = CancelAllOrdersAck{
-          .stream_id = stream_id(),
+          .stream_id = stream_id,
           .account = account_.name,
           .order_id = cancel_all_orders.order_id,
           .exchange = cancel_all_orders.exchange,
@@ -1339,7 +1339,7 @@ void OrderEntryMargin::cancel_all_open_orders_ack(Trace<web::rest::Response> con
     auto &[trace_info, response] = event;
     auto send_ack = [&](auto status, Error error, std::string_view const &text) {
       auto cancel_all_orders_ack = CancelAllOrdersAck{
-          .stream_id = stream_id(),
+          .stream_id = stream_id,
           .account = account_.name,
           .order_id = {},
           .exchange = {},
@@ -1424,7 +1424,7 @@ void OrderEntryMargin::operator()(Trace<protocol::json::CancelAllOpenOrdersAck> 
         .update_type = UpdateType::INCREMENTAL,
         .sending_time_utc = {},
     };
-    create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id());
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id);
   }
 }
 

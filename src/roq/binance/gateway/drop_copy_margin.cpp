@@ -81,7 +81,7 @@ struct create_metrics final : public utils::metrics::Factory {
 
 DropCopyMargin::DropCopyMargin(
     Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared, Request &request, ListenKeyUpdate const &listen_key_update)
-    : server::Stream{stream_id}, handler_{handler}, name_{create_name(stream_id, account.name)},
+    : server::Stream{stream_id, account.name, SUPPORTS}, handler_{handler}, name_{create_name(stream_id, account.name)},
       connection_{create_connection(*this, shared.settings, context, shared, account)},
       decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
@@ -168,9 +168,9 @@ void DropCopyMargin::operator()(Trace<ConnectionStatus> const &event, std::strin
   auto &[trace_info, connection_status] = event;
   if (update(connection_status, reason)) {
     auto stream_status = StreamStatus{
-        .stream_id = stream_id(),
-        .account = account_.name,
-        .supports = SUPPORTS,
+        .stream_id = stream_id,
+        .account = account,
+        .supports = supports,
         .transport = Transport::TCP,
         .protocol = Protocol::WS,
         .encoding = {Encoding::JSON},
@@ -214,7 +214,7 @@ void DropCopyMargin::operator()(Trace<web::socket::Close> const &event) {
 void DropCopyMargin::operator()(Trace<web::socket::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
-      .stream_id = stream_id(),
+      .stream_id = stream_id,
       .account = account_.name,
       .latency = latency.sample,
   };
@@ -464,7 +464,7 @@ void DropCopyMargin::operator()(Trace<protocol::json::OutboundAccountPositionDat
   auto &[trace_info, outbound_account_position] = event;
   for (auto &item : outbound_account_position.balances) {
     auto funds_update = FundsUpdate{
-        .stream_id = stream_id(),
+        .stream_id = stream_id,
         .account = account_.name,
         .currency = item.asset,
         .margin_mode = {},  // XXX FIXME TODO margin_mode
@@ -538,7 +538,7 @@ void DropCopyMargin::operator()(Trace<protocol::json::ExecutionReportData> const
     order_id = order.order_id;
     strategy_id = order.strategy_id;
   };
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id(), callback);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id, callback);
   if (execution_report.current_execution_type != protocol::json::ExecutionType::TRADE) {
     return;
   }
@@ -559,7 +559,7 @@ void DropCopyMargin::operator()(Trace<protocol::json::ExecutionReportData> const
   };
   fmt::format_to(std::back_inserter(fill.external_trade_id), "{}"sv, execution_report.trade_id);
   auto trade_update = TradeUpdate{
-      .stream_id = stream_id(),
+      .stream_id = stream_id,
       .account = account_.name,
       .order_id = order_id,
       .exchange = shared_.settings.exchange,
@@ -656,7 +656,7 @@ void DropCopyMargin::update_rate_limits(auto &event) {
   }
   if (!std::empty(shared_.rate_limits)) {
     auto rate_limits_update = RateLimitsUpdate{
-        .stream_id = stream_id(),
+        .stream_id = stream_id,
         .account = account_.name,
         .origin = Origin::EXCHANGE,
         .rate_limits = shared_.rate_limits,
