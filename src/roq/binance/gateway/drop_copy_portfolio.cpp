@@ -116,6 +116,21 @@ DropCopyPortfolio::DropCopyPortfolio(
 
 // server::Stream
 
+void DropCopyPortfolio::operator()(metrics::Writer &writer) const {
+  writer
+      // counter
+      .write(counter_.disconnect, metrics::Type::COUNTER)
+      // profile
+      .write(profile_.parse, metrics::Type::PROFILE)
+      .write(profile_.outbound_account_position, metrics::Type::PROFILE)
+      .write(profile_.balance_update, metrics::Type::PROFILE)
+      .write(profile_.execution_report, metrics::Type::PROFILE)
+      .write(profile_.list_status, metrics::Type::PROFILE)
+      // latency
+      .write(latency_.ping, metrics::Type::LATENCY)
+      .write(latency_.heartbeat, metrics::Type::LATENCY);
+}
+
 void DropCopyPortfolio::operator()(Trace<Start> const &event) {
   (*connection_)(event);
 }
@@ -133,21 +148,6 @@ void DropCopyPortfolio::operator()(Trace<Timer> const &event) {
       check_response_trades(trace_info);
     }
   }
-}
-
-void DropCopyPortfolio::operator()(metrics::Writer &writer) const {
-  writer
-      // counter
-      .write(counter_.disconnect, metrics::Type::COUNTER)
-      // profile
-      .write(profile_.parse, metrics::Type::PROFILE)
-      .write(profile_.outbound_account_position, metrics::Type::PROFILE)
-      .write(profile_.balance_update, metrics::Type::PROFILE)
-      .write(profile_.execution_report, metrics::Type::PROFILE)
-      .write(profile_.list_status, metrics::Type::PROFILE)
-      // latency
-      .write(latency_.ping, metrics::Type::LATENCY)
-      .write(latency_.heartbeat, metrics::Type::LATENCY);
 }
 
 void DropCopyPortfolio::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {

@@ -156,6 +156,33 @@ OrderEntryPortfolio::OrderEntryPortfolio(
 
 // server::Stream
 
+void OrderEntryPortfolio::operator()(metrics::Writer &writer) const {
+  writer
+      // counter
+      .write(counter_.disconnect, metrics::Type::COUNTER)
+      // profile
+      .write(profile_.listen_key, metrics::Type::PROFILE)
+      .write(profile_.listen_key_ack, metrics::Type::PROFILE)
+      .write(profile_.account, metrics::Type::PROFILE)
+      .write(profile_.account_ack, metrics::Type::PROFILE)
+      .write(profile_.open_orders, metrics::Type::PROFILE)
+      .write(profile_.open_orders_ack, metrics::Type::PROFILE)
+      .write(profile_.trades, metrics::Type::PROFILE)
+      .write(profile_.trades_ack, metrics::Type::PROFILE)
+      .write(profile_.new_order, metrics::Type::PROFILE)
+      .write(profile_.new_order_ack, metrics::Type::PROFILE)
+      .write(profile_.cancel_replace_order, metrics::Type::PROFILE)
+      .write(profile_.cancel_replace_order_ack, metrics::Type::PROFILE)
+      .write(profile_.cancel_order, metrics::Type::PROFILE)
+      .write(profile_.cancel_order_ack, metrics::Type::PROFILE)
+      .write(profile_.cancel_all_open_orders, metrics::Type::PROFILE)
+      .write(profile_.cancel_all_open_orders_ack, metrics::Type::PROFILE)
+      // latency
+      .write(latency_.ping, metrics::Type::LATENCY)
+      // rate limiter
+      .write(rate_limiter_.requests_1m, metrics::Type::RATE_LIMITER);
+}
+
 void OrderEntryPortfolio::operator()(Trace<Start> const &event) {
   (*connection_)(event);
 }
@@ -188,33 +215,6 @@ void OrderEntryPortfolio::operator()(Trace<Timer> const &event) {
       }
     }
   }
-}
-
-void OrderEntryPortfolio::operator()(metrics::Writer &writer) const {
-  writer
-      // counter
-      .write(counter_.disconnect, metrics::Type::COUNTER)
-      // profile
-      .write(profile_.listen_key, metrics::Type::PROFILE)
-      .write(profile_.listen_key_ack, metrics::Type::PROFILE)
-      .write(profile_.account, metrics::Type::PROFILE)
-      .write(profile_.account_ack, metrics::Type::PROFILE)
-      .write(profile_.open_orders, metrics::Type::PROFILE)
-      .write(profile_.open_orders_ack, metrics::Type::PROFILE)
-      .write(profile_.trades, metrics::Type::PROFILE)
-      .write(profile_.trades_ack, metrics::Type::PROFILE)
-      .write(profile_.new_order, metrics::Type::PROFILE)
-      .write(profile_.new_order_ack, metrics::Type::PROFILE)
-      .write(profile_.cancel_replace_order, metrics::Type::PROFILE)
-      .write(profile_.cancel_replace_order_ack, metrics::Type::PROFILE)
-      .write(profile_.cancel_order, metrics::Type::PROFILE)
-      .write(profile_.cancel_order_ack, metrics::Type::PROFILE)
-      .write(profile_.cancel_all_open_orders, metrics::Type::PROFILE)
-      .write(profile_.cancel_all_open_orders_ack, metrics::Type::PROFILE)
-      // latency
-      .write(latency_.ping, metrics::Type::LATENCY)
-      // rate limiter
-      .write(rate_limiter_.requests_1m, metrics::Type::RATE_LIMITER);
 }
 
 void OrderEntryPortfolio::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {

@@ -122,25 +122,6 @@ void DropCopyMargin::operator()(Trace<ListenKeyUpdate> const &event) {
 
 // server::Stream
 
-void DropCopyMargin::operator()(Trace<Start> const &event) {
-  (*connection_)(event);
-}
-
-void DropCopyMargin::operator()(Trace<Stop> const &event) {
-  (*connection_)(event);
-}
-
-void DropCopyMargin::operator()(Trace<Timer> const &event) {
-  auto &[trace_info, timer] = event;
-  if ((*connection_)(event)) {
-    if (ready()) {
-      check_response_listen_key();
-      check_response_account(trace_info);
-      check_response_orders(trace_info);
-    }
-  }
-}
-
 void DropCopyMargin::operator()(metrics::Writer &writer) const {
   writer
       // counter
@@ -162,6 +143,25 @@ void DropCopyMargin::operator()(metrics::Writer &writer) const {
       .write(rate_limiter_.request_weight_1m, metrics::Type::RATE_LIMITER)
       .write(rate_limiter_.create_order_10s, metrics::Type::RATE_LIMITER)
       .write(rate_limiter_.create_order_1d, metrics::Type::RATE_LIMITER);
+}
+
+void DropCopyMargin::operator()(Trace<Start> const &event) {
+  (*connection_)(event);
+}
+
+void DropCopyMargin::operator()(Trace<Stop> const &event) {
+  (*connection_)(event);
+}
+
+void DropCopyMargin::operator()(Trace<Timer> const &event) {
+  auto &[trace_info, timer] = event;
+  if ((*connection_)(event)) {
+    if (ready()) {
+      check_response_listen_key();
+      check_response_account(trace_info);
+      check_response_orders(trace_info);
+    }
+  }
 }
 
 void DropCopyMargin::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {

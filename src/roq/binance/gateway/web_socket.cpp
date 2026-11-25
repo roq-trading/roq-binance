@@ -140,21 +140,6 @@ WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id,
 
 // server::Stream
 
-void WebSocket::operator()(Trace<Start> const &event) {
-  (*connection_)(event);
-}
-
-void WebSocket::operator()(Trace<Stop> const &event) {
-  (*connection_)(event);
-}
-
-void WebSocket::operator()(Trace<Timer> const &event) {
-  if ((*connection_)(event)) {
-    if (ready()) {
-    }
-  }
-}
-
 void WebSocket::operator()(metrics::Writer &writer) const {
   writer
       // counter
@@ -189,6 +174,21 @@ void WebSocket::operator()(metrics::Writer &writer) const {
       .write(rate_limiter_.request_weight_1m, metrics::Type::RATE_LIMITER)
       .write(rate_limiter_.create_order_10s, metrics::Type::RATE_LIMITER)
       .write(rate_limiter_.create_order_1d, metrics::Type::RATE_LIMITER);
+}
+
+void WebSocket::operator()(Trace<Start> const &event) {
+  (*connection_)(event);
+}
+
+void WebSocket::operator()(Trace<Stop> const &event) {
+  (*connection_)(event);
+}
+
+void WebSocket::operator()(Trace<Timer> const &event) {
+  if ((*connection_)(event)) {
+    if (ready()) {
+    }
+  }
 }
 
 void WebSocket::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
