@@ -22,6 +22,9 @@
     },
     {
       "name": "EXPIRED"
+    },
+    {
+      "name": "EXPIRED_IN_MATCH"
     }
   ]
 }

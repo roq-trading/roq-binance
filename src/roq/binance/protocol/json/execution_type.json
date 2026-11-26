@@ -19,6 +19,9 @@
     },
     {
       "name": "EXPIRED"
+    },
+    {
+      "name": "TRADE_PREVENTION"
     }
   ]
 }

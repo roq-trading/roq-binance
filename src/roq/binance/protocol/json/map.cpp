@@ -153,6 +153,8 @@ constexpr Helper<binance::protocol::json::OrderStatus>::operator std::optional<r
       return roq::OrderStatus::REJECTED;
     case EXPIRED:
       return roq::OrderStatus::EXPIRED;
+    case EXPIRED_IN_MATCH:
+      return roq::OrderStatus::EXPIRED;
   }
   return {};
 }
@@ -165,6 +167,7 @@ static_assert(Helper{binance::protocol::json::OrderStatus{binance::protocol::jso
 static_assert(Helper{binance::protocol::json::OrderStatus{binance::protocol::json::OrderStatus::PENDING_CANCEL}} == roq::OrderStatus::UNDEFINED);
 static_assert(Helper{binance::protocol::json::OrderStatus{binance::protocol::json::OrderStatus::REJECTED}} == roq::OrderStatus::REJECTED);
 static_assert(Helper{binance::protocol::json::OrderStatus{binance::protocol::json::OrderStatus::EXPIRED}} == roq::OrderStatus::EXPIRED);
+static_assert(Helper{binance::protocol::json::OrderStatus{binance::protocol::json::OrderStatus::EXPIRED_IN_MATCH}} == roq::OrderStatus::EXPIRED);
 
 template <>
 template <>

@@ -184,6 +184,51 @@
       "raw": "eR",
       "name": "expiry_reason",
       "type": "std/string_view"
+    },
+    {
+      "raw": "A",
+      "name": "prevented_quantity",
+      "type": "std/double"
+    },
+    {
+      "raw": "B",
+      "name": "last_prevented_quantity",
+      "type": "std/double"
+    },
+    {
+      "raw": "Cs",
+      "name": "counter_symbol",
+      "type": "std/string_view"
+    },
+    {
+      "raw": "U",
+      "name": "counter_order_id",
+      "type": "std/int64"
+    },
+    {
+      "raw": "pL",
+      "name": "prevented_execution_price",
+      "type": "std/double"
+    },
+    {
+      "raw": "pY",
+      "name": "prevented_execution_quote_quantity",
+      "type": "std/double"
+    },
+    {
+      "raw": "pl",
+      "name": "prevented_execution_uantity",
+      "type": "std/double"
+    },
+    {
+      "raw": "u",
+      "name": "trade_group_id",
+      "type": "std/int64"
+    },
+    {
+      "raw": "v",
+      "name": "prevented_match_id",
+      "type": "std/int64"
     }
   ]
 }
